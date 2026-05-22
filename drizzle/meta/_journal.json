@@ -1,0 +1,104 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1777285082857,
+      "tag": "0000_small_blacklash",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1779361200000,
+      "tag": "0001_add_memorials",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1779363600000,
+      "tag": "0002_add_memorial_letters",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1779365400000,
+      "tag": "0003_add_memorial_archives",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1779367200000,
+      "tag": "0004_seed_memorial_archive_content",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1779451200000,
+      "tag": "0005_add_memorial_family_rooms",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1779509400000,
+      "tag": "0006_seed_sample_memorials",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1779510600000,
+      "tag": "0007_add_memorial_day_reminders",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1779513000000,
+      "tag": "0008_add_memorial_access_password",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1779520200000,
+      "tag": "0009_seed_kim_somang_family_room",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1779525000000,
+      "tag": "0010_add_standalone_memorial_letters",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1779528600000,
+      "tag": "0011_auto_publish_memorials_and_seed_park_somang",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1779532200000,
+      "tag": "0012_add_local_auth_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1779534000000,
+      "tag": "0013_approve_existing_users",
+      "breakpoints": true
+    }
+  ]
+}

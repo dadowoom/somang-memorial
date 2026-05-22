@@ -1,0 +1,394 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-canvas-white: #ffffff;
+  --color-ink-black: #121212;
+  --color-ash-gray: #dbdad7;
+  --color-deep-graphite: #18181b;
+  --color-cool-gray-mist: #e6e4e0;
+  --color-muted-stone: #616161;
+  --color-success-green: #4caf50;
+  /* Warm Chronicle custom colors */
+  --color-gold: oklch(0.65 0.12 70);
+  --color-gold-light: oklch(0.75 0.1 75);
+  --color-gold-dark: oklch(0.5 0.12 65);
+  --color-cream: oklch(0.97 0.01 85);
+  --color-cream-dark: oklch(0.93 0.015 80);
+  --color-warm-brown: oklch(0.4 0.06 55);
+  --color-warm-text: oklch(0.3 0.04 50);
+  --color-parchment: oklch(0.95 0.02 80);
+  /* Royal Chronicle (Dark) custom colors */
+  --color-navy: oklch(0.15 0.03 260);
+  --color-navy-light: oklch(0.22 0.04 260);
+  --color-navy-deep: oklch(0.1 0.03 260);
+  --color-ivory: oklch(0.95 0.01 85);
+  --font-display: "Playfair Display", serif;
+  --font-serif-kr: "Noto Serif KR", serif;
+  --font-accent: "Cormorant Garamond", serif;
+}
+
+:root {
+  --radius: 0rem;
+  --background: #ffffff;
+  --foreground: #121212;
+  --card: #ffffff;
+  --card-foreground: #121212;
+  --popover: #ffffff;
+  --popover-foreground: #121212;
+  --primary: #18181b;
+  --primary-foreground: #ffffff;
+  --secondary: #e6e4e0;
+  --secondary-foreground: #121212;
+  --muted: #e6e4e0;
+  --muted-foreground: #616161;
+  --accent: #e6e4e0;
+  --accent-foreground: #121212;
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: #dbdad7;
+  --input: #dbdad7;
+  --ring: #616161;
+  --chart-1: #18181b;
+  --chart-2: #616161;
+  --chart-3: #dbdad7;
+  --chart-4: #4caf50;
+  --chart-5: #e6e4e0;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #121212;
+  --sidebar-accent: #e6e4e0;
+  --sidebar-accent-foreground: #121212;
+  --sidebar-border: #dbdad7;
+  --sidebar-ring: #616161;
+  --sidebar-primary: #18181b;
+  --sidebar-primary-foreground: #ffffff;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Noto Sans KR", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    overflow-x: hidden;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #ffffff;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #dbdad7;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #616161;
+  }
+}
+
+@layer components {
+  .container {
+    box-sizing: border-box;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+      max-width: 1280px;
+    }
+  }
+
+  /* Warm gold text shadow */
+  .text-glow {
+    text-shadow: 0 1px 3px rgba(160, 120, 40, 0.2);
+  }
+
+  .text-glow-strong {
+    text-shadow: 0 2px 8px rgba(160, 120, 40, 0.3),
+                 0 1px 3px rgba(160, 120, 40, 0.15);
+  }
+
+  /* Gold gradient text */
+  .gold-gradient-text {
+    background: linear-gradient(135deg, #8b6914 0%, #c9a84c 40%, #a88734 60%, #6b4f10 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Warm card style */
+  .warm-card {
+    background: linear-gradient(135deg, rgba(255,250,240,0.95), rgba(245,235,220,0.9));
+    border: 1px solid rgba(201, 168, 76, 0.25);
+    box-shadow: 0 4px 20px rgba(160, 120, 40, 0.08),
+                0 1px 4px rgba(0,0,0,0.05);
+  }
+
+  .warm-card:hover {
+    box-shadow: 0 8px 30px rgba(160, 120, 40, 0.15),
+                0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  /* Parchment/paper texture feel */
+  .parchment-bg {
+    background: linear-gradient(135deg, #faf6ef 0%, #f5ede0 50%, #efe5d5 100%);
+  }
+
+  /* Book page style */
+  .book-page-bg {
+    background: linear-gradient(to right, #f0e6d3 0%, #faf6ef 5%, #faf6ef 95%, #f0e6d3 100%);
+    box-shadow: inset 0 0 30px rgba(160, 120, 40, 0.05);
+  }
+
+  /* Section divider ornament - warm */
+  .ornament-divider {
+    position: relative;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(160, 120, 40, 0.4), transparent);
+  }
+  .ornament-divider::before {
+    content: "✦";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: #a88734;
+    font-size: 1.2rem;
+    background: #faf6ef;
+    padding: 0 1rem;
+  }
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection color */
+::selection {
+  background: #e6e4e0;
+  color: #121212;
+}
+
+/* react-pageflip overrides for warm theme */
+.stf__parent {
+  margin: 0 auto;
+}
+.stf__wrapper {
+  box-shadow: 0 10px 40px rgba(100, 70, 20, 0.15),
+              0 4px 12px rgba(0,0,0,0.08);
+  border-radius: 4px;
+}
+
+/* ========== ROYAL CHRONICLE (Dark Theme) Scoped Styles ========== */
+.royal-dark {
+  --color-navy: oklch(0.15 0.03 260);
+  --color-navy-light: oklch(0.22 0.04 260);
+  --color-navy-deep: oklch(0.1 0.03 260);
+  background: oklch(0.1 0.03 260);
+  color: oklch(0.92 0.01 85);
+}
+
+.royal-dark .text-glow {
+  text-shadow: 0 0 10px rgba(201, 168, 76, 0.5),
+               0 0 20px rgba(201, 168, 76, 0.3),
+               0 0 40px rgba(201, 168, 76, 0.15);
+}
+.royal-dark .text-glow-strong {
+  text-shadow: 0 0 10px rgba(201, 168, 76, 0.7),
+               0 0 30px rgba(201, 168, 76, 0.5),
+               0 0 60px rgba(201, 168, 76, 0.3),
+               0 0 100px rgba(201, 168, 76, 0.15);
+}
+.royal-dark .gold-gradient-text {
+  background: linear-gradient(135deg, #c9a84c 0%, #f5d77a 40%, #c9a84c 60%, #8b6914 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.royal-dark .gold-border-glow {
+  box-shadow: 0 0 15px rgba(201, 168, 76, 0.3),
+              inset 0 0 15px rgba(201, 168, 76, 0.1);
+  border: 1px solid rgba(201, 168, 76, 0.4);
+}
+.royal-dark .ornament-divider {
+  background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.5), transparent);
+}
+.royal-dark .ornament-divider::before {
+  color: #c9a84c;
+  background: oklch(0.15 0.03 260);
+}
+.royal-dark ::selection {
+  background: rgba(201, 168, 76, 0.3);
+  color: #f5d77a;
+}
+
+
+/* ========== LIGHT TRAJECTORY EFFECT (별처럼 빛나는 효과) ========== */
+@keyframes lightTrajectory {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+    filter: drop-shadow(0 0 0px rgba(201, 168, 76, 0));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 20px rgba(201, 168, 76, 0.8));
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 0px rgba(201, 168, 76, 0));
+  }
+}
+
+@keyframes lightTrajectoryDark {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+    filter: drop-shadow(0 0 0px rgba(201, 168, 76, 0));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 25px rgba(201, 168, 76, 1));
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 0px rgba(201, 168, 76, 0));
+  }
+}
+
+/* Timeline card light effect */
+.timeline-card {
+  position: relative;
+}
+
+.timeline-card::before {
+  content: "✦";
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #c9a84c;
+  font-size: 1.5rem;
+  opacity: 0;
+  animation: lightTrajectory 1.5s ease-out forwards;
+  animation-delay: 0.3s;
+  pointer-events: none;
+}
+
+.royal-dark .timeline-card::before {
+  animation: lightTrajectoryDark 1.5s ease-out forwards;
+  animation-delay: 0.3s;
+}
+
+/* Stagger effect for multiple cards */
+.timeline-card:nth-child(1)::before { animation-delay: 0.3s; }
+.timeline-card:nth-child(2)::before { animation-delay: 0.5s; }
+.timeline-card:nth-child(3)::before { animation-delay: 0.7s; }
+.timeline-card:nth-child(4)::before { animation-delay: 0.9s; }
+.timeline-card:nth-child(5)::before { animation-delay: 1.1s; }
+
+/* ========== GRACE PARTICLES EFFECT (은혜의 입자) ========== */
+@keyframes graceParticleFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(0) translateX(0);
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-100px) translateX(var(--tx, 0px));
+  }
+}
+
+.grace-particle {
+  position: fixed;
+  pointer-events: none;
+  font-size: 1.5rem;
+  opacity: 0;
+  animation: graceParticleFloat 4s ease-in-out forwards;
+  z-index: 10;
+}
+
+.grace-particle-1 { animation-delay: 0s; --tx: 30px; }
+.grace-particle-2 { animation-delay: 0.5s; --tx: -40px; }
+.grace-particle-3 { animation-delay: 1s; --tx: 50px; }
+.grace-particle-4 { animation-delay: 1.5s; --tx: -30px; }
+.grace-particle-5 { animation-delay: 2s; --tx: 40px; }
