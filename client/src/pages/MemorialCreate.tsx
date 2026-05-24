@@ -339,7 +339,7 @@ export default function MemorialCreate() {
         <main className="container pt-32">
           <div className="border border-[#dbdad7] py-20 text-center">
             <p className="text-sm text-[#616161]">
-              성도 인증 상태를 확인하고 있습니다.
+              로그인 상태를 확인하고 있습니다.
             </p>
           </div>
         </main>
@@ -354,7 +354,7 @@ export default function MemorialCreate() {
         <main className="container pt-32">
           <div className="border border-[#dbdad7] py-20 text-center">
             <p className="text-sm text-[#616161]">
-              로그인 후 추모관을 생성할 수 있습니다.
+              회원가입 또는 로그인 후 추모관을 생성할 수 있습니다.
             </p>
           </div>
         </main>

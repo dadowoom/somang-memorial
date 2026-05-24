@@ -1,6 +1,6 @@
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
-import { ArrowRight, Check, LockKeyhole, Mail } from "lucide-react";
+import { ArrowRight, Check, LockKeyhole, Mail, Phone, User } from "lucide-react";
 import type { ReactNode } from "react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -21,10 +21,23 @@ function getRedirectPath() {
   return redirect;
 }
 
+function getInitialMode(): Mode {
+  if (typeof window === "undefined") return "login";
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get("mode");
+  const redirect = params.get("redirect");
+
+  if (mode === "signup" || redirect === "/memorial/create") {
+    return "signup";
+  }
+
+  return "login";
+}
+
 export default function Login() {
   const utils = trpc.useUtils();
   const [, setLocation] = useLocation();
-  const [mode, setMode] = useState<Mode>("login");
+  const [mode, setMode] = useState<Mode>(getInitialMode);
   const [message, setMessage] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -32,6 +45,8 @@ export default function Login() {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPhone, setSignupPhone] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [signupPasswordConfirm, setSignupPasswordConfirm] = useState("");
+  const [signupConsent, setSignupConsent] = useState(false);
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
@@ -40,6 +55,7 @@ export default function Login() {
   const loginMutation = trpc.auth.login.useMutation();
   const signupMutation = trpc.auth.signup.useMutation();
   const redirectPath = useMemo(getRedirectPath, []);
+  const isCreateRedirect = redirectPath === "/memorial/create";
 
   useEffect(() => {
     if (meQuery.data) {
@@ -70,6 +86,21 @@ export default function Login() {
   const submitSignup = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage("");
+
+    if (signupPassword.length < 8) {
+      setMessage("비밀번호는 8자 이상으로 입력해 주세요.");
+      return;
+    }
+
+    if (signupPassword !== signupPasswordConfirm) {
+      setMessage("비밀번호 확인이 일치하지 않습니다.");
+      return;
+    }
+
+    if (!signupConsent) {
+      setMessage("회원가입과 추모관 생성을 위한 필수 동의가 필요합니다.");
+      return;
+    }
 
     try {
       const result = await signupMutation.mutateAsync({
@@ -115,14 +146,14 @@ export default function Login() {
                 소망을 남깁니다
               </h1>
               <p className="mt-6 max-w-lg text-sm leading-7 text-[#616161]">
-                회원가입 후 바로 추모관을 만들고, 필요한 기록을 이어서
-                정리할 수 있습니다.
+                소망 만들기는 회원가입 또는 로그인 후 이용할 수 있습니다.
+                가입을 마치면 바로 추모관 생성 화면으로 이어집니다.
               </p>
 
               <div className="mt-10 grid gap-px border border-[#dbdad7] bg-[#dbdad7] sm:grid-cols-3">
                 {[
                   ["01", "회원가입"],
-                  ["02", "로그인"],
+                  ["02", "소망 만들기"],
                   ["03", "추모관 생성"],
                 ].map(([number, text]) => (
                   <div key={number} className="bg-white p-5">
@@ -156,6 +187,12 @@ export default function Login() {
 
               {mode === "login" ? (
                 <form onSubmit={submitLogin} className="mt-8 space-y-6">
+                  {isCreateRedirect && (
+                    <div className="border border-[#dbdad7] p-4 text-sm leading-6 text-[#616161]">
+                      이미 계정이 있다면 로그인 후 소망 만들기를 이어갈 수
+                      있습니다.
+                    </div>
+                  )}
                   <Field label="이메일">
                     <div className="relative">
                       <input
@@ -193,52 +230,106 @@ export default function Login() {
                 </form>
               ) : (
                 <form onSubmit={submitSignup} className="mt-8 space-y-6">
+                  {isCreateRedirect && (
+                    <div className="border border-[#dbdad7] p-4 text-sm leading-6 text-[#616161]">
+                      처음 이용하시는 경우 회원가입을 마치면 바로 소망 만들기
+                      화면으로 이동합니다.
+                    </div>
+                  )}
                   <Field label="성함">
-                    <input
-                      value={signupName}
-                      onChange={event => setSignupName(event.target.value)}
-                      className={inputClass}
-                      placeholder="홍길동"
-                      autoComplete="name"
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        value={signupName}
+                        onChange={event => setSignupName(event.target.value)}
+                        className={`${inputClass} pr-9`}
+                        placeholder="홍길동"
+                        autoComplete="name"
+                        required
+                      />
+                      <User className="pointer-events-none absolute right-0 top-3.5 h-4 w-4 text-[#777]" />
+                    </div>
                   </Field>
                   <Field label="이메일">
-                    <input
-                      type="email"
-                      value={signupEmail}
-                      onChange={event => setSignupEmail(event.target.value)}
-                      className={inputClass}
-                      placeholder="name@example.com"
-                      autoComplete="email"
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        type="email"
+                        value={signupEmail}
+                        onChange={event => setSignupEmail(event.target.value)}
+                        className={`${inputClass} pr-9`}
+                        placeholder="name@example.com"
+                        autoComplete="email"
+                        required
+                      />
+                      <Mail className="pointer-events-none absolute right-0 top-3.5 h-4 w-4 text-[#777]" />
+                    </div>
                   </Field>
                   <Field label="휴대폰 번호">
-                    <input
-                      value={signupPhone}
-                      onChange={event => setSignupPhone(event.target.value)}
-                      className={inputClass}
-                      placeholder="010-0000-0000"
-                      autoComplete="tel"
-                    />
+                    <div className="relative">
+                      <input
+                        value={signupPhone}
+                        onChange={event => setSignupPhone(event.target.value)}
+                        className={`${inputClass} pr-9`}
+                        placeholder="010-0000-0000"
+                        autoComplete="tel"
+                      />
+                      <Phone className="pointer-events-none absolute right-0 top-3.5 h-4 w-4 text-[#777]" />
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-[#8a8a8a]">
+                      추모관 작성과 안내 확인에 필요한 연락처입니다.
+                    </p>
                   </Field>
                   <Field label="비밀번호">
+                    <div className="relative">
+                      <input
+                        type="password"
+                        value={signupPassword}
+                        onChange={event =>
+                          setSignupPassword(event.target.value)
+                        }
+                        className={`${inputClass} pr-9`}
+                        placeholder="8자 이상"
+                        autoComplete="new-password"
+                        minLength={8}
+                        required
+                      />
+                      <LockKeyhole className="pointer-events-none absolute right-0 top-3.5 h-4 w-4 text-[#777]" />
+                    </div>
+                  </Field>
+                  <Field label="비밀번호 확인">
+                    <div className="relative">
+                      <input
+                        type="password"
+                        value={signupPasswordConfirm}
+                        onChange={event =>
+                          setSignupPasswordConfirm(event.target.value)
+                        }
+                        className={`${inputClass} pr-9`}
+                        placeholder="한 번 더 입력"
+                        autoComplete="new-password"
+                        minLength={8}
+                        required
+                      />
+                      <LockKeyhole className="pointer-events-none absolute right-0 top-3.5 h-4 w-4 text-[#777]" />
+                    </div>
+                  </Field>
+
+                  <label className="flex gap-3 border border-[#dbdad7] p-4 text-sm leading-6 text-[#616161]">
                     <input
-                      type="password"
-                      value={signupPassword}
-                      onChange={event => setSignupPassword(event.target.value)}
-                      className={inputClass}
-                      placeholder="8자 이상"
-                      autoComplete="new-password"
-                      minLength={8}
+                      type="checkbox"
+                      checked={signupConsent}
+                      onChange={event => setSignupConsent(event.target.checked)}
+                      className="mt-1 h-4 w-4 accent-[#18181b]"
                       required
                     />
-                  </Field>
+                    <span>
+                      회원가입과 추모관 생성에 필요한 개인정보 수집 및 이용에
+                      동의합니다.
+                    </span>
+                  </label>
 
                   <SubmitButton
                     pending={signupMutation.isPending}
-                    label="회원가입"
+                    label="회원가입하고 시작하기"
                     pendingLabel="가입 중"
                   />
                 </form>
