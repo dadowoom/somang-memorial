@@ -98,7 +98,7 @@ export default function Kiosk() {
       return;
     }
 
-    setLocation(memorial.href);
+    setLocation(`/kiosk/memorial/${memorial.slug}`);
   }
 
   async function submitPassword() {
@@ -120,7 +120,7 @@ export default function Kiosk() {
           accessStorageKey(selectedPrivate.slug),
           result.accessToken
         );
-        setLocation(`/memorial/${selectedPrivate.slug}`);
+        setLocation(`/kiosk/memorial/${selectedPrivate.slug}`);
       }
     } catch {
       setPasswordMessage("비밀번호가 맞지 않습니다.");
