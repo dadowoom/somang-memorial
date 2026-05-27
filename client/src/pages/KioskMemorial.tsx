@@ -493,6 +493,11 @@ function KioskMemorialContent({
         accessToken={accessToken}
         isPrivate={memorial.visibility === "private"}
       />
+
+      <div
+        aria-hidden="true"
+        className="h-[52vh] border-t border-[#dedbd5]"
+      />
     </>
   );
 }
@@ -789,7 +794,10 @@ function KioskSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="border-t border-[#dedbd5] px-8 py-10">
+    <section
+      id={id}
+      className="scroll-mt-28 border-t border-[#dedbd5] px-8 py-10"
+    >
       <p className="mb-3 text-[12px] font-medium tracking-[0.26em] text-[#777]">
         {eyebrow}
       </p>
