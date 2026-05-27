@@ -8,11 +8,14 @@ import {
   createLocalUser,
   createMemorialReminderSubscription,
   canReadMemorial,
+  getAdminMemorialById,
+  getAdminMemorialBySlug,
   getUserByEmail,
   getMemorialFamilyRoomStatus,
   getMemorialAccessStatus,
   getPublicMemorialBySlug,
   hashMemorialAccessPassword,
+  listAdminMemorials,
   listMemorialLetters,
   listPublicMemorials,
   listRecentMemorialLetters,
@@ -126,6 +129,11 @@ const memorialUpdateInput = z.object({
   id: z.number(),
   name: z.string().trim().min(1).max(120).optional(),
   role: z.string().trim().min(1).max(80).optional(),
+  birthDate: z.string().trim().min(1).max(20).optional(),
+  deathDate: z.string().trim().min(1).max(20).optional(),
+  church: z.string().trim().min(1).max(160).optional(),
+  familyContact: z.string().trim().max(120).nullable().optional(),
+  familyPhone: z.string().trim().max(80).nullable().optional(),
   verse: z.string().trim().max(1000).nullable().optional(),
   verseRef: z.string().trim().max(120).nullable().optional(),
   summary: z.string().trim().min(1).max(255).optional(),
@@ -135,6 +143,20 @@ const memorialUpdateInput = z.object({
   servicePlace: z.string().trim().max(255).nullable().optional(),
   serviceTime: z.string().trim().max(40).nullable().optional(),
   memorialDay: z.string().trim().max(40).nullable().optional(),
+  visibility: z.enum(["public", "private"]).optional(),
+  accessPassword: z.string().trim().max(80).optional(),
+  status: z.enum(["published", "private"]).optional(),
+  managerMemo: z.string().trim().max(2000).nullable().optional(),
+  timeline: z
+    .array(
+      z.object({
+        year: z.string().trim().max(20),
+        title: z.string().trim().max(160),
+        description: z.string().trim().max(1000),
+      })
+    )
+    .max(30)
+    .optional(),
 });
 
 const withLetterLinks = <T extends { memorialSlug: string | null }>(
@@ -243,6 +265,50 @@ export const appRouter = router({
   }),
 
   memorial: router({
+    adminList: adminProcedure.query(async () => {
+      const memorials = await listAdminMemorials();
+      return memorials.map(memorial => ({
+        ...memorial,
+        isPrivate: memorial.visibility === "private",
+        href: `/memorial/${memorial.slug}`,
+        editHref: `/admin/memorials/${memorial.slug}/edit`,
+      }));
+    }),
+
+    adminBySlug: adminProcedure
+      .input(z.object({ slug: z.string().trim().min(1).max(120) }))
+      .query(async ({ input }) => {
+        const memorial = await getAdminMemorialBySlug(input.slug);
+        if (!memorial) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "추모관을 찾을 수 없습니다.",
+          });
+        }
+
+        let timeline: Array<{
+          year: string;
+          title: string;
+          description: string;
+        }> = [];
+
+        if (memorial.timelineJson) {
+          try {
+            timeline = JSON.parse(memorial.timelineJson);
+          } catch {
+            timeline = [];
+          }
+        }
+
+        const { accessPasswordHash, ...safeMemorial } = memorial;
+        return {
+          ...safeMemorial,
+          timeline,
+          hasAccessPassword: Boolean(accessPasswordHash),
+          href: `/memorial/${memorial.slug}`,
+        };
+      }),
+
     list: publicProcedure.query(async () => {
       const memorials = await listPublicMemorials();
 
@@ -401,8 +467,56 @@ export const appRouter = router({
     update: adminProcedure
       .input(memorialUpdateInput)
       .mutation(async ({ input }) => {
-        const { id, ...data } = input;
-        await updateMemorial(id, data);
+        const {
+          id,
+          accessPassword,
+          timeline,
+          visibility,
+          status,
+          ...data
+        } = input;
+        const existing = await getAdminMemorialById(id);
+        if (!existing) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "추모관을 찾을 수 없습니다.",
+          });
+        }
+
+        const updateData: Parameters<typeof updateMemorial>[1] = {
+          ...data,
+        };
+
+        if (visibility) {
+          updateData.visibility = visibility;
+          updateData.status = visibility === "private" ? "private" : "published";
+        } else if (status) {
+          updateData.status = status;
+        }
+
+        if (timeline) {
+          const cleanedTimeline = timeline.filter(
+            item => item.year || item.title || item.description
+          );
+          updateData.timelineJson = JSON.stringify(cleanedTimeline);
+        }
+
+        if (visibility === "public") {
+          updateData.accessPasswordHash = null;
+        } else if (accessPassword?.trim()) {
+          updateData.accessPasswordHash =
+            hashMemorialAccessPassword(accessPassword);
+        } else if (
+          visibility === "private" &&
+          !existing.accessPasswordHash
+        ) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "비공개 추모관은 입장 비밀번호가 필요합니다.",
+          });
+        }
+
+        await updateMemorial(id, updateData);
         return { success: true };
       }),
   }),

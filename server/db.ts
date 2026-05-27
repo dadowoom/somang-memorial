@@ -331,6 +331,64 @@ export async function searchPublicMemorials(keyword: string) {
     .limit(12);
 }
 
+export async function listAdminMemorials() {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  return db
+    .select({
+      id: memorials.id,
+      slug: memorials.slug,
+      name: memorials.name,
+      role: memorials.role,
+      birthDate: memorials.birthDate,
+      deathDate: memorials.deathDate,
+      church: memorials.church,
+      familyContact: memorials.familyContact,
+      familyPhone: memorials.familyPhone,
+      visibility: memorials.visibility,
+      status: memorials.status,
+      memorialDay: memorials.memorialDay,
+      createdAt: memorials.createdAt,
+      updatedAt: memorials.updatedAt,
+    })
+    .from(memorials)
+    .orderBy(desc(memorials.updatedAt), desc(memorials.createdAt))
+    .limit(500);
+}
+
+export async function getAdminMemorialBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const result = await db
+    .select()
+    .from(memorials)
+    .where(eq(memorials.slug, slug))
+    .limit(1);
+
+  return result[0] ?? null;
+}
+
+export async function getAdminMemorialById(id: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const result = await db
+    .select()
+    .from(memorials)
+    .where(eq(memorials.id, id))
+    .limit(1);
+
+  return result[0] ?? null;
+}
+
 export async function getPublicMemorialBySlug(slug: string) {
   const db = await getDb();
   if (!db) {

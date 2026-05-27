@@ -11,12 +11,14 @@ import MemorialCreate from "./pages/MemorialCreate";
 import HomeWarm from "./pages/HomeWarm";
 import Letters from "./pages/Letters";
 import Login from "./pages/Login";
+import AdminMemorials from "./pages/AdminMemorials";
 import MemorialSearch from "./pages/MemorialSearch";
 import MemorialDark from "./pages/MemorialDark";
 import MemorialPublicDetail from "./pages/MemorialPublicDetail";
 import SomangHill from "./pages/SomangHill";
 import MemorialArchivePage from "./pages/MemorialArchivePage";
 import MemorialFamilyPage from "./pages/MemorialFamilyPage";
+import MemorialEdit from "./pages/MemorialEdit";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -24,6 +26,8 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/login"} component={Login} />
+      <Route path={"/admin"} component={AdminMemorials} />
+      <Route path={"/admin/memorials/:slug/edit"} component={MemorialEdit} />
       <Route path={"/memorial/demo"} component={MemorialDemo} />
       <Route path={"/memorial/create"} component={MemorialCreate} />
       <Route path={"/memorial/warm"} component={HomeWarm} />

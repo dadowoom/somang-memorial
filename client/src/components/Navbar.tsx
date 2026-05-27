@@ -61,6 +61,13 @@ export default function Navbar() {
             </Link>
             {isAuthenticated ? (
               <>
+                {user?.role === "admin" && (
+                  <Link href="/admin">
+                    <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
+                      관리
+                    </span>
+                  </Link>
+                )}
                 <Link href="/">
                   <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
                     {user?.name || "계정"}
@@ -126,6 +133,16 @@ export default function Navbar() {
                 소망 만들기
               </span>
             </Link>
+            {user?.role === "admin" && (
+              <Link href="/admin">
+                <span
+                  onClick={closeMobile}
+                  className="py-3 text-sm text-[#121212]"
+                >
+                  관리
+                </span>
+              </Link>
+            )}
             <div className="mt-3 border-t border-[#dbdad7] pt-4">
               {isAuthenticated ? (
                 <button
