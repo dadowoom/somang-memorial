@@ -273,24 +273,7 @@ function KioskMemorialContent({
   return (
     <>
       <section className="px-8 pb-10 pt-8">
-        <div className="overflow-hidden border border-[#dedbd5] bg-[#f8f7f4]">
-          {portraitPhoto ? (
-            <img
-              src={toImgUrl(portraitPhoto.photoUrl)}
-              alt={`${memorial.name} 사진`}
-              className="aspect-[4/5] w-full object-cover grayscale"
-            />
-          ) : (
-            <div
-              className="flex aspect-[4/5] items-center justify-center text-[96px]"
-              style={serifStyle}
-            >
-              {memorial.name.slice(0, 1)}
-            </div>
-          )}
-        </div>
-
-        <div className="mt-8">
+        <div>
           <p className="mb-4 text-[12px] font-medium tracking-[0.26em] text-[#777]">
             SOMANG MEMORIAL
           </p>
@@ -309,6 +292,23 @@ function KioskMemorialContent({
           <p className="mt-7 text-[19px] leading-9 text-[#34312d]">
             {memorial.summary}
           </p>
+        </div>
+
+        <div className="mt-8 overflow-hidden border border-[#dedbd5] bg-[#f8f7f4]">
+          {portraitPhoto ? (
+            <img
+              src={toImgUrl(portraitPhoto.photoUrl)}
+              alt={`${memorial.name} 사진`}
+              className="h-[360px] w-full object-cover object-center grayscale"
+            />
+          ) : (
+            <div
+              className="flex h-[260px] items-center justify-center text-[88px]"
+              style={serifStyle}
+            >
+              {memorial.name.slice(0, 1)}
+            </div>
+          )}
         </div>
 
         <div className="mt-8 grid grid-cols-3 border border-[#dedbd5]">
