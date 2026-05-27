@@ -128,46 +128,36 @@ export default function Kiosk() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-[#efeeea] text-[#121212]">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[760px] flex-col bg-white shadow-[0_0_60px_rgba(0,0,0,0.08)]">
-        <header className="flex items-center justify-between border-b border-[#dbdad7] px-10 py-8">
+    <main className="min-h-[100dvh] bg-white text-[#121212]">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[680px] flex-col bg-white">
+        <header className="px-8 py-8">
           <button type="button" onClick={resetKiosk} className="text-left">
-            <span className="block text-[13px] font-medium tracking-[0.28em] text-[#777]">
-              SOMANG MEMORIAL
-            </span>
             <span
-              className="mt-2 block text-3xl font-normal"
+              className="block text-[26px] font-normal leading-tight"
               style={serifStyle}
             >
               소망이 있는 곳
             </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={resetKiosk}
-            className="h-12 border border-[#dbdad7] px-5 text-sm font-medium text-[#616161]"
-          >
-            처음으로
+            <span className="mt-1 block text-sm text-[#777]">
+              소망교회 추모관
+            </span>
           </button>
         </header>
 
-        <section className="px-10 pb-8 pt-16">
+        <section className="px-8 pb-9 pt-20">
           <h1
-            className="text-[58px] font-normal leading-[1.15]"
+            className="text-[42px] font-normal leading-[1.2]"
             style={serifStyle}
           >
-            고인의 성함을
-            <br />
-            입력해 주세요
+            고인 성함 검색
           </h1>
-          <p className="mt-7 text-xl leading-9 text-[#616161]">
-            성함을 입력하고 검색을 누르면 등록된 추모관을 찾을 수 있습니다.
+          <p className="mt-4 text-base leading-7 text-[#616161]">
+            성함을 입력한 뒤 검색 버튼을 눌러 주세요.
           </p>
 
-          <form onSubmit={handleSearch} className="mt-14">
-            <label className="flex h-24 items-center gap-5 border border-[#18181b] bg-white px-6">
-              <Search className="h-8 w-8 shrink-0" strokeWidth={1.7} />
+          <form onSubmit={handleSearch} className="mt-10">
+            <label className="flex h-[76px] items-center gap-4 border border-[#18181b] bg-white px-5">
+              <Search className="h-6 w-6 shrink-0" strokeWidth={1.7} />
               <input
                 ref={inputRef}
                 value={query}
@@ -176,7 +166,7 @@ export default function Kiosk() {
                   setMessage("");
                 }}
                 placeholder="예: 김소망"
-                className="min-w-0 flex-1 bg-transparent text-5xl font-light outline-none placeholder:text-[#b8b8b8]"
+                className="min-w-0 flex-1 bg-transparent text-[34px] font-light outline-none placeholder:text-[#b8b8b8]"
                 style={serifStyle}
                 autoComplete="off"
                 inputMode="text"
@@ -189,10 +179,10 @@ export default function Kiosk() {
                     setSubmittedKeyword("");
                     setMessage("");
                   }}
-                  className="flex h-12 w-12 shrink-0 items-center justify-center border border-[#dbdad7]"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#dbdad7]"
                   aria-label="검색어 지우기"
                 >
-                  <X className="h-6 w-6" strokeWidth={1.7} />
+                  <X className="h-5 w-5" strokeWidth={1.7} />
                 </button>
               )}
             </label>
@@ -203,74 +193,58 @@ export default function Kiosk() {
 
             <button
               type="submit"
-              className="mt-5 flex h-20 w-full items-center justify-center gap-3 bg-[#18181b] text-2xl font-medium text-white"
+              className="mt-4 flex h-16 w-full items-center justify-center gap-3 bg-[#18181b] text-lg font-medium text-white"
             >
               검색
-              <ArrowRight className="h-7 w-7" strokeWidth={1.7} />
+              <ArrowRight className="h-5 w-5" strokeWidth={1.7} />
             </button>
           </form>
         </section>
 
-        <section className="min-h-0 flex-1 border-t border-[#dbdad7]">
-          {!submittedKeyword ? (
-            <EmptyPanel
-              title="검색을 기다리고 있습니다."
-              body="고인의 성함을 입력한 뒤 검색 버튼을 눌러 주세요."
-            />
-          ) : memorialsQuery.isLoading ? (
-            <EmptyPanel title="검색 중입니다." body="잠시만 기다려 주세요." />
+        <section className="min-h-0 flex-1">
+          {!submittedKeyword ? null : memorialsQuery.isLoading ? (
+            <EmptyPanel title="검색 중입니다." />
           ) : memorialsQuery.isError ? (
-            <EmptyPanel
-              title="검색을 완료하지 못했습니다."
-              body="잠시 뒤 다시 검색해 주세요."
-            />
+            <EmptyPanel title="검색을 완료하지 못했습니다." />
           ) : results.length === 0 ? (
-            <EmptyPanel
-              title="일치하는 추모관이 없습니다."
-              body="성함을 다시 확인해 주세요."
-            />
+            <EmptyPanel title="일치하는 추모관이 없습니다." />
           ) : (
-            <div className="h-full overflow-y-auto">
-              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#dbdad7] bg-[#faf9f6] px-10 py-5">
-                <p className="text-base text-[#616161]">검색 결과</p>
-                <p className="text-xl font-light">{results.length}건</p>
+            <div className="h-full overflow-y-auto border-t border-[#dbdad7]">
+              <div className="flex items-center justify-between px-8 py-4">
+                <p className="text-sm text-[#616161]">검색 결과</p>
+                <p className="text-base text-[#616161]">{results.length}건</p>
               </div>
 
-              <div className="divide-y divide-[#dbdad7]">
+              <div className="border-t border-[#dbdad7]">
                 {results.map(memorial => (
                   <button
                     key={memorial.slug}
                     type="button"
                     onClick={() => openMemorial(memorial)}
-                    className="grid w-full gap-5 px-10 py-7 text-left active:bg-[#f5f3ee]"
+                    className="flex w-full items-center justify-between gap-5 border-b border-[#dbdad7] px-8 py-5 text-left active:bg-[#f7f6f2]"
                   >
-                    <span className="flex items-start justify-between gap-5">
-                      <span>
-                        <span className="flex flex-wrap items-center gap-3">
-                          <span
-                            className="text-[40px] font-normal leading-tight"
-                            style={serifStyle}
-                          >
-                            {memorial.name}
+                    <span className="min-w-0">
+                      <span className="flex flex-wrap items-center gap-3">
+                        <span
+                          className="text-[30px] font-normal leading-tight"
+                          style={serifStyle}
+                        >
+                          {memorial.name}
+                        </span>
+                        {memorial.isPrivate && (
+                          <span className="inline-flex items-center gap-1.5 border border-[#dbdad7] px-2.5 py-1 text-xs text-[#616161]">
+                            <LockKeyhole className="h-3.5 w-3.5" />
+                            비공개
                           </span>
-                          {memorial.isPrivate && (
-                            <span className="inline-flex items-center gap-2 border border-[#dbdad7] px-3 py-1.5 text-sm text-[#616161]">
-                              <LockKeyhole className="h-4 w-4" />
-                              비공개
-                            </span>
-                          )}
-                        </span>
-                        <span className="mt-3 block text-lg leading-8 text-[#616161]">
-                          {memorial.birthDate} - {memorial.deathDate}
-                          <br />
-                          {memorial.church} · {memorial.role}
-                        </span>
+                        )}
                       </span>
-
-                      <span className="mt-2 flex h-14 w-14 shrink-0 items-center justify-center border border-[#18181b]">
-                        <ArrowRight className="h-7 w-7" strokeWidth={1.7} />
+                      <span className="mt-2 block text-[15px] leading-6 text-[#616161]">
+                        {memorial.birthDate} - {memorial.deathDate} ·{" "}
+                        {memorial.church} · {memorial.role}
                       </span>
                     </span>
+
+                    <ArrowRight className="h-5 w-5 shrink-0 text-[#18181b]" />
                   </button>
                 ))}
               </div>
@@ -301,15 +275,10 @@ export default function Kiosk() {
   );
 }
 
-function EmptyPanel({ title, body }: { title: string; body: string }) {
+function EmptyPanel({ title }: { title: string }) {
   return (
-    <div className="flex h-full min-h-[420px] items-center justify-center px-10 text-center">
-      <div>
-        <p className="text-4xl font-normal" style={serifStyle}>
-          {title}
-        </p>
-        <p className="mt-5 text-lg leading-8 text-[#616161]">{body}</p>
-      </div>
+    <div className="flex min-h-[180px] items-center justify-center border-t border-[#dbdad7] px-8 text-center">
+      <p className="text-lg text-[#616161]">{title}</p>
     </div>
   );
 }
@@ -332,18 +301,18 @@ function PrivateAccessPanel({
   onSubmit: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-8">
-      <section className="w-full max-w-[680px] border border-[#dbdad7] bg-white p-8 shadow-2xl">
-        <div className="mb-8 flex items-start justify-between gap-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-8">
+      <section className="w-full max-w-[600px] border border-[#dbdad7] bg-white p-8">
+        <div className="mb-7 flex items-start justify-between gap-6">
           <div>
             <p className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#616161]">
               <LockKeyhole className="h-4 w-4" />
               비공개 추모관
             </p>
-            <h2 className="text-5xl font-normal" style={serifStyle}>
+            <h2 className="text-4xl font-normal" style={serifStyle}>
               {memorial.name}
             </h2>
-            <p className="mt-3 text-lg text-[#616161]">
+            <p className="mt-3 text-base text-[#616161]">
               {memorial.years} · {memorial.role}
             </p>
           </div>
@@ -351,10 +320,10 @@ function PrivateAccessPanel({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-14 w-14 items-center justify-center border border-[#dbdad7]"
+            className="flex h-12 w-12 items-center justify-center border border-[#dbdad7]"
             aria-label="비밀번호 입력 닫기"
           >
-            <X className="h-7 w-7" strokeWidth={1.7} />
+            <X className="h-6 w-6" strokeWidth={1.7} />
           </button>
         </div>
 
@@ -363,7 +332,7 @@ function PrivateAccessPanel({
           value={password}
           onChange={event => onPassword(event.target.value)}
           placeholder="비밀번호"
-          className="h-20 w-full border border-[#18181b] px-5 text-4xl outline-none placeholder:text-[#b8b8b8]"
+          className="h-16 w-full border border-[#18181b] px-5 text-2xl outline-none placeholder:text-[#b8b8b8]"
           autoFocus
         />
         {message && <p className="mt-4 text-base text-[#9f2a2a]">{message}</p>}
@@ -372,7 +341,7 @@ function PrivateAccessPanel({
           type="button"
           onClick={onSubmit}
           disabled={pending}
-          className="mt-6 h-18 min-h-18 w-full bg-[#18181b] py-5 text-xl font-medium text-white disabled:opacity-50"
+          className="mt-5 h-16 w-full bg-[#18181b] text-lg font-medium text-white disabled:opacity-50"
         >
           {pending ? "확인 중" : "입장하기"}
         </button>
