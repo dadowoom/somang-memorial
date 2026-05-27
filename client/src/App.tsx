@@ -19,6 +19,7 @@ import SomangHill from "./pages/SomangHill";
 import MemorialArchivePage from "./pages/MemorialArchivePage";
 import MemorialFamilyPage from "./pages/MemorialFamilyPage";
 import MemorialEdit from "./pages/MemorialEdit";
+import Kiosk from "./pages/Kiosk";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -26,6 +27,7 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/login"} component={Login} />
+      <Route path={"/kiosk"} component={Kiosk} />
       <Route path={"/admin"} component={AdminMemorials} />
       <Route path={"/admin/memorials/:slug/edit"} component={MemorialEdit} />
       <Route path={"/memorial/demo"} component={MemorialDemo} />
