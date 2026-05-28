@@ -19,6 +19,7 @@ import SomangHill from "./pages/SomangHill";
 import MemorialArchivePage from "./pages/MemorialArchivePage";
 import MemorialFamilyPage from "./pages/MemorialFamilyPage";
 import MemorialEdit from "./pages/MemorialEdit";
+import MyMemorials from "./pages/MyMemorials";
 import Kiosk from "./pages/Kiosk";
 import KioskMemorial from "./pages/KioskMemorial";
 
@@ -32,6 +33,8 @@ function Router() {
       <Route path={"/kiosk"} component={Kiosk} />
       <Route path={"/admin"} component={AdminMemorials} />
       <Route path={"/admin/memorials/:slug/edit"} component={MemorialEdit} />
+      <Route path={"/my/memorials"} component={MyMemorials} />
+      <Route path={"/my/memorials/:slug/edit"} component={MemorialEdit} />
       <Route path={"/memorial/demo"} component={MemorialDemo} />
       <Route path={"/memorial/create"} component={MemorialCreate} />
       <Route path={"/memorial/warm"} component={HomeWarm} />

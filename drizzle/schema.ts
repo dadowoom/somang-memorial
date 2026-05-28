@@ -14,74 +14,85 @@ import {
  * Extend this file with additional tables as your product grows.
  * Columns use camelCase to match both database fields and generated types.
  */
-export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
-  id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
-  name: text("name"),
-  email: varchar("email", { length: 320 }),
-  passwordHash: varchar("passwordHash", { length: 255 }),
-  phone: varchar("phone", { length: 30 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  approvalStatus: mysqlEnum("approvalStatus", [
-    "pending",
-    "approved",
-    "rejected",
-  ])
-    .default("approved")
-    .notNull(),
-  approvedAt: timestamp("approvedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
-}, table => [
-  index("users_email_idx").on(table.email),
-  index("users_approvalStatus_idx").on(table.approvalStatus),
-]);
+export const users = mysqlTable(
+  "users",
+  {
+    /**
+     * Surrogate primary key. Auto-incremented numeric value managed by the database.
+     * Use this for relations between tables.
+     */
+    id: int("id").autoincrement().primaryKey(),
+    /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
+    openId: varchar("openId", { length: 64 }).notNull().unique(),
+    name: text("name"),
+    email: varchar("email", { length: 320 }),
+    passwordHash: varchar("passwordHash", { length: 255 }),
+    phone: varchar("phone", { length: 30 }),
+    loginMethod: varchar("loginMethod", { length: 64 }),
+    role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+    approvalStatus: mysqlEnum("approvalStatus", [
+      "pending",
+      "approved",
+      "rejected",
+    ])
+      .default("approved")
+      .notNull(),
+    approvedAt: timestamp("approvedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  },
+  table => [
+    index("users_email_idx").on(table.email),
+    index("users_approvalStatus_idx").on(table.approvalStatus),
+  ]
+);
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-export const memorials = mysqlTable("memorials", {
-  id: int("id").autoincrement().primaryKey(),
-  slug: varchar("slug", { length: 120 }).notNull().unique(),
-  name: varchar("name", { length: 120 }).notNull(),
-  role: varchar("role", { length: 80 }).notNull(),
-  birthDate: varchar("birthDate", { length: 20 }).notNull(),
-  deathDate: varchar("deathDate", { length: 20 }).notNull(),
-  church: varchar("church", { length: 160 }).default("소망교회").notNull(),
-  familyContact: varchar("familyContact", { length: 120 }),
-  familyPhone: varchar("familyPhone", { length: 80 }),
-  verse: text("verse"),
-  verseRef: varchar("verseRef", { length: 120 }),
-  summary: varchar("summary", { length: 255 }).notNull(),
-  summaryDisplaySize: varchar("summaryDisplaySize", { length: 20 })
-    .default("auto")
-    .notNull(),
-  story: text("story").notNull(),
-  storyDisplaySize: varchar("storyDisplaySize", { length: 20 })
-    .default("auto")
-    .notNull(),
-  servicePlace: varchar("servicePlace", { length: 255 }),
-  serviceTime: varchar("serviceTime", { length: 40 }),
-  memorialDay: varchar("memorialDay", { length: 40 }),
-  visibility: mysqlEnum("visibility", ["public", "link", "private"])
-    .default("public")
-    .notNull(),
-  accessPasswordHash: varchar("accessPasswordHash", { length: 128 }),
-  status: mysqlEnum("status", ["pending", "published", "private"])
-    .default("published")
-    .notNull(),
-  timelineJson: text("timelineJson"),
-  managerMemo: text("managerMemo"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const memorials = mysqlTable(
+  "memorials",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    slug: varchar("slug", { length: 120 }).notNull().unique(),
+    name: varchar("name", { length: 120 }).notNull(),
+    role: varchar("role", { length: 80 }).notNull(),
+    birthDate: varchar("birthDate", { length: 20 }).notNull(),
+    deathDate: varchar("deathDate", { length: 20 }).notNull(),
+    church: varchar("church", { length: 160 }).default("소망교회").notNull(),
+    familyContact: varchar("familyContact", { length: 120 }),
+    familyPhone: varchar("familyPhone", { length: 80 }),
+    createdByUserId: int("createdByUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    verse: text("verse"),
+    verseRef: varchar("verseRef", { length: 120 }),
+    summary: varchar("summary", { length: 255 }).notNull(),
+    summaryDisplaySize: varchar("summaryDisplaySize", { length: 20 })
+      .default("auto")
+      .notNull(),
+    story: text("story").notNull(),
+    storyDisplaySize: varchar("storyDisplaySize", { length: 20 })
+      .default("auto")
+      .notNull(),
+    servicePlace: varchar("servicePlace", { length: 255 }),
+    serviceTime: varchar("serviceTime", { length: 40 }),
+    memorialDay: varchar("memorialDay", { length: 40 }),
+    visibility: mysqlEnum("visibility", ["public", "link", "private"])
+      .default("public")
+      .notNull(),
+    accessPasswordHash: varchar("accessPasswordHash", { length: 128 }),
+    status: mysqlEnum("status", ["pending", "published", "private"])
+      .default("published")
+      .notNull(),
+    timelineJson: text("timelineJson"),
+    managerMemo: text("managerMemo"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("memorials_createdByUserId_idx").on(table.createdByUserId)]
+);
 
 export type Memorial = typeof memorials.$inferSelect;
 export type InsertMemorial = typeof memorials.$inferInsert;
@@ -134,8 +145,7 @@ export const memorialGalleryPhotos = mysqlTable(
   ]
 );
 
-export type MemorialGalleryPhoto =
-  typeof memorialGalleryPhotos.$inferSelect;
+export type MemorialGalleryPhoto = typeof memorialGalleryPhotos.$inferSelect;
 export type InsertMemorialGalleryPhoto =
   typeof memorialGalleryPhotos.$inferInsert;
 
@@ -217,8 +227,7 @@ export const memorialBookPages = mysqlTable(
 );
 
 export type MemorialBookPage = typeof memorialBookPages.$inferSelect;
-export type InsertMemorialBookPage =
-  typeof memorialBookPages.$inferInsert;
+export type InsertMemorialBookPage = typeof memorialBookPages.$inferInsert;
 
 export const memorialFamilyRooms = mysqlTable(
   "memorial_family_rooms",
@@ -234,14 +243,11 @@ export const memorialFamilyRooms = mysqlTable(
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
-  table => [
-    index("memorial_family_rooms_memorialId_idx").on(table.memorialId),
-  ]
+  table => [index("memorial_family_rooms_memorialId_idx").on(table.memorialId)]
 );
 
 export type MemorialFamilyRoom = typeof memorialFamilyRooms.$inferSelect;
-export type InsertMemorialFamilyRoom =
-  typeof memorialFamilyRooms.$inferInsert;
+export type InsertMemorialFamilyRoom = typeof memorialFamilyRooms.$inferInsert;
 
 export const memorialReminderSubscriptions = mysqlTable(
   "memorial_reminder_subscriptions",

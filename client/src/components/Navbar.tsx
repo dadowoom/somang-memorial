@@ -61,6 +61,11 @@ export default function Navbar() {
             </Link>
             {isAuthenticated ? (
               <>
+                <Link href="/my/memorials">
+                  <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
+                    내 추모관
+                  </span>
+                </Link>
                 {user?.role === "admin" && (
                   <Link href="/admin">
                     <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
@@ -133,6 +138,16 @@ export default function Navbar() {
                 소망 만들기
               </span>
             </Link>
+            {isAuthenticated && (
+              <Link href="/my/memorials">
+                <span
+                  onClick={closeMobile}
+                  className="py-3 text-sm text-[#121212]"
+                >
+                  내 추모관
+                </span>
+              </Link>
+            )}
             {user?.role === "admin" && (
               <Link href="/admin">
                 <span

@@ -99,6 +99,13 @@
       "when": 1779534000000,
       "tag": "0013_approve_existing_users",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1779971553482,
+      "tag": "0014_add_memorial_owners",
+      "breakpoints": true
     }
   ]
 }

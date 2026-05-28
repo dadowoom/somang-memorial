@@ -2,14 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Plus,
-  Save,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Plus, Save, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useRoute } from "wouter";
 
@@ -135,24 +128,29 @@ const makeTimelineItem = (): TimelineItem => ({
 });
 
 export default function MemorialEdit() {
-  const [, params] = useRoute<{ slug: string }>(
+  const [, adminParams] = useRoute<{ slug: string }>(
     "/admin/memorials/:slug/edit"
   );
-  const slug = params?.slug ?? "";
-  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
-  const utils = trpc.useUtils();
-  const memorialQuery = trpc.memorial.adminBySlug.useQuery(
-    { slug },
-    { enabled: Boolean(slug) && user?.role === "admin", retry: false }
+  const [, ownerParams] = useRoute<{ slug: string }>(
+    "/my/memorials/:slug/edit"
   );
-  const updateMemorial = trpc.memorial.update.useMutation();
+  const slug = adminParams?.slug ?? ownerParams?.slug ?? "";
+  const isAdminPath = Boolean(adminParams?.slug);
+  const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
+  const isAdmin = user?.role === "admin";
+  const utils = trpc.useUtils();
+  const memorialQuery = trpc.memorial.editableBySlug.useQuery(
+    { slug },
+    { enabled: Boolean(slug) && Boolean(user), retry: false }
+  );
+  const updateMemorial = trpc.memorial.updateEditable.useMutation();
 
   const [loadedId, setLoadedId] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(initialForm);
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>(
-    {}
-  );
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof FormState, string>>
+  >({});
   const [notice, setNotice] = useState("");
   const memorial = memorialQuery.data as AdminMemorial | undefined;
 
@@ -281,7 +279,7 @@ export default function MemorialEdit() {
 
     try {
       setNotice("수정 내용을 저장하고 있습니다.");
-      await updateMemorial.mutateAsync({
+      const payload = {
         id: memorial.id,
         name: form.name,
         role: form.role,
@@ -298,17 +296,24 @@ export default function MemorialEdit() {
         memorialDay: form.memorialDay || null,
         visibility: form.visibility,
         accessPassword: form.accessPassword.trim() || undefined,
-        managerMemo: form.managerMemo || null,
         timeline: timeline.map(({ year, title, description }) => ({
           year,
           title,
           description,
         })),
-      });
+      };
+
+      await updateMemorial.mutateAsync(
+        isAdmin
+          ? { ...payload, managerMemo: form.managerMemo || null }
+          : payload
+      );
 
       await Promise.all([
-        utils.memorial.adminBySlug.invalidate({ slug }),
+        utils.memorial.editableBySlug.invalidate({ slug }),
+        utils.memorial.mine.invalidate(),
         utils.memorial.adminList.invalidate(),
+        utils.memorial.adminBySlug.invalidate({ slug }),
         utils.memorial.bySlug.invalidate({ slug }),
       ]);
       setForm(current => ({ ...current, accessPassword: "" }));
@@ -320,10 +325,14 @@ export default function MemorialEdit() {
   };
 
   if (loading) {
-    return <StateScreen text="관리자 권한을 확인하고 있습니다." />;
+    return <StateScreen text="수정 권한을 확인하고 있습니다." />;
   }
 
-  if (user?.role !== "admin") {
+  if (!user) {
+    return <StateScreen text="로그인 후 추모관을 수정할 수 있습니다." />;
+  }
+
+  if (isAdminPath && !isAdmin) {
     return <StateScreen text="관리자만 접근할 수 있습니다." />;
   }
 
@@ -335,10 +344,10 @@ export default function MemorialEdit() {
         <section className="border-b border-[#dbdad7]">
           <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)]">
             <div>
-              <Link href="/admin">
+              <Link href={isAdminPath ? "/admin" : "/my/memorials"}>
                 <button className="mb-8 inline-flex h-10 items-center gap-2 border border-[#dbdad7] bg-white px-4 text-sm text-[#616161] transition-colors hover:text-[#121212]">
                   <ArrowLeft className="h-4 w-4" strokeWidth={1.7} />
-                  관리자 목록
+                  {isAdminPath ? "관리자 목록" : "내 추모관"}
                 </button>
               </Link>
               <p className="mb-5 text-xs font-medium text-[#616161]">
@@ -521,7 +530,8 @@ export default function MemorialEdit() {
                         readOnly
                       />
                       <p className="mt-2 text-xs leading-5 text-[#8a8a8a]">
-                        주소 변경은 링크 공유에 영향을 줄 수 있어 별도 처리합니다.
+                        주소 변경은 링크 공유에 영향을 줄 수 있어 별도
+                        처리합니다.
                       </p>
                     </Field>
 
@@ -763,18 +773,20 @@ export default function MemorialEdit() {
                       </Field>
                     )}
 
-                    <div className="md:col-span-2">
-                      <Field label="관리 메모">
-                        <textarea
-                          className="min-h-28 w-full resize-y border border-[#dbdad7] bg-transparent p-4 text-sm leading-7 outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
-                          value={form.managerMemo}
-                          onChange={event =>
-                            updateField("managerMemo", event.target.value)
-                          }
-                          placeholder="운영자가 참고할 메모"
-                        />
-                      </Field>
-                    </div>
+                    {isAdmin && (
+                      <div className="md:col-span-2">
+                        <Field label="관리 메모">
+                          <textarea
+                            className="min-h-28 w-full resize-y border border-[#dbdad7] bg-transparent p-4 text-sm leading-7 outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
+                            value={form.managerMemo}
+                            onChange={event =>
+                              updateField("managerMemo", event.target.value)
+                            }
+                            placeholder="운영자가 참고할 메모"
+                          />
+                        </Field>
+                      </div>
+                    )}
                   </div>
                 </section>
 

@@ -10,12 +10,14 @@ import {
   canReadMemorial,
   getAdminMemorialById,
   getAdminMemorialBySlug,
+  getEditableMemorialBySlug,
   getUserByEmail,
   getMemorialFamilyRoomStatus,
   getMemorialAccessStatus,
   getPublicMemorialBySlug,
   hashMemorialAccessPassword,
   listAdminMemorials,
+  listUserMemorials,
   listMemorialLetters,
   listPublicMemorials,
   listRecentMemorialLetters,
@@ -179,6 +181,64 @@ const toPublicUser = (user: User) => ({
   lastSignedIn: user.lastSignedIn,
 });
 
+const parseTimeline = (timelineJson?: string | null) => {
+  if (!timelineJson) return [];
+
+  try {
+    return JSON.parse(timelineJson) as Array<{
+      year: string;
+      title: string;
+      description: string;
+    }>;
+  } catch {
+    return [];
+  }
+};
+
+const buildMemorialUpdateData = (
+  input: z.infer<typeof memorialUpdateInput>,
+  existing: { accessPasswordHash: string | null }
+) => {
+  const {
+    id: _id,
+    accessPassword,
+    timeline,
+    visibility,
+    status,
+    ...data
+  } = input;
+  const updateData: Parameters<typeof updateMemorial>[1] = {
+    ...data,
+  };
+
+  if (visibility) {
+    updateData.visibility = visibility;
+    updateData.status = visibility === "private" ? "private" : "published";
+  } else if (status) {
+    updateData.status = status;
+  }
+
+  if (timeline) {
+    const cleanedTimeline = timeline.filter(
+      item => item.year || item.title || item.description
+    );
+    updateData.timelineJson = JSON.stringify(cleanedTimeline);
+  }
+
+  if (visibility === "public") {
+    updateData.accessPasswordHash = null;
+  } else if (accessPassword?.trim()) {
+    updateData.accessPasswordHash = hashMemorialAccessPassword(accessPassword);
+  } else if (visibility === "private" && !existing.accessPasswordHash) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "비공개 추모관은 입장 비밀번호가 필요합니다.",
+    });
+  }
+
+  return updateData;
+};
+
 export const appRouter = router({
   // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
@@ -186,24 +246,65 @@ export const appRouter = router({
     me: publicProcedure.query(opts =>
       opts.ctx.user ? toPublicUser(opts.ctx.user) : null
     ),
-    signup: publicProcedure.input(authSignupInput).mutation(async ({ ctx, input }) => {
-      const created = await createLocalUser({
-        name: input.name,
-        email: input.email,
-        phone: input.phone,
-        password: input.password,
-      });
-
-      if (!created) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "이미 가입된 이메일입니다.",
+    signup: publicProcedure
+      .input(authSignupInput)
+      .mutation(async ({ ctx, input }) => {
+        const created = await createLocalUser({
+          name: input.name,
+          email: input.email,
+          phone: input.phone,
+          password: input.password,
         });
-      }
 
-      if (created.approvalStatus === "approved") {
-        const sessionToken = await sdk.createSessionToken(created.openId, {
-          name: created.name || normalizeEmail(input.email),
+        if (!created) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "이미 가입된 이메일입니다.",
+          });
+        }
+
+        if (created.approvalStatus === "approved") {
+          const sessionToken = await sdk.createSessionToken(created.openId, {
+            name: created.name || normalizeEmail(input.email),
+            expiresInMs: ONE_YEAR_MS,
+          });
+          const cookieOptions = getSessionCookieOptions(ctx.req);
+          ctx.res.cookie(COOKIE_NAME, sessionToken, {
+            ...cookieOptions,
+            maxAge: ONE_YEAR_MS,
+          });
+        }
+
+        return {
+          user: toPublicUser(created),
+          approvalStatus: created.approvalStatus,
+          firstAdmin: created.role === "admin",
+        };
+      }),
+    login: publicProcedure
+      .input(authLoginInput)
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserByEmail(input.email);
+        if (
+          !user?.passwordHash ||
+          !verifyUserPassword(input.password, user.passwordHash)
+        ) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "이메일 또는 비밀번호가 맞지 않습니다.",
+          });
+        }
+
+        const signedInAt = new Date();
+        await upsertUser({
+          openId: user.openId,
+          approvalStatus: "approved",
+          approvedAt: user.approvedAt ?? signedInAt,
+          lastSignedIn: signedInAt,
+        });
+
+        const sessionToken = await sdk.createSessionToken(user.openId, {
+          name: user.name || normalizeEmail(input.email),
           expiresInMs: ONE_YEAR_MS,
         });
         const cookieOptions = getSessionCookieOptions(ctx.req);
@@ -211,50 +312,16 @@ export const appRouter = router({
           ...cookieOptions,
           maxAge: ONE_YEAR_MS,
         });
-      }
 
-      return {
-        user: toPublicUser(created),
-        approvalStatus: created.approvalStatus,
-        firstAdmin: created.role === "admin",
-      };
-    }),
-    login: publicProcedure.input(authLoginInput).mutation(async ({ ctx, input }) => {
-      const user = await getUserByEmail(input.email);
-      if (!user?.passwordHash || !verifyUserPassword(input.password, user.passwordHash)) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "이메일 또는 비밀번호가 맞지 않습니다.",
-        });
-      }
-
-      const signedInAt = new Date();
-      await upsertUser({
-        openId: user.openId,
-        approvalStatus: "approved",
-        approvedAt: user.approvedAt ?? signedInAt,
-        lastSignedIn: signedInAt,
-      });
-
-      const sessionToken = await sdk.createSessionToken(user.openId, {
-        name: user.name || normalizeEmail(input.email),
-        expiresInMs: ONE_YEAR_MS,
-      });
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.cookie(COOKIE_NAME, sessionToken, {
-        ...cookieOptions,
-        maxAge: ONE_YEAR_MS,
-      });
-
-      return {
-        user: toPublicUser({
-          ...user,
-          approvalStatus: "approved",
-          approvedAt: user.approvedAt ?? signedInAt,
-          lastSignedIn: signedInAt,
-        }),
-      };
-    }),
+        return {
+          user: toPublicUser({
+            ...user,
+            approvalStatus: "approved",
+            approvedAt: user.approvedAt ?? signedInAt,
+            lastSignedIn: signedInAt,
+          }),
+        };
+      }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -286,26 +353,51 @@ export const appRouter = router({
           });
         }
 
-        let timeline: Array<{
-          year: string;
-          title: string;
-          description: string;
-        }> = [];
+        const { accessPasswordHash, ...safeMemorial } = memorial;
+        return {
+          ...safeMemorial,
+          timeline: parseTimeline(memorial.timelineJson),
+          hasAccessPassword: Boolean(accessPasswordHash),
+          href: `/memorial/${memorial.slug}`,
+        };
+      }),
 
-        if (memorial.timelineJson) {
-          try {
-            timeline = JSON.parse(memorial.timelineJson);
-          } catch {
-            timeline = [];
-          }
+    mine: protectedProcedure.query(async ({ ctx }) => {
+      const memorials = await listUserMemorials(ctx.user.id);
+      return memorials.map(memorial => ({
+        ...memorial,
+        isPrivate: memorial.visibility === "private",
+        href: `/memorial/${memorial.slug}`,
+        editHref: `/my/memorials/${memorial.slug}/edit`,
+      }));
+    }),
+
+    editableBySlug: protectedProcedure
+      .input(z.object({ slug: z.string().trim().min(1).max(120) }))
+      .query(async ({ ctx, input }) => {
+        const memorial = await getEditableMemorialBySlug({
+          slug: input.slug,
+          userId: ctx.user.id,
+          isAdmin: ctx.user.role === "admin",
+        });
+
+        if (!memorial) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "수정할 추모관을 찾을 수 없습니다.",
+          });
         }
 
         const { accessPasswordHash, ...safeMemorial } = memorial;
         return {
           ...safeMemorial,
-          timeline,
+          timeline: parseTimeline(memorial.timelineJson),
           hasAccessPassword: Boolean(accessPasswordHash),
           href: `/memorial/${memorial.slug}`,
+          editHref:
+            ctx.user.role === "admin"
+              ? `/admin/memorials/${memorial.slug}/edit`
+              : `/my/memorials/${memorial.slug}/edit`,
         };
       }),
 
@@ -393,32 +485,18 @@ export const appRouter = router({
           });
         }
 
-        let timeline: Array<{
-          year: string;
-          title: string;
-          description: string;
-        }> = [];
-
-        if (memorial.timelineJson) {
-          try {
-            timeline = JSON.parse(memorial.timelineJson);
-          } catch {
-            timeline = [];
-          }
-        }
-
         const { accessPasswordHash, ...safeMemorial } = memorial;
 
         return {
           ...safeMemorial,
-          timeline,
+          timeline: parseTimeline(memorial.timelineJson),
           href: `/memorial/${safeMemorial.slug}`,
         };
       }),
 
     create: protectedProcedure
       .input(memorialCreateInput)
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         if (input.visibility === "private" && !input.accessPassword?.trim()) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -438,6 +516,7 @@ export const appRouter = router({
           church: input.church || "소망교회",
           familyContact: input.familyContact || null,
           familyPhone: input.familyPhone || null,
+          createdByUserId: ctx.user.id,
           slug: input.slug || input.name,
           verse: input.verse || null,
           verseRef: input.verseRef || null,
@@ -461,21 +540,14 @@ export const appRouter = router({
           slug: created.slug,
           status: created.status,
           href: `/memorial/${created.slug}`,
+          editHref: `/my/memorials/${created.slug}/edit`,
         };
       }),
 
     update: adminProcedure
       .input(memorialUpdateInput)
       .mutation(async ({ input }) => {
-        const {
-          id,
-          accessPassword,
-          timeline,
-          visibility,
-          status,
-          ...data
-        } = input;
-        const existing = await getAdminMemorialById(id);
+        const existing = await getAdminMemorialById(input.id);
         if (!existing) {
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -483,40 +555,38 @@ export const appRouter = router({
           });
         }
 
-        const updateData: Parameters<typeof updateMemorial>[1] = {
-          ...data,
-        };
+        await updateMemorial(
+          input.id,
+          buildMemorialUpdateData(input, existing)
+        );
+        return { success: true };
+      }),
 
-        if (visibility) {
-          updateData.visibility = visibility;
-          updateData.status = visibility === "private" ? "private" : "published";
-        } else if (status) {
-          updateData.status = status;
-        }
-
-        if (timeline) {
-          const cleanedTimeline = timeline.filter(
-            item => item.year || item.title || item.description
-          );
-          updateData.timelineJson = JSON.stringify(cleanedTimeline);
-        }
-
-        if (visibility === "public") {
-          updateData.accessPasswordHash = null;
-        } else if (accessPassword?.trim()) {
-          updateData.accessPasswordHash =
-            hashMemorialAccessPassword(accessPassword);
-        } else if (
-          visibility === "private" &&
-          !existing.accessPasswordHash
-        ) {
+    updateEditable: protectedProcedure
+      .input(memorialUpdateInput)
+      .mutation(async ({ ctx, input }) => {
+        const existing = await getAdminMemorialById(input.id);
+        if (!existing) {
           throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "비공개 추모관은 입장 비밀번호가 필요합니다.",
+            code: "NOT_FOUND",
+            message: "추모관을 찾을 수 없습니다.",
           });
         }
 
-        await updateMemorial(id, updateData);
+        if (
+          ctx.user.role !== "admin" &&
+          existing.createdByUserId !== ctx.user.id
+        ) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "수정 권한이 없습니다.",
+          });
+        }
+
+        await updateMemorial(
+          input.id,
+          buildMemorialUpdateData(input, existing)
+        );
         return { success: true };
       }),
   }),

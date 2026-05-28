@@ -47,6 +47,7 @@ type CreatedMemorial = {
   slug: string;
   status: string;
   href: string;
+  editHref: string;
 };
 
 const draftKey = "somang.memorialCreateDraft";
@@ -221,8 +222,7 @@ export default function MemorialCreate() {
     setForm(current => ({
       ...current,
       visibility,
-      accessPassword:
-        visibility === "private" ? current.accessPassword : "",
+      accessPassword: visibility === "private" ? current.accessPassword : "",
     }));
     setErrors(current => ({
       ...current,
@@ -289,7 +289,8 @@ export default function MemorialCreate() {
     });
 
     if (form.visibility === "private" && !form.accessPassword.trim()) {
-      nextErrors.accessPassword = "비공개 추모관 입장 비밀번호를 입력해 주세요.";
+      nextErrors.accessPassword =
+        "비공개 추모관 입장 비밀번호를 입력해 주세요.";
     }
 
     setErrors(nextErrors);
@@ -876,7 +877,6 @@ export default function MemorialCreate() {
                       />
                     </Field>
                   )}
-
                 </div>
               </section>
 
@@ -954,6 +954,26 @@ export default function MemorialCreate() {
                           }
                         />
                       </dl>
+                      <div className="mt-6 flex flex-wrap gap-3">
+                        <Link href={createdMemorial?.href || "/"}>
+                          <button className="inline-flex h-10 items-center justify-center gap-2 bg-[#18181b] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90">
+                            추모관 보기
+                            <ArrowRight className="h-4 w-4" strokeWidth={1.6} />
+                          </button>
+                        </Link>
+                        <Link href="/my/memorials">
+                          <button className="inline-flex h-10 items-center justify-center border border-[#dbdad7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                            내 추모관
+                          </button>
+                        </Link>
+                        <Link
+                          href={createdMemorial?.editHref || "/my/memorials"}
+                        >
+                          <button className="inline-flex h-10 items-center justify-center border border-[#dbdad7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                            이어서 수정
+                          </button>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </section>

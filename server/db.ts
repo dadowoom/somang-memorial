@@ -348,6 +348,7 @@ export async function listAdminMemorials() {
       church: memorials.church,
       familyContact: memorials.familyContact,
       familyPhone: memorials.familyPhone,
+      createdByUserId: memorials.createdByUserId,
       visibility: memorials.visibility,
       status: memorials.status,
       memorialDay: memorials.memorialDay,
@@ -357,6 +358,35 @@ export async function listAdminMemorials() {
     .from(memorials)
     .orderBy(desc(memorials.updatedAt), desc(memorials.createdAt))
     .limit(500);
+}
+
+export async function listUserMemorials(userId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  return db
+    .select({
+      id: memorials.id,
+      slug: memorials.slug,
+      name: memorials.name,
+      role: memorials.role,
+      birthDate: memorials.birthDate,
+      deathDate: memorials.deathDate,
+      church: memorials.church,
+      familyContact: memorials.familyContact,
+      familyPhone: memorials.familyPhone,
+      visibility: memorials.visibility,
+      status: memorials.status,
+      memorialDay: memorials.memorialDay,
+      createdAt: memorials.createdAt,
+      updatedAt: memorials.updatedAt,
+    })
+    .from(memorials)
+    .where(eq(memorials.createdByUserId, userId))
+    .orderBy(desc(memorials.updatedAt), desc(memorials.createdAt))
+    .limit(200);
 }
 
 export async function getAdminMemorialBySlug(slug: string) {
@@ -370,6 +400,28 @@ export async function getAdminMemorialBySlug(slug: string) {
     .from(memorials)
     .where(eq(memorials.slug, slug))
     .limit(1);
+
+  return result[0] ?? null;
+}
+
+export async function getEditableMemorialBySlug(input: {
+  slug: string;
+  userId: number;
+  isAdmin: boolean;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const whereClause = input.isAdmin
+    ? eq(memorials.slug, input.slug)
+    : and(
+        eq(memorials.slug, input.slug),
+        eq(memorials.createdByUserId, input.userId)
+      );
+
+  const result = await db.select().from(memorials).where(whereClause).limit(1);
 
   return result[0] ?? null;
 }
@@ -441,9 +493,7 @@ export async function updateMemorial(
 }
 
 export function hashFamilyRoomPassword(password: string) {
-  return createHash("sha256")
-    .update(`somang-family:${password}`)
-    .digest("hex");
+  return createHash("sha256").update(`somang-family:${password}`).digest("hex");
 }
 
 export function hashMemorialAccessPassword(password: string) {
@@ -462,7 +512,11 @@ export function createMemorialAccessToken(
 }
 
 export function canReadMemorial(
-  memorial: { slug: string; visibility: string; accessPasswordHash: string | null },
+  memorial: {
+    slug: string;
+    visibility: string;
+    accessPasswordHash: string | null;
+  },
   accessToken?: string | null
 ) {
   if (memorial.visibility !== "private") return true;
@@ -856,7 +910,10 @@ export async function listRecentMemorialLetters(limit = 100) {
     .where(
       and(
         eq(memorialLetters.status, "published"),
-        or(eq(memorials.visibility, "public"), isNull(memorialLetters.memorialId))
+        or(
+          eq(memorials.visibility, "public"),
+          isNull(memorialLetters.memorialId)
+        )
       )
     )
     .orderBy(desc(memorialLetters.createdAt), desc(memorialLetters.id))
@@ -910,7 +967,10 @@ export async function updateMemorialGalleryPhoto(
     throw new Error("Database is not available");
   }
 
-  await db.update(memorialGalleryPhotos).set(data).where(eq(memorialGalleryPhotos.id, id));
+  await db
+    .update(memorialGalleryPhotos)
+    .set(data)
+    .where(eq(memorialGalleryPhotos.id, id));
 }
 
 export async function setRepresentativeMemorialPhoto(
@@ -938,7 +998,9 @@ export async function deleteMemorialGalleryPhoto(id: number) {
     throw new Error("Database is not available");
   }
 
-  await db.delete(memorialGalleryPhotos).where(eq(memorialGalleryPhotos.id, id));
+  await db
+    .delete(memorialGalleryPhotos)
+    .where(eq(memorialGalleryPhotos.id, id));
 }
 
 export async function listMemorialVideos(memorialId: number) {
@@ -1060,9 +1122,7 @@ export async function listMemorialBookPages(bookId: number) {
     );
 }
 
-export async function createMemorialBookPage(
-  data: InsertMemorialBookPage
-) {
+export async function createMemorialBookPage(data: InsertMemorialBookPage) {
   const db = await getDb();
   if (!db) {
     throw new Error("Database is not available");
@@ -1080,7 +1140,10 @@ export async function updateMemorialBookPage(
     throw new Error("Database is not available");
   }
 
-  await db.update(memorialBookPages).set(data).where(eq(memorialBookPages.id, id));
+  await db
+    .update(memorialBookPages)
+    .set(data)
+    .where(eq(memorialBookPages.id, id));
 }
 
 export async function deleteMemorialBookPage(id: number) {
