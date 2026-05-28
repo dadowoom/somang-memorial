@@ -55,10 +55,7 @@ const VALUES = [
   },
 ];
 
-const HERO_VIDEO_ID = "3HO-vSy2Ras";
-const HERO_VIDEO_START = 103;
-const HERO_VIDEO_SRC = `https://www.youtube-nocookie.com/embed/${HERO_VIDEO_ID}?autoplay=1&mute=1&controls=0&loop=1&playlist=${HERO_VIDEO_ID}&playsinline=1&rel=0&modestbranding=1&start=${HERO_VIDEO_START}`;
-const HERO_VIDEO_POSTER = `https://img.youtube.com/vi/${HERO_VIDEO_ID}/maxresdefault.jpg`;
+const HERO_STILL_IMAGE = "/hero-somang-chapel-v1.jpg";
 
 export default function Home() {
   return (
@@ -66,8 +63,8 @@ export default function Home() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="relative min-h-[calc(100svh-4rem)] overflow-hidden border-b border-[#dbdad7] bg-[#f6f5f2]">
-          <HeroVideoBackground />
+        <section className="relative min-h-[calc(100svh-4rem)] overflow-hidden border-b border-[#dbdad7] bg-[#fbfaf7]">
+          <HeroStillBackground />
           <div className="container relative z-10 flex min-h-[calc(100svh-4rem)] flex-col justify-center py-14 md:py-20">
             <div className="max-w-3xl">
               <p className="mb-6 text-[11px] font-medium tracking-[0.28em] text-[#3f3f3f] uppercase">
@@ -84,8 +81,8 @@ export default function Home() {
                   소망교회 디지털추모관 「소망이 있는 곳」은
                 </span>
                 <span className="block">
-                  믿음으로 살다 주님 품에 안긴 성도들의 삶과 신앙을
-                  기억하는 거룩한 공간입니다.
+                  믿음으로 살다 주님 품에 안긴 성도들의 삶과 신앙을 기억하는
+                  거룩한 공간입니다.
                 </span>
               </p>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
@@ -258,8 +255,8 @@ export default function Home() {
                   소망을 남길 준비가 되었나요
                 </h2>
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-[#616161]">
-                  회원가입 후 고인을 등록하고, 온라인 추모관과 부고장을 만들
-                  수 있습니다. 방문록 작성은 누구나 참여할 수 있습니다.
+                  회원가입 후 고인을 등록하고, 온라인 추모관과 부고장을 만들 수
+                  있습니다. 방문록 작성은 누구나 참여할 수 있습니다.
                 </p>
               </div>
               <Link href="/memorial/create">
@@ -278,32 +275,27 @@ export default function Home() {
   );
 }
 
-function HeroVideoBackground() {
+function HeroStillBackground() {
   return (
     <div
-      className="pointer-events-none absolute inset-0 overflow-hidden bg-[#f6f5f2]"
+      className="pointer-events-none absolute inset-0 overflow-hidden bg-[#fbfaf7]"
       aria-hidden="true"
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_28%,rgba(255,255,255,0.92),transparent_34%),linear-gradient(90deg,#ffffff_0%,#faf9f6_43%,#f4f1eb_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,#ffffff_0%,#ffffff_38%,#f7f4ee_100%)]" />
 
       <div
-        className="absolute inset-y-0 right-0 hidden w-[56vw] overflow-hidden bg-cover bg-center md:block lg:w-[62vw]"
-        style={{ backgroundImage: `url(${HERO_VIDEO_POSTER})` }}
-      >
-        <iframe
-          title="소망교회 배경 영상"
-          src={HERO_VIDEO_SRC}
-          className="absolute left-1/2 top-1/2 h-[56.25vw] min-h-full w-screen min-w-[177.78vh] -translate-x-1/2 -translate-y-1/2 border-0 opacity-70 contrast-105 saturate-[0.85]"
-          allow="autoplay; fullscreen; picture-in-picture"
-          tabIndex={-1}
-        />
-        <div className="absolute inset-0 bg-white/28" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#f6f5f2] via-white/44 to-white/8" />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/18 via-transparent to-[#f6f5f2]/58" />
-      </div>
+        className="absolute inset-y-0 right-0 hidden w-[68vw] bg-cover bg-right-center opacity-90 md:block"
+        style={{ backgroundImage: `url(${HERO_STILL_IMAGE})` }}
+      />
+      <div
+        className="absolute inset-x-0 bottom-0 h-[44%] bg-cover bg-right-bottom opacity-35 md:hidden"
+        style={{ backgroundImage: `url(${HERO_STILL_IMAGE})` }}
+      />
 
-      <div className="absolute inset-y-0 left-0 w-[56vw] bg-gradient-to-r from-white via-white/92 to-transparent" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_74%_10%,rgba(211,185,120,0.14),transparent_28%),radial-gradient(circle_at_92%_86%,rgba(180,190,188,0.22),transparent_34%)]" />
+      <div className="absolute inset-y-0 left-0 w-[72vw] bg-gradient-to-r from-white via-white/96 to-white/18" />
+      <div className="absolute inset-y-0 right-0 hidden w-[72vw] bg-gradient-to-r from-white via-white/72 to-white/0 md:block" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_12%,rgba(180,168,132,0.14),transparent_28%),radial-gradient(circle_at_90%_88%,rgba(142,151,132,0.12),transparent_32%)]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/22 via-transparent to-white/58" />
     </div>
   );
 }
