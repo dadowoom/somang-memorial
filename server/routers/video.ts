@@ -6,11 +6,22 @@ import {
   updateMemorialVideo,
 } from "../db";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
+import { requireReadableMemorialById } from "./memorialAccess";
 
 export const videoRouter = router({
   listByMemorial: publicProcedure
-    .input(z.object({ memorialId: z.number() }))
+    .input(
+      z.object({
+        memorialId: z.number(),
+        accessToken: z.string().trim().max(128).optional(),
+      })
+    )
     .query(async ({ ctx, input }) => {
+      await requireReadableMemorialById({
+        memorialId: input.memorialId,
+        accessToken: input.accessToken,
+        ctx,
+      });
       const videos = await listMemorialVideos(input.memorialId);
       if (ctx.user?.role === "admin") return videos;
       return videos.filter(video => video.isVisible !== 0);

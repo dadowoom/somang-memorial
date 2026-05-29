@@ -467,6 +467,7 @@ export async function getPublicMemorialBySlug(slug: string) {
       memorialDay: memorials.memorialDay,
       visibility: memorials.visibility,
       accessPasswordHash: memorials.accessPasswordHash,
+      createdByUserId: memorials.createdByUserId,
       status: memorials.status,
       timelineJson: memorials.timelineJson,
       createdAt: memorials.createdAt,
@@ -525,6 +526,21 @@ export function canReadMemorial(
     accessToken ===
     createMemorialAccessToken(memorial.slug, memorial.accessPasswordHash)
   );
+}
+
+export function canUserReadMemorial(
+  memorial: {
+    slug: string;
+    visibility: string;
+    accessPasswordHash: string | null;
+    createdByUserId?: number | null;
+  },
+  accessToken?: string | null,
+  user?: { id: number; role: string } | null
+) {
+  if (user?.role === "admin") return true;
+  if (user && memorial.createdByUserId === user.id) return true;
+  return canReadMemorial(memorial, accessToken);
 }
 
 export async function getMemorialAccessStatus(slug: string) {

@@ -10,11 +10,24 @@ import {
 import { decodeImageDataUrl } from "../_core/imageUpload";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 import { storagePut } from "../storage";
+import { requireReadableMemorialById } from "./memorialAccess";
 
 export const galleryRouter = router({
   listByMemorial: publicProcedure
-    .input(z.object({ memorialId: z.number() }))
-    .query(({ input }) => listMemorialGalleryPhotos(input.memorialId)),
+    .input(
+      z.object({
+        memorialId: z.number(),
+        accessToken: z.string().trim().max(128).optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      await requireReadableMemorialById({
+        memorialId: input.memorialId,
+        accessToken: input.accessToken,
+        ctx,
+      });
+      return listMemorialGalleryPhotos(input.memorialId);
+    }),
 
   upload: adminProcedure
     .input(

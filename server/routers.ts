@@ -7,7 +7,7 @@ import {
   createMemorialLetter,
   createLocalUser,
   createMemorialReminderSubscription,
-  canReadMemorial,
+  canUserReadMemorial,
   getAdminMemorialById,
   getAdminMemorialBySlug,
   getEditableMemorialBySlug,
@@ -469,7 +469,7 @@ export const appRouter = router({
           accessToken: z.string().trim().max(128).optional(),
         })
       )
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
         const memorial = await getPublicMemorialBySlug(input.slug);
         if (!memorial) {
           throw new TRPCError({
@@ -478,14 +478,18 @@ export const appRouter = router({
           });
         }
 
-        if (!canReadMemorial(memorial, input.accessToken)) {
+        if (!canUserReadMemorial(memorial, input.accessToken, ctx.user)) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "비공개 추모관입니다.",
           });
         }
 
-        const { accessPasswordHash, ...safeMemorial } = memorial;
+        const {
+          accessPasswordHash,
+          createdByUserId: _ownerId,
+          ...safeMemorial
+        } = memorial;
 
         return {
           ...safeMemorial,
@@ -606,7 +610,7 @@ export const appRouter = router({
           accessToken: z.string().trim().max(128).optional(),
         })
       )
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
         const memorial = await getPublicMemorialBySlug(input.memorialSlug);
         if (!memorial) {
           throw new TRPCError({
@@ -614,7 +618,7 @@ export const appRouter = router({
             message: "추모관을 찾을 수 없습니다.",
           });
         }
-        if (!canReadMemorial(memorial, input.accessToken)) {
+        if (!canUserReadMemorial(memorial, input.accessToken, ctx.user)) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "비공개 추모관입니다.",
@@ -627,7 +631,7 @@ export const appRouter = router({
 
     create: publicProcedure
       .input(letterCreateInput)
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         if (input.memorialSlug) {
           const memorial = await getPublicMemorialBySlug(input.memorialSlug);
           if (!memorial) {
@@ -636,7 +640,7 @@ export const appRouter = router({
               message: "추모관을 찾을 수 없습니다.",
             });
           }
-          if (!canReadMemorial(memorial, input.accessToken)) {
+          if (!canUserReadMemorial(memorial, input.accessToken, ctx.user)) {
             throw new TRPCError({
               code: "FORBIDDEN",
               message: "비공개 추모관입니다.",

@@ -7,7 +7,10 @@ import MemorialVideoSection from "@/components/memorial/MemorialVideoSection";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toImgUrl } from "@/lib/imageUrl";
-import { getNarrativeFontSize, normalizeTextDisplaySize } from "@/lib/textDisplay";
+import {
+  getNarrativeFontSize,
+  normalizeTextDisplaySize,
+} from "@/lib/textDisplay";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
@@ -78,7 +81,10 @@ export default function MemorialArchivePage() {
 
   const memorial = memorialQuery.data as ArchiveMemorial | undefined;
   const photosQuery = trpc.gallery.listByMemorial.useQuery(
-    { memorialId: memorial?.id ?? 0 },
+    {
+      memorialId: memorial?.id ?? 0,
+      accessToken: accessToken || undefined,
+    },
     { enabled: Boolean(memorial?.id) }
   );
   const photos = (photosQuery.data ?? []) as ArchivePhoto[];
@@ -124,8 +130,7 @@ export default function MemorialArchivePage() {
             <section
               className="relative flex min-h-[calc(100vh-4rem)] items-center overflow-hidden"
               style={{
-                background:
-                  "linear-gradient(180deg, #ffffff 0%, #fbfaf8 100%)",
+                background: "linear-gradient(180deg, #ffffff 0%, #fbfaf8 100%)",
               }}
             >
               <GoldDust />
@@ -141,7 +146,10 @@ export default function MemorialArchivePage() {
                 <div className="grid min-w-0 items-center gap-12 md:grid-cols-2 md:gap-20">
                   <div className="min-w-0">
                     <div className="mb-8 flex items-center gap-3">
-                      <span className="h-px w-8" style={{ background: warmGold }} />
+                      <span
+                        className="h-px w-8"
+                        style={{ background: warmGold }}
+                      />
                       <p
                         className="text-[11px] font-medium uppercase tracking-[0.28em]"
                         style={{ color: warmGold }}
@@ -174,7 +182,10 @@ export default function MemorialArchivePage() {
                       {memorial.church} 가족 기록관
                     </p>
 
-                    <div className="my-8 h-px w-16" style={{ background: warmGold }} />
+                    <div
+                      className="my-8 h-px w-16"
+                      style={{ background: warmGold }}
+                    />
 
                     <div
                       className="max-w-2xl break-words font-light leading-8"
@@ -201,9 +212,21 @@ export default function MemorialArchivePage() {
                     </div>
 
                     <div className="mt-10 grid max-w-xl grid-cols-1 gap-px overflow-hidden border border-[#e6ded1] bg-[#e6ded1] sm:grid-cols-3">
-                      <ArchiveFact icon={<CalendarDays className="h-4 w-4" />} label="출생" value={memorial.birthDate} />
-                      <ArchiveFact icon={<CalendarDays className="h-4 w-4" />} label="소천" value={memorial.deathDate} />
-                      <ArchiveFact icon={<Church className="h-4 w-4" />} label="교회" value={memorial.church} />
+                      <ArchiveFact
+                        icon={<CalendarDays className="h-4 w-4" />}
+                        label="출생"
+                        value={memorial.birthDate}
+                      />
+                      <ArchiveFact
+                        icon={<CalendarDays className="h-4 w-4" />}
+                        label="소천"
+                        value={memorial.deathDate}
+                      />
+                      <ArchiveFact
+                        icon={<Church className="h-4 w-4" />}
+                        label="교회"
+                        value={memorial.church}
+                      />
                     </div>
 
                     <div className="mt-8 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -333,7 +356,10 @@ export default function MemorialArchivePage() {
                   </div>
 
                   <article>
-                    <div className="mb-6 h-px w-10" style={{ background: warmGold }} />
+                    <div
+                      className="mb-6 h-px w-10"
+                      style={{ background: warmGold }}
+                    />
                     <h2
                       className="text-2xl font-light"
                       style={{ ...serifStyle, color: warmText }}
@@ -371,6 +397,7 @@ export default function MemorialArchivePage() {
               <MemorialGallerySection
                 memorialId={memorial.id}
                 isAdmin={isAdmin}
+                accessToken={accessToken || undefined}
               />
             </div>
             <div id="video">
@@ -380,12 +407,14 @@ export default function MemorialArchivePage() {
                 churchName={memorial.church}
                 coverImageUrl={heroPhoto}
                 isAdmin={isAdmin}
+                accessToken={accessToken || undefined}
               />
             </div>
             <div id="book">
               <MemorialBookSection
                 memorialId={memorial.id}
                 isAdmin={isAdmin}
+                accessToken={accessToken || undefined}
               />
             </div>
             <MemorialLettersSection
@@ -421,7 +450,10 @@ function ArchiveFact({
         {icon}
         {label}
       </p>
-      <p className="text-sm font-medium" style={{ ...serifStyle, color: warmText }}>
+      <p
+        className="text-sm font-medium"
+        style={{ ...serifStyle, color: warmText }}
+      >
         {value || "-"}
       </p>
     </div>
@@ -457,9 +489,18 @@ function SectionHeader({
         </p>
       )}
       <div className="mt-6 flex items-center justify-center gap-3">
-        <span className="h-px w-10" style={{ background: warmGold, opacity: 0.55 }} />
-        <span className="h-1.5 w-1.5 rounded-full" style={{ background: warmGold }} />
-        <span className="h-px w-10" style={{ background: warmGold, opacity: 0.55 }} />
+        <span
+          className="h-px w-10"
+          style={{ background: warmGold, opacity: 0.55 }}
+        />
+        <span
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ background: warmGold }}
+        />
+        <span
+          className="h-px w-10"
+          style={{ background: warmGold, opacity: 0.55 }}
+        />
       </div>
     </div>
   );

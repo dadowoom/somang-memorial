@@ -141,15 +141,24 @@ export default function KioskMemorial() {
   const isLocked = memorialQuery.error?.data?.code === "FORBIDDEN";
 
   const photosQuery = trpc.gallery.listByMemorial.useQuery(
-    { memorialId: memorial?.id ?? 0 },
+    {
+      memorialId: memorial?.id ?? 0,
+      accessToken: accessToken || undefined,
+    },
     { enabled: Boolean(memorial?.id) }
   );
   const videosQuery = trpc.video.listByMemorial.useQuery(
-    { memorialId: memorial?.id ?? 0 },
+    {
+      memorialId: memorial?.id ?? 0,
+      accessToken: accessToken || undefined,
+    },
     { enabled: Boolean(memorial?.id) }
   );
   const booksQuery = trpc.book.listByMemorial.useQuery(
-    { memorialId: memorial?.id ?? 0 },
+    {
+      memorialId: memorial?.id ?? 0,
+      accessToken: accessToken || undefined,
+    },
     { enabled: Boolean(memorial?.id) }
   );
 
@@ -338,9 +347,7 @@ function KioskMemorialContent({
               {memorial.verse}
             </p>
             {memorial.verseRef && (
-              <p className="mt-4 text-sm text-[#7a643e]">
-                {memorial.verseRef}
-              </p>
+              <p className="mt-4 text-sm text-[#7a643e]">{memorial.verseRef}</p>
             )}
           </article>
         )}
@@ -351,7 +358,10 @@ function KioskMemorialContent({
           </p>
           <div className="space-y-5">
             {storyParagraphs.map((paragraph, index) => (
-              <p key={`${index}-${paragraph.slice(0, 16)}`} className="text-base leading-8 text-[#4f4c48]">
+              <p
+                key={`${index}-${paragraph.slice(0, 16)}`}
+                className="text-base leading-8 text-[#4f4c48]"
+              >
                 {paragraph}
               </p>
             ))}
@@ -394,7 +404,10 @@ function KioskMemorialContent({
             ))}
           </div>
         ) : (
-          <EmptyBox icon={<ImageIcon className="h-5 w-5" />} text="등록된 사진이 없습니다." />
+          <EmptyBox
+            icon={<ImageIcon className="h-5 w-5" />}
+            text="등록된 사진이 없습니다."
+          />
         )}
       </KioskSection>
 
@@ -423,7 +436,10 @@ function KioskMemorialContent({
             {videos.length ? (
               <div className="space-y-3">
                 {videos.slice(0, 4).map(video => (
-                  <p key={video.id} className="border-t border-[#dedbd5] pt-3 text-base text-[#4f4c48]">
+                  <p
+                    key={video.id}
+                    className="border-t border-[#dedbd5] pt-3 text-base text-[#4f4c48]"
+                  >
                     {video.title}
                   </p>
                 ))}
@@ -470,7 +486,9 @@ function KioskMemorialContent({
                   {book.title}
                 </h3>
                 {book.subtitle && (
-                  <p className="mt-2 text-base text-[#64615d]">{book.subtitle}</p>
+                  <p className="mt-2 text-base text-[#64615d]">
+                    {book.subtitle}
+                  </p>
                 )}
                 {book.pages[0]?.content && (
                   <p className="mt-4 line-clamp-3 text-base leading-8 text-[#64615d]">
@@ -481,7 +499,10 @@ function KioskMemorialContent({
             ))}
           </div>
         ) : !memorial.timeline.length ? (
-          <EmptyBox icon={<BookOpenText className="h-5 w-5" />} text="등록된 기록이 없습니다." />
+          <EmptyBox
+            icon={<BookOpenText className="h-5 w-5" />}
+            text="등록된 기록이 없습니다."
+          />
         ) : null}
       </KioskSection>
 
@@ -494,10 +515,7 @@ function KioskMemorialContent({
         isPrivate={memorial.visibility === "private"}
       />
 
-      <div
-        aria-hidden="true"
-        className="h-[52vh] border-t border-[#dedbd5]"
-      />
+      <div aria-hidden="true" className="h-[52vh] border-t border-[#dedbd5]" />
     </>
   );
 }
@@ -611,9 +629,15 @@ function KioskFamilySection({ slug }: { slug: string }) {
   return (
     <KioskSection id="family" eyebrow="Family" title="가족관">
       {statusQuery.isLoading ? (
-        <EmptyBox icon={<LockKeyhole className="h-5 w-5" />} text="가족관을 확인하고 있습니다." />
+        <EmptyBox
+          icon={<LockKeyhole className="h-5 w-5" />}
+          text="가족관을 확인하고 있습니다."
+        />
       ) : !status?.enabled ? (
-        <EmptyBox icon={<LockKeyhole className="h-5 w-5" />} text="아직 준비된 가족관이 없습니다." />
+        <EmptyBox
+          icon={<LockKeyhole className="h-5 w-5" />}
+          text="아직 준비된 가족관이 없습니다."
+        />
       ) : room ? (
         <div className="space-y-4">
           <article className="border border-[#dedbd5] p-6">
@@ -765,7 +789,9 @@ function KioskLettersSection({
             <article key={letter.id} className="border-b border-[#dedbd5] py-5">
               <div className="flex items-center justify-between gap-4">
                 <p className="text-base font-medium">From {letter.author}</p>
-                <p className="text-sm text-[#777]">{formatDate(letter.createdAt)}</p>
+                <p className="text-sm text-[#777]">
+                  {formatDate(letter.createdAt)}
+                </p>
               </div>
               <p className="mt-3 whitespace-pre-line break-words text-base leading-8 text-[#64615d]">
                 {letter.content}
@@ -801,7 +827,10 @@ function KioskSection({
       <p className="mb-3 text-[12px] font-medium tracking-[0.26em] text-[#777]">
         {eyebrow}
       </p>
-      <h2 className="mb-7 text-[36px] font-normal leading-tight" style={serifStyle}>
+      <h2
+        className="mb-7 text-[36px] font-normal leading-tight"
+        style={serifStyle}
+      >
         {title}
       </h2>
       {children}
@@ -840,7 +869,9 @@ function KioskState({ children }: { children: ReactNode }) {
 }
 
 function scrollToSection(id: string) {
-  document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "smooth" });
+  document
+    .getElementById(id)
+    ?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
 function splitParagraphs(value: string) {

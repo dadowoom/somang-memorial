@@ -93,7 +93,10 @@ export default function MemorialPublicDetail() {
   const memorial = memorialQuery.data as MemorialRecord | undefined;
   const isLocked = memorialQuery.error?.data?.code === "FORBIDDEN";
   const photosQuery = trpc.gallery.listByMemorial.useQuery(
-    { memorialId: memorial?.id ?? 0 },
+    {
+      memorialId: memorial?.id ?? 0,
+      accessToken: accessToken || undefined,
+    },
     { enabled: Boolean(memorial?.id) }
   );
   const photos = (photosQuery.data ?? []) as MemorialPhoto[];
@@ -211,7 +214,9 @@ function PrivateMemorialGate({
               placeholder="비밀번호"
               autoFocus
             />
-            {message && <p className="mt-3 text-xs text-[#9f2a2a]">{message}</p>}
+            {message && (
+              <p className="mt-3 text-xs text-[#9f2a2a]">{message}</p>
+            )}
             <button
               type="submit"
               disabled={verifyAccess.isPending}
@@ -252,8 +257,7 @@ function MemorialContent({
       <section
         className="relative overflow-hidden"
         style={{
-          background:
-            "linear-gradient(180deg, #ffffff 0%, #fbfaf8 100%)",
+          background: "linear-gradient(180deg, #ffffff 0%, #fbfaf8 100%)",
         }}
       >
         <GoldDust />
@@ -269,10 +273,7 @@ function MemorialContent({
           <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.98fr)_minmax(300px,0.68fr)] lg:gap-20">
             <div>
               <div className="mb-8 flex items-center gap-3">
-                <span
-                  className="h-px w-8"
-                  style={{ background: warmGold }}
-                />
+                <span className="h-px w-8" style={{ background: warmGold }} />
                 <p
                   className="text-[11px] font-medium uppercase tracking-[0.28em]"
                   style={{ color: warmGold }}
@@ -345,7 +346,10 @@ function MemorialContent({
               </div>
             </div>
 
-            <MemorialPortrait memorial={memorial} portraitPhoto={portraitPhoto} />
+            <MemorialPortrait
+              memorial={memorial}
+              portraitPhoto={portraitPhoto}
+            />
           </div>
         </div>
 
@@ -419,10 +423,7 @@ function MemorialContent({
                     className="flex items-start gap-3"
                     style={{ color: mutedText }}
                   >
-                    <Bell
-                      className="mt-1 h-4 w-4 shrink-0"
-                      strokeWidth={1.6}
-                    />
+                    <Bell className="mt-1 h-4 w-4 shrink-0" strokeWidth={1.6} />
                     <span>추도일 {memorialDayLabel}</span>
                   </p>
                 </div>
@@ -541,7 +542,10 @@ function HeroFact({ label, value }: { label: string; value: string }) {
       >
         {label}
       </p>
-      <p className="text-sm font-medium" style={{ ...serifStyle, color: warmText }}>
+      <p
+        className="text-sm font-medium"
+        style={{ ...serifStyle, color: warmText }}
+      >
         {value || "-"}
       </p>
     </div>
@@ -562,9 +566,7 @@ function MemorialReminderForm({
     onSuccess: data => {
       setPhone("");
       setConsent(false);
-      setMessage(
-        `${data.memorialDay} 추도일 알림 신청이 저장되었습니다.`
-      );
+      setMessage(`${data.memorialDay} 추도일 알림 신청이 저장되었습니다.`);
     },
     onError: error => {
       setMessage(error.message || "알림 신청 중 문제가 생겼습니다.");
@@ -605,15 +607,11 @@ function MemorialReminderForm({
           strokeWidth={1.6}
         />
         <div>
-          <p
-            className="text-sm font-medium"
-            style={{ color: warmText }}
-          >
+          <p className="text-sm font-medium" style={{ color: warmText }}>
             추도일 알림 받기
           </p>
           <p className="mt-1 text-xs leading-5" style={{ color: mutedText }}>
-            휴대폰 번호를 남기면 {memorialDay} 추도일 안내를 받을 수
-            있습니다.
+            휴대폰 번호를 남기면 {memorialDay} 추도일 안내를 받을 수 있습니다.
           </p>
         </div>
       </div>
@@ -627,7 +625,10 @@ function MemorialReminderForm({
           maxLength={20}
           className="h-11 w-full border border-[#e6ded1] bg-white px-3 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#8a6a3e]"
         />
-        <label className="flex items-start gap-2 text-xs leading-5" style={{ color: mutedText }}>
+        <label
+          className="flex items-start gap-2 text-xs leading-5"
+          style={{ color: mutedText }}
+        >
           <input
             type="checkbox"
             checked={consent}

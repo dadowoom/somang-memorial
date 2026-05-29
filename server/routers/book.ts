@@ -12,13 +12,24 @@ import {
   updateMemorialBookPage,
 } from "../db";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
+import { requireReadableMemorialById } from "./memorialAccess";
 
 const nullableText = z.string().trim().nullable().optional();
 
 export const bookRouter = router({
   listByMemorial: publicProcedure
-    .input(z.object({ memorialId: z.number() }))
-    .query(async ({ input }) => {
+    .input(
+      z.object({
+        memorialId: z.number(),
+        accessToken: z.string().trim().max(128).optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      await requireReadableMemorialById({
+        memorialId: input.memorialId,
+        accessToken: input.accessToken,
+        ctx,
+      });
       const books = await listMemorialBooks(input.memorialId);
       return Promise.all(
         books.map(async book => ({
@@ -29,8 +40,13 @@ export const bookRouter = router({
     }),
 
   getById: publicProcedure
-    .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
+    .input(
+      z.object({
+        id: z.number(),
+        accessToken: z.string().trim().max(128).optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
       const book = await getMemorialBookById(input.id);
       if (!book) {
         throw new TRPCError({
@@ -38,6 +54,11 @@ export const bookRouter = router({
           message: "책을 찾을 수 없습니다.",
         });
       }
+      await requireReadableMemorialById({
+        memorialId: book.memorialId,
+        accessToken: input.accessToken,
+        ctx,
+      });
       return { ...book, pages: await listMemorialBookPages(book.id) };
     }),
 

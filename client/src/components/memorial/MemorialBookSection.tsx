@@ -44,13 +44,18 @@ type MemorialBook = {
 type MemorialBookSectionProps = {
   memorialId: number;
   isAdmin: boolean;
+  accessToken?: string;
 };
 
 type ViewMode = "book" | "timeline";
 
 const memorialPhotoFilter = "grayscale(1) contrast(1.04) brightness(1.02)";
 
-function formatDate(year?: number | null, month?: number | null, day?: number | null) {
+function formatDate(
+  year?: number | null,
+  month?: number | null,
+  day?: number | null
+) {
   if (!year) return "";
   if (month && day) return `${year}년 ${month}월 ${day}일`;
   if (month) return `${year}년 ${month}월`;
@@ -87,7 +92,9 @@ const CoverPage = forwardRef<HTMLDivElement, { book: MemorialBook }>(
           {book.title}
         </h3>
         {book.subtitle && (
-          <p className="mt-5 text-sm leading-7 text-[#6f6a61]">{book.subtitle}</p>
+          <p className="mt-5 text-sm leading-7 text-[#6f6a61]">
+            {book.subtitle}
+          </p>
         )}
         <p className="mt-10 inline-flex items-center gap-2 text-xs text-[#7f673d]">
           <BookOpen className="h-3.5 w-3.5" />
@@ -165,10 +172,12 @@ const BlankPage = forwardRef<HTMLDivElement>(function BlankPage(_, ref) {
 export default function MemorialBookSection({
   memorialId,
   isAdmin,
+  accessToken,
 }: MemorialBookSectionProps) {
   const utils = trpc.useUtils();
   const bookRef = useRef<any>(null);
-  const booksQuery = trpc.book.listByMemorial.useQuery({ memorialId });
+  const listInput = { memorialId, accessToken: accessToken || undefined };
+  const booksQuery = trpc.book.listByMemorial.useQuery(listInput);
   const [selectedBookIndex, setSelectedBookIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>("book");
@@ -179,8 +188,11 @@ export default function MemorialBookSection({
   >(null);
 
   const allBooks = (booksQuery.data ?? []) as MemorialBook[];
-  const books = isAdmin ? allBooks : allBooks.filter(book => book.pages.length > 0);
-  const selectedBook = books[Math.min(selectedBookIndex, Math.max(books.length - 1, 0))];
+  const books = isAdmin
+    ? allBooks
+    : allBooks.filter(book => book.pages.length > 0);
+  const selectedBook =
+    books[Math.min(selectedBookIndex, Math.max(books.length - 1, 0))];
   const sortedPages = useMemo(
     () => (selectedBook ? sortPages(selectedBook.pages) : []),
     [selectedBook]
@@ -191,7 +203,7 @@ export default function MemorialBookSection({
       toast.success("책이 추가되었습니다.");
       setAddingBook(false);
       setNewBookTitle("");
-      utils.book.listByMemorial.invalidate({ memorialId });
+      utils.book.listByMemorial.invalidate(listInput);
     },
     onError: error => toast.error(error.message),
   });
@@ -199,7 +211,7 @@ export default function MemorialBookSection({
     onSuccess: () => {
       toast.success("책이 삭제되었습니다.");
       setSelectedBookIndex(0);
-      utils.book.listByMemorial.invalidate({ memorialId });
+      utils.book.listByMemorial.invalidate(listInput);
     },
     onError: error => toast.error(error.message),
   });
@@ -207,7 +219,7 @@ export default function MemorialBookSection({
     onSuccess: () => {
       toast.success("페이지가 추가되었습니다.");
       setEditingPage(null);
-      utils.book.listByMemorial.invalidate({ memorialId });
+      utils.book.listByMemorial.invalidate(listInput);
     },
     onError: error => toast.error(error.message),
   });
@@ -215,14 +227,14 @@ export default function MemorialBookSection({
     onSuccess: () => {
       toast.success("저장되었습니다.");
       setEditingPage(null);
-      utils.book.listByMemorial.invalidate({ memorialId });
+      utils.book.listByMemorial.invalidate(listInput);
     },
     onError: error => toast.error(error.message),
   });
   const deletePage = trpc.book.deletePage.useMutation({
     onSuccess: () => {
       toast.success("페이지가 삭제되었습니다.");
-      utils.book.listByMemorial.invalidate({ memorialId });
+      utils.book.listByMemorial.invalidate(listInput);
     },
     onError: error => toast.error(error.message),
   });
@@ -320,7 +332,10 @@ export default function MemorialBookSection({
                   onChange={event => setNewBookTitle(event.target.value)}
                   onKeyDown={event => {
                     if (event.key === "Enter" && newBookTitle.trim()) {
-                      createBook.mutate({ memorialId, title: newBookTitle.trim() });
+                      createBook.mutate({
+                        memorialId,
+                        title: newBookTitle.trim(),
+                      });
                     }
                     if (event.key === "Escape") setAddingBook(false);
                   }}
@@ -332,7 +347,10 @@ export default function MemorialBookSection({
                   type="button"
                   onClick={() => {
                     if (newBookTitle.trim()) {
-                      createBook.mutate({ memorialId, title: newBookTitle.trim() });
+                      createBook.mutate({
+                        memorialId,
+                        title: newBookTitle.trim(),
+                      });
                     }
                   }}
                   className="h-10 bg-[#1f1d1a] px-3 text-white"
@@ -355,8 +373,7 @@ export default function MemorialBookSection({
                 onClick={() => setAddingBook(true)}
                 className="inline-flex h-10 items-center gap-2 border border-dashed border-[#c8b383] bg-white px-4 text-sm text-[#4f4638]"
               >
-                <Plus className="h-4 w-4" />
-                책 추가
+                <Plus className="h-4 w-4" />책 추가
               </button>
             )}
 
@@ -373,14 +390,15 @@ export default function MemorialBookSection({
                 <button
                   type="button"
                   onClick={() => {
-                    if (confirm(`"${selectedBook.title}" 책을 삭제하시겠습니까?`)) {
+                    if (
+                      confirm(`"${selectedBook.title}" 책을 삭제하시겠습니까?`)
+                    ) {
                       deleteBook.mutate({ id: selectedBook.id });
                     }
                   }}
                   className="inline-flex h-10 items-center gap-2 border border-red-200 bg-white px-4 text-sm text-red-500"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  책 삭제
+                  <Trash2 className="h-4 w-4" />책 삭제
                 </button>
               </>
             )}
@@ -401,7 +419,9 @@ export default function MemorialBookSection({
               isAdmin={isAdmin}
               selectedBook={selectedBook}
               sortedPages={sortedPages}
-              onEditPage={page => setEditingPage({ ...page, bookId: selectedBook.id })}
+              onEditPage={page =>
+                setEditingPage({ ...page, bookId: selectedBook.id })
+              }
               onDeletePage={page => {
                 if (confirm("이 페이지를 삭제하시겠습니까?")) {
                   deletePage.mutate({ id: page.id });
@@ -412,7 +432,9 @@ export default function MemorialBookSection({
             <TimelineView
               pages={sortedPages}
               isAdmin={isAdmin}
-              onEditPage={page => setEditingPage({ ...page, bookId: selectedBook.id })}
+              onEditPage={page =>
+                setEditingPage({ ...page, bookId: selectedBook.id })
+              }
               onDeletePage={page => {
                 if (confirm("이 페이지를 삭제하시겠습니까?")) {
                   deletePage.mutate({ id: page.id });
@@ -434,7 +456,8 @@ export default function MemorialBookSection({
           page={editingPage}
           onClose={() => setEditingPage(null)}
           onSave={data => {
-            if (editingPage.id) updatePage.mutate({ id: editingPage.id, ...data });
+            if (editingPage.id)
+              updatePage.mutate({ id: editingPage.id, ...data });
             else {
               addPage.mutate({
                 bookId: editingPage.bookId,
