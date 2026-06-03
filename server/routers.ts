@@ -17,13 +17,17 @@ import {
   getPublicMemorialBySlug,
   hashMemorialAccessPassword,
   listAdminMemorials,
+  listAdminMemorialLetters,
+  listAdminReminderSubscriptions,
   listUserMemorials,
   listMemorialLetters,
   listPublicMemorials,
   listRecentMemorialLetters,
   normalizeEmail,
   searchPublicMemorials,
+  updateMemorialLetterStatus,
   updateMemorial,
+  updateReminderSubscriptionStatus,
   upsertUser,
   verifyUserPassword,
   verifyMemorialAccessPassword,
@@ -106,6 +110,16 @@ const reminderSubscribeInput = z.object({
     .max(20)
     .regex(/^[0-9\-\s+()]+$/, "휴대폰 번호 형식으로 입력해주세요."),
   consent: z.literal(true),
+});
+
+const adminLetterStatusInput = z.object({
+  id: z.number(),
+  status: z.enum(["published", "hidden"]),
+});
+
+const adminReminderStatusInput = z.object({
+  id: z.number(),
+  status: z.enum(["active", "cancelled"]),
 });
 
 const authSignupInput = z.object({
@@ -596,6 +610,17 @@ export const appRouter = router({
   }),
 
   letter: router({
+    adminList: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(500).default(300) }))
+      .query(async ({ input }) => listAdminMemorialLetters(input.limit)),
+
+    updateStatus: adminProcedure
+      .input(adminLetterStatusInput)
+      .mutation(async ({ input }) => {
+        await updateMemorialLetterStatus(input.id, input.status);
+        return { success: true };
+      }),
+
     recent: publicProcedure
       .input(z.object({ limit: z.number().min(1).max(100).default(100) }))
       .query(async ({ input }) => {
@@ -704,6 +729,17 @@ export const appRouter = router({
   }),
 
   reminder: router({
+    adminList: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(500).default(300) }))
+      .query(async ({ input }) => listAdminReminderSubscriptions(input.limit)),
+
+    updateStatus: adminProcedure
+      .input(adminReminderStatusInput)
+      .mutation(async ({ input }) => {
+        await updateReminderSubscriptionStatus(input.id, input.status);
+        return { success: true };
+      }),
+
     subscribe: publicProcedure
       .input(reminderSubscribeInput)
       .mutation(async ({ input }) => {

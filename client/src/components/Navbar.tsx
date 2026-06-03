@@ -67,11 +67,18 @@ export default function Navbar() {
                   </span>
                 </Link>
                 {user?.role === "admin" && (
-                  <Link href="/admin">
-                    <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
-                      관리
-                    </span>
-                  </Link>
+                  <>
+                    <Link href="/admin">
+                      <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
+                        관리
+                      </span>
+                    </Link>
+                    <Link href="/admin/operations">
+                      <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
+                        운영
+                      </span>
+                    </Link>
+                  </>
                 )}
                 <Link href="/">
                   <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
@@ -96,7 +103,7 @@ export default function Navbar() {
 
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center border border-[#dbdad7] bg-white text-[#121212] md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center border border-[#dbdad7] bg-white text-[#121212] lg:hidden"
             onClick={() => setMobileOpen(open => !open)}
             aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"}
           >
@@ -110,7 +117,7 @@ export default function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-[#dbdad7] bg-white md:hidden">
+        <div className="border-t border-[#dbdad7] bg-white lg:hidden">
           <div className="container flex flex-col gap-1 py-4">
             {navItems.map(item => (
               <a
@@ -149,14 +156,24 @@ export default function Navbar() {
               </Link>
             )}
             {user?.role === "admin" && (
-              <Link href="/admin">
-                <span
-                  onClick={closeMobile}
-                  className="py-3 text-sm text-[#121212]"
-                >
-                  관리
-                </span>
-              </Link>
+              <>
+                <Link href="/admin">
+                  <span
+                    onClick={closeMobile}
+                    className="py-3 text-sm text-[#121212]"
+                  >
+                    관리
+                  </span>
+                </Link>
+                <Link href="/admin/operations">
+                  <span
+                    onClick={closeMobile}
+                    className="py-3 text-sm text-[#121212]"
+                  >
+                    운영
+                  </span>
+                </Link>
+              </>
             )}
             <div className="mt-3 border-t border-[#dbdad7] pt-4">
               {isAuthenticated ? (

@@ -947,6 +947,108 @@ export async function listRecentMemorialLetters(limit = 100) {
   }));
 }
 
+export async function listAdminMemorialLetters(limit = 300) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({
+      id: memorialLetters.id,
+      author: memorialLetters.author,
+      content: memorialLetters.content,
+      status: memorialLetters.status,
+      createdAt: memorialLetters.createdAt,
+      memorialId: memorialLetters.memorialId,
+      memorialSlug: memorials.slug,
+      memorialName: memorials.name,
+      memorialRole: memorials.role,
+      memorialVisibility: memorials.visibility,
+      recipientName: memorialLetters.recipientName,
+      recipientRole: memorialLetters.recipientRole,
+    })
+    .from(memorialLetters)
+    .leftJoin(memorials, eq(memorialLetters.memorialId, memorials.id))
+    .orderBy(desc(memorialLetters.createdAt), desc(memorialLetters.id))
+    .limit(limit);
+
+  return rows.map(row => ({
+    id: row.id,
+    author: row.author,
+    content: row.content,
+    status: row.status,
+    createdAt: row.createdAt,
+    memorialId: row.memorialId,
+    memorialSlug: row.memorialSlug,
+    memorialName: row.memorialName ?? row.recipientName ?? "하늘",
+    memorialRole: row.memorialRole ?? row.recipientRole ?? "",
+    memorialVisibility: row.memorialVisibility ?? "standalone",
+  }));
+}
+
+export async function updateMemorialLetterStatus(
+  id: number,
+  status: "published" | "hidden"
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db
+    .update(memorialLetters)
+    .set({ status })
+    .where(eq(memorialLetters.id, id));
+}
+
+export async function listAdminReminderSubscriptions(limit = 300) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  return db
+    .select({
+      id: memorialReminderSubscriptions.id,
+      phone: memorialReminderSubscriptions.phone,
+      memorialDay: memorialReminderSubscriptions.memorialDay,
+      status: memorialReminderSubscriptions.status,
+      consentAt: memorialReminderSubscriptions.consentAt,
+      createdAt: memorialReminderSubscriptions.createdAt,
+      updatedAt: memorialReminderSubscriptions.updatedAt,
+      memorialSlug: memorials.slug,
+      memorialName: memorials.name,
+      memorialRole: memorials.role,
+      memorialVisibility: memorials.visibility,
+    })
+    .from(memorialReminderSubscriptions)
+    .innerJoin(
+      memorials,
+      eq(memorialReminderSubscriptions.memorialId, memorials.id)
+    )
+    .orderBy(
+      desc(memorialReminderSubscriptions.updatedAt),
+      desc(memorialReminderSubscriptions.id)
+    )
+    .limit(limit);
+}
+
+export async function updateReminderSubscriptionStatus(
+  id: number,
+  status: "active" | "cancelled"
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db
+    .update(memorialReminderSubscriptions)
+    .set({ status })
+    .where(eq(memorialReminderSubscriptions.id, id));
+}
+
 export async function listMemorialGalleryPhotos(memorialId: number) {
   const db = await getDb();
   if (!db) {
