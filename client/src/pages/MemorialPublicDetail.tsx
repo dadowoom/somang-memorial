@@ -566,7 +566,11 @@ function MemorialReminderForm({
     onSuccess: data => {
       setPhone("");
       setConsent(false);
-      setMessage(`${data.memorialDay} 추도일 알림 신청이 저장되었습니다.`);
+      setMessage(
+        data.confirmationSent
+          ? `${data.memorialDay} 추도일 알림 신청이 저장되었고 확인 문자를 보냈습니다.`
+          : `${data.memorialDay} 추도일 알림 신청이 저장되었습니다. ${data.confirmationMessage}`
+      );
     },
     onError: error => {
       setMessage(error.message || "알림 신청 중 문제가 생겼습니다.");

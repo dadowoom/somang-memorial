@@ -6,6 +6,13 @@ type SendSmsInput = {
   text: string;
 };
 
+type ReminderConfirmationInput = {
+  to: string;
+  memorialName: string;
+  memorialDay: string;
+  memorialSlug: string;
+};
+
 let messageService: SolapiMessageService | null = null;
 
 function digitsOnly(value: string) {
@@ -57,5 +64,25 @@ export async function sendSms(input: SendSmsInput) {
     to,
     from,
     text: input.text,
+  });
+}
+
+function buildMemorialUrl(slug: string) {
+  const baseUrl = ENV.publicSiteUrl || "http://115.68.224.123:3050";
+  return `${baseUrl.replace(/\/$/, "")}/memorial/${slug}`;
+}
+
+export async function sendReminderConfirmationSms(
+  input: ReminderConfirmationInput
+) {
+  return sendSms({
+    to: input.to,
+    text: [
+      "[소망이 있는 곳]",
+      `${input.memorialName}님의 추도일 알림 신청이 완료되었습니다.`,
+      `추도일: ${input.memorialDay}`,
+      "정식 운영 전 테스트 기간에는 신청 즉시 확인 문자를 보내드립니다.",
+      buildMemorialUrl(input.memorialSlug),
+    ].join("\n"),
   });
 }

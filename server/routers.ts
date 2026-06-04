@@ -35,7 +35,11 @@ import {
 } from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { sdk } from "./_core/sdk";
-import { getSmsConfigStatus, sendSms } from "./_core/sms";
+import {
+  getSmsConfigStatus,
+  sendReminderConfirmationSms,
+  sendSms,
+} from "./_core/sms";
 import { systemRouter } from "./_core/systemRouter";
 import {
   adminProcedure,
@@ -782,7 +786,29 @@ export const appRouter = router({
           });
         }
 
-        return subscribed;
+        try {
+          await sendReminderConfirmationSms({
+            to: subscribed.phone,
+            memorialName: subscribed.memorialName,
+            memorialDay: subscribed.memorialDay,
+            memorialSlug: subscribed.memorialSlug,
+          });
+
+          return {
+            ...subscribed,
+            confirmationSent: true,
+            confirmationMessage: "확인 문자를 발송했습니다.",
+          };
+        } catch (error) {
+          return {
+            ...subscribed,
+            confirmationSent: false,
+            confirmationMessage:
+              error instanceof Error
+                ? error.message
+                : "확인 문자 발송은 처리되지 않았습니다.",
+          };
+        }
       }),
   }),
 
