@@ -33,6 +33,9 @@ type AdminReminder = {
   memorialDay: string | null;
   status: "active" | "cancelled";
   consentAt: Date | string;
+  lastNotifiedYear: number | null;
+  lastNotifiedAt: Date | string | null;
+  lastNotificationError: string | null;
   updatedAt: Date | string;
   memorialSlug: string;
   memorialName: string;
@@ -45,7 +48,12 @@ const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 export default function AdminOperations() {
   const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
   const [query, setQuery] = useState("");
+  const [testPhone, setTestPhone] = useState("");
+  const [testMessage, setTestMessage] = useState("");
   const utils = trpc.useUtils();
+  const smsStatusQuery = trpc.reminder.smsStatus.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
   const lettersQuery = trpc.letter.adminList.useQuery(
     { limit: 300 },
     { enabled: user?.role === "admin" }
@@ -65,6 +73,10 @@ export default function AdminOperations() {
   });
   const updateReminder = trpc.reminder.updateStatus.useMutation({
     onSuccess: () => utils.reminder.adminList.invalidate(),
+  });
+  const testSend = trpc.reminder.testSend.useMutation({
+    onSuccess: () => setTestMessage("테스트 문자를 발송했습니다."),
+    onError: error => setTestMessage(error.message),
   });
 
   const letters = (lettersQuery.data ?? []) as AdminLetter[];
@@ -246,6 +258,70 @@ export default function AdminOperations() {
               </section>
 
               <section>
+                <div className="mb-8 border border-[#dbdad7] p-5">
+                  <div className="mb-4 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-[0.24em] text-[#777]">
+                        SMS
+                      </p>
+                      <h2
+                        className="mt-2 text-2xl font-normal"
+                        style={serifStyle}
+                      >
+                        문자 발송 설정
+                      </h2>
+                    </div>
+                    <StatusBadge
+                      tone={smsStatusQuery.data?.enabled ? "normal" : "muted"}
+                      label={smsStatusQuery.data?.enabled ? "연동됨" : "대기"}
+                    />
+                  </div>
+
+                  <dl className="grid grid-cols-3 gap-px bg-[#dbdad7] text-center text-xs text-[#616161]">
+                    <ConfigItem
+                      label="API Key"
+                      enabled={Boolean(smsStatusQuery.data?.hasApiKey)}
+                    />
+                    <ConfigItem
+                      label="Secret"
+                      enabled={Boolean(smsStatusQuery.data?.hasApiSecret)}
+                    />
+                    <ConfigItem
+                      label="발신번호"
+                      enabled={Boolean(smsStatusQuery.data?.hasFromNumber)}
+                    />
+                  </dl>
+
+                  <form
+                    className="mt-5 flex flex-col gap-3 sm:flex-row"
+                    onSubmit={event => {
+                      event.preventDefault();
+                      setTestMessage("");
+                      testSend.mutate({ phone: testPhone });
+                    }}
+                  >
+                    <input
+                      value={testPhone}
+                      onChange={event => setTestPhone(event.target.value)}
+                      placeholder="테스트 받을 휴대폰 번호"
+                      className="h-11 min-w-0 flex-1 border border-[#dbdad7] px-3 text-sm outline-none focus:border-[#18181b]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={testSend.isPending}
+                      className="h-11 border border-[#18181b] px-4 text-sm transition-colors hover:bg-[#18181b] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      테스트 발송
+                    </button>
+                  </form>
+
+                  {testMessage && (
+                    <p className="mt-3 text-xs leading-5 text-[#616161]">
+                      {testMessage}
+                    </p>
+                  )}
+                </div>
+
                 <SectionTitle
                   icon={<Bell className="h-4 w-4" />}
                   title="추도일 알림"
@@ -294,6 +370,22 @@ export default function AdminOperations() {
                               <dt>최근 변경</dt>
                               <dd>{formatDate(reminder.updatedAt)}</dd>
                             </div>
+                            <div className="flex justify-between gap-4">
+                              <dt>최근 발송</dt>
+                              <dd>
+                                {reminder.lastNotifiedAt
+                                  ? `${formatDate(reminder.lastNotifiedAt)} (${reminder.lastNotifiedYear})`
+                                  : "없음"}
+                              </dd>
+                            </div>
+                            {reminder.lastNotificationError && (
+                              <div className="grid gap-1">
+                                <dt>최근 오류</dt>
+                                <dd className="break-words text-[#9a4a3f]">
+                                  {reminder.lastNotificationError}
+                                </dd>
+                              </div>
+                            )}
                           </dl>
 
                           <button
@@ -376,6 +468,21 @@ function StatusBadge({
     >
       {label}
     </span>
+  );
+}
+
+function ConfigItem({ label, enabled }: { label: string; enabled: boolean }) {
+  return (
+    <div className="bg-white px-3 py-4">
+      <dt>{label}</dt>
+      <dd
+        className={`mt-2 font-medium ${
+          enabled ? "text-[#121212]" : "text-[#9a9a9a]"
+        }`}
+      >
+        {enabled ? "설정" : "미설정"}
+      </dd>
+    </div>
   );
 }
 

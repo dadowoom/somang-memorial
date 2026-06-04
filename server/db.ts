@@ -1015,6 +1015,10 @@ export async function listAdminReminderSubscriptions(limit = 300) {
       memorialDay: memorialReminderSubscriptions.memorialDay,
       status: memorialReminderSubscriptions.status,
       consentAt: memorialReminderSubscriptions.consentAt,
+      lastNotifiedYear: memorialReminderSubscriptions.lastNotifiedYear,
+      lastNotifiedAt: memorialReminderSubscriptions.lastNotifiedAt,
+      lastNotificationError:
+        memorialReminderSubscriptions.lastNotificationError,
       createdAt: memorialReminderSubscriptions.createdAt,
       updatedAt: memorialReminderSubscriptions.updatedAt,
       memorialSlug: memorials.slug,
@@ -1046,6 +1050,122 @@ export async function updateReminderSubscriptionStatus(
   await db
     .update(memorialReminderSubscriptions)
     .set({ status })
+    .where(eq(memorialReminderSubscriptions.id, id));
+}
+
+function getSeoulDateParts(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const [year, month, day] = formatter.format(date).split("-").map(Number);
+  return { year, month, day };
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
+}
+
+function parseMemorialMonthDay(value: string | null) {
+  if (!value) return null;
+
+  const isoMatch = value.match(/\b\d{4}-(\d{1,2})-(\d{1,2})\b/);
+  if (isoMatch) {
+    return { month: Number(isoMatch[1]), day: Number(isoMatch[2]) };
+  }
+
+  const koreanMatch = value.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
+  if (koreanMatch) {
+    return { month: Number(koreanMatch[1]), day: Number(koreanMatch[2]) };
+  }
+
+  const slashMatch = value.match(/\b(\d{1,2})[./](\d{1,2})\b/);
+  if (slashMatch) {
+    return { month: Number(slashMatch[1]), day: Number(slashMatch[2]) };
+  }
+
+  return null;
+}
+
+export async function listDueReminderSubscriptions(
+  date = new Date(),
+  daysBefore = 1
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const targetDate = addDays(date, daysBefore);
+  const target = getSeoulDateParts(targetDate);
+  const notificationYear = target.year;
+
+  const rows = await db
+    .select({
+      id: memorialReminderSubscriptions.id,
+      phone: memorialReminderSubscriptions.phone,
+      memorialDay: memorialReminderSubscriptions.memorialDay,
+      lastNotifiedYear: memorialReminderSubscriptions.lastNotifiedYear,
+      memorialSlug: memorials.slug,
+      memorialName: memorials.name,
+      memorialRole: memorials.role,
+    })
+    .from(memorialReminderSubscriptions)
+    .innerJoin(
+      memorials,
+      eq(memorialReminderSubscriptions.memorialId, memorials.id)
+    )
+    .where(eq(memorialReminderSubscriptions.status, "active"))
+    .limit(1000);
+
+  return rows
+    .filter(row => {
+      if (row.lastNotifiedYear === notificationYear) return false;
+      const day = parseMemorialMonthDay(row.memorialDay);
+      return day?.month === target.month && day.day === target.day;
+    })
+    .map(row => ({ ...row, notificationYear }));
+}
+
+export async function markReminderNotificationSent(
+  id: number,
+  notificationYear: number,
+  messageId: string | null
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db
+    .update(memorialReminderSubscriptions)
+    .set({
+      lastNotifiedYear: notificationYear,
+      lastNotifiedAt: new Date(),
+      lastNotificationMessageId: messageId,
+      lastNotificationError: null,
+    })
+    .where(eq(memorialReminderSubscriptions.id, id));
+}
+
+export async function markReminderNotificationFailed(
+  id: number,
+  errorMessage: string
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db
+    .update(memorialReminderSubscriptions)
+    .set({
+      lastNotificationError: errorMessage.slice(0, 1000),
+    })
     .where(eq(memorialReminderSubscriptions.id, id));
 }
 

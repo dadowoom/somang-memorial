@@ -262,6 +262,12 @@ export const memorialReminderSubscriptions = mysqlTable(
       .default("active")
       .notNull(),
     consentAt: timestamp("consentAt").defaultNow().notNull(),
+    lastNotifiedYear: int("lastNotifiedYear"),
+    lastNotifiedAt: timestamp("lastNotifiedAt"),
+    lastNotificationMessageId: varchar("lastNotificationMessageId", {
+      length: 120,
+    }),
+    lastNotificationError: text("lastNotificationError"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },

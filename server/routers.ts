@@ -35,6 +35,7 @@ import {
 } from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { sdk } from "./_core/sdk";
+import { getSmsConfigStatus, sendSms } from "./_core/sms";
 import { systemRouter } from "./_core/systemRouter";
 import {
   adminProcedure,
@@ -120,6 +121,15 @@ const adminLetterStatusInput = z.object({
 const adminReminderStatusInput = z.object({
   id: z.number(),
   status: z.enum(["active", "cancelled"]),
+});
+
+const adminSmsTestInput = z.object({
+  phone: z
+    .string()
+    .trim()
+    .min(10)
+    .max(20)
+    .regex(/^[0-9\-\s+()]+$/, "휴대폰 번호 형식으로 입력해주세요."),
 });
 
 const authSignupInput = z.object({
@@ -729,6 +739,23 @@ export const appRouter = router({
   }),
 
   reminder: router({
+    smsStatus: adminProcedure.query(() => getSmsConfigStatus()),
+
+    testSend: adminProcedure
+      .input(adminSmsTestInput)
+      .mutation(async ({ input }) => {
+        await sendSms({
+          to: input.phone,
+          text: [
+            "[소망이 있는 곳]",
+            "추도일 알림 문자 연동 테스트입니다.",
+            "이 문자를 받으셨다면 SOLAPI 발송 설정이 정상입니다.",
+          ].join("\n"),
+        });
+
+        return { success: true };
+      }),
+
     adminList: adminProcedure
       .input(z.object({ limit: z.number().min(1).max(500).default(300) }))
       .query(async ({ input }) => listAdminReminderSubscriptions(input.limit)),

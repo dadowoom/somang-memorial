@@ -7,4 +7,10 @@ export const ENV = {
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  solapiApiKey: process.env.SOLAPI_API_KEY ?? "",
+  solapiApiSecret: process.env.SOLAPI_API_SECRET ?? "",
+  solapiFromNumber: process.env.SOLAPI_FROM_NUMBER ?? "",
+  publicSiteUrl: process.env.PUBLIC_SITE_URL ?? "",
+  reminderDaysBefore: Number(process.env.REMINDER_DAYS_BEFORE ?? "1"),
+  reminderSchedulerEnabled: process.env.REMINDER_SCHEDULER_ENABLED !== "false",
 };
