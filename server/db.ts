@@ -228,6 +228,31 @@ export async function createLocalUser(input: {
   return created;
 }
 
+export async function listAdminUsers(limit = 500) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      phone: users.phone,
+      loginMethod: users.loginMethod,
+      role: users.role,
+      approvalStatus: users.approvalStatus,
+      approvedAt: users.approvedAt,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      lastSignedIn: users.lastSignedIn,
+    })
+    .from(users)
+    .orderBy(desc(users.createdAt), desc(users.id))
+    .limit(limit);
+}
+
 export function normalizeMemorialSlug(name: string, requestedSlug?: string) {
   const source = (requestedSlug || name || "memorial").trim().toLowerCase();
   const normalized = source

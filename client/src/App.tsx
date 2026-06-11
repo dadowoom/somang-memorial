@@ -13,6 +13,7 @@ import Letters from "./pages/Letters";
 import Login from "./pages/Login";
 import AdminMemorials from "./pages/AdminMemorials";
 import AdminOperations from "./pages/AdminOperations";
+import AdminUsers from "./pages/AdminUsers";
 import MemorialSearch from "./pages/MemorialSearch";
 import MemorialDark from "./pages/MemorialDark";
 import MemorialPublicDetail from "./pages/MemorialPublicDetail";
@@ -33,6 +34,7 @@ function Router() {
       <Route path={"/kiosk/memorial/:slug"} component={KioskMemorial} />
       <Route path={"/kiosk"} component={Kiosk} />
       <Route path={"/admin/operations"} component={AdminOperations} />
+      <Route path={"/admin/users"} component={AdminUsers} />
       <Route path={"/admin"} component={AdminMemorials} />
       <Route path={"/admin/memorials/:slug/edit"} component={MemorialEdit} />
       <Route path={"/my/memorials"} component={MyMemorials} />

@@ -1,9 +1,11 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
+import { downloadCsv } from "@/lib/csvExport";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowRight,
+  Download,
   Edit3,
   Eye,
   LockKeyhole,
@@ -107,7 +109,7 @@ export default function AdminMemorials() {
 
         <section className="py-8 md:py-12">
           <div className="container">
-            <div className="mb-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+            <div className="mb-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center">
               <label className="flex min-w-0 items-center gap-3 border border-[#dbdad7] px-4 py-3">
                 <Search className="h-4 w-4 shrink-0 text-[#616161]" />
                 <input
@@ -117,6 +119,15 @@ export default function AdminMemorials() {
                   className="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#9a9a9a]"
                 />
               </label>
+
+              <button
+                type="button"
+                onClick={() => exportMemorials(filteredMemorials)}
+                className="inline-flex h-12 items-center justify-center gap-2 border border-[#dbdad7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]"
+              >
+                <Download className="h-4 w-4" strokeWidth={1.7} />
+                CSV
+              </button>
 
               <Link href="/memorial/create">
                 <button className="inline-flex h-12 items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90">
@@ -205,6 +216,23 @@ export default function AdminMemorials() {
       <Footer />
     </div>
   );
+}
+
+function exportMemorials(memorials: AdminMemorial[]) {
+  downloadCsv("somang-memorials.csv", memorials, [
+    { label: "성함", value: row => row.name },
+    { label: "직분", value: row => row.role },
+    { label: "출생일", value: row => row.birthDate },
+    { label: "소천일", value: row => row.deathDate },
+    { label: "교회", value: row => row.church },
+    { label: "가족대표", value: row => row.familyContact },
+    { label: "가족연락처", value: row => row.familyPhone },
+    { label: "공개설정", value: row => row.visibility },
+    { label: "상태", value: row => row.status },
+    { label: "추도일", value: row => row.memorialDay },
+    { label: "주소", value: row => row.href },
+    { label: "수정일", value: row => formatDate(row.updatedAt) },
+  ]);
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

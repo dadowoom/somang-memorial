@@ -1,9 +1,11 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
+import { downloadCsv } from "@/lib/csvExport";
 import { trpc } from "@/lib/trpc";
 import {
   Bell,
+  Download,
   Eye,
   EyeOff,
   Mail,
@@ -164,11 +166,29 @@ export default function AdminOperations() {
                   className="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#9a9a9a]"
                 />
               </label>
-              <Link href="/admin">
-                <button className="h-12 border border-[#dbdad7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
-                  추모관 관리
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => exportLetters(filteredLetters)}
+                  className="inline-flex h-12 items-center justify-center gap-2 border border-[#dbdad7] bg-white px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]"
+                >
+                  <Download className="h-4 w-4" strokeWidth={1.7} />
+                  편지 CSV
                 </button>
-              </Link>
+                <button
+                  type="button"
+                  onClick={() => exportReminders(filteredReminders)}
+                  className="inline-flex h-12 items-center justify-center gap-2 border border-[#dbdad7] bg-white px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]"
+                >
+                  <Download className="h-4 w-4" strokeWidth={1.7} />
+                  알림 CSV
+                </button>
+                <Link href="/admin">
+                  <button className="h-12 border border-[#dbdad7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                    추모관 관리
+                  </button>
+                </Link>
+              </div>
             </div>
 
             <div className="grid gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
@@ -422,6 +442,34 @@ export default function AdminOperations() {
   );
 }
 
+function exportLetters(letters: AdminLetter[]) {
+  downloadCsv("somang-letters.csv", letters, [
+    { label: "고인", value: row => row.memorialName },
+    { label: "직분", value: row => row.memorialRole },
+    { label: "작성자", value: row => row.author },
+    { label: "내용", value: row => row.content },
+    { label: "상태", value: row => row.status },
+    { label: "추모관공개", value: row => row.memorialVisibility },
+    { label: "작성일", value: row => formatDate(row.createdAt) },
+    { label: "추모관주소", value: row => row.memorialSlug || "" },
+  ]);
+}
+
+function exportReminders(reminders: AdminReminder[]) {
+  downloadCsv("somang-reminders.csv", reminders, [
+    { label: "고인", value: row => row.memorialName },
+    { label: "직분", value: row => row.memorialRole },
+    { label: "연락처", value: row => formatPhone(row.phone) },
+    { label: "추도일", value: row => row.memorialDay },
+    { label: "상태", value: row => row.status },
+    { label: "최근발송연도", value: row => row.lastNotifiedYear },
+    { label: "최근발송일", value: row => formatDate(row.lastNotifiedAt) },
+    { label: "최근오류", value: row => row.lastNotificationError },
+    { label: "신청일", value: row => formatDate(row.consentAt) },
+    { label: "최근변경", value: row => formatDate(row.updatedAt) },
+  ]);
+}
+
 function SectionTitle({
   icon,
   title,
@@ -505,7 +553,8 @@ function StateScreen({ text }: { text: string }) {
   );
 }
 
-function formatDate(value: Date | string) {
+function formatDate(value: Date | string | null) {
+  if (!value) return "-";
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleDateString("ko-KR", {

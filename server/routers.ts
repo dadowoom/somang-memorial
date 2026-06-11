@@ -19,6 +19,7 @@ import {
   listAdminMemorials,
   listAdminMemorialLetters,
   listAdminReminderSubscriptions,
+  listAdminUsers,
   listUserMemorials,
   listMemorialLetters,
   listPublicMemorials,
@@ -740,6 +741,12 @@ export const appRouter = router({
 
         return room;
       }),
+  }),
+
+  admin: router({
+    users: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(1000).default(500) }))
+      .query(async ({ input }) => listAdminUsers(input.limit)),
   }),
 
   reminder: router({

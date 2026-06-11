@@ -78,6 +78,11 @@ export default function Navbar() {
                         운영
                       </span>
                     </Link>
+                    <Link href="/admin/users">
+                      <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
+                        회원
+                      </span>
+                    </Link>
                   </>
                 )}
                 <Link href="/">
@@ -171,6 +176,14 @@ export default function Navbar() {
                     className="py-3 text-sm text-[#121212]"
                   >
                     운영
+                  </span>
+                </Link>
+                <Link href="/admin/users">
+                  <span
+                    onClick={closeMobile}
+                    className="py-3 text-sm text-[#121212]"
+                  >
+                    회원
                   </span>
                 </Link>
               </>
