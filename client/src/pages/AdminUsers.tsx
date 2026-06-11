@@ -3,7 +3,14 @@ import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { downloadCsv } from "@/lib/csvExport";
 import { trpc } from "@/lib/trpc";
-import { Download, Search, ShieldCheck, UserRound } from "lucide-react";
+import {
+  Download,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  UserRound,
+  XCircle,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 
@@ -26,10 +33,26 @@ const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 export default function AdminUsers() {
   const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
   const [query, setQuery] = useState("");
+  const [message, setMessage] = useState("");
+  const utils = trpc.useUtils();
   const usersQuery = trpc.admin.users.useQuery(
     { limit: 500 },
     { enabled: user?.role === "admin" }
   );
+  const updateRole = trpc.admin.updateUserRole.useMutation({
+    onSuccess: async () => {
+      setMessage("회원 권한을 변경했습니다.");
+      await utils.admin.users.invalidate();
+    },
+    onError: error => setMessage(error.message),
+  });
+  const updateStatus = trpc.admin.updateUserStatus.useMutation({
+    onSuccess: async () => {
+      setMessage("회원 상태를 변경했습니다.");
+      await utils.admin.users.invalidate();
+    },
+    onError: error => setMessage(error.message),
+  });
   const users = (usersQuery.data ?? []) as AdminUser[];
   const keyword = query.trim().toLowerCase();
 
@@ -115,6 +138,11 @@ export default function AdminUsers() {
                 </button>
               </Link>
             </div>
+            {message && (
+              <p className="mb-5 border border-[#dbdad7] px-4 py-3 text-sm text-[#616161]">
+                {message}
+              </p>
+            )}
 
             {usersQuery.isLoading ? (
               <Panel text="회원 목록을 불러오고 있습니다." />
@@ -124,20 +152,21 @@ export default function AdminUsers() {
               <Panel text="조건에 맞는 회원이 없습니다." />
             ) : (
               <div className="overflow-hidden border-y border-[#dbdad7]">
-                <div className="hidden grid-cols-[1.1fr_1.3fr_0.8fr_0.75fr_0.8fr_0.85fr] border-b border-[#dbdad7] bg-[#f8f7f4] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
+                <div className="hidden grid-cols-[1fr_1.2fr_0.75fr_0.7fr_0.75fr_0.8fr_170px] border-b border-[#dbdad7] bg-[#f8f7f4] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
                   <span>Name</span>
                   <span>Email</span>
                   <span>Phone</span>
                   <span>Role</span>
                   <span>Joined</span>
                   <span>Last Login</span>
+                  <span className="text-right">Action</span>
                 </div>
 
                 <div className="divide-y divide-[#dbdad7]">
                   {filteredUsers.map(item => (
                     <article
                       key={item.id}
-                      className="grid gap-3 bg-white px-4 py-5 transition-colors hover:bg-[#faf9f6] lg:grid-cols-[1.1fr_1.3fr_0.8fr_0.75fr_0.8fr_0.85fr] lg:items-center lg:px-5"
+                      className="grid gap-3 bg-white px-4 py-5 transition-colors hover:bg-[#faf9f6] lg:grid-cols-[1fr_1.2fr_0.75fr_0.7fr_0.75fr_0.8fr_170px] lg:items-center lg:px-5"
                     >
                       <div className="flex items-center gap-2">
                         {item.role === "admin" ? (
@@ -155,13 +184,59 @@ export default function AdminUsers() {
                       <p className="text-sm text-[#616161]">
                         {formatPhone(item.phone || "") || "-"}
                       </p>
-                      <RoleBadge role={item.role} />
+                      <div className="flex flex-wrap gap-2">
+                        <RoleBadge role={item.role} />
+                        <StatusBadge status={item.approvalStatus} />
+                      </div>
                       <p className="text-sm text-[#616161]">
                         {formatDate(item.createdAt)}
                       </p>
                       <p className="text-sm text-[#616161]">
                         {formatDate(item.lastSignedIn)}
                       </p>
+                      <div className="flex flex-wrap gap-2 lg:justify-end">
+                        <button
+                          type="button"
+                          disabled={
+                            updateRole.isPending || updateStatus.isPending
+                          }
+                          onClick={() =>
+                            updateRole.mutate({
+                              id: item.id,
+                              role: item.role === "admin" ? "user" : "admin",
+                            })
+                          }
+                          className="inline-flex h-9 items-center justify-center gap-1 border border-[#dbdad7] px-3 text-xs text-[#121212] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          {item.role === "admin" ? "권한 해제" : "관리자"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={
+                            updateRole.isPending || updateStatus.isPending
+                          }
+                          onClick={() =>
+                            updateStatus.mutate({
+                              id: item.id,
+                              approvalStatus:
+                                item.approvalStatus === "approved"
+                                  ? "rejected"
+                                  : "approved",
+                            })
+                          }
+                          className="inline-flex h-9 items-center justify-center gap-1 border border-[#dbdad7] px-3 text-xs text-[#121212] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {item.approvalStatus === "approved" ? (
+                            <XCircle className="h-3.5 w-3.5" />
+                          ) : (
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          )}
+                          {item.approvalStatus === "approved"
+                            ? "비활성"
+                            : "복구"}
+                        </button>
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -182,6 +257,7 @@ function exportUsers(users: AdminUser[]) {
     { label: "연락처", value: row => row.phone },
     { label: "권한", value: row => row.role },
     { label: "가입방식", value: row => row.loginMethod },
+    { label: "상태", value: row => row.approvalStatus },
     { label: "가입일", value: row => formatDate(row.createdAt) },
     { label: "최근로그인", value: row => formatDate(row.lastSignedIn) },
   ]);
@@ -200,6 +276,14 @@ function RoleBadge({ role }: { role: string }) {
   return (
     <span className="inline-flex w-fit border border-[#dbdad7] px-2 py-1 text-xs text-[#616161]">
       {role === "admin" ? "관리자" : "회원"}
+    </span>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span className="inline-flex w-fit border border-[#dbdad7] px-2 py-1 text-xs text-[#616161]">
+      {status === "approved" ? "활성" : "비활성"}
     </span>
   );
 }

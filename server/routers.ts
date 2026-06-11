@@ -8,6 +8,7 @@ import {
   createLocalUser,
   createMemorialReminderSubscription,
   canUserReadMemorial,
+  countAdminUsers,
   getAdminMemorialById,
   getAdminMemorialBySlug,
   getEditableMemorialBySlug,
@@ -28,6 +29,8 @@ import {
   searchPublicMemorials,
   updateMemorialLetterStatus,
   updateMemorial,
+  updateAdminUserRole,
+  updateAdminUserStatus,
   updateReminderSubscriptionStatus,
   upsertUser,
   verifyUserPassword,
@@ -135,6 +138,16 @@ const adminSmsTestInput = z.object({
     .min(10)
     .max(20)
     .regex(/^[0-9\-\s+()]+$/, "휴대폰 번호 형식으로 입력해주세요."),
+});
+
+const adminUserRoleInput = z.object({
+  id: z.number(),
+  role: z.enum(["user", "admin"]),
+});
+
+const adminUserStatusInput = z.object({
+  id: z.number(),
+  approvalStatus: z.enum(["approved", "rejected"]),
 });
 
 const authSignupInput = z.object({
@@ -324,11 +337,16 @@ export const appRouter = router({
           });
         }
 
+        if (user.approvalStatus === "rejected") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "비활성화된 계정입니다.",
+          });
+        }
+
         const signedInAt = new Date();
         await upsertUser({
           openId: user.openId,
-          approvalStatus: "approved",
-          approvedAt: user.approvedAt ?? signedInAt,
           lastSignedIn: signedInAt,
         });
 
@@ -345,8 +363,6 @@ export const appRouter = router({
         return {
           user: toPublicUser({
             ...user,
-            approvalStatus: "approved",
-            approvedAt: user.approvedAt ?? signedInAt,
             lastSignedIn: signedInAt,
           }),
         };
@@ -747,6 +763,44 @@ export const appRouter = router({
     users: adminProcedure
       .input(z.object({ limit: z.number().min(1).max(1000).default(500) }))
       .query(async ({ input }) => listAdminUsers(input.limit)),
+
+    updateUserRole: adminProcedure
+      .input(adminUserRoleInput)
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.id === input.id && input.role !== "admin") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "자기 자신의 관리자 권한은 해제할 수 없습니다.",
+          });
+        }
+
+        if (input.role !== "admin") {
+          const adminCount = await countAdminUsers();
+          if (adminCount <= 1) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "마지막 관리자 권한은 해제할 수 없습니다.",
+            });
+          }
+        }
+
+        await updateAdminUserRole(input.id, input.role);
+        return { success: true };
+      }),
+
+    updateUserStatus: adminProcedure
+      .input(adminUserStatusInput)
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.id === input.id && input.approvalStatus !== "approved") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "자기 자신의 계정은 비활성화할 수 없습니다.",
+          });
+        }
+
+        await updateAdminUserStatus(input.id, input.approvalStatus);
+        return { success: true };
+      }),
   }),
 
   reminder: router({

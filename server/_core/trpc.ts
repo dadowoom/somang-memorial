@@ -17,6 +17,13 @@ const requireUser = t.middleware(async opts => {
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
   }
 
+  if (ctx.user.approvalStatus === "rejected") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "비활성화된 계정입니다.",
+    });
+  }
+
   return next({
     ctx: {
       ...ctx,
@@ -31,7 +38,11 @@ export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || ctx.user.role !== 'admin') {
+    if (
+      !ctx.user ||
+      ctx.user.approvalStatus === "rejected" ||
+      ctx.user.role !== 'admin'
+    ) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 

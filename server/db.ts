@@ -253,6 +253,50 @@ export async function listAdminUsers(limit = 500) {
     .limit(limit);
 }
 
+export async function countAdminUsers() {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const result = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.role, "admin"));
+
+  return result.length;
+}
+
+export async function updateAdminUserRole(
+  id: number,
+  role: "user" | "admin"
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db.update(users).set({ role }).where(eq(users.id, id));
+}
+
+export async function updateAdminUserStatus(
+  id: number,
+  approvalStatus: "approved" | "rejected"
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db
+    .update(users)
+    .set({
+      approvalStatus,
+      approvedAt: approvalStatus === "approved" ? new Date() : null,
+    })
+    .where(eq(users.id, id));
+}
+
 export function normalizeMemorialSlug(name: string, requestedSlug?: string) {
   const source = (requestedSlug || name || "memorial").trim().toLowerCase();
   const normalized = source
