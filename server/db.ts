@@ -1,13 +1,16 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { and, asc, desc, eq, isNull, like, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/mysql-core";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  InsertAdminAuditLog,
   InsertMemorialBook,
   InsertMemorialBookPage,
   InsertMemorialGalleryPhoto,
   InsertMemorial,
   InsertUser,
   InsertMemorialVideo,
+  adminAuditLogs,
   memorialBookPages,
   memorialBooks,
   memorialFamilyRooms,
@@ -253,6 +256,16 @@ export async function listAdminUsers(limit = 500) {
     .limit(limit);
 }
 
+export async function getAdminUserById(id: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
 export async function countAdminUsers() {
   const db = await getDb();
   if (!db) {
@@ -295,6 +308,46 @@ export async function updateAdminUserStatus(
       approvedAt: approvalStatus === "approved" ? new Date() : null,
     })
     .where(eq(users.id, id));
+}
+
+export async function createAdminAuditLog(input: InsertAdminAuditLog) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db.insert(adminAuditLogs).values(input);
+}
+
+export async function listAdminAuditLogs(limit = 100) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const adminUser = alias(users, "admin_user");
+  const targetUser = alias(users, "target_user");
+
+  return db
+    .select({
+      id: adminAuditLogs.id,
+      action: adminAuditLogs.action,
+      beforeValue: adminAuditLogs.beforeValue,
+      afterValue: adminAuditLogs.afterValue,
+      note: adminAuditLogs.note,
+      createdAt: adminAuditLogs.createdAt,
+      adminUserId: adminAuditLogs.adminUserId,
+      targetUserId: adminAuditLogs.targetUserId,
+      adminName: adminUser.name,
+      adminEmail: adminUser.email,
+      targetName: targetUser.name,
+      targetEmail: targetUser.email,
+    })
+    .from(adminAuditLogs)
+    .leftJoin(adminUser, eq(adminAuditLogs.adminUserId, adminUser.id))
+    .leftJoin(targetUser, eq(adminAuditLogs.targetUserId, targetUser.id))
+    .orderBy(desc(adminAuditLogs.createdAt), desc(adminAuditLogs.id))
+    .limit(limit);
 }
 
 export function normalizeMemorialSlug(name: string, requestedSlug?: string) {

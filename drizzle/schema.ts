@@ -51,6 +51,32 @@ export const users = mysqlTable(
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+export const adminAuditLogs = mysqlTable(
+  "admin_audit_logs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    adminUserId: int("adminUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    targetUserId: int("targetUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    action: varchar("action", { length: 80 }).notNull(),
+    beforeValue: varchar("beforeValue", { length: 120 }),
+    afterValue: varchar("afterValue", { length: 120 }),
+    note: text("note"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("admin_audit_logs_adminUserId_idx").on(table.adminUserId),
+    index("admin_audit_logs_targetUserId_idx").on(table.targetUserId),
+    index("admin_audit_logs_createdAt_idx").on(table.createdAt),
+  ]
+);
+
+export type AdminAuditLog = typeof adminAuditLogs.$inferSelect;
+export type InsertAdminAuditLog = typeof adminAuditLogs.$inferInsert;
+
 export const memorials = mysqlTable(
   "memorials",
   {

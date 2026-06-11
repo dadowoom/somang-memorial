@@ -5,10 +5,12 @@ import type { User } from "../drizzle/schema";
 import {
   createMemorial,
   createMemorialLetter,
+  createAdminAuditLog,
   createLocalUser,
   createMemorialReminderSubscription,
   canUserReadMemorial,
   countAdminUsers,
+  getAdminUserById,
   getAdminMemorialById,
   getAdminMemorialBySlug,
   getEditableMemorialBySlug,
@@ -20,6 +22,7 @@ import {
   listAdminMemorials,
   listAdminMemorialLetters,
   listAdminReminderSubscriptions,
+  listAdminAuditLogs,
   listAdminUsers,
   listUserMemorials,
   listMemorialLetters,
@@ -764,9 +767,21 @@ export const appRouter = router({
       .input(z.object({ limit: z.number().min(1).max(1000).default(500) }))
       .query(async ({ input }) => listAdminUsers(input.limit)),
 
+    auditLogs: adminProcedure
+      .input(z.object({ limit: z.number().min(1).max(300).default(100) }))
+      .query(async ({ input }) => listAdminAuditLogs(input.limit)),
+
     updateUserRole: adminProcedure
       .input(adminUserRoleInput)
       .mutation(async ({ ctx, input }) => {
+        const targetUser = await getAdminUserById(input.id);
+        if (!targetUser) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "회원을 찾을 수 없습니다.",
+          });
+        }
+
         if (ctx.user.id === input.id && input.role !== "admin") {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -784,13 +799,32 @@ export const appRouter = router({
           }
         }
 
-        await updateAdminUserRole(input.id, input.role);
+        if (targetUser.role !== input.role) {
+          await updateAdminUserRole(input.id, input.role);
+          await createAdminAuditLog({
+            adminUserId: ctx.user.id,
+            targetUserId: input.id,
+            action: "user.role.update",
+            beforeValue: targetUser.role,
+            afterValue: input.role,
+            note: `${targetUser.name || targetUser.email || "회원"} 권한 변경`,
+          });
+        }
+
         return { success: true };
       }),
 
     updateUserStatus: adminProcedure
       .input(adminUserStatusInput)
       .mutation(async ({ ctx, input }) => {
+        const targetUser = await getAdminUserById(input.id);
+        if (!targetUser) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "회원을 찾을 수 없습니다.",
+          });
+        }
+
         if (ctx.user.id === input.id && input.approvalStatus !== "approved") {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -798,7 +832,18 @@ export const appRouter = router({
           });
         }
 
-        await updateAdminUserStatus(input.id, input.approvalStatus);
+        if (targetUser.approvalStatus !== input.approvalStatus) {
+          await updateAdminUserStatus(input.id, input.approvalStatus);
+          await createAdminAuditLog({
+            adminUserId: ctx.user.id,
+            targetUserId: input.id,
+            action: "user.status.update",
+            beforeValue: targetUser.approvalStatus,
+            afterValue: input.approvalStatus,
+            note: `${targetUser.name || targetUser.email || "회원"} 상태 변경`,
+          });
+        }
+
         return { success: true };
       }),
   }),

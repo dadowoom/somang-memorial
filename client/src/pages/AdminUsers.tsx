@@ -28,6 +28,19 @@ type AdminUser = {
   lastSignedIn: Date | string;
 };
 
+type AdminAuditLog = {
+  id: number;
+  action: string;
+  beforeValue: string | null;
+  afterValue: string | null;
+  note: string | null;
+  createdAt: Date | string;
+  adminName: string | null;
+  adminEmail: string | null;
+  targetName: string | null;
+  targetEmail: string | null;
+};
+
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 
 export default function AdminUsers() {
@@ -39,21 +52,32 @@ export default function AdminUsers() {
     { limit: 500 },
     { enabled: user?.role === "admin" }
   );
+  const auditQuery = trpc.admin.auditLogs.useQuery(
+    { limit: 80 },
+    { enabled: user?.role === "admin" }
+  );
   const updateRole = trpc.admin.updateUserRole.useMutation({
     onSuccess: async () => {
       setMessage("회원 권한을 변경했습니다.");
-      await utils.admin.users.invalidate();
+      await Promise.all([
+        utils.admin.users.invalidate(),
+        utils.admin.auditLogs.invalidate(),
+      ]);
     },
     onError: error => setMessage(error.message),
   });
   const updateStatus = trpc.admin.updateUserStatus.useMutation({
     onSuccess: async () => {
       setMessage("회원 상태를 변경했습니다.");
-      await utils.admin.users.invalidate();
+      await Promise.all([
+        utils.admin.users.invalidate(),
+        utils.admin.auditLogs.invalidate(),
+      ]);
     },
     onError: error => setMessage(error.message),
   });
   const users = (usersQuery.data ?? []) as AdminUser[];
+  const auditLogs = (auditQuery.data ?? []) as AdminAuditLog[];
   const keyword = query.trim().toLowerCase();
 
   const filteredUsers = useMemo(() => {
@@ -244,6 +268,65 @@ export default function AdminUsers() {
             )}
           </div>
         </section>
+
+        <section className="pb-12 md:pb-16">
+          <div className="container">
+            <div className="mb-5 flex flex-col gap-2 border-t border-[#dbdad7] pt-8 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.24em] text-[#777]">
+                  Audit
+                </p>
+                <h2
+                  className="text-3xl font-normal leading-tight md:text-4xl"
+                  style={serifStyle}
+                >
+                  최근 운영 기록
+                </h2>
+              </div>
+              <p className="text-sm text-[#777]">
+                회원 권한과 상태 변경 내역만 표시합니다.
+              </p>
+            </div>
+
+            {auditQuery.isLoading ? (
+              <Panel text="운영 기록을 불러오고 있습니다." />
+            ) : auditQuery.isError ? (
+              <Panel text="운영 기록을 불러오지 못했습니다." />
+            ) : auditLogs.length === 0 ? (
+              <Panel text="아직 운영 기록이 없습니다." />
+            ) : (
+              <div className="divide-y divide-[#dbdad7] border-y border-[#dbdad7]">
+                {auditLogs.map(log => (
+                  <article
+                    key={log.id}
+                    className="grid gap-3 bg-white px-4 py-4 md:grid-cols-[minmax(0,1fr)_180px] md:items-center md:px-5"
+                  >
+                    <div className="min-w-0">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex w-fit border border-[#dbdad7] px-2 py-1 text-xs text-[#616161]">
+                          {formatAuditAction(log.action)}
+                        </span>
+                        <span className="text-xs text-[#777]">
+                          {formatDateTime(log.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-[#121212]">
+                        {log.targetName || log.targetEmail || "대상 회원"}
+                      </p>
+                      <p className="mt-1 text-sm text-[#616161]">
+                        {formatAuditValue(log.beforeValue)} →{" "}
+                        {formatAuditValue(log.afterValue)}
+                      </p>
+                    </div>
+                    <p className="text-sm text-[#777] md:text-right">
+                      {log.adminName || log.adminEmail || "관리자"}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
       </main>
       <Footer />
     </div>
@@ -324,4 +407,31 @@ function formatPhone(value: string) {
     return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
   }
   return value;
+}
+
+function formatDateTime(value: Date | string | null) {
+  if (!value) return "-";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatAuditAction(action: string) {
+  if (action === "user.role.update") return "권한 변경";
+  if (action === "user.status.update") return "상태 변경";
+  return action;
+}
+
+function formatAuditValue(value: string | null) {
+  if (value === "admin") return "관리자";
+  if (value === "user") return "회원";
+  if (value === "approved") return "활성";
+  if (value === "rejected") return "비활성";
+  return value || "-";
 }
