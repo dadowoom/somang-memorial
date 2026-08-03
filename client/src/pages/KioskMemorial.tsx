@@ -1,6 +1,11 @@
 import { toImgUrl } from "@/lib/imageUrl";
 import { trpc } from "@/lib/trpc";
 import {
+  getYouTubeEmbedUrl,
+  getYouTubeThumbnailUrl,
+  isValidYouTubeVideoId,
+} from "@/lib/youtube";
+import {
   clearBrowserKioskAccessStorage,
   kioskAccessStorageKey,
   useKioskIdleReset,
@@ -121,6 +126,7 @@ type FamilyRoomStatus = {
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 const muted = "#64615d";
 const line = "#dedbd5";
+const KIOSK_VIDEO_IDLE_RESET_MS = 15 * 60_000;
 
 function readAccessToken(slug: string) {
   if (!slug || typeof window === "undefined") return "";
@@ -136,17 +142,26 @@ export default function KioskMemorial() {
   const [selectedPhoto, setSelectedPhoto] = useState<MemorialPhoto | null>(
     null
   );
+  const [selectedVideo, setSelectedVideo] = useState<MemorialVideo | null>(
+    null
+  );
+  const closeVideo = useCallback(() => setSelectedVideo(null), []);
   const returnToKiosk = useCallback(() => {
     kioskSessionActiveRef.current = false;
     clearBrowserKioskAccessStorage();
     setLocation("/kiosk", { replace: true });
   }, [setLocation]);
 
-  useKioskIdleReset(returnToKiosk);
+  useKioskIdleReset(
+    returnToKiosk,
+    selectedVideo ? KIOSK_VIDEO_IDLE_RESET_MS : undefined
+  );
 
   useEffect(() => {
     kioskSessionActiveRef.current = true;
     setAccessToken(readAccessToken(slug));
+    setSelectedPhoto(null);
+    setSelectedVideo(null);
     window.scrollTo({ top: 0, left: 0 });
 
     return () => {
@@ -223,6 +238,7 @@ export default function KioskMemorial() {
               portraitPhoto={portraitPhoto}
               accessToken={accessToken || undefined}
               onPhoto={setSelectedPhoto}
+              onVideo={setSelectedVideo}
             />
           </>
         )}
@@ -244,6 +260,10 @@ export default function KioskMemorial() {
             <X className="h-6 w-6" />
           </span>
         </button>
+      )}
+
+      {selectedVideo && (
+        <KioskVideoDialog video={selectedVideo} onClose={closeVideo} />
       )}
     </main>
   );
@@ -274,6 +294,95 @@ function KioskMemorialHeader({ onBack }: { onBack: () => void }) {
   );
 }
 
+function KioskVideoDialog({
+  video,
+  onClose,
+}: {
+  video: MemorialVideo;
+  onClose: () => void;
+}) {
+  const embedUrl = getYouTubeEmbedUrl(video.youtubeVideoId, true);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const previousFocus =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+      previousFocus?.focus();
+    };
+  }, [onClose]);
+
+  if (!embedUrl) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="kiosk-video-title"
+    >
+      <button
+        type="button"
+        className="absolute inset-0 h-full w-full cursor-default"
+        onClick={onClose}
+        aria-label="영상 바깥쪽을 눌러 닫기"
+      />
+
+      <section className="relative z-10 w-full max-w-[980px] bg-[#111] text-white shadow-2xl">
+        <div className="flex items-center justify-between gap-5 border-b border-white/20 px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-xs tracking-[0.18em] text-white/60">VIDEO</p>
+            <h2
+              id="kiosk-video-title"
+              className="mt-1 truncate text-xl font-medium"
+            >
+              {video.title}
+            </h2>
+          </div>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            className="flex h-12 shrink-0 items-center gap-2 border border-white/40 px-4 text-sm font-medium"
+          >
+            <X className="h-5 w-5" />
+            영상 닫기
+          </button>
+        </div>
+
+        <div className="aspect-video w-full bg-black">
+          <iframe
+            src={embedUrl}
+            title={video.title}
+            className="h-full w-full"
+            allow="autoplay; encrypted-media"
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        </div>
+
+        {video.description && (
+          <p className="px-5 py-4 text-sm leading-6 text-white/70">
+            {video.description}
+          </p>
+        )}
+      </section>
+    </div>
+  );
+}
+
 function KioskMemorialContent({
   memorial,
   photos,
@@ -282,6 +391,7 @@ function KioskMemorialContent({
   portraitPhoto,
   accessToken,
   onPhoto,
+  onVideo,
 }: {
   memorial: KioskMemorialRecord;
   photos: MemorialPhoto[];
@@ -290,11 +400,23 @@ function KioskMemorialContent({
   portraitPhoto: MemorialPhoto | null;
   accessToken?: string;
   onPhoto: (photo: MemorialPhoto) => void;
+  onVideo: (video: MemorialVideo) => void;
 }) {
   const storyParagraphs = useMemo(
     () => splitParagraphs(memorial.story),
     [memorial.story]
   );
+  const playableVideos = useMemo(
+    () =>
+      videos
+        .filter(
+          video =>
+            video.isVisible === 1 && isValidYouTubeVideoId(video.youtubeVideoId)
+        )
+        .slice(0, 4),
+    [videos]
+  );
+  const featuredVideo = playableVideos[0] ?? null;
 
   const navItems = [
     { id: "story", label: "삶" },
@@ -439,40 +561,67 @@ function KioskMemorialContent({
 
       <KioskSection id="video" eyebrow="Video" title="영상 기록">
         <div className="overflow-hidden border border-[#dedbd5]">
-          <div className="relative aspect-video bg-[#1f1d1a]">
-            {portraitPhoto ? (
+          {featuredVideo ? (
+            <button
+              type="button"
+              onClick={() => onVideo(featuredVideo)}
+              className="group relative block aspect-video w-full bg-[#1f1d1a] text-left"
+              aria-label={`${featuredVideo.title} 영상 재생`}
+            >
               <img
-                src={toImgUrl(portraitPhoto.photoUrl)}
-                alt={`${memorial.name} 영상 이미지`}
-                className="h-full w-full object-cover grayscale opacity-72"
+                src={getYouTubeThumbnailUrl(featuredVideo.youtubeVideoId) ?? ""}
+                alt=""
+                className="h-full w-full object-cover opacity-80 transition group-active:opacity-60"
               />
-            ) : null}
-            <div className="absolute inset-0 bg-black/25" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="flex h-20 w-20 items-center justify-center border border-white/70 bg-white/90 text-[#1f1d1a]">
-                <Play className="ml-1 h-9 w-9 fill-current" />
+              <span className="absolute inset-0 bg-black/30" />
+              <span className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white">
+                <span className="flex h-20 w-20 items-center justify-center border border-white/70 bg-white/90 text-[#1f1d1a]">
+                  <Play className="ml-1 h-9 w-9 fill-current" />
+                </span>
+                <span className="bg-black/60 px-4 py-2 text-base font-medium">
+                  눌러서 영상 재생
+                </span>
               </span>
+            </button>
+          ) : (
+            <div className="relative aspect-video bg-[#1f1d1a]">
+              {portraitPhoto ? (
+                <img
+                  src={toImgUrl(portraitPhoto.photoUrl)}
+                  alt={`${memorial.name} 영상 이미지`}
+                  className="h-full w-full object-cover grayscale opacity-60"
+                />
+              ) : null}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
+                <span className="flex items-center gap-3 text-base">
+                  <Video className="h-5 w-5" />
+                  등록된 영상이 없습니다.
+                </span>
+              </div>
             </div>
-          </div>
+          )}
           <div className="p-6">
             <div className="mb-4 flex items-center gap-3">
               <Video className="h-5 w-5" />
               <p className="text-lg font-medium">영상으로 남은 기억</p>
             </div>
-            {videos.length ? (
+            {playableVideos.length ? (
               <div className="space-y-3">
-                {videos.slice(0, 4).map(video => (
-                  <p
+                {playableVideos.map(video => (
+                  <button
                     key={video.id}
-                    className="border-t border-[#dedbd5] pt-3 text-base text-[#4f4c48]"
+                    type="button"
+                    onClick={() => onVideo(video)}
+                    className="flex min-h-14 w-full items-center justify-between gap-4 border-t border-[#dedbd5] py-3 text-left text-base text-[#4f4c48]"
                   >
-                    {video.title}
-                  </p>
+                    <span>{video.title}</span>
+                    <Play className="h-4 w-4 shrink-0 fill-current" />
+                  </button>
                 ))}
               </div>
             ) : (
               <p className="text-base leading-8 text-[#64615d]">
-                영상 기록이 있는 공간이라는 느낌만 조용히 보여줍니다.
+                등록된 영상이 없습니다.
               </p>
             )}
           </div>
