@@ -1,10 +1,14 @@
 import { trpc } from "@/lib/trpc";
 import {
+  getKioskPasswordErrorMessage,
+  KIOSK_CONNECTION_ERROR_MESSAGE,
+} from "@/lib/kioskError";
+import {
   clearBrowserKioskAccessStorage,
   kioskAccessStorageKey,
   useKioskIdleReset,
 } from "@/hooks/useKioskIdleReset";
-import { ArrowRight, LockKeyhole, Search, X } from "lucide-react";
+import { ArrowRight, LockKeyhole, RefreshCw, Search, X } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
@@ -39,11 +43,17 @@ export default function Kiosk() {
     useState<PrivateSelection | null>(null);
   const [password, setPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
-  const verifyAccess = trpc.memorial.verifyAccess.useMutation();
+  const verifyAccess = trpc.memorial.verifyAccess.useMutation({
+    networkMode: "always",
+  });
   const keyword = submittedKeyword.trim();
   const memorialsQuery = trpc.memorial.search.useQuery(
     { keyword },
-    { enabled: keyword.length >= 2, retry: false }
+    {
+      enabled: keyword.length >= 2,
+      retry: false,
+      networkMode: "always",
+    }
   );
   const results = (memorialsQuery.data ?? []) as KioskMemorial[];
 
@@ -114,6 +124,11 @@ export default function Kiosk() {
       return;
     }
 
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setPasswordMessage(KIOSK_CONNECTION_ERROR_MESSAGE);
+      return;
+    }
+
     const requestGeneration = resetGenerationRef.current;
 
     try {
@@ -132,9 +147,9 @@ export default function Kiosk() {
         );
         setLocation(`/kiosk/memorial/${selectedPrivate.slug}`);
       }
-    } catch {
+    } catch (error) {
       if (requestGeneration !== resetGenerationRef.current) return;
-      setPasswordMessage("비밀번호가 맞지 않습니다.");
+      setPasswordMessage(getKioskPasswordErrorMessage(error));
     }
   }
 
@@ -215,8 +230,14 @@ export default function Kiosk() {
         <section className="min-h-0 flex-1">
           {!submittedKeyword ? null : memorialsQuery.isLoading ? (
             <EmptyPanel title="검색 중입니다." />
-          ) : memorialsQuery.isError ? (
-            <EmptyPanel title="검색을 완료하지 못했습니다." />
+          ) : memorialsQuery.isError || memorialsQuery.isPaused ? (
+            <EmptyPanel
+              title="연결이 원활하지 않습니다."
+              description="인터넷 연결을 확인한 뒤 다시 시도해 주세요."
+              actionLabel="다시 시도"
+              actionPending={memorialsQuery.isFetching}
+              onAction={() => void memorialsQuery.refetch()}
+            />
           ) : results.length === 0 ? (
             <EmptyPanel title="일치하는 추모관이 없습니다." />
           ) : (
@@ -282,10 +303,38 @@ export default function Kiosk() {
   );
 }
 
-function EmptyPanel({ title }: { title: string }) {
+function EmptyPanel({
+  title,
+  description,
+  actionLabel,
+  actionPending = false,
+  onAction,
+}: {
+  title: string;
+  description?: string;
+  actionLabel?: string;
+  actionPending?: boolean;
+  onAction?: () => void;
+}) {
   return (
-    <div className="flex min-h-[180px] items-center justify-center border-t border-[#dbdad7] px-8 text-center">
-      <p className="text-lg text-[#616161]">{title}</p>
+    <div className="flex min-h-[180px] flex-col items-center justify-center border-t border-[#dbdad7] px-8 py-8 text-center">
+      <p className="text-lg font-medium text-[#343434]">{title}</p>
+      {description && (
+        <p className="mt-3 text-base leading-7 text-[#616161]">{description}</p>
+      )}
+      {actionLabel && onAction && (
+        <button
+          type="button"
+          onClick={onAction}
+          disabled={actionPending}
+          className="mt-6 flex h-14 min-w-[180px] items-center justify-center gap-2 bg-[#18181b] px-6 text-base font-medium text-white disabled:opacity-50"
+        >
+          <RefreshCw
+            className={`h-4 w-4 ${actionPending ? "animate-spin" : ""}`}
+          />
+          {actionPending ? "다시 연결 중" : actionLabel}
+        </button>
+      )}
     </div>
   );
 }
