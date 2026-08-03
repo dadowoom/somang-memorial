@@ -4,6 +4,11 @@ import {
   KIOSK_CONNECTION_ERROR_MESSAGE,
 } from "@/lib/kioskError";
 import {
+  acquireKioskSubmissionLock,
+  releaseKioskSubmissionLock,
+  resetKioskSubmissionLock,
+} from "@/lib/kioskSubmissionLock";
+import {
   clearBrowserKioskAccessStorage,
   kioskAccessStorageKey,
   useKioskIdleReset,
@@ -39,6 +44,7 @@ const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 export default function Kiosk() {
   const [, setLocation] = useLocation();
   const resetGenerationRef = useRef(0);
+  const passwordSubmissionLockRef = useRef<symbol | null>(null);
   const [query, setQuery] = useState("");
   const [submittedKeyword, setSubmittedKeyword] = useState("");
   const [message, setMessage] = useState("");
@@ -81,6 +87,7 @@ export default function Kiosk() {
 
   function resetKiosk() {
     resetGenerationRef.current += 1;
+    resetKioskSubmissionLock(passwordSubmissionLockRef);
     closeKeyboard();
     clearBrowserKioskAccessStorage();
     if (document.activeElement instanceof HTMLElement) {
@@ -136,6 +143,7 @@ export default function Kiosk() {
 
   function closePrivatePanel() {
     resetGenerationRef.current += 1;
+    resetKioskSubmissionLock(passwordSubmissionLockRef);
     closeKeyboard();
     setSelectedPrivate(null);
     setPassword("");
@@ -143,7 +151,7 @@ export default function Kiosk() {
   }
 
   async function submitPassword() {
-    if (!selectedPrivate) return;
+    if (!selectedPrivate || verifyAccess.isPending) return;
 
     if (!password.trim()) {
       setPasswordMessage("비밀번호를 입력해 주세요.");
@@ -154,6 +162,11 @@ export default function Kiosk() {
       setPasswordMessage(KIOSK_CONNECTION_ERROR_MESSAGE);
       return;
     }
+
+    const submissionToken = acquireKioskSubmissionLock(
+      passwordSubmissionLockRef
+    );
+    if (!submissionToken) return;
 
     const requestGeneration = resetGenerationRef.current;
 
@@ -176,6 +189,8 @@ export default function Kiosk() {
     } catch (error) {
       if (requestGeneration !== resetGenerationRef.current) return;
       setPasswordMessage(getKioskPasswordErrorMessage(error));
+    } finally {
+      releaseKioskSubmissionLock(passwordSubmissionLockRef, submissionToken);
     }
   }
 
@@ -394,6 +409,7 @@ function PrivateAccessPanel({
     maxLength: 80,
     defaultMode: "number",
     submitLabel: "입장",
+    submitDisabled: pending,
     onSubmit: () => {
       onSubmit();
       return false;
