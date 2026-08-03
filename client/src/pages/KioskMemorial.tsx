@@ -16,6 +16,10 @@ import {
   useKioskIdleReset,
 } from "@/hooks/useKioskIdleReset";
 import {
+  useKioskKeyboard,
+  useKioskKeyboardField,
+} from "@/components/kiosk/KioskKeyboard";
+import {
   ArrowLeft,
   BookOpenText,
   CalendarDays,
@@ -150,6 +154,7 @@ export default function KioskMemorial() {
   const [, params] = useRoute<{ slug: string }>("/kiosk/memorial/:slug");
   const slug = params?.slug ?? "";
   const [, setLocation] = useLocation();
+  const { closeKeyboard } = useKioskKeyboard();
   const kioskSessionActiveRef = useRef(true);
   const [accessToken, setAccessToken] = useState(() => readAccessToken(slug));
   const [selectedPhoto, setSelectedPhoto] = useState<MemorialPhoto | null>(
@@ -161,9 +166,10 @@ export default function KioskMemorial() {
   const closeVideo = useCallback(() => setSelectedVideo(null), []);
   const returnToKiosk = useCallback(() => {
     kioskSessionActiveRef.current = false;
+    closeKeyboard();
     clearBrowserKioskAccessStorage();
     setLocation("/kiosk", { replace: true });
-  }, [setLocation]);
+  }, [closeKeyboard, setLocation]);
 
   useKioskIdleReset(
     returnToKiosk,
@@ -172,6 +178,7 @@ export default function KioskMemorial() {
 
   useEffect(() => {
     kioskSessionActiveRef.current = true;
+    closeKeyboard();
     setAccessToken(readAccessToken(slug));
     setSelectedPhoto(null);
     setSelectedVideo(null);
@@ -180,7 +187,7 @@ export default function KioskMemorial() {
     return () => {
       kioskSessionActiveRef.current = false;
     };
-  }, [slug]);
+  }, [closeKeyboard, slug]);
 
   const accessStatusQuery = trpc.memorial.accessStatus.useQuery(
     { slug },
@@ -300,8 +307,14 @@ export default function KioskMemorial() {
                 retrying: booksQuery.isFetching,
                 onRetry: () => void booksQuery.refetch(),
               }}
-              onPhoto={setSelectedPhoto}
-              onVideo={setSelectedVideo}
+              onPhoto={photo => {
+                closeKeyboard();
+                setSelectedPhoto(photo);
+              }}
+              onVideo={video => {
+                closeKeyboard();
+                setSelectedVideo(video);
+              }}
             />
           </>
         )}
@@ -817,9 +830,24 @@ function KioskMemorialGate({
   const verifyAccess = trpc.memorial.verifyAccess.useMutation({
     networkMode: "always",
   });
+  const passwordKeyboard = useKioskKeyboardField<HTMLInputElement>({
+    id: `kiosk-memorial-password-${slug}`,
+    label: "추모관 비밀번호",
+    value: password,
+    onChange: value => {
+      setPassword(value);
+      setMessage("");
+    },
+    maxLength: 80,
+    defaultMode: "number",
+    submitLabel: "입장",
+    onSubmit: () => {
+      void submitPassword();
+      return false;
+    },
+  });
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  async function submitPassword() {
     if (!password.trim()) {
       setMessage("비밀번호를 입력해 주세요.");
       return;
@@ -836,7 +864,12 @@ function KioskMemorialGate({
     } catch (error) {
       setMessage(getKioskPasswordErrorMessage(error));
     }
-  };
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void submitPassword();
+  }
 
   return (
     <section className="px-8 py-12">
@@ -864,6 +897,7 @@ function KioskMemorialGate({
           </p>
         )}
         <input
+          ref={passwordKeyboard.ref}
           type="password"
           value={password}
           onChange={event => {
@@ -873,6 +907,11 @@ function KioskMemorialGate({
           placeholder="비밀번호"
           className="mt-8 h-16 w-full border border-[#18181b] px-5 text-2xl outline-none placeholder:text-[#aaa]"
           autoFocus
+          autoComplete="off"
+          maxLength={80}
+          inputMode={passwordKeyboard.inputMode}
+          onFocus={passwordKeyboard.onFocus}
+          onClick={passwordKeyboard.onClick}
         />
         {message && <p className="mt-4 text-sm text-[#9f2a2a]">{message}</p>}
         <button
@@ -891,6 +930,7 @@ function KioskFamilySection({ slug }: { slug: string }) {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [room, setRoom] = useState<FamilyRoom | null>(null);
+  const { closeKeyboard } = useKioskKeyboard();
   const statusQuery = trpc.familyRoom.status.useQuery(
     { memorialSlug: slug },
     { enabled: Boolean(slug), retry: false, networkMode: "always" }
@@ -898,6 +938,7 @@ function KioskFamilySection({ slug }: { slug: string }) {
   const verifyFamily = trpc.familyRoom.verify.useMutation({
     networkMode: "always",
     onSuccess: data => {
+      closeKeyboard();
       setRoom(data as FamilyRoom);
       setPassword("");
       setMessage("");
@@ -905,9 +946,24 @@ function KioskFamilySection({ slug }: { slug: string }) {
     onError: error => setMessage(getKioskPasswordErrorMessage(error)),
   });
   const status = statusQuery.data as FamilyRoomStatus | undefined;
+  const passwordKeyboard = useKioskKeyboardField<HTMLInputElement>({
+    id: `kiosk-family-password-${slug}`,
+    label: "가족관 비밀번호",
+    value: password,
+    onChange: value => {
+      setPassword(value);
+      setMessage("");
+    },
+    maxLength: 100,
+    defaultMode: "number",
+    submitLabel: "입장",
+    onSubmit: () => {
+      submitPassword();
+      return false;
+    },
+  });
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  function submitPassword() {
     if (!password.trim()) {
       setMessage("비밀번호를 입력해 주세요.");
       return;
@@ -918,7 +974,12 @@ function KioskFamilySection({ slug }: { slug: string }) {
       return;
     }
     verifyFamily.mutate({ memorialSlug: slug, password: password.trim() });
-  };
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    submitPassword();
+  }
 
   return (
     <KioskSection id="family" eyebrow="Family" title="가족관">
@@ -966,6 +1027,7 @@ function KioskFamilySection({ slug }: { slug: string }) {
             가족에게만 열린 공간입니다. 전달받은 비밀번호를 입력해 주세요.
           </p>
           <input
+            ref={passwordKeyboard.ref}
             type="password"
             value={password}
             onChange={event => {
@@ -974,6 +1036,11 @@ function KioskFamilySection({ slug }: { slug: string }) {
             }}
             placeholder="가족관 비밀번호"
             className="mt-6 h-16 w-full border border-[#18181b] px-5 text-2xl outline-none placeholder:text-[#aaa]"
+            autoComplete="off"
+            maxLength={100}
+            inputMode={passwordKeyboard.inputMode}
+            onFocus={passwordKeyboard.onFocus}
+            onClick={passwordKeyboard.onClick}
           />
           {message && <p className="mt-3 text-sm text-[#9f2a2a]">{message}</p>}
           <button
@@ -1004,6 +1071,7 @@ function KioskLettersSection({
   const [author, setAuthor] = useState("");
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
+  const { closeKeyboard } = useKioskKeyboard();
   const queryInput = { memorialSlug, accessToken: accessToken || undefined };
   const lettersQuery = trpc.letter.byMemorial.useQuery(queryInput, {
     retry: false,
@@ -1012,6 +1080,7 @@ function KioskLettersSection({
   const createLetter = trpc.letter.create.useMutation({
     networkMode: "always",
     onSuccess: async () => {
+      closeKeyboard();
       setAuthor("");
       setContent("");
       setMessage("편지가 남겨졌습니다.");
@@ -1025,16 +1094,43 @@ function KioskLettersSection({
         "편지를 남기지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요."
       ),
   });
+  const contentKeyboard = useKioskKeyboardField<HTMLTextAreaElement>({
+    id: `kiosk-letter-content-${memorialSlug}`,
+    label: "편지 내용",
+    value: content,
+    onChange: value => {
+      setContent(value);
+      setMessage("");
+    },
+    maxLength: 2000,
+    multiline: true,
+    submitLabel: "편지 남기기",
+    onSubmit: submitLetter,
+  });
+  const authorKeyboard = useKioskKeyboardField<HTMLInputElement>({
+    id: `kiosk-letter-author-${memorialSlug}`,
+    label: "편지 작성자",
+    value: author,
+    onChange: value => {
+      setAuthor(value);
+      setMessage("");
+    },
+    maxLength: 80,
+    submitLabel: "다음",
+    onSubmit: () => {
+      contentKeyboard.ref.current?.focus();
+      return false;
+    },
+  });
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  function submitLetter() {
     if (!author.trim() || !content.trim()) {
       setMessage("작성자와 내용을 입력해 주세요.");
-      return;
+      return false;
     }
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
       setMessage(KIOSK_CONNECTION_ERROR_MESSAGE);
-      return;
+      return false;
     }
     setMessage("");
     createLetter.mutate({
@@ -1043,7 +1139,13 @@ function KioskLettersSection({
       author: author.trim(),
       content: content.trim(),
     });
-  };
+    return true;
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitLetter()) closeKeyboard();
+  }
 
   const letters = (lettersQuery.data ?? []) as MemorialLetter[];
 
@@ -1053,6 +1155,7 @@ function KioskLettersSection({
         <div className="border-b border-[#dedbd5] p-5">
           <p className="text-sm text-[#7a643e]">To {memorialName}</p>
           <input
+            ref={authorKeyboard.ref}
             value={author}
             onChange={event => {
               setAuthor(event.target.value);
@@ -1060,8 +1163,14 @@ function KioskLettersSection({
             }}
             placeholder="작성자"
             className="mt-4 h-12 w-full border-b border-[#dedbd5] bg-transparent text-xl outline-none placeholder:text-[#aaa]"
+            autoComplete="off"
+            maxLength={80}
+            inputMode={authorKeyboard.inputMode}
+            onFocus={authorKeyboard.onFocus}
+            onClick={authorKeyboard.onClick}
           />
           <textarea
+            ref={contentKeyboard.ref}
             value={content}
             onChange={event => {
               setContent(event.target.value);
@@ -1070,6 +1179,10 @@ function KioskLettersSection({
             placeholder="전하고 싶은 마음을 남겨주세요."
             rows={4}
             className="mt-5 w-full resize-none bg-transparent text-lg leading-8 outline-none placeholder:text-[#aaa]"
+            maxLength={2000}
+            inputMode={contentKeyboard.inputMode}
+            onFocus={contentKeyboard.onFocus}
+            onClick={contentKeyboard.onClick}
           />
         </div>
         <div className="p-5">

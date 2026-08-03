@@ -8,6 +8,10 @@ import {
   kioskAccessStorageKey,
   useKioskIdleReset,
 } from "@/hooks/useKioskIdleReset";
+import {
+  useKioskKeyboard,
+  useKioskKeyboardField,
+} from "@/components/kiosk/KioskKeyboard";
 import { ArrowRight, LockKeyhole, RefreshCw, Search, X } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -34,7 +38,6 @@ const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 
 export default function Kiosk() {
   const [, setLocation] = useLocation();
-  const inputRef = useRef<HTMLInputElement>(null);
   const resetGenerationRef = useRef(0);
   const [query, setQuery] = useState("");
   const [submittedKeyword, setSubmittedKeyword] = useState("");
@@ -56,6 +59,19 @@ export default function Kiosk() {
     }
   );
   const results = (memorialsQuery.data ?? []) as KioskMemorial[];
+  const { closeKeyboard } = useKioskKeyboard();
+  const searchKeyboard = useKioskKeyboardField<HTMLInputElement>({
+    id: "kiosk-search",
+    label: "고인 성함",
+    value: query,
+    onChange: value => {
+      setQuery(value);
+      setMessage("");
+    },
+    maxLength: 80,
+    submitLabel: "검색",
+    onSubmit: runSearch,
+  });
 
   useKioskIdleReset(resetKiosk);
 
@@ -65,6 +81,7 @@ export default function Kiosk() {
 
   function resetKiosk() {
     resetGenerationRef.current += 1;
+    closeKeyboard();
     clearBrowserKioskAccessStorage();
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
@@ -80,20 +97,28 @@ export default function Kiosk() {
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    runSearch();
+  }
+
+  function runSearch() {
     const nextKeyword = query.trim();
 
     if (nextKeyword.length < 2) {
       setSubmittedKeyword("");
       setMessage("성함을 두 글자 이상 입력해 주세요.");
-      inputRef.current?.focus();
-      return;
+      searchKeyboard.ref.current?.focus();
+      return false;
     }
 
     setMessage("");
     setSubmittedKeyword(nextKeyword);
+    closeKeyboard();
+    searchKeyboard.ref.current?.blur();
+    return true;
   }
 
   function openMemorial(memorial: KioskMemorial) {
+    closeKeyboard();
     if (memorial.isPrivate) {
       setSelectedPrivate({
         slug: memorial.slug,
@@ -111,6 +136,7 @@ export default function Kiosk() {
 
   function closePrivatePanel() {
     resetGenerationRef.current += 1;
+    closeKeyboard();
     setSelectedPrivate(null);
     setPassword("");
     setPasswordMessage("");
@@ -185,7 +211,7 @@ export default function Kiosk() {
             <label className="flex h-[76px] items-center gap-4 border border-[#18181b] bg-white px-5">
               <Search className="h-6 w-6 shrink-0" strokeWidth={1.7} />
               <input
-                ref={inputRef}
+                ref={searchKeyboard.ref}
                 value={query}
                 onChange={event => {
                   setQuery(event.target.value);
@@ -195,7 +221,10 @@ export default function Kiosk() {
                 className="min-w-0 flex-1 bg-transparent text-[34px] font-light outline-none placeholder:text-[#b8b8b8]"
                 style={serifStyle}
                 autoComplete="off"
-                inputMode="text"
+                maxLength={80}
+                inputMode={searchKeyboard.inputMode}
+                onFocus={searchKeyboard.onFocus}
+                onClick={searchKeyboard.onClick}
               />
               {query && (
                 <button
@@ -356,8 +385,26 @@ function PrivateAccessPanel({
   onClose: () => void;
   onSubmit: () => void;
 }) {
+  const { isOpen } = useKioskKeyboard();
+  const passwordKeyboard = useKioskKeyboardField<HTMLInputElement>({
+    id: `kiosk-private-password-${memorial.slug}`,
+    label: `${memorial.name} 추모관 비밀번호`,
+    value: password,
+    onChange: onPassword,
+    maxLength: 80,
+    defaultMode: "number",
+    submitLabel: "입장",
+    onSubmit: () => {
+      onSubmit();
+      return false;
+    },
+  });
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-8">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/30 p-8"
+      style={{ paddingBottom: isOpen ? "min(370px, 56dvh)" : "2rem" }}
+    >
       <section className="w-full max-w-[600px] border border-[#dbdad7] bg-white p-8">
         <div className="mb-7 flex items-start justify-between gap-6">
           <div>
@@ -384,12 +431,18 @@ function PrivateAccessPanel({
         </div>
 
         <input
+          ref={passwordKeyboard.ref}
           type="password"
           value={password}
           onChange={event => onPassword(event.target.value)}
           placeholder="비밀번호"
           className="h-16 w-full border border-[#18181b] px-5 text-2xl outline-none placeholder:text-[#b8b8b8]"
           autoFocus
+          autoComplete="off"
+          maxLength={80}
+          inputMode={passwordKeyboard.inputMode}
+          onFocus={passwordKeyboard.onFocus}
+          onClick={passwordKeyboard.onClick}
         />
         {message && <p className="mt-4 text-base text-[#9f2a2a]">{message}</p>}
 
