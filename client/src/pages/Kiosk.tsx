@@ -1,4 +1,9 @@
 import { trpc } from "@/lib/trpc";
+import {
+  clearBrowserKioskAccessStorage,
+  kioskAccessStorageKey,
+  useKioskIdleReset,
+} from "@/hooks/useKioskIdleReset";
 import { ArrowRight, LockKeyhole, Search, X } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -22,12 +27,11 @@ type PrivateSelection = {
 };
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
-const idleResetMs = 90_000;
-const accessStorageKey = (slug: string) => `somang.memorialAccess.${slug}`;
 
 export default function Kiosk() {
   const [, setLocation] = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
+  const resetGenerationRef = useRef(0);
   const [query, setQuery] = useState("");
   const [submittedKeyword, setSubmittedKeyword] = useState("");
   const [message, setMessage] = useState("");
@@ -43,24 +47,18 @@ export default function Kiosk() {
   );
   const results = (memorialsQuery.data ?? []) as KioskMemorial[];
 
+  useKioskIdleReset(resetKiosk);
+
   useEffect(() => {
-    let timer = window.setTimeout(resetKiosk, idleResetMs);
-    const restart = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(resetKiosk, idleResetMs);
-    };
-
-    window.addEventListener("pointerdown", restart);
-    window.addEventListener("keydown", restart);
-
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("pointerdown", restart);
-      window.removeEventListener("keydown", restart);
-    };
-  });
+    clearBrowserKioskAccessStorage();
+  }, []);
 
   function resetKiosk() {
+    resetGenerationRef.current += 1;
+    clearBrowserKioskAccessStorage();
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setQuery("");
     setSubmittedKeyword("");
     setMessage("");
@@ -101,6 +99,13 @@ export default function Kiosk() {
     setLocation(`/kiosk/memorial/${memorial.slug}`);
   }
 
+  function closePrivatePanel() {
+    resetGenerationRef.current += 1;
+    setSelectedPrivate(null);
+    setPassword("");
+    setPasswordMessage("");
+  }
+
   async function submitPassword() {
     if (!selectedPrivate) return;
 
@@ -109,20 +114,26 @@ export default function Kiosk() {
       return;
     }
 
+    const requestGeneration = resetGenerationRef.current;
+
     try {
       const result = await verifyAccess.mutateAsync({
         slug: selectedPrivate.slug,
         password,
       });
 
-      if (result.accessToken) {
+      if (
+        result.accessToken &&
+        requestGeneration === resetGenerationRef.current
+      ) {
         sessionStorage.setItem(
-          accessStorageKey(selectedPrivate.slug),
+          kioskAccessStorageKey(selectedPrivate.slug),
           result.accessToken
         );
         setLocation(`/kiosk/memorial/${selectedPrivate.slug}`);
       }
     } catch {
+      if (requestGeneration !== resetGenerationRef.current) return;
       setPasswordMessage("비밀번호가 맞지 않습니다.");
     }
   }
@@ -263,11 +274,7 @@ export default function Kiosk() {
             setPassword(value);
             setPasswordMessage("");
           }}
-          onClose={() => {
-            setSelectedPrivate(null);
-            setPassword("");
-            setPasswordMessage("");
-          }}
+          onClose={closePrivatePanel}
           onSubmit={submitPassword}
         />
       )}

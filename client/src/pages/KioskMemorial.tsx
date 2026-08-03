@@ -1,6 +1,11 @@
 import { toImgUrl } from "@/lib/imageUrl";
 import { trpc } from "@/lib/trpc";
 import {
+  clearBrowserKioskAccessStorage,
+  kioskAccessStorageKey,
+  useKioskIdleReset,
+} from "@/hooks/useKioskIdleReset";
+import {
   ArrowLeft,
   BookOpenText,
   CalendarDays,
@@ -12,7 +17,15 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import {
+  FormEvent,
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLocation, useRoute } from "wouter";
 
 type TimelineItem = {
@@ -108,25 +121,37 @@ type FamilyRoomStatus = {
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 const muted = "#64615d";
 const line = "#dedbd5";
-const accessStorageKey = (slug: string) => `somang.memorialAccess.${slug}`;
 
 function readAccessToken(slug: string) {
   if (!slug || typeof window === "undefined") return "";
-  return sessionStorage.getItem(accessStorageKey(slug)) || "";
+  return sessionStorage.getItem(kioskAccessStorageKey(slug)) || "";
 }
 
 export default function KioskMemorial() {
   const [, params] = useRoute<{ slug: string }>("/kiosk/memorial/:slug");
   const slug = params?.slug ?? "";
   const [, setLocation] = useLocation();
+  const kioskSessionActiveRef = useRef(true);
   const [accessToken, setAccessToken] = useState(() => readAccessToken(slug));
   const [selectedPhoto, setSelectedPhoto] = useState<MemorialPhoto | null>(
     null
   );
+  const returnToKiosk = useCallback(() => {
+    kioskSessionActiveRef.current = false;
+    clearBrowserKioskAccessStorage();
+    setLocation("/kiosk", { replace: true });
+  }, [setLocation]);
+
+  useKioskIdleReset(returnToKiosk);
 
   useEffect(() => {
+    kioskSessionActiveRef.current = true;
     setAccessToken(readAccessToken(slug));
     window.scrollTo({ top: 0, left: 0 });
+
+    return () => {
+      kioskSessionActiveRef.current = false;
+    };
   }, [slug]);
 
   const accessStatusQuery = trpc.memorial.accessStatus.useQuery(
@@ -171,7 +196,7 @@ export default function KioskMemorial() {
   return (
     <main className="min-h-[100dvh] bg-white text-[#121212]">
       <div className="mx-auto min-h-[100dvh] w-full max-w-[720px] bg-white">
-        <KioskMemorialHeader onBack={() => setLocation("/kiosk")} />
+        <KioskMemorialHeader onBack={returnToKiosk} />
 
         {memorialQuery.isLoading ? (
           <KioskState>추모관을 불러오고 있습니다.</KioskState>
@@ -179,9 +204,10 @@ export default function KioskMemorial() {
           <KioskMemorialGate
             slug={slug}
             status={accessStatusQuery.data as AccessStatus | undefined}
-            onBack={() => setLocation("/kiosk")}
+            onBack={returnToKiosk}
             onUnlocked={token => {
-              sessionStorage.setItem(accessStorageKey(slug), token);
+              if (!kioskSessionActiveRef.current) return;
+              sessionStorage.setItem(kioskAccessStorageKey(slug), token);
               setAccessToken(token);
             }}
           />
