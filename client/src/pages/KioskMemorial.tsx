@@ -4,6 +4,10 @@ import {
   getKioskPasswordErrorMessage,
   KIOSK_CONNECTION_ERROR_MESSAGE,
 } from "@/lib/kioskError";
+import {
+  acquireKioskSubmissionLock,
+  releaseKioskSubmissionLock,
+} from "@/lib/kioskSubmissionLock";
 import { trpc } from "@/lib/trpc";
 import {
   getYouTubeEmbedUrl,
@@ -827,6 +831,7 @@ function KioskMemorialGate({
 }) {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const submissionLockRef = useRef<symbol | null>(null);
   const verifyAccess = trpc.memorial.verifyAccess.useMutation({
     networkMode: "always",
   });
@@ -841,6 +846,7 @@ function KioskMemorialGate({
     maxLength: 80,
     defaultMode: "number",
     submitLabel: "입장",
+    submitDisabled: verifyAccess.isPending,
     onSubmit: () => {
       void submitPassword();
       return false;
@@ -848,6 +854,8 @@ function KioskMemorialGate({
   });
 
   async function submitPassword() {
+    if (verifyAccess.isPending) return;
+
     if (!password.trim()) {
       setMessage("비밀번호를 입력해 주세요.");
       return;
@@ -858,11 +866,16 @@ function KioskMemorialGate({
       return;
     }
 
+    const submissionToken = acquireKioskSubmissionLock(submissionLockRef);
+    if (!submissionToken) return;
+
     try {
       const result = await verifyAccess.mutateAsync({ slug, password });
       if (result.accessToken) onUnlocked(result.accessToken);
     } catch (error) {
       setMessage(getKioskPasswordErrorMessage(error));
+    } finally {
+      releaseKioskSubmissionLock(submissionLockRef, submissionToken);
     }
   }
 
@@ -930,6 +943,7 @@ function KioskFamilySection({ slug }: { slug: string }) {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [room, setRoom] = useState<FamilyRoom | null>(null);
+  const submissionLockRef = useRef<symbol | null>(null);
   const { closeKeyboard } = useKioskKeyboard();
   const statusQuery = trpc.familyRoom.status.useQuery(
     { memorialSlug: slug },
@@ -957,6 +971,7 @@ function KioskFamilySection({ slug }: { slug: string }) {
     maxLength: 100,
     defaultMode: "number",
     submitLabel: "입장",
+    submitDisabled: verifyFamily.isPending,
     onSubmit: () => {
       submitPassword();
       return false;
@@ -964,6 +979,8 @@ function KioskFamilySection({ slug }: { slug: string }) {
   });
 
   function submitPassword() {
+    if (verifyFamily.isPending) return;
+
     if (!password.trim()) {
       setMessage("비밀번호를 입력해 주세요.");
       return;
@@ -973,7 +990,22 @@ function KioskFamilySection({ slug }: { slug: string }) {
       setMessage(KIOSK_CONNECTION_ERROR_MESSAGE);
       return;
     }
-    verifyFamily.mutate({ memorialSlug: slug, password: password.trim() });
+
+    const submissionToken = acquireKioskSubmissionLock(submissionLockRef);
+    if (!submissionToken) return;
+
+    void (async () => {
+      try {
+        await verifyFamily.mutateAsync({
+          memorialSlug: slug,
+          password: password.trim(),
+        });
+      } catch {
+        // The mutation's onError handler displays the message.
+      } finally {
+        releaseKioskSubmissionLock(submissionLockRef, submissionToken);
+      }
+    })();
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -1071,6 +1103,7 @@ function KioskLettersSection({
   const [author, setAuthor] = useState("");
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
+  const submissionLockRef = useRef<symbol | null>(null);
   const { closeKeyboard } = useKioskKeyboard();
   const queryInput = { memorialSlug, accessToken: accessToken || undefined };
   const lettersQuery = trpc.letter.byMemorial.useQuery(queryInput, {
@@ -1105,6 +1138,7 @@ function KioskLettersSection({
     maxLength: 2000,
     multiline: true,
     submitLabel: "편지 남기기",
+    submitDisabled: createLetter.isPending,
     onSubmit: submitLetter,
   });
   const authorKeyboard = useKioskKeyboardField<HTMLInputElement>({
@@ -1124,6 +1158,8 @@ function KioskLettersSection({
   });
 
   function submitLetter() {
+    if (createLetter.isPending) return false;
+
     if (!author.trim() || !content.trim()) {
       setMessage("작성자와 내용을 입력해 주세요.");
       return false;
@@ -1132,13 +1168,25 @@ function KioskLettersSection({
       setMessage(KIOSK_CONNECTION_ERROR_MESSAGE);
       return false;
     }
+
+    const submissionToken = acquireKioskSubmissionLock(submissionLockRef);
+    if (!submissionToken) return false;
+
     setMessage("");
-    createLetter.mutate({
-      memorialSlug,
-      accessToken: accessToken || undefined,
-      author: author.trim(),
-      content: content.trim(),
-    });
+    void (async () => {
+      try {
+        await createLetter.mutateAsync({
+          memorialSlug,
+          accessToken: accessToken || undefined,
+          author: author.trim(),
+          content: content.trim(),
+        });
+      } catch {
+        // The mutation's onError handler displays the message.
+      } finally {
+        releaseKioskSubmissionLock(submissionLockRef, submissionToken);
+      }
+    })();
     return true;
   }
 

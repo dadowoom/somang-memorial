@@ -29,6 +29,7 @@ type ActiveField = {
   multiline: boolean;
   maxLength?: number;
   submitLabel?: string;
+  submitDisabled: boolean;
   elementRef: RefObject<KioskKeyboardElement | null>;
   getValue: () => string;
   setValue: (value: string) => void;
@@ -41,6 +42,7 @@ type KioskKeyboardContextValue = {
   closeKeyboard: () => void;
   closeKeyboardField: (id: string) => void;
   openKeyboard: (field: ActiveField) => void;
+  updateKeyboardFieldSubmitDisabled: (id: string, disabled: boolean) => void;
 };
 
 const KioskKeyboardContext = createContext<KioskKeyboardContextValue | null>(
@@ -79,17 +81,29 @@ export function KioskKeyboardProvider({ children }: { children: ReactNode }) {
   const openKeyboard = useCallback((field: ActiveField) => {
     setActiveField(current => (current?.id === field.id ? current : field));
   }, []);
+  const updateKeyboardFieldSubmitDisabled = useCallback(
+    (id: string, disabled: boolean) => {
+      setActiveField(current => {
+        if (current?.id !== id || current.submitDisabled === disabled) {
+          return current;
+        }
+        return { ...current, submitDisabled: disabled };
+      });
+    },
+    []
+  );
+
+  const contextValue: KioskKeyboardContextValue = {
+    activeFieldId: activeField?.id ?? null,
+    isOpen: Boolean(activeField),
+    closeKeyboard,
+    closeKeyboardField,
+    openKeyboard,
+    updateKeyboardFieldSubmitDisabled,
+  };
 
   return (
-    <KioskKeyboardContext.Provider
-      value={{
-        activeFieldId: activeField?.id ?? null,
-        isOpen: Boolean(activeField),
-        closeKeyboard,
-        closeKeyboardField,
-        openKeyboard,
-      }}
-    >
+    <KioskKeyboardContext.Provider value={contextValue}>
       {children}
       {activeField && (
         <>
@@ -120,6 +134,7 @@ type KioskKeyboardFieldOptions = {
   multiline?: boolean;
   defaultMode?: KioskKeyboardMode;
   submitLabel?: string;
+  submitDisabled?: boolean;
   onSubmit?: () => boolean | void;
 };
 
@@ -134,6 +149,7 @@ export function useKioskKeyboardField<
   multiline = false,
   defaultMode = "ko",
   submitLabel,
+  submitDisabled = false,
   onSubmit,
 }: KioskKeyboardFieldOptions) {
   const {
@@ -142,6 +158,7 @@ export function useKioskKeyboardField<
     closeKeyboardField,
     isOpen,
     openKeyboard,
+    updateKeyboardFieldSubmitDisabled,
   } = useKioskKeyboard();
   const elementRef = useRef<TElement>(null);
   const valueRef = useRef(value);
@@ -160,12 +177,28 @@ export function useKioskKeyboardField<
       multiline,
       maxLength,
       submitLabel,
+      submitDisabled,
       elementRef: elementRef as MutableRefObject<KioskKeyboardElement | null>,
       getValue: () => valueRef.current,
       setValue: nextValue => onChangeRef.current(nextValue),
       onSubmit: () => onSubmitRef.current?.(),
     });
-  }, [defaultMode, id, label, maxLength, multiline, openKeyboard, submitLabel]);
+  }, [
+    defaultMode,
+    id,
+    label,
+    maxLength,
+    multiline,
+    openKeyboard,
+    submitDisabled,
+    submitLabel,
+  ]);
+
+  useEffect(() => {
+    if (activeFieldId === id) {
+      updateKeyboardFieldSubmitDisabled(id, submitDisabled);
+    }
+  }, [activeFieldId, id, submitDisabled, updateKeyboardFieldSubmitDisabled]);
 
   useEffect(() => {
     return () => closeKeyboardField(id);
@@ -267,6 +300,7 @@ function KioskKeyboard({
   }, [field, restoreSelection]);
 
   const submit = useCallback(() => {
+    if (field.submitDisabled) return;
     const shouldClose = field.onSubmit?.();
     if (shouldClose !== false) onClose();
   }, [field, onClose]);
@@ -366,6 +400,7 @@ function KioskKeyboard({
           <KeyboardKey
             label={field.submitLabel ?? "완료"}
             onClick={submit}
+            disabled={field.submitDisabled}
             className="min-w-[68px] flex-[1.15] border-[#18181b] bg-[#18181b] text-base font-semibold text-white active:bg-black"
           />
         </div>
@@ -556,6 +591,7 @@ function KeyboardKey({
   ariaLabel,
   className,
   compact = false,
+  disabled = false,
   icon,
   label,
   onClick,
@@ -564,6 +600,7 @@ function KeyboardKey({
   ariaLabel?: string;
   className?: string;
   compact?: boolean;
+  disabled?: boolean;
   icon?: ReactNode;
   label: string;
   onClick: () => void;
@@ -573,11 +610,13 @@ function KeyboardKey({
       type="button"
       aria-label={ariaLabel ?? label}
       aria-pressed={active || undefined}
+      disabled={disabled}
       onClick={onClick}
       className={cn(
         "flex min-w-0 flex-1 touch-manipulation select-none items-center justify-center rounded-md border border-[#cbc6be] bg-white text-xl font-medium text-[#18181b] shadow-sm active:bg-[#d9d5ce] sm:text-2xl",
         compact ? "h-[clamp(30px,4.3dvh,36px)]" : "h-[clamp(36px,5.6dvh,48px)]",
         active && "border-[#18181b] bg-[#d7d3cc]",
+        disabled && "cursor-not-allowed opacity-45 active:bg-white",
         className
       )}
     >
