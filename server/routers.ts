@@ -41,6 +41,10 @@ import {
   verifyMemorialFamilyRoomPassword,
 } from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
+import {
+  createPasswordAttemptLimiter,
+  passwordAttemptKey,
+} from "./_core/passwordAttemptLimiter";
 import { sdk } from "./_core/sdk";
 import {
   getSmsConfigStatus,
@@ -58,6 +62,18 @@ import { bookRouter } from "./routers/book";
 import { galleryRouter } from "./routers/gallery";
 import { uploadRouter } from "./routers/upload";
 import { videoRouter } from "./routers/video";
+
+const passwordAttemptLimiter = createPasswordAttemptLimiter();
+
+function ensurePasswordAttemptAllowed(key: string) {
+  const result = passwordAttemptLimiter.check(key);
+  if (!result.allowed) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "비밀번호를 여러 번 잘못 입력했습니다. 잠시 후 다시 시도해주세요.",
+    });
+  }
+}
 
 const memorialCreateInput = z.object({
   name: z.string().trim().min(1).max(120),
@@ -491,9 +507,12 @@ export const appRouter = router({
           password: z.string().trim().min(1).max(80),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        const attemptKey = passwordAttemptKey(ctx.req, `memorial:${input.slug}`);
+        ensurePasswordAttemptAllowed(attemptKey);
         const access = await verifyMemorialAccessPassword(input);
         if (access === null) {
+          passwordAttemptLimiter.recordFailure(attemptKey);
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "추모관을 찾을 수 없습니다.",
@@ -501,12 +520,14 @@ export const appRouter = router({
         }
 
         if (access === false) {
+          passwordAttemptLimiter.recordFailure(attemptKey);
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "비밀번호가 맞지 않습니다.",
           });
         }
 
+        passwordAttemptLimiter.recordSuccess(attemptKey);
         return access;
       }),
 
@@ -738,13 +759,19 @@ export const appRouter = router({
 
     verify: publicProcedure
       .input(familyRoomVerifyInput)
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        const attemptKey = passwordAttemptKey(
+          ctx.req,
+          `family-room:${input.memorialSlug}`
+        );
+        ensurePasswordAttemptAllowed(attemptKey);
         const room = await verifyMemorialFamilyRoomPassword(
           input.memorialSlug,
           input.password
         );
 
         if (room === null) {
+          passwordAttemptLimiter.recordFailure(attemptKey);
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "가족관을 찾을 수 없습니다.",
@@ -752,12 +779,14 @@ export const appRouter = router({
         }
 
         if (room === false) {
+          passwordAttemptLimiter.recordFailure(attemptKey);
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "비밀번호가 맞지 않습니다.",
           });
         }
 
+        passwordAttemptLimiter.recordSuccess(attemptKey);
         return room;
       }),
   }),
