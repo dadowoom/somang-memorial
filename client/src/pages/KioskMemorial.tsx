@@ -1,4 +1,9 @@
 import { toImgUrl } from "@/lib/imageUrl";
+import {
+  getKioskErrorCode,
+  getKioskPasswordErrorMessage,
+  KIOSK_CONNECTION_ERROR_MESSAGE,
+} from "@/lib/kioskError";
 import { trpc } from "@/lib/trpc";
 import {
   getYouTubeEmbedUrl,
@@ -17,6 +22,7 @@ import {
   Image as ImageIcon,
   LockKeyhole,
   Play,
+  RefreshCw,
   Search,
   Send,
   Video,
@@ -123,6 +129,13 @@ type FamilyRoomStatus = {
   memorialName: string;
 };
 
+type KioskResourceStatus = {
+  loading: boolean;
+  unavailable: boolean;
+  retrying: boolean;
+  onRetry: () => void;
+};
+
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 const muted = "#64615d";
 const line = "#dedbd5";
@@ -171,35 +184,49 @@ export default function KioskMemorial() {
 
   const accessStatusQuery = trpc.memorial.accessStatus.useQuery(
     { slug },
-    { enabled: Boolean(slug) }
+    { enabled: Boolean(slug), retry: false, networkMode: "always" }
   );
   const memorialQuery = trpc.memorial.bySlug.useQuery(
     { slug, accessToken: accessToken || undefined },
-    { enabled: Boolean(slug), retry: false }
+    { enabled: Boolean(slug), retry: false, networkMode: "always" }
   );
   const memorial = memorialQuery.data as KioskMemorialRecord | undefined;
-  const isLocked = memorialQuery.error?.data?.code === "FORBIDDEN";
+  const memorialErrorCode = getKioskErrorCode(memorialQuery.error);
+  const isLocked = memorialErrorCode === "FORBIDDEN";
+  const isNotFound = memorialErrorCode === "NOT_FOUND";
 
   const photosQuery = trpc.gallery.listByMemorial.useQuery(
     {
       memorialId: memorial?.id ?? 0,
       accessToken: accessToken || undefined,
     },
-    { enabled: Boolean(memorial?.id) }
+    {
+      enabled: Boolean(memorial?.id),
+      retry: false,
+      networkMode: "always",
+    }
   );
   const videosQuery = trpc.video.listByMemorial.useQuery(
     {
       memorialId: memorial?.id ?? 0,
       accessToken: accessToken || undefined,
     },
-    { enabled: Boolean(memorial?.id) }
+    {
+      enabled: Boolean(memorial?.id),
+      retry: false,
+      networkMode: "always",
+    }
   );
   const booksQuery = trpc.book.listByMemorial.useQuery(
     {
       memorialId: memorial?.id ?? 0,
       accessToken: accessToken || undefined,
     },
-    { enabled: Boolean(memorial?.id) }
+    {
+      enabled: Boolean(memorial?.id),
+      retry: false,
+      networkMode: "always",
+    }
   );
 
   const photos = (photosQuery.data ?? []) as MemorialPhoto[];
@@ -227,7 +254,25 @@ export default function KioskMemorial() {
             }}
           />
         ) : memorialQuery.isError || !memorial ? (
-          <KioskState>추모관을 찾을 수 없습니다.</KioskState>
+          isNotFound ? (
+            <KioskState
+              description="검색 화면으로 돌아가 다른 성함을 확인해 주세요."
+              actionLabel="검색으로"
+              actionKind="back"
+              onAction={returnToKiosk}
+            >
+              추모관을 찾을 수 없습니다.
+            </KioskState>
+          ) : (
+            <KioskState
+              description="인터넷 연결을 확인한 뒤 다시 시도해 주세요."
+              actionLabel="다시 시도"
+              actionPending={memorialQuery.isFetching}
+              onAction={() => void memorialQuery.refetch()}
+            >
+              연결이 원활하지 않습니다.
+            </KioskState>
+          )
         ) : (
           <>
             <KioskMemorialContent
@@ -237,6 +282,24 @@ export default function KioskMemorial() {
               books={books}
               portraitPhoto={portraitPhoto}
               accessToken={accessToken || undefined}
+              photosStatus={{
+                loading: photosQuery.isLoading,
+                unavailable: photosQuery.isError || photosQuery.isPaused,
+                retrying: photosQuery.isFetching,
+                onRetry: () => void photosQuery.refetch(),
+              }}
+              videosStatus={{
+                loading: videosQuery.isLoading,
+                unavailable: videosQuery.isError || videosQuery.isPaused,
+                retrying: videosQuery.isFetching,
+                onRetry: () => void videosQuery.refetch(),
+              }}
+              booksStatus={{
+                loading: booksQuery.isLoading,
+                unavailable: booksQuery.isError || booksQuery.isPaused,
+                retrying: booksQuery.isFetching,
+                onRetry: () => void booksQuery.refetch(),
+              }}
               onPhoto={setSelectedPhoto}
               onVideo={setSelectedVideo}
             />
@@ -390,6 +453,9 @@ function KioskMemorialContent({
   books,
   portraitPhoto,
   accessToken,
+  photosStatus,
+  videosStatus,
+  booksStatus,
   onPhoto,
   onVideo,
 }: {
@@ -399,6 +465,9 @@ function KioskMemorialContent({
   books: MemorialBook[];
   portraitPhoto: MemorialPhoto | null;
   accessToken?: string;
+  photosStatus: KioskResourceStatus;
+  videosStatus: KioskResourceStatus;
+  booksStatus: KioskResourceStatus;
   onPhoto: (photo: MemorialPhoto) => void;
   onVideo: (video: MemorialVideo) => void;
 }) {
@@ -528,7 +597,18 @@ function KioskMemorialContent({
       </KioskSection>
 
       <KioskSection id="gallery" eyebrow="Gallery" title="사진첩">
-        {photos.length ? (
+        {photosStatus.loading ? (
+          <EmptyBox
+            icon={<ImageIcon className="h-5 w-5" />}
+            text="사진을 불러오고 있습니다."
+          />
+        ) : photosStatus.unavailable ? (
+          <RetryBox
+            text="사진을 불러오지 못했습니다."
+            pending={photosStatus.retrying}
+            onRetry={photosStatus.onRetry}
+          />
+        ) : photos.length ? (
           <div className="grid grid-cols-2 gap-3">
             {photos.slice(0, 8).map(photo => (
               <button
@@ -560,72 +640,87 @@ function KioskMemorialContent({
       </KioskSection>
 
       <KioskSection id="video" eyebrow="Video" title="영상 기록">
-        <div className="overflow-hidden border border-[#dedbd5]">
-          {featuredVideo ? (
-            <button
-              type="button"
-              onClick={() => onVideo(featuredVideo)}
-              className="group relative block aspect-video w-full bg-[#1f1d1a] text-left"
-              aria-label={`${featuredVideo.title} 영상 재생`}
-            >
-              <img
-                src={getYouTubeThumbnailUrl(featuredVideo.youtubeVideoId) ?? ""}
-                alt=""
-                className="h-full w-full object-cover opacity-80 transition group-active:opacity-60"
-              />
-              <span className="absolute inset-0 bg-black/30" />
-              <span className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white">
-                <span className="flex h-20 w-20 items-center justify-center border border-white/70 bg-white/90 text-[#1f1d1a]">
-                  <Play className="ml-1 h-9 w-9 fill-current" />
-                </span>
-                <span className="bg-black/60 px-4 py-2 text-base font-medium">
-                  눌러서 영상 재생
-                </span>
-              </span>
-            </button>
-          ) : (
-            <div className="relative aspect-video bg-[#1f1d1a]">
-              {portraitPhoto ? (
+        {videosStatus.loading ? (
+          <EmptyBox
+            icon={<Video className="h-5 w-5" />}
+            text="영상을 불러오고 있습니다."
+          />
+        ) : videosStatus.unavailable ? (
+          <RetryBox
+            text="영상을 불러오지 못했습니다."
+            pending={videosStatus.retrying}
+            onRetry={videosStatus.onRetry}
+          />
+        ) : (
+          <div className="overflow-hidden border border-[#dedbd5]">
+            {featuredVideo ? (
+              <button
+                type="button"
+                onClick={() => onVideo(featuredVideo)}
+                className="group relative block aspect-video w-full bg-[#1f1d1a] text-left"
+                aria-label={`${featuredVideo.title} 영상 재생`}
+              >
                 <img
-                  src={toImgUrl(portraitPhoto.photoUrl)}
-                  alt={`${memorial.name} 영상 이미지`}
-                  className="h-full w-full object-cover grayscale opacity-60"
+                  src={
+                    getYouTubeThumbnailUrl(featuredVideo.youtubeVideoId) ?? ""
+                  }
+                  alt=""
+                  className="h-full w-full object-cover opacity-80 transition group-active:opacity-60"
                 />
-              ) : null}
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
-                <span className="flex items-center gap-3 text-base">
-                  <Video className="h-5 w-5" />
-                  등록된 영상이 없습니다.
+                <span className="absolute inset-0 bg-black/30" />
+                <span className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white">
+                  <span className="flex h-20 w-20 items-center justify-center border border-white/70 bg-white/90 text-[#1f1d1a]">
+                    <Play className="ml-1 h-9 w-9 fill-current" />
+                  </span>
+                  <span className="bg-black/60 px-4 py-2 text-base font-medium">
+                    눌러서 영상 재생
+                  </span>
                 </span>
-              </div>
-            </div>
-          )}
-          <div className="p-6">
-            <div className="mb-4 flex items-center gap-3">
-              <Video className="h-5 w-5" />
-              <p className="text-lg font-medium">영상으로 남은 기억</p>
-            </div>
-            {playableVideos.length ? (
-              <div className="space-y-3">
-                {playableVideos.map(video => (
-                  <button
-                    key={video.id}
-                    type="button"
-                    onClick={() => onVideo(video)}
-                    className="flex min-h-14 w-full items-center justify-between gap-4 border-t border-[#dedbd5] py-3 text-left text-base text-[#4f4c48]"
-                  >
-                    <span>{video.title}</span>
-                    <Play className="h-4 w-4 shrink-0 fill-current" />
-                  </button>
-                ))}
-              </div>
+              </button>
             ) : (
-              <p className="text-base leading-8 text-[#64615d]">
-                등록된 영상이 없습니다.
-              </p>
+              <div className="relative aspect-video bg-[#1f1d1a]">
+                {portraitPhoto ? (
+                  <img
+                    src={toImgUrl(portraitPhoto.photoUrl)}
+                    alt={`${memorial.name} 영상 이미지`}
+                    className="h-full w-full object-cover grayscale opacity-60"
+                  />
+                ) : null}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
+                  <span className="flex items-center gap-3 text-base">
+                    <Video className="h-5 w-5" />
+                    등록된 영상이 없습니다.
+                  </span>
+                </div>
+              </div>
             )}
+            <div className="p-6">
+              <div className="mb-4 flex items-center gap-3">
+                <Video className="h-5 w-5" />
+                <p className="text-lg font-medium">영상으로 남은 기억</p>
+              </div>
+              {playableVideos.length ? (
+                <div className="space-y-3">
+                  {playableVideos.map(video => (
+                    <button
+                      key={video.id}
+                      type="button"
+                      onClick={() => onVideo(video)}
+                      className="flex min-h-14 w-full items-center justify-between gap-4 border-t border-[#dedbd5] py-3 text-left text-base text-[#4f4c48]"
+                    >
+                      <span>{video.title}</span>
+                      <Play className="h-4 w-4 shrink-0 fill-current" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-base leading-8 text-[#64615d]">
+                  등록된 영상이 없습니다.
+                </p>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </KioskSection>
 
       <KioskSection id="book" eyebrow="Archive" title="책장과 연표">
@@ -650,7 +745,18 @@ function KioskMemorialContent({
           </div>
         ) : null}
 
-        {books.length ? (
+        {booksStatus.loading ? (
+          <EmptyBox
+            icon={<BookOpenText className="h-5 w-5" />}
+            text="책 기록을 불러오고 있습니다."
+          />
+        ) : booksStatus.unavailable ? (
+          <RetryBox
+            text="책 기록을 불러오지 못했습니다."
+            pending={booksStatus.retrying}
+            onRetry={booksStatus.onRetry}
+          />
+        ) : books.length ? (
           <div className="mt-5 space-y-3">
             {books.slice(0, 3).map(book => (
               <article key={book.id} className="border border-[#dedbd5] p-5">
@@ -708,7 +814,9 @@ function KioskMemorialGate({
 }) {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const verifyAccess = trpc.memorial.verifyAccess.useMutation();
+  const verifyAccess = trpc.memorial.verifyAccess.useMutation({
+    networkMode: "always",
+  });
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -717,11 +825,16 @@ function KioskMemorialGate({
       return;
     }
 
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setMessage(KIOSK_CONNECTION_ERROR_MESSAGE);
+      return;
+    }
+
     try {
       const result = await verifyAccess.mutateAsync({ slug, password });
       if (result.accessToken) onUnlocked(result.accessToken);
-    } catch {
-      setMessage("비밀번호가 맞지 않습니다.");
+    } catch (error) {
+      setMessage(getKioskPasswordErrorMessage(error));
     }
   };
 
@@ -780,15 +893,16 @@ function KioskFamilySection({ slug }: { slug: string }) {
   const [room, setRoom] = useState<FamilyRoom | null>(null);
   const statusQuery = trpc.familyRoom.status.useQuery(
     { memorialSlug: slug },
-    { enabled: Boolean(slug) }
+    { enabled: Boolean(slug), retry: false, networkMode: "always" }
   );
   const verifyFamily = trpc.familyRoom.verify.useMutation({
+    networkMode: "always",
     onSuccess: data => {
       setRoom(data as FamilyRoom);
       setPassword("");
       setMessage("");
     },
-    onError: error => setMessage(error.message),
+    onError: error => setMessage(getKioskPasswordErrorMessage(error)),
   });
   const status = statusQuery.data as FamilyRoomStatus | undefined;
 
@@ -796,6 +910,11 @@ function KioskFamilySection({ slug }: { slug: string }) {
     event.preventDefault();
     if (!password.trim()) {
       setMessage("비밀번호를 입력해 주세요.");
+      return;
+    }
+
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setMessage(KIOSK_CONNECTION_ERROR_MESSAGE);
       return;
     }
     verifyFamily.mutate({ memorialSlug: slug, password: password.trim() });
@@ -807,6 +926,12 @@ function KioskFamilySection({ slug }: { slug: string }) {
         <EmptyBox
           icon={<LockKeyhole className="h-5 w-5" />}
           text="가족관을 확인하고 있습니다."
+        />
+      ) : statusQuery.isError || statusQuery.isPaused ? (
+        <RetryBox
+          text="가족관 정보를 불러오지 못했습니다."
+          pending={statusQuery.isFetching}
+          onRetry={() => void statusQuery.refetch()}
         />
       ) : !status?.enabled ? (
         <EmptyBox
@@ -880,8 +1005,12 @@ function KioskLettersSection({
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
   const queryInput = { memorialSlug, accessToken: accessToken || undefined };
-  const lettersQuery = trpc.letter.byMemorial.useQuery(queryInput);
+  const lettersQuery = trpc.letter.byMemorial.useQuery(queryInput, {
+    retry: false,
+    networkMode: "always",
+  });
   const createLetter = trpc.letter.create.useMutation({
+    networkMode: "always",
     onSuccess: async () => {
       setAuthor("");
       setContent("");
@@ -891,13 +1020,20 @@ function KioskLettersSection({
         utils.letter.recent.invalidate(),
       ]);
     },
-    onError: error => setMessage(error.message),
+    onError: () =>
+      setMessage(
+        "편지를 남기지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요."
+      ),
   });
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!author.trim() || !content.trim()) {
       setMessage("작성자와 내용을 입력해 주세요.");
+      return;
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setMessage(KIOSK_CONNECTION_ERROR_MESSAGE);
       return;
     }
     setMessage("");
@@ -959,6 +1095,12 @@ function KioskLettersSection({
           <p className="border-b border-[#dedbd5] py-5 text-base text-[#64615d]">
             편지를 불러오고 있습니다.
           </p>
+        ) : lettersQuery.isError || lettersQuery.isPaused ? (
+          <RetryBox
+            text="편지를 불러오지 못했습니다."
+            pending={lettersQuery.isFetching}
+            onRetry={() => void lettersQuery.refetch()}
+          />
         ) : letters.length ? (
           letters.slice(0, 4).map(letter => (
             <article key={letter.id} className="border-b border-[#dedbd5] py-5">
@@ -1033,11 +1175,72 @@ function EmptyBox({ icon, text }: { icon: ReactNode; text: string }) {
   );
 }
 
-function KioskState({ children }: { children: ReactNode }) {
+function RetryBox({
+  text,
+  pending,
+  onRetry,
+}: {
+  text: string;
+  pending: boolean;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="flex min-h-[170px] flex-col items-center justify-center border border-[#dedbd5] px-6 text-center">
+      <p className="text-base text-[#64615d]">{text}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        disabled={pending}
+        className="mt-5 flex h-12 min-w-[160px] items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white disabled:opacity-50"
+      >
+        <RefreshCw className={`h-4 w-4 ${pending ? "animate-spin" : ""}`} />
+        {pending ? "다시 연결 중" : "다시 시도"}
+      </button>
+    </div>
+  );
+}
+
+function KioskState({
+  children,
+  description,
+  actionLabel,
+  actionKind = "retry",
+  actionPending = false,
+  onAction,
+}: {
+  children: ReactNode;
+  description?: string;
+  actionLabel?: string;
+  actionKind?: "retry" | "back";
+  actionPending?: boolean;
+  onAction?: () => void;
+}) {
   return (
     <section className="px-8 py-16">
-      <div className="border border-[#dedbd5] py-16 text-center text-base text-[#64615d]">
-        {children}
+      <div className="flex min-h-[240px] flex-col items-center justify-center border border-[#dedbd5] px-6 py-12 text-center">
+        <p className="text-lg font-medium text-[#34312d]">{children}</p>
+        {description && (
+          <p className="mt-3 max-w-md text-base leading-7 text-[#64615d]">
+            {description}
+          </p>
+        )}
+        {actionLabel && onAction && (
+          <button
+            type="button"
+            onClick={onAction}
+            disabled={actionPending}
+            className="mt-7 flex h-14 min-w-[180px] items-center justify-center gap-2 bg-[#18181b] px-6 text-base font-medium text-white disabled:opacity-50"
+          >
+            {actionKind === "back" ? (
+              <ArrowLeft className="h-4 w-4" />
+            ) : (
+              <RefreshCw
+                className={`h-4 w-4 ${actionPending ? "animate-spin" : ""}`}
+              />
+            )}
+            {actionPending ? "다시 연결 중" : actionLabel}
+          </button>
+        )}
       </div>
     </section>
   );
