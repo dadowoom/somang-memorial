@@ -422,9 +422,18 @@ export async function listPublicMemorials() {
       createdAt: memorials.createdAt,
     })
     .from(memorials)
-    .where(eq(memorials.visibility, "public"))
+    .where(
+      and(
+        eq(memorials.visibility, "public"),
+        eq(memorials.status, "published")
+      )
+    )
     .orderBy(desc(memorials.createdAt))
     .limit(100);
+}
+
+export function escapeMemorialSearchKeyword(keyword: string) {
+  return keyword.replace(/[\\%_]/g, character => `\\${character}`);
 }
 
 export async function searchPublicMemorials(keyword: string) {
@@ -435,6 +444,7 @@ export async function searchPublicMemorials(keyword: string) {
 
   const normalizedKeyword = keyword.trim();
   if (normalizedKeyword.length < 2) return [];
+  const escapedKeyword = escapeMemorialSearchKeyword(normalizedKeyword);
 
   return db
     .select({
@@ -448,7 +458,16 @@ export async function searchPublicMemorials(keyword: string) {
       visibility: memorials.visibility,
     })
     .from(memorials)
-    .where(like(memorials.name, `%${normalizedKeyword}%`))
+    .where(
+      and(
+        eq(memorials.status, "published"),
+        or(
+          eq(memorials.visibility, "public"),
+          eq(memorials.visibility, "private")
+        ),
+        like(memorials.name, `%${escapedKeyword}%`)
+      )
+    )
     .orderBy(desc(memorials.createdAt))
     .limit(12);
 }
@@ -638,10 +657,12 @@ export function canReadMemorial(
   memorial: {
     slug: string;
     visibility: string;
+    status: string;
     accessPasswordHash: string | null;
   },
   accessToken?: string | null
 ) {
+  if (memorial.status !== "published") return false;
   if (memorial.visibility !== "private") return true;
   if (!memorial.accessPasswordHash || !accessToken) return false;
   return (
@@ -654,6 +675,7 @@ export function canUserReadMemorial(
   memorial: {
     slug: string;
     visibility: string;
+    status: string;
     accessPasswordHash: string | null;
     createdByUserId?: number | null;
   },
@@ -684,7 +706,9 @@ export async function getMemorialAccessStatus(slug: string) {
       accessPasswordHash: memorials.accessPasswordHash,
     })
     .from(memorials)
-    .where(eq(memorials.slug, slug))
+    .where(
+      and(eq(memorials.slug, slug), eq(memorials.status, "published"))
+    )
     .limit(1);
 
   const memorial = result[0];
@@ -723,7 +747,12 @@ export async function verifyMemorialAccessPassword(input: {
       accessPasswordHash: memorials.accessPasswordHash,
     })
     .from(memorials)
-    .where(eq(memorials.slug, input.slug))
+    .where(
+      and(
+        eq(memorials.slug, input.slug),
+        eq(memorials.status, "published")
+      )
+    )
     .limit(1);
 
   const memorial = result[0];
@@ -774,7 +803,9 @@ export async function getMemorialFamilyRoomStatus(slug: string) {
       memorialFamilyRooms,
       eq(memorialFamilyRooms.memorialId, memorials.id)
     )
-    .where(eq(memorials.slug, slug))
+    .where(
+      and(eq(memorials.slug, slug), eq(memorials.status, "published"))
+    )
     .limit(1);
 
   const row = result[0];
@@ -814,7 +845,9 @@ export async function verifyMemorialFamilyRoomPassword(
       memorialFamilyRooms,
       eq(memorialFamilyRooms.memorialId, memorials.id)
     )
-    .where(eq(memorials.slug, slug))
+    .where(
+      and(eq(memorials.slug, slug), eq(memorials.status, "published"))
+    )
     .limit(1);
 
   const room = result[0];
