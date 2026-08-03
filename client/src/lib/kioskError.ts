@@ -16,6 +16,9 @@ export function getKioskPasswordErrorMessage(error: unknown) {
 
   if (code === "UNAUTHORIZED") return "비밀번호가 맞지 않습니다.";
   if (code === "NOT_FOUND") return "추모관을 찾을 수 없습니다.";
+  if (code === "TOO_MANY_REQUESTS") {
+    return "비밀번호를 여러 번 잘못 입력했습니다. 잠시 후 다시 시도해주세요.";
+  }
 
   return KIOSK_CONNECTION_ERROR_MESSAGE;
 }

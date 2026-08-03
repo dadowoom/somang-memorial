@@ -27,4 +27,10 @@ describe("kiosk error messages", () => {
       "추모관을 찾을 수 없습니다."
     );
   });
+
+  it("asks the kiosk visitor to wait after repeated password failures", () => {
+    expect(
+      getKioskPasswordErrorMessage({ data: { code: "TOO_MANY_REQUESTS" } })
+    ).toBe("비밀번호를 여러 번 잘못 입력했습니다. 잠시 후 다시 시도해주세요.");
+  });
 });
