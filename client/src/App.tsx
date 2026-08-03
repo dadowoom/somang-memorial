@@ -24,6 +24,23 @@ import MemorialEdit from "./pages/MemorialEdit";
 import MyMemorials from "./pages/MyMemorials";
 import Kiosk from "./pages/Kiosk";
 import KioskMemorial from "./pages/KioskMemorial";
+import { KioskKeyboardProvider } from "./components/kiosk/KioskKeyboard";
+
+function KioskIndexRoute() {
+  return (
+    <KioskKeyboardProvider>
+      <Kiosk />
+    </KioskKeyboardProvider>
+  );
+}
+
+function KioskMemorialRoute() {
+  return (
+    <KioskKeyboardProvider>
+      <KioskMemorial />
+    </KioskKeyboardProvider>
+  );
+}
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -31,8 +48,8 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/login"} component={Login} />
-      <Route path={"/kiosk/memorial/:slug"} component={KioskMemorial} />
-      <Route path={"/kiosk"} component={Kiosk} />
+      <Route path={"/kiosk/memorial/:slug"} component={KioskMemorialRoute} />
+      <Route path={"/kiosk"} component={KioskIndexRoute} />
       <Route path={"/admin/operations"} component={AdminOperations} />
       <Route path={"/admin/users"} component={AdminUsers} />
       <Route path={"/admin"} component={AdminMemorials} />
