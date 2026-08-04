@@ -1,5 +1,11 @@
 import { toImgUrl } from "@/lib/imageUrl";
 import {
+  createKioskVideoFrameState,
+  KIOSK_VIDEO_IFRAME_SANDBOX,
+  KIOSK_VIDEO_LOAD_TIMEOUT_MS,
+  reduceKioskVideoFrameState,
+} from "@/lib/kioskMedia";
+import {
   getKioskErrorCode,
   getKioskPasswordErrorMessage,
   KIOSK_CONNECTION_ERROR_MESSAGE,
@@ -9,6 +15,7 @@ import {
   releaseKioskSubmissionLock,
 } from "@/lib/kioskSubmissionLock";
 import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/utils";
 import {
   getYouTubeEmbedUrl,
   getYouTubeThumbnailUrl,
@@ -42,6 +49,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
 } from "react";
@@ -167,6 +175,7 @@ export default function KioskMemorial() {
   const [selectedVideo, setSelectedVideo] = useState<MemorialVideo | null>(
     null
   );
+  const closePhoto = useCallback(() => setSelectedPhoto(null), []);
   const closeVideo = useCallback(() => setSelectedVideo(null), []);
   const returnToKiosk = useCallback(() => {
     kioskSessionActiveRef.current = false;
@@ -325,25 +334,15 @@ export default function KioskMemorial() {
       </div>
 
       {selectedPhoto && (
-        <button
-          type="button"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/82 p-6"
-          onClick={() => setSelectedPhoto(null)}
-          aria-label="사진 크게 보기 닫기"
-        >
-          <img
-            src={toImgUrl(selectedPhoto.photoUrl)}
-            alt={selectedPhoto.caption || "추억 사진"}
-            className="max-h-full max-w-full object-contain"
-          />
-          <span className="absolute right-6 top-6 flex h-12 w-12 items-center justify-center border border-white/35 text-white">
-            <X className="h-6 w-6" />
-          </span>
-        </button>
+        <KioskPhotoDialog photo={selectedPhoto} onClose={closePhoto} />
       )}
 
       {selectedVideo && (
-        <KioskVideoDialog video={selectedVideo} onClose={closeVideo} />
+        <KioskVideoDialog
+          key={selectedVideo.id}
+          video={selectedVideo}
+          onClose={closeVideo}
+        />
       )}
     </main>
   );
@@ -374,6 +373,232 @@ function KioskMemorialHeader({ onBack }: { onBack: () => void }) {
   );
 }
 
+function KioskLoadableImage({
+  src,
+  alt,
+  containerClassName,
+  imageClassName,
+  loading = "lazy",
+  loadingText = "사진을 불러오는 중입니다.",
+  fallback,
+}: {
+  src: string;
+  alt: string;
+  containerClassName?: string;
+  imageClassName?: string;
+  loading?: "eager" | "lazy";
+  loadingText?: string;
+  fallback?: ReactNode;
+}) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "failed">(
+    src ? "loading" : "failed"
+  );
+
+  useEffect(() => {
+    setStatus(src ? "loading" : "failed");
+  }, [src]);
+
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden bg-[#f3f1ec]",
+        containerClassName
+      )}
+      aria-busy={status === "loading"}
+    >
+      {status === "loading" && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-[#6f6b65]"
+          role="status"
+        >
+          <RefreshCw className="h-5 w-5 animate-spin" />
+          <span>{loadingText}</span>
+        </div>
+      )}
+
+      {status === "failed" &&
+        (fallback ?? (
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 text-center text-sm text-[#6f6b65]"
+            role="status"
+          >
+            <ImageIcon className="h-6 w-6" />
+            <span>사진을 표시할 수 없습니다.</span>
+          </div>
+        ))}
+
+      {src && (
+        <img
+          src={src}
+          alt={alt}
+          loading={loading}
+          decoding="async"
+          onLoad={() => setStatus("loaded")}
+          onError={() => setStatus("failed")}
+          className={cn(
+            "h-full w-full",
+            status === "loaded" ? "visible" : "invisible",
+            imageClassName
+          )}
+        />
+      )}
+    </div>
+  );
+}
+
+function useKioskDialog({
+  onClose,
+  dialogRef,
+  initialFocusRef,
+}: {
+  onClose: () => void;
+  dialogRef: { current: HTMLElement | null };
+  initialFocusRef: { current: HTMLButtonElement | null };
+}) {
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const previousFocus =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    document.body.style.overflow = "hidden";
+    initialFocusRef.current?.focus();
+
+    const handleDialogKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      if (event.key !== "Tab" || !dialogRef.current) return;
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter(element => element.getAttribute("aria-hidden") !== "true");
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+
+      if (!dialogRef.current.contains(document.activeElement)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleDialogKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleDialogKey);
+      previousFocus?.focus();
+    };
+  }, [dialogRef, initialFocusRef, onClose]);
+}
+
+function KioskPhotoDialog({
+  photo,
+  onClose,
+}: {
+  photo: MemorialPhoto;
+  onClose: () => void;
+}) {
+  const [attempt, setAttempt] = useState(0);
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const photoUrl = toImgUrl(photo.photoUrl);
+  const photoTitle = photo.caption || "추억 사진";
+
+  useKioskDialog({ onClose, dialogRef, initialFocusRef: closeButtonRef });
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="kiosk-photo-title"
+    >
+      <button
+        type="button"
+        className="absolute inset-0 h-full w-full cursor-default"
+        onClick={onClose}
+        aria-label="사진 바깥쪽을 눌러 닫기"
+      />
+
+      <section
+        ref={dialogRef}
+        className="relative z-10 flex h-[calc(100vh-2.5rem)] w-full max-w-[1200px] flex-col bg-[#111] text-white shadow-2xl"
+      >
+        <div className="flex items-center justify-between gap-5 border-b border-white/20 px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-xs tracking-[0.18em] text-white/60">PHOTO</p>
+            <h2
+              id="kiosk-photo-title"
+              className="mt-1 truncate text-xl font-medium"
+            >
+              {photoTitle}
+            </h2>
+          </div>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            className="flex h-12 shrink-0 items-center gap-2 border border-white/40 px-4 text-sm font-medium"
+          >
+            <X className="h-5 w-5" />
+            사진 닫기
+          </button>
+        </div>
+
+        <KioskLoadableImage
+          key={`${photo.id}-${attempt}`}
+          src={photoUrl}
+          alt={photoTitle}
+          loading="eager"
+          loadingText="큰 사진을 불러오는 중입니다."
+          containerClassName="min-h-0 flex-1 bg-black"
+          imageClassName="object-contain"
+          fallback={
+            <div
+              className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center"
+              role="alert"
+            >
+              <ImageIcon className="h-10 w-10 text-white/65" />
+              <p className="text-lg">사진을 표시할 수 없습니다.</p>
+              <p className="text-sm leading-6 text-white/65">
+                인터넷 연결을 확인한 뒤 다시 시도해 주세요.
+              </p>
+              <div className="mt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAttempt(current => current + 1)}
+                  className="flex h-12 items-center gap-2 border border-white/50 px-5 text-sm font-medium"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  다시 시도
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="h-12 border border-white/30 px-5 text-sm font-medium text-white/80"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          }
+        />
+      </section>
+    </div>
+  );
+}
+
 function KioskVideoDialog({
   video,
   onClose,
@@ -382,30 +607,26 @@ function KioskVideoDialog({
   onClose: () => void;
 }) {
   const embedUrl = getYouTubeEmbedUrl(video.youtubeVideoId, true);
+  const dialogRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const [frameState, dispatchFrame] = useReducer(
+    reduceKioskVideoFrameState,
+    undefined,
+    createKioskVideoFrameState
+  );
 
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    const previousFocus =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    document.body.style.overflow = "hidden";
-    closeButtonRef.current?.focus();
+    if (!embedUrl || frameState.phase !== "loading") return;
 
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
+    const attempt = frameState.attempt;
+    const timeout = window.setTimeout(() => {
+      dispatchFrame({ type: "timed-out", attempt });
+    }, KIOSK_VIDEO_LOAD_TIMEOUT_MS);
 
-    window.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", closeOnEscape);
-      previousFocus?.focus();
-    };
-  }, [onClose]);
+    return () => window.clearTimeout(timeout);
+  }, [embedUrl, frameState.attempt, frameState.phase]);
 
-  if (!embedUrl) return null;
+  useKioskDialog({ onClose, dialogRef, initialFocusRef: closeButtonRef });
 
   return (
     <div
@@ -421,7 +642,10 @@ function KioskVideoDialog({
         aria-label="영상 바깥쪽을 눌러 닫기"
       />
 
-      <section className="relative z-10 w-full max-w-[980px] bg-[#111] text-white shadow-2xl">
+      <section
+        ref={dialogRef}
+        className="relative z-10 max-h-[calc(100vh-2.5rem)] w-full max-w-[980px] overflow-y-auto bg-[#111] text-white shadow-2xl"
+      >
         <div className="flex items-center justify-between gap-5 border-b border-white/20 px-5 py-4">
           <div className="min-w-0">
             <p className="text-xs tracking-[0.18em] text-white/60">VIDEO</p>
@@ -444,13 +668,63 @@ function KioskVideoDialog({
         </div>
 
         <div className="aspect-video w-full bg-black">
-          <iframe
-            src={embedUrl}
-            title={video.title}
-            className="h-full w-full"
-            allow="autoplay; encrypted-media"
-            referrerPolicy="strict-origin-when-cross-origin"
-          />
+          {embedUrl ? (
+            <iframe
+              key={`${video.id}-${frameState.attempt}`}
+              src={embedUrl}
+              title={`${video.title} 영상`}
+              className="h-full w-full border-0"
+              sandbox={KIOSK_VIDEO_IFRAME_SANDBOX}
+              allow="autoplay; encrypted-media"
+              referrerPolicy="strict-origin-when-cross-origin"
+              loading="eager"
+              onLoad={() =>
+                dispatchFrame({
+                  type: "responded",
+                  attempt: frameState.attempt,
+                })
+              }
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center px-5 text-center text-white/75">
+              이 영상은 재생할 수 없습니다.
+            </div>
+          )}
+        </div>
+
+        <div
+          className="flex min-h-16 items-center justify-between gap-4 border-t border-white/20 px-5 py-3"
+          aria-live="polite"
+        >
+          <div className="flex min-w-0 items-center gap-3 text-sm text-white/70">
+            {frameState.phase === "loading" && embedUrl ? (
+              <>
+                <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
+                <span>영상을 준비하고 있습니다.</span>
+              </>
+            ) : frameState.phase === "slow" && embedUrl ? (
+              <>
+                <Video className="h-4 w-4 shrink-0" />
+                <span>
+                  영상 연결이 늦어지고 있습니다. 화면이 보이지 않으면 다시
+                  불러와 주세요.
+                </span>
+              </>
+            ) : embedUrl ? (
+              <span>영상이 보이지 않으면 다시 불러오기를 눌러 주세요.</span>
+            ) : (
+              <span>등록된 영상 주소를 확인해 주세요.</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => dispatchFrame({ type: "retry" })}
+            disabled={!embedUrl || frameState.phase === "loading"}
+            className="flex h-12 shrink-0 items-center gap-2 border border-white/40 px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            <RefreshCw className="h-4 w-4" />
+            영상 다시 불러오기
+          </button>
         </div>
 
         {video.description && (
@@ -538,15 +812,40 @@ function KioskMemorialContent({
         </div>
 
         <div className="mt-8 overflow-hidden border border-[#dedbd5] bg-[#f8f7f4]">
-          {portraitPhoto ? (
-            <img
+          {photosStatus.loading ? (
+            <div
+              className="flex h-[360px] flex-col items-center justify-center gap-3 text-sm text-[#6f6b65]"
+              role="status"
+            >
+              <RefreshCw className="h-5 w-5 animate-spin" />
+              <span>대표 사진을 불러오는 중입니다.</span>
+            </div>
+          ) : portraitPhoto ? (
+            <KioskLoadableImage
+              key={`${portraitPhoto.id}-${portraitPhoto.photoUrl}`}
               src={toImgUrl(portraitPhoto.photoUrl)}
               alt={`${memorial.name} 사진`}
-              className="h-[360px] w-full object-cover object-center grayscale"
+              loading="eager"
+              loadingText="대표 사진을 불러오는 중입니다."
+              containerClassName="h-[360px] w-full"
+              imageClassName="object-cover object-center grayscale"
+              fallback={
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[#6f6b65]"
+                  role="status"
+                >
+                  <span className="text-[88px]" style={serifStyle}>
+                    {memorial.name.slice(0, 1)}
+                  </span>
+                  <span className="text-sm">
+                    대표 사진을 표시할 수 없습니다.
+                  </span>
+                </div>
+              }
             />
           ) : (
             <div
-              className="flex h-[260px] items-center justify-center text-[88px]"
+              className="flex h-[360px] items-center justify-center text-[88px]"
               style={serifStyle}
             >
               {memorial.name.slice(0, 1)}
@@ -633,11 +932,14 @@ function KioskMemorialContent({
                 type="button"
                 onClick={() => onPhoto(photo)}
                 className="overflow-hidden border border-[#dedbd5] bg-white text-left"
+                aria-label={`${photo.caption || "추억 사진"} 크게 보기`}
               >
-                <img
+                <KioskLoadableImage
+                  key={`${photo.id}-${photo.photoUrl}`}
                   src={toImgUrl(photo.photoUrl)}
                   alt={photo.caption || "추억 사진"}
-                  className="aspect-square w-full object-cover grayscale"
+                  containerClassName="aspect-square w-full"
+                  imageClassName="object-cover grayscale"
                 />
                 {(photo.caption || photo.year) && (
                   <span className="block px-3 py-3 text-sm leading-6 text-[#64615d]">
@@ -677,12 +979,24 @@ function KioskMemorialContent({
                 className="group relative block aspect-video w-full bg-[#1f1d1a] text-left"
                 aria-label={`${featuredVideo.title} 영상 재생`}
               >
-                <img
+                <KioskLoadableImage
+                  key={`${featuredVideo.id}-${featuredVideo.youtubeVideoId}`}
                   src={
                     getYouTubeThumbnailUrl(featuredVideo.youtubeVideoId) ?? ""
                   }
                   alt=""
-                  className="h-full w-full object-cover opacity-80 transition group-active:opacity-60"
+                  loadingText="영상 미리보기를 불러오는 중입니다."
+                  containerClassName="absolute inset-0 h-full w-full bg-[#1f1d1a]"
+                  imageClassName="object-cover opacity-80 transition group-active:opacity-60"
+                  fallback={
+                    <div
+                      className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/60"
+                      aria-hidden="true"
+                    >
+                      <Video className="h-8 w-8" />
+                      <span className="text-sm">미리보기 없음</span>
+                    </div>
+                  }
                 />
                 <span className="absolute inset-0 bg-black/30" />
                 <span className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white">
@@ -697,10 +1011,13 @@ function KioskMemorialContent({
             ) : (
               <div className="relative aspect-video bg-[#1f1d1a]">
                 {portraitPhoto ? (
-                  <img
+                  <KioskLoadableImage
+                    key={`${portraitPhoto.id}-${portraitPhoto.photoUrl}-video`}
                     src={toImgUrl(portraitPhoto.photoUrl)}
                     alt={`${memorial.name} 영상 이미지`}
-                    className="h-full w-full object-cover grayscale opacity-60"
+                    containerClassName="absolute inset-0 h-full w-full bg-[#1f1d1a]"
+                    imageClassName="object-cover grayscale opacity-60"
+                    fallback={<span aria-hidden="true" />}
                   />
                 ) : null}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
