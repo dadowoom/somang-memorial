@@ -256,7 +256,7 @@ const parseTimeline = (timelineJson?: string | null) => {
   }
 };
 
-const buildMemorialUpdateData = (
+export const buildMemorialUpdateData = (
   input: z.infer<typeof memorialUpdateInput>,
   existing: { accessPasswordHash: string | null }
 ) => {
@@ -274,8 +274,9 @@ const buildMemorialUpdateData = (
 
   if (visibility) {
     updateData.visibility = visibility;
-    updateData.status = visibility === "private" ? "private" : "published";
-  } else if (status) {
+  }
+
+  if (status) {
     updateData.status = status;
   }
 
