@@ -34,11 +34,11 @@ import {
   ArrowLeft,
   BookOpenText,
   CalendarDays,
+  House,
   Image as ImageIcon,
   LockKeyhole,
   Play,
   RefreshCw,
-  Search,
   Send,
   Video,
   X,
@@ -166,7 +166,7 @@ export default function KioskMemorial() {
   const [, params] = useRoute<{ slug: string }>("/kiosk/memorial/:slug");
   const slug = params?.slug ?? "";
   const [, setLocation] = useLocation();
-  const { closeKeyboard } = useKioskKeyboard();
+  const { closeKeyboard, isOpen: isKeyboardOpen } = useKioskKeyboard();
   const kioskSessionActiveRef = useRef(true);
   const [accessToken, setAccessToken] = useState(() => readAccessToken(slug));
   const [selectedPhoto, setSelectedPhoto] = useState<MemorialPhoto | null>(
@@ -257,7 +257,7 @@ export default function KioskMemorial() {
 
   return (
     <main className="min-h-[100dvh] bg-white text-[#121212]">
-      <div className="mx-auto min-h-[100dvh] w-full max-w-[720px] bg-white">
+      <div className="mx-auto min-h-[100dvh] w-full max-w-[720px] bg-white pb-24">
         <KioskMemorialHeader onBack={returnToKiosk} />
 
         {memorialQuery.isLoading ? (
@@ -333,6 +333,20 @@ export default function KioskMemorial() {
         )}
       </div>
 
+      {memorial && !selectedPhoto && !selectedVideo && !isKeyboardOpen && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-6 z-40 mx-auto flex w-full max-w-[720px] justify-end px-6">
+          <button
+            type="button"
+            onClick={returnToKiosk}
+            className="pointer-events-auto inline-flex h-14 items-center gap-2 rounded-full border border-[#d9d6d0] bg-white/95 px-5 text-[15px] font-medium text-[#343434] shadow-[0_8px_28px_rgba(0,0,0,0.16)] backdrop-blur focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#18181b] active:bg-[#f4f2ed]"
+            aria-label="처음으로: 키오스크 검색 화면으로 돌아가기"
+          >
+            <House className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
+            처음으로
+          </button>
+        </div>
+      )}
+
       {selectedPhoto && (
         <KioskPhotoDialog photo={selectedPhoto} onClose={closePhoto} />
       )}
@@ -365,8 +379,8 @@ function KioskMemorialHeader({ onBack }: { onBack: () => void }) {
           onClick={onBack}
           className="inline-flex h-12 items-center gap-2 border border-[#d9d6d0] px-4 text-sm font-medium text-[#343434]"
         >
-          <Search className="h-4 w-4" />
-          검색
+          <House className="h-4 w-4" />
+          처음으로
         </button>
       </div>
     </header>
@@ -381,6 +395,7 @@ function KioskLoadableImage({
   loading = "lazy",
   loadingText = "사진을 불러오는 중입니다.",
   fallback,
+  preserveRatio = false,
 }: {
   src: string;
   alt: string;
@@ -389,6 +404,7 @@ function KioskLoadableImage({
   loading?: "eager" | "lazy";
   loadingText?: string;
   fallback?: ReactNode;
+  preserveRatio?: boolean;
 }) {
   const [status, setStatus] = useState<"loading" | "loaded" | "failed">(
     src ? "loading" : "failed"
@@ -427,6 +443,21 @@ function KioskLoadableImage({
           </div>
         ))}
 
+      {src && status === "loaded" && preserveRatio && (
+        <>
+          <img
+            src={src}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover opacity-[0.16] grayscale"
+          />
+          <span
+            className="absolute inset-0 bg-[#f3f1ec]/70"
+            aria-hidden="true"
+          />
+        </>
+      )}
+
       {src && (
         <img
           src={src}
@@ -438,7 +469,8 @@ function KioskLoadableImage({
           className={cn(
             "h-full w-full",
             status === "loaded" ? "visible" : "invisible",
-            imageClassName
+            imageClassName,
+            preserveRatio && "relative z-10 object-contain"
           )}
         />
       )}
@@ -828,7 +860,8 @@ function KioskMemorialContent({
               loading="eager"
               loadingText="대표 사진을 불러오는 중입니다."
               containerClassName="h-[360px] w-full"
-              imageClassName="object-cover object-center grayscale"
+              imageClassName="grayscale"
+              preserveRatio
               fallback={
                 <div
                   className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-[#6f6b65]"
@@ -939,7 +972,8 @@ function KioskMemorialContent({
                   src={toImgUrl(photo.photoUrl)}
                   alt={photo.caption || "추억 사진"}
                   containerClassName="aspect-square w-full"
-                  imageClassName="object-cover grayscale"
+                  imageClassName="grayscale"
+                  preserveRatio
                 />
                 {(photo.caption || photo.year) && (
                   <span className="block px-3 py-3 text-sm leading-6 text-[#64615d]">

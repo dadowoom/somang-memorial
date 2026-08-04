@@ -17,6 +17,7 @@ import {
   useKioskKeyboard,
   useKioskKeyboardField,
 } from "@/components/kiosk/KioskKeyboard";
+import { cn } from "@/lib/utils";
 import { ArrowRight, LockKeyhole, RefreshCw, Search, X } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -211,7 +212,13 @@ export default function Kiosk() {
           </button>
         </header>
 
-        <section className="px-8 pb-9 pt-20">
+        <section
+          className={cn(
+            "px-8 pb-9 pt-20",
+            !submittedKeyword &&
+              "sm:portrait:flex sm:portrait:flex-1 sm:portrait:flex-col sm:portrait:justify-center sm:portrait:py-9"
+          )}
+        >
           <h1
             className="text-[42px] font-normal leading-[1.2]"
             style={serifStyle}
@@ -271,7 +278,9 @@ export default function Kiosk() {
           </form>
         </section>
 
-        <section className="min-h-0 flex-1">
+        <section
+          className={cn("min-h-0 flex-1", !submittedKeyword && "hidden")}
+        >
           {!submittedKeyword ? null : memorialsQuery.isLoading ? (
             <EmptyPanel title="검색 중입니다." />
           ) : memorialsQuery.isError || memorialsQuery.isPaused ? (
