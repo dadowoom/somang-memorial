@@ -638,6 +638,22 @@ export function hashFamilyRoomPassword(password: string) {
   return createHash("sha256").update(`somang-family:${password}`).digest("hex");
 }
 
+const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+
+export function getMemorialFamilyRoomVideo(slug: string) {
+  if (slug !== "kim-somang-kwonsa") return null;
+
+  const youtubeVideoId = process.env.KIM_SOMANG_FAMILY_VIDEO_ID?.trim() ?? "";
+  if (!YOUTUBE_VIDEO_ID_PATTERN.test(youtubeVideoId)) return null;
+
+  return {
+    title: "가족에게 남기는 말씀",
+    description:
+      "유순아 집사님의 위로 메시지와 ‘야곱의 축복’을 영상으로 전합니다.",
+    youtubeVideoId,
+  };
+}
+
 export function hashMemorialAccessPassword(password: string) {
   return createHash("sha256")
     .update(`somang-memorial-access:${password}`)
@@ -865,6 +881,7 @@ export async function verifyMemorialFamilyRoomPassword(
     church: room.church,
     title: room.title,
     intro: room.intro,
+    video: getMemorialFamilyRoomVideo(room.memorialSlug),
     notes: [
       {
         title: "가족의 기억",

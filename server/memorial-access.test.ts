@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   canUserReadMemorial,
   createMemorialAccessToken,
   escapeMemorialSearchKeyword,
+  getMemorialFamilyRoomVideo,
   hashMemorialAccessPassword,
 } from "./db";
 
@@ -56,5 +57,30 @@ describe("escapeMemorialSearchKeyword", () => {
     expect(escapeMemorialSearchKeyword("100%_safe\\name")).toBe(
       "100\\%\\_safe\\\\name"
     );
+  });
+});
+
+describe("getMemorialFamilyRoomVideo", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("returns the private family video configured for Kim Somang", () => {
+    vi.stubEnv("KIM_SOMANG_FAMILY_VIDEO_ID", "Abcdef12_-3");
+
+    expect(getMemorialFamilyRoomVideo("kim-somang-kwonsa")).toEqual({
+      title: "가족에게 남기는 말씀",
+      description:
+        "유순아 집사님의 위로 메시지와 ‘야곱의 축복’을 영상으로 전합니다.",
+      youtubeVideoId: "Abcdef12_-3",
+    });
+  });
+
+  it("does not expose a family video for other memorials", () => {
+    vi.stubEnv("KIM_SOMANG_FAMILY_VIDEO_ID", "Abcdef12_-3");
+    expect(getMemorialFamilyRoomVideo("kim-youngsu-elder")).toBeNull();
+  });
+
+  it("does not expose a family video when the private setting is missing", () => {
+    vi.stubEnv("KIM_SOMANG_FAMILY_VIDEO_ID", "");
+    expect(getMemorialFamilyRoomVideo("kim-somang-kwonsa")).toBeNull();
   });
 });

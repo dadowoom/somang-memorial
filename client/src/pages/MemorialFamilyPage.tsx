@@ -2,10 +2,16 @@ import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import {
+  getYouTubeEmbedUrl,
+  getYouTubeThumbnailUrl,
+  isValidYouTubeVideoId,
+} from "@/lib/youtube";
+import {
   ArrowLeft,
   BookOpenText,
   HeartHandshake,
   LockKeyhole,
+  Play,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -20,6 +26,11 @@ type FamilyRoom = {
   church: string;
   title: string;
   intro: string;
+  video: {
+    title: string;
+    description: string;
+    youtubeVideoId: string;
+  } | null;
   notes: Array<{
     title: string;
     body: string;
@@ -59,6 +70,9 @@ export default function MemorialFamilyPage() {
 
   useEffect(() => {
     setAccessToken(readStoredAccessToken(slug));
+    setPassword("");
+    setMessage("");
+    setRoom(null);
   }, [slug]);
 
   const statusQuery = trpc.familyRoom.status.useQuery(
@@ -77,6 +91,7 @@ export default function MemorialFamilyPage() {
   const memorial = memorialQuery.data;
   const status = statusQuery.data as FamilyRoomStatus | undefined;
   const hasFamilyRoom = status?.enabled ?? false;
+  const unlockedRoom = room?.memorialSlug === slug ? room : null;
 
   const submitPassword = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -94,7 +109,7 @@ export default function MemorialFamilyPage() {
       <Navbar />
 
       <main className="pt-16">
-        {room ? (
+        {unlockedRoom ? (
           <section className="border-b border-[#e6ded1] bg-white">
             <div className="container py-12 md:py-20">
               <Link href={`/memorial/${slug}/archive`}>
@@ -119,7 +134,7 @@ export default function MemorialFamilyPage() {
                     className="mt-5 text-xl font-light text-[#7f673d]"
                     style={serifStyle}
                   >
-                    {room.memorialName} {room.memorialRole}
+                    {unlockedRoom.memorialName} {unlockedRoom.memorialRole}
                   </p>
                   <p className="mt-6 max-w-2xl text-base leading-8 text-[#4f4f4f]">
                     비밀번호 확인이 완료되었습니다. 가족에게만 남기고 싶은
@@ -147,7 +162,7 @@ export default function MemorialFamilyPage() {
           </section>
         ) : null}
 
-        <section className={room ? "py-14 md:py-20" : "py-12 md:py-20"}>
+        <section className={unlockedRoom ? "py-14 md:py-20" : "py-12 md:py-20"}>
           <div className="container">
             {statusQuery.isLoading ? (
               <StateBlock text="가족관을 불러오고 있습니다." />
@@ -155,8 +170,11 @@ export default function MemorialFamilyPage() {
               <StateBlock text="추모관을 찾을 수 없습니다." />
             ) : !hasFamilyRoom ? (
               <StateBlock text="아직 준비된 가족관이 없습니다." />
-            ) : room ? (
-              <UnlockedRoom room={room} />
+            ) : unlockedRoom ? (
+              <UnlockedRoom
+                key={unlockedRoom.memorialSlug}
+                room={unlockedRoom}
+              />
             ) : (
               <PasswordGate
                 memorialName={memorial?.name ?? status.memorialName}
@@ -276,6 +294,10 @@ function UnlockedRoom({ room }: { room: FamilyRoom }) {
         </p>
       </div>
 
+      {room.video && (
+        <FamilyVideoCard key={room.video.youtubeVideoId} video={room.video} />
+      )}
+
       <div className="mt-6 grid gap-px bg-[#e6ded1] md:grid-cols-3">
         {room.notes.map((note, index) => {
           const Icon = icons[index] ?? BookOpenText;
@@ -293,6 +315,72 @@ function UnlockedRoom({ room }: { room: FamilyRoom }) {
         })}
       </div>
     </div>
+  );
+}
+
+function FamilyVideoCard({
+  video,
+}: {
+  video: NonNullable<FamilyRoom["video"]>;
+}) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const embedUrl = getYouTubeEmbedUrl(video.youtubeVideoId, true);
+  const thumbnailUrl = getYouTubeThumbnailUrl(video.youtubeVideoId);
+
+  if (!isValidYouTubeVideoId(video.youtubeVideoId) || !embedUrl) return null;
+
+  return (
+    <section className="mt-6 overflow-hidden border border-[#e6ded1] bg-white">
+      <div className="p-6 md:p-8">
+        <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.24em] text-[#7f673d]">
+          Family Video
+        </p>
+        <h3 className="text-2xl font-light md:text-3xl" style={serifStyle}>
+          {video.title}
+        </h3>
+        <p className="mt-4 text-sm leading-7 text-[#6f6a61]">
+          {video.description}
+        </p>
+      </div>
+
+      <div className="aspect-video bg-[#1f1d1a]">
+        {isPlaying ? (
+          <iframe
+            src={embedUrl}
+            title={`${video.title} 영상`}
+            className="h-full w-full border-0"
+            sandbox="allow-scripts allow-same-origin"
+            allow="autoplay; encrypted-media"
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsPlaying(true)}
+            className="group relative block h-full w-full overflow-hidden text-white"
+            aria-label={`${video.title} 눌러서 영상 재생`}
+          >
+            {thumbnailUrl && (
+              <img
+                src={thumbnailUrl}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover opacity-75 transition group-hover:opacity-65"
+              />
+            )}
+            <span className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/25">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-[#1f1d1a] shadow-lg md:h-20 md:w-20">
+                <Play className="ml-1 h-7 w-7 fill-current md:h-9 md:w-9" />
+              </span>
+              <span className="bg-black/60 px-4 py-2 text-sm font-medium md:text-base">
+                눌러서 영상 재생
+              </span>
+            </span>
+          </button>
+        )}
+      </div>
+    </section>
   );
 }
 

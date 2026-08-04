@@ -94,6 +94,10 @@ type MemorialVideo = {
   isVisible: number;
 };
 
+type KioskPlayableVideo = Omit<MemorialVideo, "id" | "isVisible"> & {
+  id: number | string;
+};
+
 type MemorialBook = {
   id: number;
   title: string;
@@ -134,6 +138,11 @@ type FamilyRoom = {
   memorialRole: string;
   title: string;
   intro: string;
+  video: {
+    title: string;
+    description: string;
+    youtubeVideoId: string;
+  } | null;
   notes: Array<{
     title: string;
     body: string;
@@ -172,7 +181,7 @@ export default function KioskMemorial() {
   const [selectedPhoto, setSelectedPhoto] = useState<MemorialPhoto | null>(
     null
   );
-  const [selectedVideo, setSelectedVideo] = useState<MemorialVideo | null>(
+  const [selectedVideo, setSelectedVideo] = useState<KioskPlayableVideo | null>(
     null
   );
   const closePhoto = useCallback(() => setSelectedPhoto(null), []);
@@ -635,7 +644,7 @@ function KioskVideoDialog({
   video,
   onClose,
 }: {
-  video: MemorialVideo;
+  video: KioskPlayableVideo;
   onClose: () => void;
 }) {
   const embedUrl = getYouTubeEmbedUrl(video.youtubeVideoId, true);
@@ -792,7 +801,7 @@ function KioskMemorialContent({
   videosStatus: KioskResourceStatus;
   booksStatus: KioskResourceStatus;
   onPhoto: (photo: MemorialPhoto) => void;
-  onVideo: (video: MemorialVideo) => void;
+  onVideo: (video: KioskPlayableVideo) => void;
 }) {
   const storyParagraphs = useMemo(
     () => splitParagraphs(memorial.story),
@@ -1155,7 +1164,11 @@ function KioskMemorialContent({
         ) : null}
       </KioskSection>
 
-      <KioskFamilySection slug={memorial.slug} />
+      <KioskFamilySection
+        key={memorial.slug}
+        slug={memorial.slug}
+        onVideo={onVideo}
+      />
 
       <KioskLettersSection
         memorialSlug={memorial.slug}
@@ -1290,7 +1303,13 @@ function KioskMemorialGate({
   );
 }
 
-function KioskFamilySection({ slug }: { slug: string }) {
+function KioskFamilySection({
+  slug,
+  onVideo,
+}: {
+  slug: string;
+  onVideo: (video: KioskPlayableVideo) => void;
+}) {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [room, setRoom] = useState<FamilyRoom | null>(null);
@@ -1393,6 +1412,48 @@ function KioskFamilySection({ slug }: { slug: string }) {
               {room.intro}
             </p>
           </article>
+          {room.video && isValidYouTubeVideoId(room.video.youtubeVideoId) && (
+            <button
+              type="button"
+              onClick={() =>
+                onVideo({
+                  id: `family-room-${slug}`,
+                  title: room.video!.title,
+                  description: room.video!.description,
+                  youtubeVideoId: room.video!.youtubeVideoId,
+                })
+              }
+              className="block w-full overflow-hidden border border-[#dedbd5] bg-white text-left active:bg-[#f4f2ed]"
+              aria-label={`${room.video.title} 눌러서 영상 재생`}
+            >
+              <span className="relative block aspect-video overflow-hidden bg-[#1f1d1a]">
+                <KioskLoadableImage
+                  src={getYouTubeThumbnailUrl(room.video.youtubeVideoId) ?? ""}
+                  alt=""
+                  loadingText="가족 영상을 준비하고 있습니다."
+                  containerClassName="absolute inset-0 h-full w-full bg-[#1f1d1a]"
+                  imageClassName="object-cover opacity-75"
+                  fallback={<span aria-hidden="true" />}
+                />
+                <span className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/25 text-white">
+                  <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-[#1f1d1a] shadow-lg">
+                    <Play className="ml-1 h-7 w-7 fill-current" />
+                  </span>
+                  <span className="bg-black/60 px-4 py-2 text-base font-medium">
+                    눌러서 영상 재생
+                  </span>
+                </span>
+              </span>
+              <span className="block p-5">
+                <span className="block text-[22px]" style={serifStyle}>
+                  {room.video.title}
+                </span>
+                <span className="mt-2 block text-base leading-8 text-[#64615d]">
+                  {room.video.description}
+                </span>
+              </span>
+            </button>
+          )}
           {room.notes.map(note => (
             <article key={note.title} className="border border-[#dedbd5] p-5">
               <h4 className="text-[22px]" style={serifStyle}>
