@@ -214,68 +214,98 @@ export default function Kiosk() {
 
         <section
           className={cn(
-            "px-8 pb-9 pt-20",
+            "px-8 pb-10 pt-16",
             !submittedKeyword &&
-              "sm:portrait:flex sm:portrait:flex-1 sm:portrait:flex-col sm:portrait:justify-center sm:portrait:py-9"
+              "sm:portrait:flex sm:portrait:flex-1 sm:portrait:flex-col sm:portrait:justify-center sm:portrait:py-12"
           )}
         >
-          <h1
-            className="text-[42px] font-normal leading-[1.2]"
-            style={serifStyle}
-          >
-            고인 성함 검색
-          </h1>
-          <p className="mt-4 text-base leading-7 text-[#616161]">
-            성함을 입력한 뒤 검색 버튼을 눌러 주세요.
-          </p>
+          <div className="w-full">
+            {!submittedKeyword && (
+              <p className="text-xs font-medium tracking-[0.2em] text-[#777]">
+                SOMANG MEMORIAL
+              </p>
+            )}
+            <h1
+              className={cn(
+                "text-[42px] font-normal leading-[1.2]",
+                !submittedKeyword && "mt-4"
+              )}
+              style={serifStyle}
+            >
+              고인 성함 검색
+            </h1>
+            <p className="mt-4 text-base leading-7 text-[#616161]">
+              성함을 입력한 뒤 검색 버튼을 눌러 주세요.
+            </p>
 
-          <form onSubmit={handleSearch} className="mt-10">
-            <label className="flex h-[76px] items-center gap-4 border border-[#18181b] bg-white px-5">
-              <Search className="h-6 w-6 shrink-0" strokeWidth={1.7} />
-              <input
-                ref={searchKeyboard.ref}
-                value={query}
-                onChange={event => {
-                  setQuery(event.target.value);
-                  setMessage("");
-                }}
-                placeholder="예: 김소망"
-                className="min-w-0 flex-1 bg-transparent text-[34px] font-light outline-none placeholder:text-[#b8b8b8]"
-                style={serifStyle}
-                autoComplete="off"
-                maxLength={80}
-                inputMode={searchKeyboard.inputMode}
-                onFocus={searchKeyboard.onFocus}
-                onClick={searchKeyboard.onClick}
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setQuery("");
-                    setSubmittedKeyword("");
+            <form onSubmit={handleSearch} className="mt-10">
+              <label className="flex h-[76px] items-center gap-4 border border-[#18181b] bg-white px-5">
+                <Search className="h-6 w-6 shrink-0" strokeWidth={1.7} />
+                <input
+                  ref={searchKeyboard.ref}
+                  value={query}
+                  onChange={event => {
+                    setQuery(event.target.value);
                     setMessage("");
                   }}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#dbdad7]"
-                  aria-label="검색어 지우기"
-                >
-                  <X className="h-5 w-5" strokeWidth={1.7} />
-                </button>
+                  placeholder="예: 김소망"
+                  className="min-w-0 flex-1 bg-transparent text-[34px] font-light outline-none placeholder:text-[#b8b8b8]"
+                  style={serifStyle}
+                  autoComplete="off"
+                  maxLength={80}
+                  inputMode={searchKeyboard.inputMode}
+                  onFocus={searchKeyboard.onFocus}
+                  onClick={searchKeyboard.onClick}
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery("");
+                      setSubmittedKeyword("");
+                      setMessage("");
+                    }}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#dbdad7]"
+                    aria-label="검색어 지우기"
+                  >
+                    <X className="h-5 w-5" strokeWidth={1.7} />
+                  </button>
+                )}
+              </label>
+
+              {message && (
+                <p className="mt-4 text-base text-[#9f2a2a]">{message}</p>
               )}
-            </label>
 
-            {message && (
-              <p className="mt-4 text-base text-[#9f2a2a]">{message}</p>
+              <button
+                type="submit"
+                className="mt-4 flex h-16 w-full items-center justify-center gap-3 bg-[#18181b] text-lg font-medium text-white"
+              >
+                검색
+                <ArrowRight className="h-5 w-5" strokeWidth={1.7} />
+              </button>
+            </form>
+
+            {!submittedKeyword && (
+              <div className="mt-10 border-y border-[#dbdad7] py-6">
+                <p className="text-sm text-[#616161]">추모관 이용 안내</p>
+                <ol className="mt-4 grid grid-cols-3 gap-4 text-sm leading-6 text-[#454545]">
+                  <li>
+                    <span className="block text-xs text-[#888]">01</span>
+                    성함을 입력해 주세요.
+                  </li>
+                  <li>
+                    <span className="block text-xs text-[#888]">02</span>
+                    추모관을 선택해 주세요.
+                  </li>
+                  <li>
+                    <span className="block text-xs text-[#888]">03</span>
+                    소중한 기억을 만나보세요.
+                  </li>
+                </ol>
+              </div>
             )}
-
-            <button
-              type="submit"
-              className="mt-4 flex h-16 w-full items-center justify-center gap-3 bg-[#18181b] text-lg font-medium text-white"
-            >
-              검색
-              <ArrowRight className="h-5 w-5" strokeWidth={1.7} />
-            </button>
-          </form>
+          </div>
         </section>
 
         <section
