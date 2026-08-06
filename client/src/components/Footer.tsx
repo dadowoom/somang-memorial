@@ -3,6 +3,11 @@ import { Link } from "wouter";
 
 const serviceLinks = [
   { label: "추모관", href: "/memorial/search", type: "route" },
+  {
+    label: "우리 부모님 찾기",
+    href: "/login?redirect=/my/find-parent&mode=signup",
+    type: "route",
+  },
   { label: "소망 만들기", href: "/memorial/create", type: "route" },
   { label: "서비스", href: "/#services", type: "hash" },
 ];
