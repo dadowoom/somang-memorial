@@ -498,6 +498,32 @@ export async function getSomangIntermentRecordForClaim(input: {
   return records[0] ?? null;
 }
 
+/**
+ * Kiosk search exposes only the minimum public confirmation needed on site:
+ * a matching name and the fact that the person is interred at Somang Garden.
+ * It deliberately excludes dates, contact details, and source metadata.
+ */
+export async function searchKioskSomangIntermentRecords(keyword: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const normalizedKeyword = normalizeIntermentName(keyword);
+  if (normalizedKeyword.length < 2) return [];
+  const escapedKeyword = escapeMemorialSearchKeyword(normalizedKeyword);
+
+  return db
+    .select({
+      id: somangIntermentRecords.id,
+      name: somangIntermentRecords.name,
+    })
+    .from(somangIntermentRecords)
+    .where(like(somangIntermentRecords.nameNormalized, `%${escapedKeyword}%`))
+    .orderBy(asc(somangIntermentRecords.name), asc(somangIntermentRecords.id))
+    .limit(20);
+}
+
 export async function listPublicMemorials() {
   const db = await getDb();
   if (!db) {

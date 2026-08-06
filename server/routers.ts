@@ -31,6 +31,7 @@ import {
   listRecentMemorialLetters,
   normalizeEmail,
   searchPublicMemorials,
+  searchKioskSomangIntermentRecords,
   searchSomangIntermentRecords,
   updateMemorialLetterStatus,
   updateMemorial,
@@ -75,6 +76,11 @@ const parentFinderSearchLimiter = createPasswordAttemptLimiter({
   failureWindowMs: 10 * 60 * 1000,
   blockMs: 10 * 60 * 1000,
 });
+const kioskIntermentSearchLimiter = createPasswordAttemptLimiter({
+  failureLimit: 40,
+  failureWindowMs: 10 * 60 * 1000,
+  blockMs: 10 * 60 * 1000,
+});
 
 function ensurePasswordAttemptAllowed(key: string) {
   const result = passwordAttemptLimiter.check(key);
@@ -96,6 +102,18 @@ function consumeParentFinderSearchAttempt(key: string) {
   }
 
   parentFinderSearchLimiter.recordFailure(key);
+}
+
+function consumeKioskIntermentSearchAttempt(key: string) {
+  const result = kioskIntermentSearchLimiter.check(key);
+  if (!result.allowed) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "보호를 위해 잠시 후 다시 검색해 주세요.",
+    });
+  }
+
+  kioskIntermentSearchLimiter.recordFailure(key);
 }
 
 const memorialCreateInput = z.object({
@@ -429,6 +447,23 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+  }),
+
+  kiosk: router({
+    intermentSearch: publicProcedure
+      .input(z.object({ keyword: z.string().trim().min(2).max(80) }))
+      .query(async ({ ctx, input }) => {
+        consumeKioskIntermentSearchAttempt(
+          passwordAttemptKey(ctx.req, "kiosk-interment-search")
+        );
+
+        const records = await searchKioskSomangIntermentRecords(input.keyword);
+        return records.map(record => ({
+          id: record.id,
+          name: record.name,
+          message: "소망교회 소망동산에 안장되어 있습니다.",
+        }));
+      }),
   }),
 
   parentFinder: router({

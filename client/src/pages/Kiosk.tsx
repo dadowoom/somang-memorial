@@ -18,7 +18,14 @@ import {
   useKioskKeyboardField,
 } from "@/components/kiosk/KioskKeyboard";
 import { cn } from "@/lib/utils";
-import { ArrowRight, LockKeyhole, RefreshCw, Search, X } from "lucide-react";
+import {
+  ArrowRight,
+  Landmark,
+  LockKeyhole,
+  RefreshCw,
+  Search,
+  X,
+} from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
@@ -31,6 +38,12 @@ type KioskMemorial = {
   church: string;
   isPrivate: boolean;
   href: string;
+};
+
+type KioskInterment = {
+  id: number;
+  name: string;
+  message: string;
 };
 
 type PrivateSelection = {
@@ -65,7 +78,17 @@ export default function Kiosk() {
       networkMode: "always",
     }
   );
+  const intermentQuery = trpc.kiosk.intermentSearch.useQuery(
+    { keyword },
+    {
+      enabled: keyword.length >= 2,
+      retry: false,
+      networkMode: "always",
+    }
+  );
   const results = (memorialsQuery.data ?? []) as KioskMemorial[];
+  const intermentResults = (intermentQuery.data ?? []) as KioskInterment[];
+  const totalResults = results.length + intermentResults.length;
   const { closeKeyboard } = useKioskKeyboard();
   const searchKeyboard = useKioskKeyboardField<HTMLInputElement>({
     id: "kiosk-search",
@@ -311,23 +334,32 @@ export default function Kiosk() {
         <section
           className={cn("min-h-0 flex-1", !submittedKeyword && "hidden")}
         >
-          {!submittedKeyword ? null : memorialsQuery.isLoading ? (
+          {!submittedKeyword ? null : memorialsQuery.isLoading ||
+            intermentQuery.isLoading ? (
             <EmptyPanel title="검색 중입니다." />
-          ) : memorialsQuery.isError || memorialsQuery.isPaused ? (
+          ) : memorialsQuery.isError ||
+            memorialsQuery.isPaused ||
+            intermentQuery.isError ||
+            intermentQuery.isPaused ? (
             <EmptyPanel
               title="연결이 원활하지 않습니다."
               description="인터넷 연결을 확인한 뒤 다시 시도해 주세요."
               actionLabel="다시 시도"
-              actionPending={memorialsQuery.isFetching}
-              onAction={() => void memorialsQuery.refetch()}
+              actionPending={
+                memorialsQuery.isFetching || intermentQuery.isFetching
+              }
+              onAction={() => {
+                void memorialsQuery.refetch();
+                void intermentQuery.refetch();
+              }}
             />
-          ) : results.length === 0 ? (
-            <EmptyPanel title="일치하는 추모관이 없습니다." />
+          ) : totalResults === 0 ? (
+            <EmptyPanel title="일치하는 추모관 또는 안장 기록이 없습니다." />
           ) : (
             <div className="h-full overflow-y-auto border-t border-[#dbdad7]">
               <div className="flex items-center justify-between px-8 py-4">
                 <p className="text-sm text-[#616161]">검색 결과</p>
-                <p className="text-base text-[#616161]">{results.length}건</p>
+                <p className="text-base text-[#616161]">{totalResults}건</p>
               </div>
 
               <div className="border-t border-[#dbdad7]">
@@ -361,6 +393,28 @@ export default function Kiosk() {
 
                     <ArrowRight className="h-5 w-5 shrink-0 text-[#18181b]" />
                   </button>
+                ))}
+                {intermentResults.map(record => (
+                  <div
+                    key={`interment-${record.id}`}
+                    className="flex w-full items-center justify-between gap-5 border-b border-[#dbdad7] bg-[#faf9f6] px-8 py-5 text-left"
+                  >
+                    <span className="min-w-0">
+                      <span
+                        className="text-[30px] font-normal leading-tight"
+                        style={serifStyle}
+                      >
+                        {record.name}
+                      </span>
+                      <span className="mt-2 flex items-center gap-2 text-[15px] leading-6 text-[#616161]">
+                        <Landmark
+                          className="h-4 w-4 shrink-0"
+                          strokeWidth={1.7}
+                        />
+                        {record.message}
+                      </span>
+                    </span>
+                  </div>
                 ))}
               </div>
             </div>
