@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BookOpenText,
   Flower2,
+  HeartHandshake,
   Plus,
   Search,
   Send,
@@ -96,6 +97,12 @@ export default function Home() {
                   <button className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#dbdad7] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
                     <Plus className="h-4 w-4" />
                     소망 만들기
+                  </button>
+                </Link>
+                <Link href="/login?redirect=/my/find-parent&mode=signup">
+                  <button className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#18181b] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#18181b] hover:text-white">
+                    <HeartHandshake className="h-4 w-4" />
+                    우리 부모님 찾기
                   </button>
                 </Link>
               </div>

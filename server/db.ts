@@ -8,6 +8,7 @@ import {
   InsertMemorialBookPage,
   InsertMemorialGalleryPhoto,
   InsertMemorial,
+  SomangIntermentRecord,
   InsertUser,
   InsertMemorialVideo,
   adminAuditLogs,
@@ -19,9 +20,11 @@ import {
   memorialReminderSubscriptions,
   memorialVideos,
   memorials,
+  somangIntermentRecords,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { normalizeIntermentName } from "../shared/parentFinder";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -398,6 +401,127 @@ export async function createMemorial(input: InsertMemorial) {
   }
 
   return created[0];
+}
+
+type SomangIntermentSearchResult = Pick<
+  SomangIntermentRecord,
+  | "id"
+  | "sourceId"
+  | "name"
+  | "role"
+  | "birthDate"
+  | "deathDate"
+  | "burialPlace"
+  | "burialDate"
+> & {
+  memorialId: number | null;
+  memorialSlug: string | null;
+  memorialVisibility: "public" | "link" | "private" | null;
+  memorialStatus: "pending" | "published" | "private" | null;
+  memorialOwnerId: number | null;
+};
+
+const somangIntermentSearchSelection = {
+  id: somangIntermentRecords.id,
+  sourceId: somangIntermentRecords.sourceId,
+  name: somangIntermentRecords.name,
+  role: somangIntermentRecords.role,
+  birthDate: somangIntermentRecords.birthDate,
+  deathDate: somangIntermentRecords.deathDate,
+  burialPlace: somangIntermentRecords.burialPlace,
+  burialDate: somangIntermentRecords.burialDate,
+  memorialId: memorials.id,
+  memorialSlug: memorials.slug,
+  memorialVisibility: memorials.visibility,
+  memorialStatus: memorials.status,
+  memorialOwnerId: memorials.createdByUserId,
+} as const;
+
+export async function searchSomangIntermentRecords(input: {
+  name: string;
+  birthDate: string;
+}): Promise<SomangIntermentSearchResult[]> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  return db
+    .select(somangIntermentSearchSelection)
+    .from(somangIntermentRecords)
+    .leftJoin(
+      memorials,
+      eq(memorials.intermentRecordId, somangIntermentRecords.id)
+    )
+    .where(
+      and(
+        eq(
+          somangIntermentRecords.nameNormalized,
+          normalizeIntermentName(input.name)
+        ),
+        eq(somangIntermentRecords.birthDate, input.birthDate)
+      )
+    )
+    .orderBy(asc(somangIntermentRecords.id))
+    .limit(3);
+}
+
+export async function getSomangIntermentRecordForClaim(input: {
+  id: number;
+  name: string;
+  birthDate: string;
+}): Promise<SomangIntermentSearchResult | null> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const records = await db
+    .select(somangIntermentSearchSelection)
+    .from(somangIntermentRecords)
+    .leftJoin(
+      memorials,
+      eq(memorials.intermentRecordId, somangIntermentRecords.id)
+    )
+    .where(
+      and(
+        eq(somangIntermentRecords.id, input.id),
+        eq(
+          somangIntermentRecords.nameNormalized,
+          normalizeIntermentName(input.name)
+        ),
+        eq(somangIntermentRecords.birthDate, input.birthDate)
+      )
+    )
+    .limit(1);
+
+  return records[0] ?? null;
+}
+
+/**
+ * Kiosk search exposes only the minimum public confirmation needed on site:
+ * a matching name and the fact that the person is interred at Somang Garden.
+ * It deliberately excludes dates, contact details, and source metadata.
+ */
+export async function searchKioskSomangIntermentRecords(keyword: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const normalizedKeyword = normalizeIntermentName(keyword);
+  if (normalizedKeyword.length < 2) return [];
+  const escapedKeyword = escapeMemorialSearchKeyword(normalizedKeyword);
+
+  return db
+    .select({
+      id: somangIntermentRecords.id,
+      name: somangIntermentRecords.name,
+    })
+    .from(somangIntermentRecords)
+    .where(like(somangIntermentRecords.nameNormalized, `%${escapedKeyword}%`))
+    .orderBy(asc(somangIntermentRecords.name), asc(somangIntermentRecords.id))
+    .limit(20);
 }
 
 export async function listPublicMemorials() {

@@ -77,6 +77,43 @@ export const adminAuditLogs = mysqlTable(
 export type AdminAuditLog = typeof adminAuditLogs.$inferSelect;
 export type InsertAdminAuditLog = typeof adminAuditLogs.$inferInsert;
 
+/**
+ * Source records imported from the church's Somang Garden interment registry.
+ * These records stay separate from editable online memorial content.
+ */
+export const somangIntermentRecords = mysqlTable(
+  "somang_interment_records",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    sourceId: int("sourceId").notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    nameNormalized: varchar("nameNormalized", { length: 120 }).notNull(),
+    role: varchar("role", { length: 80 }),
+    affiliation: varchar("affiliation", { length: 255 }),
+    pastor: varchar("pastor", { length: 120 }),
+    funeralChurch: varchar("funeralChurch", { length: 160 }),
+    birthDate: varchar("birthDate", { length: 20 }).notNull(),
+    deathDate: varchar("deathDate", { length: 20 }).notNull(),
+    deathAge: varchar("deathAge", { length: 20 }),
+    burialPlace: varchar("burialPlace", { length: 255 }).notNull(),
+    burialDate: varchar("burialDate", { length: 20 }),
+    sourcePayload: text("sourcePayload").notNull(),
+    importedAt: timestamp("importedAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    uniqueIndex("somang_interment_records_sourceId_unique").on(table.sourceId),
+    index("somang_interment_records_name_birth_idx").on(
+      table.nameNormalized,
+      table.birthDate
+    ),
+  ]
+);
+
+export type SomangIntermentRecord = typeof somangIntermentRecords.$inferSelect;
+export type InsertSomangIntermentRecord =
+  typeof somangIntermentRecords.$inferInsert;
+
 export const memorials = mysqlTable(
   "memorials",
   {
@@ -92,6 +129,10 @@ export const memorials = mysqlTable(
     createdByUserId: int("createdByUserId").references(() => users.id, {
       onDelete: "set null",
     }),
+    intermentRecordId: int("intermentRecordId").references(
+      () => somangIntermentRecords.id,
+      { onDelete: "set null" }
+    ),
     verse: text("verse"),
     verseRef: varchar("verseRef", { length: 120 }),
     summary: varchar("summary", { length: 255 }).notNull(),
@@ -117,7 +158,12 @@ export const memorials = mysqlTable(
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
-  table => [index("memorials_createdByUserId_idx").on(table.createdByUserId)]
+  table => [
+    index("memorials_createdByUserId_idx").on(table.createdByUserId),
+    uniqueIndex("memorials_intermentRecordId_unique").on(
+      table.intermentRecordId
+    ),
+  ]
 );
 
 export type Memorial = typeof memorials.$inferSelect;
