@@ -8,6 +8,7 @@ import {
   Clock3,
   Edit3,
   Eye,
+  HeartHandshake,
   Globe2,
   LockKeyhole,
   Plus,
@@ -101,12 +102,20 @@ export default function MyMemorials() {
                   최근 수정된 순서로 표시됩니다.
                 </p>
               </div>
-              <Link href="/memorial/create">
-                <button className="inline-flex h-12 w-full items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90 md:w-auto">
-                  <Plus className="h-4 w-4" strokeWidth={1.7} />
-                  소망 만들기
-                </button>
-              </Link>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Link href="/my/find-parent">
+                  <button className="inline-flex h-12 w-full items-center justify-center gap-2 border border-[#18181b] bg-white px-5 text-sm font-medium text-[#121212] transition-colors hover:bg-[#18181b] hover:text-white md:w-auto">
+                    <HeartHandshake className="h-4 w-4" strokeWidth={1.7} />
+                    내 부모님 찾기
+                  </button>
+                </Link>
+                <Link href="/memorial/create">
+                  <button className="inline-flex h-12 w-full items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90 md:w-auto">
+                    <Plus className="h-4 w-4" strokeWidth={1.7} />
+                    소망 만들기
+                  </button>
+                </Link>
+              </div>
             </div>
 
             {memorialsQuery.isLoading ? (

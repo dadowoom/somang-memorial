@@ -17,6 +17,7 @@ import {
   getUserByEmail,
   getMemorialFamilyRoomStatus,
   getMemorialAccessStatus,
+  getSomangIntermentRecordForClaim,
   getPublicMemorialBySlug,
   hashMemorialAccessPassword,
   listAdminMemorials,
@@ -30,6 +31,7 @@ import {
   listRecentMemorialLetters,
   normalizeEmail,
   searchPublicMemorials,
+  searchSomangIntermentRecords,
   updateMemorialLetterStatus,
   updateMemorial,
   updateAdminUserRole,
@@ -40,6 +42,10 @@ import {
   verifyMemorialAccessPassword,
   verifyMemorialFamilyRoomPassword,
 } from "./db";
+import {
+  createIntermentMemorialCopy,
+  isSearchableIntermentBirthDate,
+} from "../shared/parentFinder";
 import { getSessionCookieOptions } from "./_core/cookies";
 import {
   createPasswordAttemptLimiter,
@@ -64,6 +70,11 @@ import { uploadRouter } from "./routers/upload";
 import { videoRouter } from "./routers/video";
 
 const passwordAttemptLimiter = createPasswordAttemptLimiter();
+const parentFinderSearchLimiter = createPasswordAttemptLimiter({
+  failureLimit: 12,
+  failureWindowMs: 10 * 60 * 1000,
+  blockMs: 10 * 60 * 1000,
+});
 
 function ensurePasswordAttemptAllowed(key: string) {
   const result = passwordAttemptLimiter.check(key);
@@ -73,6 +84,18 @@ function ensurePasswordAttemptAllowed(key: string) {
       message: "비밀번호를 여러 번 잘못 입력했습니다. 잠시 후 다시 시도해주세요.",
     });
   }
+}
+
+function consumeParentFinderSearchAttempt(key: string) {
+  const result = parentFinderSearchLimiter.check(key);
+  if (!result.allowed) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "보호를 위해 잠시 후 다시 찾아 주세요.",
+    });
+  }
+
+  parentFinderSearchLimiter.recordFailure(key);
 }
 
 const memorialCreateInput = z.object({
@@ -127,6 +150,18 @@ const letterCreateInput = z
 const familyRoomVerifyInput = z.object({
   memorialSlug: z.string().trim().min(1).max(120),
   password: z.string().trim().min(1).max(100),
+});
+
+const parentFinderSearchInput = z.object({
+  name: z.string().trim().min(2).max(120),
+  birthDate: z
+    .string()
+    .refine(isSearchableIntermentBirthDate, "생년월일을 정확히 입력해주세요."),
+});
+
+const parentFinderCreateInput = parentFinderSearchInput.extend({
+  recordId: z.number().int().positive(),
+  familyConfirmation: z.literal(true),
 });
 
 const reminderSubscribeInput = z.object({
@@ -394,6 +429,139 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+  }),
+
+  parentFinder: router({
+    search: protectedProcedure
+      .input(parentFinderSearchInput)
+      .mutation(async ({ ctx, input }) => {
+        consumeParentFinderSearchAttempt(
+          passwordAttemptKey(ctx.req, `parent-finder:${ctx.user.id}`)
+        );
+
+        const records = await searchSomangIntermentRecords(input);
+        return records.map(record => {
+          const isOwner =
+            record.memorialOwnerId === ctx.user.id || ctx.user.role === "admin";
+          const isPublicMemorial =
+            record.memorialVisibility === "public" &&
+            record.memorialStatus === "published";
+
+          return {
+            id: record.id,
+            name: record.name,
+            role: record.role,
+            birthDate: record.birthDate,
+            deathDate: record.deathDate,
+            burialPlace: record.burialPlace,
+            burialDate: record.burialDate,
+            memorial: record.memorialId
+              ? {
+                  state: isOwner
+                    ? "owned"
+                    : isPublicMemorial
+                      ? "public"
+                      : "restricted",
+                  href:
+                    isOwner || isPublicMemorial
+                      ? `/memorial/${record.memorialSlug}`
+                      : null,
+                  editHref: isOwner
+                    ? `/my/memorials/${record.memorialSlug}/edit`
+                    : null,
+                }
+              : null,
+          };
+        });
+      }),
+
+    createMemorial: protectedProcedure
+      .input(parentFinderCreateInput)
+      .mutation(async ({ ctx, input }) => {
+        const record = await getSomangIntermentRecordForClaim({
+          id: input.recordId,
+          name: input.name,
+          birthDate: input.birthDate,
+        });
+
+        if (!record) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "부모님 정보를 다시 확인해 주세요.",
+          });
+        }
+
+        const existingAccess = (existing: typeof record) => {
+          const isOwner =
+            existing.memorialOwnerId === ctx.user.id ||
+            ctx.user.role === "admin";
+          const isPublicMemorial =
+            existing.memorialVisibility === "public" &&
+            existing.memorialStatus === "published";
+
+          return {
+            kind: "existing" as const,
+            access: isOwner
+              ? ("owner" as const)
+              : isPublicMemorial
+                ? ("public" as const)
+                : ("restricted" as const),
+            href:
+              isOwner || isPublicMemorial
+                ? `/memorial/${existing.memorialSlug}`
+                : null,
+            editHref: isOwner
+              ? `/my/memorials/${existing.memorialSlug}/edit`
+              : null,
+          };
+        };
+
+        if (record.memorialId) {
+          return existingAccess(record);
+        }
+
+        const copy = createIntermentMemorialCopy({
+          name: record.name,
+          role: record.role,
+          deathDate: record.deathDate,
+        });
+
+        try {
+          const created = await createMemorial({
+            name: record.name,
+            role: copy.role,
+            birthDate: record.birthDate,
+            deathDate: record.deathDate,
+            church: "소망교회",
+            createdByUserId: ctx.user.id,
+            intermentRecordId: record.id,
+            slug: record.name,
+            summary: copy.summary,
+            story: copy.story,
+            memorialDay: copy.memorialDay,
+            visibility: "private",
+            status: "private",
+          });
+
+          return {
+            kind: "created" as const,
+            href: `/memorial/${created.slug}`,
+            editHref: `/my/memorials/${created.slug}/edit`,
+          };
+        } catch (error) {
+          const linked = await getSomangIntermentRecordForClaim({
+            id: input.recordId,
+            name: input.name,
+            birthDate: input.birthDate,
+          });
+
+          if (linked?.memorialId) {
+            return existingAccess(linked);
+          }
+
+          throw error;
+        }
+      }),
   }),
 
   memorial: router({

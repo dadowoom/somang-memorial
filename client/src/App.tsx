@@ -22,6 +22,7 @@ import MemorialArchivePage from "./pages/MemorialArchivePage";
 import MemorialFamilyPage from "./pages/MemorialFamilyPage";
 import MemorialEdit from "./pages/MemorialEdit";
 import MyMemorials from "./pages/MyMemorials";
+import ParentFinder from "./pages/ParentFinder";
 import Kiosk from "./pages/Kiosk";
 import KioskMemorial from "./pages/KioskMemorial";
 import { KioskKeyboardProvider } from "./components/kiosk/KioskKeyboard";
@@ -55,6 +56,7 @@ function Router() {
       <Route path={"/admin"} component={AdminMemorials} />
       <Route path={"/admin/memorials/:slug/edit"} component={MemorialEdit} />
       <Route path={"/my/memorials"} component={MyMemorials} />
+      <Route path={"/my/find-parent"} component={ParentFinder} />
       <Route path={"/my/memorials/:slug/edit"} component={MemorialEdit} />
       <Route path={"/memorial/demo"} component={MemorialDemo} />
       <Route path={"/memorial/create"} component={MemorialCreate} />

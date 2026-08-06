@@ -66,6 +66,11 @@ export default function Navbar() {
                     내 추모관
                   </span>
                 </Link>
+                <Link href="/my/find-parent">
+                  <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
+                    내 부모 찾기
+                  </span>
+                </Link>
                 {user?.role === "admin" && (
                   <>
                     <Link href="/admin">
@@ -157,6 +162,16 @@ export default function Navbar() {
                   className="py-3 text-sm text-[#121212]"
                 >
                   내 추모관
+                </span>
+              </Link>
+            )}
+            {isAuthenticated && (
+              <Link href="/my/find-parent">
+                <span
+                  onClick={closeMobile}
+                  className="py-3 text-sm text-[#121212]"
+                >
+                  내 부모 찾기
                 </span>
               </Link>
             )}
