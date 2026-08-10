@@ -1,5 +1,5 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
-import { and, asc, desc, eq, isNull, like, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, like, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
@@ -585,6 +585,56 @@ export async function searchPublicMemorials(keyword: string) {
     .where(
       and(
         eq(memorials.status, "published"),
+        eq(memorials.visibility, "public"),
+        like(memorials.name, `%${escapedKeyword}%`)
+      )
+    )
+    .orderBy(desc(memorials.createdAt))
+    .limit(12);
+}
+
+export async function isDatabaseHealthy() {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    await db.execute(sql`SELECT 1`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Kiosk search intentionally includes published password-protected memorials.
+ * This is separate from web search so a private memorial's identifying details
+ * are not exposed to ordinary public web visitors.
+ */
+export async function searchKioskMemorials(keyword: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const normalizedKeyword = keyword.trim();
+  if (normalizedKeyword.length < 2) return [];
+  const escapedKeyword = escapeMemorialSearchKeyword(normalizedKeyword);
+
+  return db
+    .select({
+      slug: memorials.slug,
+      name: memorials.name,
+      role: memorials.role,
+      birthDate: memorials.birthDate,
+      deathDate: memorials.deathDate,
+      church: memorials.church,
+      summary: memorials.summary,
+      visibility: memorials.visibility,
+    })
+    .from(memorials)
+    .where(
+      and(
+        eq(memorials.status, "published"),
         or(
           eq(memorials.visibility, "public"),
           eq(memorials.visibility, "private")
@@ -1055,7 +1105,7 @@ export async function createMemorialLetter(input: {
       recipientRole: memorial[0].role,
       author: input.author,
       content: input.content,
-      status: "published",
+      status: "hidden",
     });
 
     const created = await db
@@ -1087,7 +1137,7 @@ export async function createMemorialLetter(input: {
     recipientRole: input.recipientRole?.trim() || null,
     author: input.author,
     content: input.content,
-    status: "published",
+    status: "hidden",
   });
 
   const created = await db

@@ -11,6 +11,10 @@ function isIpAddress(host: string) {
 function isSecureRequest(req: Request) {
   if (req.protocol === "https") return true;
 
+  // Forwarded headers are trustworthy only when the app is explicitly behind
+  // our reverse proxy. Direct clients must not be able to influence cookies.
+  if (process.env.TRUST_PROXY !== "true") return false;
+
   const forwardedProto = req.headers["x-forwarded-proto"];
   if (!forwardedProto) return false;
 
@@ -44,7 +48,10 @@ export function getSessionCookieOptions(
   return {
     httpOnly: true,
     path: "/",
-    sameSite: secure ? "none" : "lax",
+    // The service is not embedded on external sites. Lax keeps the session
+    // available for normal top-level navigation (including OAuth redirects)
+    // without sending it with cross-site background requests.
+    sameSite: "lax",
     secure,
   };
 }

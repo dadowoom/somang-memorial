@@ -245,6 +245,8 @@ function StatusBadge({ status }: { status: string }) {
   const label =
     status === "published"
       ? "게시중"
+      : status === "pending"
+        ? "관리자 확인 중"
       : status === "private"
         ? "비공개"
         : status || "상태 확인";

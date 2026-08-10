@@ -143,7 +143,7 @@ export default function AdminOperations() {
             <div className="grid gap-px border border-[#dbdad7] bg-[#dbdad7] sm:grid-cols-3">
               <Stat label="전체 편지" value={`${letters.length}`} />
               <Stat
-                label="숨김 편지"
+                label="검토 대기·숨김"
                 value={`${letters.filter(letter => letter.status === "hidden").length}`}
               />
               <Stat
