@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import AdminNavigation from "@/components/admin/AdminNavigation";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { downloadCsv } from "@/lib/csvExport";
@@ -107,7 +108,8 @@ export default function AdminUsers() {
   return (
     <div className="min-h-screen bg-white text-[#121212]">
       <Navbar />
-      <main className="pt-16">
+      <main className="pt-16 lg:pl-60">
+        <AdminNavigation />
         <section className="border-b border-[#dbdad7]">
           <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.85fr)] lg:items-end">
             <div>
@@ -224,12 +226,21 @@ export default function AdminUsers() {
                           disabled={
                             updateRole.isPending || updateStatus.isPending
                           }
-                          onClick={() =>
-                            updateRole.mutate({
-                              id: item.id,
-                              role: item.role === "admin" ? "user" : "admin",
-                            })
-                          }
+                          onClick={() => {
+                            const nextRole =
+                              item.role === "admin" ? "user" : "admin";
+                            const action =
+                              nextRole === "admin"
+                                ? "관리자 권한을 부여"
+                                : "관리자 권한을 해제";
+                            if (
+                              !window.confirm(
+                                `${item.name || item.email || "이 회원"}에게 ${action}하시겠습니까?`
+                              )
+                            )
+                              return;
+                            updateRole.mutate({ id: item.id, role: nextRole });
+                          }}
                           className="inline-flex h-9 items-center justify-center gap-1 border border-[#dbdad7] px-3 text-xs text-[#121212] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <ShieldCheck className="h-3.5 w-3.5" />
@@ -240,15 +251,26 @@ export default function AdminUsers() {
                           disabled={
                             updateRole.isPending || updateStatus.isPending
                           }
-                          onClick={() =>
+                          onClick={() => {
+                            const nextStatus =
+                              item.approvalStatus === "approved"
+                                ? "rejected"
+                                : "approved";
+                            const action =
+                              nextStatus === "rejected"
+                                ? "계정을 비활성"
+                                : "계정을 다시 활성화";
+                            if (
+                              !window.confirm(
+                                `${item.name || item.email || "이 회원"}의 ${action}하시겠습니까?`
+                              )
+                            )
+                              return;
                             updateStatus.mutate({
                               id: item.id,
-                              approvalStatus:
-                                item.approvalStatus === "approved"
-                                  ? "rejected"
-                                  : "approved",
-                            })
-                          }
+                              approvalStatus: nextStatus,
+                            });
+                          }}
                           className="inline-flex h-9 items-center justify-center gap-1 border border-[#dbdad7] px-3 text-xs text-[#121212] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {item.approvalStatus === "approved" ? (

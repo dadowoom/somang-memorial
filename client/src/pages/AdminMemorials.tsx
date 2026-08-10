@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import AdminNavigation from "@/components/admin/AdminNavigation";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { downloadCsv } from "@/lib/csvExport";
@@ -123,7 +124,8 @@ export default function AdminMemorials() {
     <div className="min-h-screen bg-white text-[#121212]">
       <Navbar />
 
-      <main className="pt-16">
+      <main className="pt-16 lg:pl-60">
+        <AdminNavigation />
         <section className="border-b border-[#dbdad7]">
           <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.85fr)] lg:items-end">
             <div>
