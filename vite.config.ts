@@ -167,6 +167,36 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Keep stable, reusable browser libraries separate from application
+        // screens. This improves first-load parsing on the kiosk and lets
+        // returning visitors reuse cached code after routine content updates.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-dom/") ||
+            id.includes("node_modules/scheduler/")
+          ) {
+            return "react-vendor";
+          }
+          if (
+            id.includes("node_modules/@trpc/") ||
+            id.includes("node_modules/@tanstack/") ||
+            id.includes("node_modules/superjson/")
+          ) {
+            return "data-vendor";
+          }
+          if (id.includes("node_modules/@radix-ui/")) {
+            return "ui-vendor";
+          }
+          if (id.includes("node_modules/lucide-react/")) {
+            return "icons";
+          }
+        },
+      },
+    },
   },
   server: {
     host: true,

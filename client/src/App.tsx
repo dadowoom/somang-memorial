@@ -5,7 +5,6 @@ import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Kiosk from "./pages/Kiosk";
-import KioskMemorial from "./pages/KioskMemorial";
 import { KioskKeyboardProvider } from "./components/kiosk/KioskKeyboard";
 
 // Kiosk routes stay in the first download. Less frequently used web and admin
@@ -29,6 +28,7 @@ const MemorialEdit = lazy(() => import("./pages/MemorialEdit"));
 const MyMemorials = lazy(() => import("./pages/MyMemorials"));
 const ParentFinder = lazy(() => import("./pages/ParentFinder"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const KioskMemorial = lazy(() => import("./pages/KioskMemorial"));
 
 function KioskIndexRoute() {
   return (
