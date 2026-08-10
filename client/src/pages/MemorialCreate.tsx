@@ -138,6 +138,7 @@ export default function MemorialCreate() {
   const { user, loading } = useAuth({
     redirectOnUnauthenticated: true,
   });
+  const isAdmin = user?.role === "admin";
   const [form, setForm] = useState<MemorialForm>(initialForm);
   const [timeline, setTimeline] = useState<TimelineItem[]>([
     makeTimelineItem(),
@@ -825,6 +826,13 @@ export default function MemorialCreate() {
               >
                 <SectionHeader number="05" title="공개 설정" />
 
+                {!isAdmin && (
+                  <p className="mb-6 border-l-2 border-[#18181b] bg-[#f8f7f4] px-4 py-3 text-sm leading-6 text-[#414141]">
+                    작성한 추모관은 관리자 확인을 거친 뒤 게시됩니다. 확인 전에는
+                    검색 결과와 키오스크에 보이지 않습니다.
+                  </p>
+                )}
+
                 <div className="grid gap-6 md:grid-cols-2">
                   <Field label="공개 범위">
                     <div className="grid gap-px border border-[#dbdad7] bg-[#dbdad7] sm:grid-cols-2">
@@ -854,8 +862,9 @@ export default function MemorialCreate() {
                       })}
                     </div>
                     <p className="mt-3 text-xs leading-6 text-[#616161]">
-                      기본 정보는 검색 결과에 표시됩니다. 비공개로 설정하면
-                      비밀번호를 아는 분만 추모관에 들어갈 수 있습니다.
+                      {isAdmin
+                        ? "기본 정보는 검색 결과에 표시됩니다. 비공개로 설정하면 비밀번호를 아는 분만 추모관에 들어갈 수 있습니다."
+                        : "선택한 공개 범위는 관리자 확인 후 적용됩니다. 비공개로 선택하면 입장 비밀번호가 필요합니다."}
                     </p>
                   </Field>
 
@@ -950,6 +959,8 @@ export default function MemorialCreate() {
                           value={
                             createdMemorial?.status === "published"
                               ? "등록 완료"
+                              : createdMemorial?.status === "pending"
+                                ? "관리자 확인 중"
                               : createdMemorial?.status || "등록 완료"
                           }
                         />

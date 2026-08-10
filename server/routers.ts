@@ -311,7 +311,7 @@ const memorialUpdateInput = z.object({
   memorialDay: z.string().trim().max(40).nullable().optional(),
   visibility: z.enum(["public", "private"]).optional(),
   accessPassword: z.string().trim().max(80).optional(),
-  status: z.enum(["published", "private"]).optional(),
+  status: z.enum(["pending", "published", "private"]).optional(),
   managerMemo: z.string().trim().max(2000).nullable().optional(),
   timeline: z
     .array(
@@ -853,10 +853,9 @@ export const appRouter = router({
       .input(memorialCreateInput)
       .mutation(async ({ ctx, input }) => {
         const isAdmin = ctx.user.role === "admin";
-        const visibility = isAdmin ? input.visibility : "private";
+        const visibility = input.visibility;
 
         if (
-          isAdmin &&
           visibility === "private" &&
           !input.accessPassword?.trim()
         ) {
@@ -892,8 +891,8 @@ export const appRouter = router({
             visibility === "private" && input.accessPassword
               ? hashMemorialAccessPassword(input.accessPassword)
               : null,
-          // Self-service memorials stay private until an administrator reviews
-          // and publishes them. Existing published memorials are untouched.
+          // Self-service memorials keep the family's requested visibility, but
+          // are never searchable or public until an administrator publishes them.
           status: isAdmin ? "published" : "pending",
           timelineJson: JSON.stringify(timeline),
           managerMemo: input.managerMemo || null,
@@ -962,12 +961,22 @@ export const appRouter = router({
           });
         }
 
+        if (
+          input.visibility === "private" &&
+          !input.accessPassword?.trim() &&
+          !existing.accessPasswordHash
+        ) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "비공개 추모관은 입장 비밀번호가 필요합니다.",
+          });
+        }
+
         const editableInput =
           ctx.user.role === "admin"
             ? input
             : {
                 ...input,
-                visibility: undefined,
                 status: undefined,
                 managerMemo: undefined,
               };

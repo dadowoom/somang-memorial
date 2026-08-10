@@ -7,6 +7,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useRoute } from "wouter";
 
 type Visibility = "public" | "private";
+type MemorialStatus = "pending" | "published" | "private";
 
 type TimelineItem = {
   id: string;
@@ -33,6 +34,7 @@ type AdminMemorial = {
   serviceTime: string | null;
   memorialDay: string | null;
   visibility: string;
+  status: string;
   managerMemo: string | null;
   timeline: Array<{
     year: string;
@@ -58,6 +60,7 @@ type FormState = {
   serviceTime: string;
   memorialDay: string;
   visibility: Visibility;
+  status: MemorialStatus;
   accessPassword: string;
   managerMemo: string;
 };
@@ -77,6 +80,7 @@ const initialForm: FormState = {
   serviceTime: "",
   memorialDay: "",
   visibility: "public",
+  status: "pending",
   accessPassword: "",
   managerMemo: "",
 };
@@ -172,6 +176,10 @@ export default function MemorialEdit() {
       serviceTime: memorial.serviceTime ?? "",
       memorialDay: memorial.memorialDay ?? "",
       visibility: memorial.visibility === "private" ? "private" : "public",
+      status:
+        memorial.status === "published" || memorial.status === "private"
+          ? memorial.status
+          : "pending",
       accessPassword: "",
       managerMemo: memorial.managerMemo ?? "",
     });
@@ -295,6 +303,7 @@ export default function MemorialEdit() {
         serviceTime: form.serviceTime || null,
         memorialDay: form.memorialDay || null,
         visibility: form.visibility,
+        status: isAdmin ? form.status : undefined,
         accessPassword: form.accessPassword.trim() || undefined,
         timeline: timeline.map(({ year, title, description }) => ({
           year,
@@ -770,6 +779,28 @@ export default function MemorialEdit() {
                               : "비밀번호를 입력해 주세요"
                           }
                         />
+                      </Field>
+                    )}
+
+                    {isAdmin && (
+                      <Field label="게시 상태">
+                        <select
+                          className={selectClass}
+                          value={form.status}
+                          onChange={event =>
+                            updateField(
+                              "status",
+                              event.target.value as MemorialStatus
+                            )
+                          }
+                        >
+                          <option value="pending">검토 대기</option>
+                          <option value="published">게시하기</option>
+                          <option value="private">비공개로 보관</option>
+                        </select>
+                        <p className="mt-2 text-xs leading-5 text-[#616161]">
+                          검토 대기는 검색과 키오스크에 노출되지 않습니다.
+                        </p>
                       </Field>
                     )}
 
