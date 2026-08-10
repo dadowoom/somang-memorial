@@ -72,23 +72,11 @@ export default function Navbar() {
                   </span>
                 </Link>
                 {user?.role === "admin" && (
-                  <>
-                    <Link href="/admin">
-                      <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
-                        관리
-                      </span>
-                    </Link>
-                    <Link href="/admin/operations">
-                      <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
-                        운영
-                      </span>
-                    </Link>
-                    <Link href="/admin/users">
-                      <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
-                        회원
-                      </span>
-                    </Link>
-                  </>
+                  <Link href="/admin">
+                    <button className="h-9 border border-[#18181b] bg-[#18181b] px-4 text-xs font-medium text-white transition-opacity hover:opacity-90">
+                      관리자
+                    </button>
+                  </Link>
                 )}
                 <Link href="/">
                   <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
@@ -103,11 +91,18 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <a href={getLoginUrl()}>
-                <button className="h-9 bg-[#18181b] px-4 text-xs font-medium text-white transition-opacity hover:opacity-90">
-                  로그인
-                </button>
-              </a>
+              <>
+                <Link href="/login?redirect=/admin">
+                  <button className="h-9 border border-[#dbdad7] bg-white px-4 text-xs font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                    관리자 로그인
+                  </button>
+                </Link>
+                <a href={getLoginUrl()}>
+                  <button className="h-9 bg-[#18181b] px-4 text-xs font-medium text-white transition-opacity hover:opacity-90">
+                    로그인
+                  </button>
+                </a>
+              </>
             )}
           </div>
 
@@ -176,32 +171,14 @@ export default function Navbar() {
               </Link>
             )}
             {user?.role === "admin" && (
-              <>
-                <Link href="/admin">
-                  <span
-                    onClick={closeMobile}
-                    className="py-3 text-sm text-[#121212]"
-                  >
-                    관리
-                  </span>
-                </Link>
-                <Link href="/admin/operations">
-                  <span
-                    onClick={closeMobile}
-                    className="py-3 text-sm text-[#121212]"
-                  >
-                    운영
-                  </span>
-                </Link>
-                <Link href="/admin/users">
-                  <span
-                    onClick={closeMobile}
-                    className="py-3 text-sm text-[#121212]"
-                  >
-                    회원
-                  </span>
-                </Link>
-              </>
+              <Link href="/admin">
+                <span
+                  onClick={closeMobile}
+                  className="py-3 text-sm font-medium text-[#121212]"
+                >
+                  관리자
+                </span>
+              </Link>
             )}
             <div className="mt-3 border-t border-[#dbdad7] pt-4">
               {isAuthenticated ? (
@@ -215,11 +192,18 @@ export default function Navbar() {
                   로그아웃
                 </button>
               ) : (
-                <a href={getLoginUrl()} onClick={closeMobile}>
-                  <button className="h-10 w-full bg-[#18181b] text-sm font-medium text-white">
-                    로그인
-                  </button>
-                </a>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/login?redirect=/admin" onClick={closeMobile}>
+                    <button className="h-10 w-full border border-[#dbdad7] bg-white text-sm font-medium text-[#121212]">
+                      관리자 로그인
+                    </button>
+                  </Link>
+                  <a href={getLoginUrl()} onClick={closeMobile}>
+                    <button className="h-10 w-full bg-[#18181b] text-sm font-medium text-white">
+                      로그인
+                    </button>
+                  </a>
+                </div>
               )}
             </div>
           </div>
