@@ -48,7 +48,10 @@ export function getSessionCookieOptions(
   return {
     httpOnly: true,
     path: "/",
-    sameSite: secure ? "none" : "lax",
+    // The service is not embedded on external sites. Lax keeps the session
+    // available for normal top-level navigation (including OAuth redirects)
+    // without sending it with cross-site background requests.
+    sameSite: "lax",
     secure,
   };
 }

@@ -31,6 +31,6 @@ describe("getSessionCookieOptions", () => {
     } as never);
 
     expect(options.secure).toBe(true);
-    expect(options.sameSite).toBe("none");
+    expect(options.sameSite).toBe("lax");
   });
 });
