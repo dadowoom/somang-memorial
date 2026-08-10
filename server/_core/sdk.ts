@@ -18,6 +18,12 @@ import type {
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
 
+const LOCAL_SESSION_APP_ID = "somang-memorial";
+
+export function getSessionAppId(appId: string | undefined = ENV.appId) {
+  return appId || LOCAL_SESSION_APP_ID;
+}
+
 export type SessionPayload = {
   openId: string;
   appId: string;
@@ -171,7 +177,10 @@ class SDKServer {
     return this.signSession(
       {
         openId,
-        appId: ENV.appId,
+        // Local email/admin accounts do not use Manus OAuth, so production
+        // installations may not have VITE_APP_ID. Keep their signed sessions
+        // valid with a stable internal application identifier.
+        appId: getSessionAppId(),
         name: options.name || "",
       },
       options
@@ -214,7 +223,7 @@ class SDKServer {
 
       if (
         !isNonEmptyString(openId) ||
-        !isNonEmptyString(appId) ||
+        typeof appId !== "string" ||
         !isNonEmptyString(name)
       ) {
         console.warn("[Auth] Session payload missing required fields");
