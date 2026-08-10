@@ -1,31 +1,34 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
-import MemorialDemo from "./pages/MemorialDemo";
-import MemorialCreate from "./pages/MemorialCreate";
-import HomeWarm from "./pages/HomeWarm";
-import Letters from "./pages/Letters";
-import Login from "./pages/Login";
-import AdminMemorials from "./pages/AdminMemorials";
-import AdminOperations from "./pages/AdminOperations";
-import AdminUsers from "./pages/AdminUsers";
-import MemorialSearch from "./pages/MemorialSearch";
-import MemorialDark from "./pages/MemorialDark";
-import MemorialPublicDetail from "./pages/MemorialPublicDetail";
-import SomangHill from "./pages/SomangHill";
-import MemorialArchivePage from "./pages/MemorialArchivePage";
-import MemorialFamilyPage from "./pages/MemorialFamilyPage";
-import MemorialEdit from "./pages/MemorialEdit";
-import MyMemorials from "./pages/MyMemorials";
-import ParentFinder from "./pages/ParentFinder";
 import Kiosk from "./pages/Kiosk";
 import KioskMemorial from "./pages/KioskMemorial";
 import { KioskKeyboardProvider } from "./components/kiosk/KioskKeyboard";
+
+// Kiosk routes stay in the first download. Less frequently used web and admin
+// pages load only when opened, keeping the kiosk's first screen responsive.
+const Home = lazy(() => import("./pages/Home"));
+const MemorialDemo = lazy(() => import("./pages/MemorialDemo"));
+const MemorialCreate = lazy(() => import("./pages/MemorialCreate"));
+const HomeWarm = lazy(() => import("./pages/HomeWarm"));
+const Letters = lazy(() => import("./pages/Letters"));
+const Login = lazy(() => import("./pages/Login"));
+const AdminMemorials = lazy(() => import("./pages/AdminMemorials"));
+const AdminOperations = lazy(() => import("./pages/AdminOperations"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
+const MemorialSearch = lazy(() => import("./pages/MemorialSearch"));
+const MemorialDark = lazy(() => import("./pages/MemorialDark"));
+const MemorialPublicDetail = lazy(() => import("./pages/MemorialPublicDetail"));
+const SomangHill = lazy(() => import("./pages/SomangHill"));
+const MemorialArchivePage = lazy(() => import("./pages/MemorialArchivePage"));
+const MemorialFamilyPage = lazy(() => import("./pages/MemorialFamilyPage"));
+const MemorialEdit = lazy(() => import("./pages/MemorialEdit"));
+const MyMemorials = lazy(() => import("./pages/MyMemorials"));
+const ParentFinder = lazy(() => import("./pages/ParentFinder"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 function KioskIndexRoute() {
   return (
@@ -46,32 +49,42 @@ function KioskMemorialRoute() {
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/login"} component={Login} />
-      <Route path={"/kiosk/memorial/:slug"} component={KioskMemorialRoute} />
-      <Route path={"/kiosk"} component={KioskIndexRoute} />
-      <Route path={"/admin/operations"} component={AdminOperations} />
-      <Route path={"/admin/users"} component={AdminUsers} />
-      <Route path={"/admin"} component={AdminMemorials} />
-      <Route path={"/admin/memorials/:slug/edit"} component={MemorialEdit} />
-      <Route path={"/my/memorials"} component={MyMemorials} />
-      <Route path={"/my/find-parent"} component={ParentFinder} />
-      <Route path={"/my/memorials/:slug/edit"} component={MemorialEdit} />
-      <Route path={"/memorial/demo"} component={MemorialDemo} />
-      <Route path={"/memorial/create"} component={MemorialCreate} />
-      <Route path={"/memorial/warm"} component={HomeWarm} />
-      <Route path={"/letters"} component={Letters} />
-      <Route path={"/memorial/search"} component={MemorialSearch} />
-      <Route path={"/memorial/dark"} component={MemorialDark} />
-      <Route path={"/somang-hill"} component={SomangHill} />
-      <Route path={"/memorial/:slug/archive"} component={MemorialArchivePage} />
-      <Route path={"/memorial/:slug/family"} component={MemorialFamilyPage} />
-      <Route path={"/memorial/:slug"} component={MemorialPublicDetail} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<RouteLoading />}>
+      <Switch>
+        <Route path={"/"} component={Home} />
+        <Route path={"/login"} component={Login} />
+        <Route path={"/kiosk/memorial/:slug"} component={KioskMemorialRoute} />
+        <Route path={"/kiosk"} component={KioskIndexRoute} />
+        <Route path={"/admin/operations"} component={AdminOperations} />
+        <Route path={"/admin/users"} component={AdminUsers} />
+        <Route path={"/admin"} component={AdminMemorials} />
+        <Route path={"/admin/memorials/:slug/edit"} component={MemorialEdit} />
+        <Route path={"/my/memorials"} component={MyMemorials} />
+        <Route path={"/my/find-parent"} component={ParentFinder} />
+        <Route path={"/my/memorials/:slug/edit"} component={MemorialEdit} />
+        <Route path={"/memorial/demo"} component={MemorialDemo} />
+        <Route path={"/memorial/create"} component={MemorialCreate} />
+        <Route path={"/memorial/warm"} component={HomeWarm} />
+        <Route path={"/letters"} component={Letters} />
+        <Route path={"/memorial/search"} component={MemorialSearch} />
+        <Route path={"/memorial/dark"} component={MemorialDark} />
+        <Route path={"/somang-hill"} component={SomangHill} />
+        <Route path={"/memorial/:slug/archive"} component={MemorialArchivePage} />
+        <Route path={"/memorial/:slug/family"} component={MemorialFamilyPage} />
+        <Route path={"/memorial/:slug"} component={MemorialPublicDetail} />
+        <Route path={"/404"} component={NotFound} />
+        {/* Final fallback route */}
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
+  );
+}
+
+function RouteLoading() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#f8f7f4] text-sm text-[#616161]">
+      화면을 불러오는 중입니다.
+    </main>
   );
 }
 

@@ -8,6 +8,8 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { startReminderNotificationScheduler } from "./reminderScheduler";
+import { isDatabaseHealthy } from "../db";
+import { validateRuntimeConfig } from "./runtimeConfig";
 import { registerSecurityHeaders } from "./securityHeaders";
 import { serveStatic, setupVite } from "./vite";
 
@@ -31,13 +33,29 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  validateRuntimeConfig(process.env);
   const app = express();
+  if (process.env.TRUST_PROXY === "true") {
+    app.set("trust proxy", 1);
+  }
   const server = createServer(app);
   registerSecurityHeaders(app);
   // 20MB is the largest permitted source image; base64 encoding needs a
   // little additional room without allowing arbitrary 50MB request bodies.
   app.use(express.json({ limit: "30mb" }));
   app.use(express.urlencoded({ limit: "30mb", extended: true }));
+  app.get("/healthz", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).json({ status: "ok" });
+  });
+  app.get("/readyz", async (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    const databaseReady = await isDatabaseHealthy();
+    res.status(databaseReady ? 200 : 503).json({
+      status: databaseReady ? "ready" : "not_ready",
+      database: databaseReady ? "ok" : "unavailable",
+    });
+  });
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   // tRPC API
@@ -56,7 +74,10 @@ async function startServer() {
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  const port =
+    process.env.NODE_ENV === "production"
+      ? preferredPort
+      : await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);

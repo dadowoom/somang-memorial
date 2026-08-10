@@ -1,5 +1,5 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
-import { and, asc, desc, eq, isNull, like, or } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, like, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
@@ -591,6 +591,18 @@ export async function searchPublicMemorials(keyword: string) {
     )
     .orderBy(desc(memorials.createdAt))
     .limit(12);
+}
+
+export async function isDatabaseHealthy() {
+  const db = await getDb();
+  if (!db) return false;
+
+  try {
+    await db.execute(sql`SELECT 1`);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
