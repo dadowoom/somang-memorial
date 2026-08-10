@@ -14,7 +14,7 @@ import {
   getAdminMemorialById,
   getAdminMemorialBySlug,
   getEditableMemorialBySlug,
-  getUserByEmail,
+  getUserByLocalLogin,
   getMemorialFamilyRoomStatus,
   getMemorialAccessStatus,
   getSomangIntermentRecordForClaim,
@@ -30,6 +30,8 @@ import {
   listPublicMemorials,
   listRecentMemorialLetters,
   normalizeEmail,
+  isAdminLoginIdentifier,
+  normalizeLocalLoginIdentifier,
   searchKioskMemorials,
   searchPublicMemorials,
   searchKioskSomangIntermentRecords,
@@ -285,7 +287,17 @@ const authSignupInput = z.object({
 });
 
 const authLoginInput = z.object({
-  email: z.string().trim().email("이메일 형식으로 입력해주세요.").max(320),
+  identifier: z
+    .string()
+    .trim()
+    .min(1, "아이디 또는 이메일을 입력해주세요.")
+    .max(320)
+    .refine(
+      value =>
+        isAdminLoginIdentifier(value) ||
+        z.string().email().safeParse(value).success,
+      "아이디 또는 이메일 형식으로 입력해주세요."
+    ),
   password: z.string().min(1, "비밀번호를 입력해주세요.").max(100),
 });
 
@@ -447,7 +459,6 @@ export const appRouter = router({
         return {
           user: toPublicUser(created),
           approvalStatus: created.approvalStatus,
-          firstAdmin: created.role === "admin",
         };
       }),
     login: publicProcedure
@@ -455,11 +466,11 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const attemptKey = passwordAttemptKey(
           ctx.req,
-          `login:${normalizeEmail(input.email)}`
+          `login:${normalizeLocalLoginIdentifier(input.identifier)}`
         );
         ensurePasswordAttemptAllowed(attemptKey, loginAttemptLimiter);
 
-        const user = await getUserByEmail(input.email);
+        const user = await getUserByLocalLogin(input.identifier);
         if (
           !user?.passwordHash ||
           !verifyUserPassword(input.password, user.passwordHash)
@@ -487,7 +498,7 @@ export const appRouter = router({
         });
 
         const sessionToken = await sdk.createSessionToken(user.openId, {
-          name: user.name || normalizeEmail(input.email),
+          name: user.name || normalizeLocalLoginIdentifier(input.identifier),
           expiresInMs: ONE_YEAR_MS,
         });
         const cookieOptions = getSessionCookieOptions(ctx.req);

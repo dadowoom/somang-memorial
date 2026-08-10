@@ -139,6 +139,26 @@ export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+// The administrator signs in with the short, non-email ID "admin".  The
+// database still keeps an internal email-shaped value because regular member
+// accounts continue to use email addresses as their login identifier.
+export const ADMIN_LOGIN_ID = "admin";
+export const ADMIN_ACCOUNT_EMAIL = "admin@somang-memorial.invalid";
+
+export function normalizeLocalLoginIdentifier(identifier: string) {
+  return identifier.trim().toLowerCase();
+}
+
+export function isAdminLoginIdentifier(identifier: string) {
+  return normalizeLocalLoginIdentifier(identifier) === ADMIN_LOGIN_ID;
+}
+
+export function resolveLocalLoginEmail(identifier: string) {
+  return isAdminLoginIdentifier(identifier)
+    ? ADMIN_ACCOUNT_EMAIL
+    : normalizeEmail(identifier);
+}
+
 export function hashUserPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(password, salt, 64).toString("hex");
@@ -177,6 +197,10 @@ export async function getUserByEmail(email: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getUserByLocalLogin(identifier: string) {
+  return getUserByEmail(resolveLocalLoginEmail(identifier));
+}
+
 export async function hasAdminUser() {
   const db = await getDb();
   if (!db) {
@@ -210,7 +234,6 @@ export async function createLocalUser(input: {
     return null;
   }
 
-  const firstAdmin = !(await hasAdminUser());
   const now = new Date();
 
   await db.insert(users).values({
@@ -220,7 +243,9 @@ export async function createLocalUser(input: {
     phone: input.phone || null,
     passwordHash: hashUserPassword(input.password),
     loginMethod: "local",
-    role: firstAdmin ? "admin" : "user",
+    // Administrator access is created only through the server-side bootstrap
+    // command. Public sign-up must never become an administrator by timing.
+    role: "user",
     approvalStatus: "approved",
     approvedAt: now,
     lastSignedIn: now,
@@ -229,6 +254,41 @@ export async function createLocalUser(input: {
   const created = await getUserByEmail(email);
   if (!created) {
     throw new Error("Failed to create user");
+  }
+
+  return created;
+}
+
+export async function createBootstrapAdmin(password: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  if (await hasAdminUser()) {
+    throw new Error("An administrator account already exists");
+  }
+
+  if (await getUserByEmail(ADMIN_ACCOUNT_EMAIL)) {
+    throw new Error("The administrator login ID is already reserved");
+  }
+
+  const now = new Date();
+  await db.insert(users).values({
+    openId: createLocalOpenId(ADMIN_ACCOUNT_EMAIL),
+    name: "관리자",
+    email: ADMIN_ACCOUNT_EMAIL,
+    passwordHash: hashUserPassword(password),
+    loginMethod: "local",
+    role: "admin",
+    approvalStatus: "approved",
+    approvedAt: now,
+    lastSignedIn: now,
+  });
+
+  const created = await getUserByEmail(ADMIN_ACCOUNT_EMAIL);
+  if (!created) {
+    throw new Error("Failed to create the administrator account");
   }
 
   return created;

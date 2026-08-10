@@ -53,7 +53,7 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const [mode, setMode] = useState<Mode>(getInitialMode);
   const [message, setMessage] = useState("");
-  const [loginEmail, setLoginEmail] = useState("");
+  const [loginIdentifier, setLoginIdentifier] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
@@ -91,11 +91,11 @@ export default function Login() {
   const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage("");
-    const email = loginEmail.trim();
+    const identifier = loginIdentifier.trim();
 
     try {
       await loginMutation.mutateAsync({
-        email,
+        identifier,
         password: loginPassword,
       });
       await utils.auth.me.invalidate();
@@ -153,11 +153,7 @@ export default function Login() {
       });
 
       await utils.auth.me.invalidate();
-      setMessage(
-        result.firstAdmin
-          ? "최초 관리자 계정으로 가입되었습니다."
-          : "가입이 완료되었습니다."
-      );
+      setMessage("가입이 완료되었습니다.");
       setLocation(redirectPath);
     } catch (error) {
       setMessage(
@@ -234,18 +230,18 @@ export default function Login() {
                       로그인하면 작성 화면으로 바로 이동합니다.
                     </div>
                   )}
-                  <Field label="이메일" required>
+                  <Field label="아이디 또는 이메일" required>
                     <div className="relative">
                       <input
-                        type="email"
-                        value={loginEmail}
-                        onChange={event => setLoginEmail(event.target.value)}
+                        type="text"
+                        value={loginIdentifier}
+                        onChange={event => setLoginIdentifier(event.target.value)}
                         className={`${inputClass} pr-9`}
-                        placeholder="name@example.com"
-                        autoComplete="email"
+                        placeholder="admin 또는 name@example.com"
+                        autoComplete="username"
                         required
                       />
-                      <Mail className="pointer-events-none absolute right-0 top-3.5 h-4 w-4 text-[#777]" />
+                      <User className="pointer-events-none absolute right-0 top-3.5 h-4 w-4 text-[#777]" />
                     </div>
                   </Field>
                   <Field label="비밀번호" required>
