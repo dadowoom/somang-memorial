@@ -33,7 +33,7 @@ export default function MemorialLettersSection({
     onSuccess: async () => {
       setAuthor("");
       setContent("");
-      setMessage("편지가 남겨졌습니다.");
+      setMessage("편지가 접수되었습니다. 관리자 확인 후 공개됩니다.");
       await Promise.all([
         utils.letter.byMemorial.invalidate(queryInput),
         utils.letter.recent.invalidate(),

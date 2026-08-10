@@ -180,7 +180,10 @@ export default function AdminMemorials() {
                         {memorial.church}
                       </p>
 
-                      <VisibilityBadge visibility={memorial.visibility} />
+                      <div className="flex flex-wrap gap-2">
+                        <VisibilityBadge visibility={memorial.visibility} />
+                        <MemorialStatusBadge status={memorial.status} />
+                      </div>
 
                       <p className="text-sm text-[#616161]">
                         {formatDate(memorial.updatedAt)}
@@ -250,6 +253,21 @@ function VisibilityBadge({ visibility }: { visibility: string }) {
     <span className="inline-flex w-fit items-center gap-1 border border-[#dbdad7] px-2 py-1 text-xs text-[#616161]">
       {privateMemorial && <LockKeyhole className="h-3 w-3" />}
       {privateMemorial ? "비공개" : "전체 공개"}
+    </span>
+  );
+}
+
+function MemorialStatusBadge({ status }: { status: string }) {
+  const label =
+    status === "published"
+      ? "게시 중"
+      : status === "pending"
+        ? "검토 대기"
+        : "비공개";
+
+  return (
+    <span className="inline-flex w-fit items-center border border-[#dbdad7] bg-[#f8f7f4] px-2 py-1 text-xs text-[#616161]">
+      {label}
     </span>
   );
 }

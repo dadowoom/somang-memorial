@@ -30,6 +30,7 @@ import {
   listPublicMemorials,
   listRecentMemorialLetters,
   normalizeEmail,
+  searchKioskMemorials,
   searchPublicMemorials,
   searchKioskSomangIntermentRecords,
   searchSomangIntermentRecords,
@@ -81,9 +82,33 @@ const kioskIntermentSearchLimiter = createPasswordAttemptLimiter({
   failureWindowMs: 10 * 60 * 1000,
   blockMs: 10 * 60 * 1000,
 });
+const kioskMemorialSearchLimiter = createPasswordAttemptLimiter({
+  failureLimit: 40,
+  failureWindowMs: 10 * 60 * 1000,
+  blockMs: 10 * 60 * 1000,
+});
+const signupLimiter = createPasswordAttemptLimiter({
+  failureLimit: 8,
+  failureWindowMs: 15 * 60 * 1000,
+  blockMs: 15 * 60 * 1000,
+});
+const loginAttemptLimiter = createPasswordAttemptLimiter();
+const letterSubmissionLimiter = createPasswordAttemptLimiter({
+  failureLimit: 6,
+  failureWindowMs: 10 * 60 * 1000,
+  blockMs: 10 * 60 * 1000,
+});
+const reminderSubscriptionLimiter = createPasswordAttemptLimiter({
+  failureLimit: 3,
+  failureWindowMs: 24 * 60 * 60 * 1000,
+  blockMs: 24 * 60 * 60 * 1000,
+});
 
-function ensurePasswordAttemptAllowed(key: string) {
-  const result = passwordAttemptLimiter.check(key);
+function ensurePasswordAttemptAllowed(
+  key: string,
+  limiter = passwordAttemptLimiter
+) {
+  const result = limiter.check(key);
   if (!result.allowed) {
     throw new TRPCError({
       code: "TOO_MANY_REQUESTS",
@@ -114,6 +139,31 @@ function consumeKioskIntermentSearchAttempt(key: string) {
   }
 
   kioskIntermentSearchLimiter.recordFailure(key);
+}
+
+function consumeKioskMemorialSearchAttempt(key: string) {
+  const result = kioskMemorialSearchLimiter.check(key);
+  if (!result.allowed) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "보호를 위해 잠시 뒤 다시 검색해 주세요.",
+    });
+  }
+
+  kioskMemorialSearchLimiter.recordFailure(key);
+}
+
+function consumePublicSubmissionAttempt(
+  limiter: ReturnType<typeof createPasswordAttemptLimiter>,
+  key: string,
+  message = "보호를 위해 잠시 뒤 다시 시도해 주세요."
+) {
+  const result = limiter.check(key);
+  if (!result.allowed) {
+    throw new TRPCError({ code: "TOO_MANY_REQUESTS", message });
+  }
+
+  limiter.recordFailure(key);
 }
 
 const memorialCreateInput = z.object({
@@ -364,6 +414,10 @@ export const appRouter = router({
     signup: publicProcedure
       .input(authSignupInput)
       .mutation(async ({ ctx, input }) => {
+        consumePublicSubmissionAttempt(
+          signupLimiter,
+          passwordAttemptKey(ctx.req, "signup")
+        );
         const created = await createLocalUser({
           name: input.name,
           email: input.email,
@@ -399,11 +453,18 @@ export const appRouter = router({
     login: publicProcedure
       .input(authLoginInput)
       .mutation(async ({ ctx, input }) => {
+        const attemptKey = passwordAttemptKey(
+          ctx.req,
+          `login:${normalizeEmail(input.email)}`
+        );
+        ensurePasswordAttemptAllowed(attemptKey, loginAttemptLimiter);
+
         const user = await getUserByEmail(input.email);
         if (
           !user?.passwordHash ||
           !verifyUserPassword(input.password, user.passwordHash)
         ) {
+          loginAttemptLimiter.recordFailure(attemptKey);
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "이메일 또는 비밀번호가 맞지 않습니다.",
@@ -411,6 +472,7 @@ export const appRouter = router({
         }
 
         if (user.approvalStatus === "rejected") {
+          loginAttemptLimiter.recordFailure(attemptKey);
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "비활성화된 계정입니다.",
@@ -418,6 +480,7 @@ export const appRouter = router({
         }
 
         const signedInAt = new Date();
+        loginAttemptLimiter.recordSuccess(attemptKey);
         await upsertUser({
           openId: user.openId,
           lastSignedIn: signedInAt,
@@ -450,6 +513,21 @@ export const appRouter = router({
   }),
 
   kiosk: router({
+    memorialSearch: publicProcedure
+      .input(z.object({ keyword: z.string().trim().min(2).max(80) }))
+      .query(async ({ ctx, input }) => {
+        consumeKioskMemorialSearchAttempt(
+          passwordAttemptKey(ctx.req, "kiosk-memorial-search")
+        );
+
+        const memorials = await searchKioskMemorials(input.keyword);
+        return memorials.map(memorial => ({
+          ...memorial,
+          isPrivate: memorial.visibility === "private",
+          href: `/kiosk/memorial/${memorial.slug}`,
+        }));
+      }),
+
     intermentSearch: publicProcedure
       .input(z.object({ keyword: z.string().trim().min(2).max(80) }))
       .query(async ({ ctx, input }) => {
@@ -774,7 +852,14 @@ export const appRouter = router({
     create: protectedProcedure
       .input(memorialCreateInput)
       .mutation(async ({ ctx, input }) => {
-        if (input.visibility === "private" && !input.accessPassword?.trim()) {
+        const isAdmin = ctx.user.role === "admin";
+        const visibility = isAdmin ? input.visibility : "private";
+
+        if (
+          isAdmin &&
+          visibility === "private" &&
+          !input.accessPassword?.trim()
+        ) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "비공개 추모관은 입장 비밀번호가 필요합니다.",
@@ -802,12 +887,14 @@ export const appRouter = router({
           servicePlace: input.servicePlace || null,
           serviceTime: input.serviceTime || null,
           memorialDay: input.memorialDay || null,
-          visibility: input.visibility,
+          visibility,
           accessPasswordHash:
-            input.visibility === "private" && input.accessPassword
+            visibility === "private" && input.accessPassword
               ? hashMemorialAccessPassword(input.accessPassword)
               : null,
-          status: "published",
+          // Self-service memorials stay private until an administrator reviews
+          // and publishes them. Existing published memorials are untouched.
+          status: isAdmin ? "published" : "pending",
           timelineJson: JSON.stringify(timeline),
           managerMemo: input.managerMemo || null,
         });
@@ -823,7 +910,7 @@ export const appRouter = router({
 
     update: adminProcedure
       .input(memorialUpdateInput)
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         const existing = await getAdminMemorialById(input.id);
         if (!existing) {
           throw new TRPCError({
@@ -832,10 +919,17 @@ export const appRouter = router({
           });
         }
 
-        await updateMemorial(
-          input.id,
-          buildMemorialUpdateData(input, existing)
-        );
+        const updateData = buildMemorialUpdateData(input, existing);
+        await updateMemorial(input.id, updateData);
+        await createAdminAuditLog({
+          adminUserId: ctx.user.id,
+          action: "memorial.update",
+          beforeValue: `${existing.status}/${existing.visibility}`,
+          afterValue: `${updateData.status ?? existing.status}/${
+            updateData.visibility ?? existing.visibility
+          }`,
+          note: `${existing.name} (${existing.slug})`,
+        });
         return { success: true };
       }),
 
@@ -860,9 +954,27 @@ export const appRouter = router({
           });
         }
 
+        if (ctx.user.role !== "admin" && existing.status === "published") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "게시 중인 추모관의 수정은 관리자 확인이 필요합니다. 관리자에게 수정 요청을 남겨 주세요.",
+          });
+        }
+
+        const editableInput =
+          ctx.user.role === "admin"
+            ? input
+            : {
+                ...input,
+                visibility: undefined,
+                status: undefined,
+                managerMemo: undefined,
+              };
+
         await updateMemorial(
           input.id,
-          buildMemorialUpdateData(input, existing)
+          buildMemorialUpdateData(editableInput, existing)
         );
         return { success: true };
       }),
@@ -916,6 +1028,11 @@ export const appRouter = router({
     create: publicProcedure
       .input(letterCreateInput)
       .mutation(async ({ ctx, input }) => {
+        consumePublicSubmissionAttempt(
+          letterSubmissionLimiter,
+          passwordAttemptKey(ctx.req, "letter-create")
+        );
+
         if (input.memorialSlug) {
           const memorial = await getPublicMemorialBySlug(input.memorialSlug);
           if (!memorial) {
@@ -1112,7 +1229,13 @@ export const appRouter = router({
 
     subscribe: publicProcedure
       .input(reminderSubscribeInput)
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        consumePublicSubmissionAttempt(
+          reminderSubscriptionLimiter,
+          passwordAttemptKey(ctx.req, "reminder-subscribe"),
+          "문자 알림 요청이 너무 많습니다. 내일 다시 시도해 주세요."
+        );
+
         const subscribed = await createMemorialReminderSubscription({
           memorialSlug: input.memorialSlug,
           phone: input.phone,

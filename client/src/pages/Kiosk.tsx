@@ -70,7 +70,7 @@ export default function Kiosk() {
     networkMode: "always",
   });
   const keyword = submittedKeyword.trim();
-  const memorialsQuery = trpc.memorial.search.useQuery(
+  const memorialsQuery = trpc.kiosk.memorialSearch.useQuery(
     { keyword },
     {
       enabled: keyword.length >= 2,

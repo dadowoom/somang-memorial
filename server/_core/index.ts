@@ -8,6 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { startReminderNotificationScheduler } from "./reminderScheduler";
+import { registerSecurityHeaders } from "./securityHeaders";
 import { serveStatic, setupVite } from "./vite";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -32,9 +33,11 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  registerSecurityHeaders(app);
+  // 20MB is the largest permitted source image; base64 encoding needs a
+  // little additional room without allowing arbitrary 50MB request bodies.
+  app.use(express.json({ limit: "30mb" }));
+  app.use(express.urlencoded({ limit: "30mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   // tRPC API
