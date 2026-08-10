@@ -70,9 +70,10 @@ async function main() {
 
   await createBootstrapAdmin(password);
   process.stdout.write(`관리자 계정 '${ADMIN_LOGIN_ID}'을 만들었습니다.\n`);
+  process.exit(0);
 }
 
 main().catch(error => {
   process.stderr.write(`${error instanceof Error ? error.message : "관리자 계정 생성에 실패했습니다."}\n`);
-  process.exitCode = 1;
+  process.exit(1);
 });
