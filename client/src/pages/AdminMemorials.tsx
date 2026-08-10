@@ -37,7 +37,14 @@ type AdminMemorial = {
   editHref: string;
 };
 
-type MemorialStatusFilter = "all" | "pending" | "published" | "private";
+type MemorialStatus = "pending" | "published" | "private";
+type MemorialStatusFilter = "all" | MemorialStatus;
+
+const statusLabels: Record<MemorialStatus, string> = {
+  pending: "검토 대기",
+  published: "게시 중",
+  private: "비공개 보관",
+};
 
 type AdminLetter = { status: "published" | "hidden" };
 type AdminUser = { approvalStatus: "pending" | "approved" | "rejected" };
@@ -50,6 +57,8 @@ export default function AdminMemorials() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] =
     useState<MemorialStatusFilter>("all");
+  const [statusError, setStatusError] = useState("");
+  const utils = trpc.useUtils();
   const memorialsQuery = trpc.memorial.adminList.useQuery(undefined, {
     enabled: user?.role === "admin",
   });
@@ -67,6 +76,19 @@ export default function AdminMemorials() {
   );
   const smsStatusQuery = trpc.reminder.smsStatus.useQuery(undefined, {
     enabled: user?.role === "admin",
+  });
+  // Publishing from the list keeps the daily review in one screen. Only the
+  // publication status is sent, so visibility and the access password stay
+  // exactly as the family set them.
+  const updateStatus = trpc.memorial.update.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.memorial.adminList.invalidate(),
+        utils.memorial.list.invalidate(),
+        utils.memorial.search.invalidate(),
+      ]);
+    },
+    onError: error => setStatusError(error.message),
   });
   const memorials = (memorialsQuery.data ?? []) as AdminMemorial[];
   const letters = (lettersQuery.data ?? []) as AdminLetter[];
@@ -111,6 +133,27 @@ export default function AdminMemorials() {
   const activeReminders = reminders.filter(
     reminder => reminder.status === "active"
   ).length;
+
+  function changeStatus(memorial: AdminMemorial, nextStatus: MemorialStatus) {
+    if (nextStatus === memorial.status) return;
+
+    // A published memorial still stays out of public search while its
+    // visibility is private, so the administrator is told before confirming.
+    const privateNotice =
+      nextStatus === "published" && memorial.visibility === "private"
+        ? "\n\n공개 범위가 '비공개'이므로 일반 검색에는 나타나지 않습니다. 검색에도 보이게 하려면 수정 화면에서 공개 범위를 함께 바꿔 주세요."
+        : "";
+
+    if (
+      !window.confirm(
+        `${memorial.name} ${memorial.role} 추모관을 '${statusLabels[nextStatus]}'(으)로 바꾸시겠습니까?${privateNotice}`
+      )
+    )
+      return;
+
+    setStatusError("");
+    updateStatus.mutate({ id: memorial.id, status: nextStatus });
+  }
 
   if (loading) {
     return <StateScreen text="관리자 권한을 확인하고 있습니다." />;
@@ -290,6 +333,15 @@ export default function AdminMemorials() {
               </Link>
             </div>
 
+            {statusError && (
+              <p
+                role="alert"
+                className="mb-4 border border-[#e3c9c9] bg-[#fbf5f5] px-4 py-3 text-sm leading-6 text-[#9f2a2a]"
+              >
+                게시 상태를 바꾸지 못했습니다. {statusError}
+              </p>
+            )}
+
             {memorialsQuery.isLoading ? (
               <Panel text="추모관 목록을 불러오고 있습니다." />
             ) : memorialsQuery.isError ? (
@@ -298,7 +350,7 @@ export default function AdminMemorials() {
               <Panel text="조건에 맞는 추모관이 없습니다." />
             ) : (
               <div className="overflow-hidden border-y border-[#dbdad7]">
-                <div className="hidden grid-cols-[150px_1.1fr_0.9fr_0.8fr_0.8fr_178px] border-b border-[#dbdad7] bg-[#f8f7f4] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
+                <div className="hidden grid-cols-[150px_1.1fr_0.9fr_0.8fr_0.8fr_300px] border-b border-[#dbdad7] bg-[#f8f7f4] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
                   <span>Year</span>
                   <span>Name</span>
                   <span>Church</span>
@@ -311,7 +363,7 @@ export default function AdminMemorials() {
                   {filteredMemorials.map(memorial => (
                     <article
                       key={memorial.id}
-                      className="grid gap-4 bg-white px-4 py-5 transition-colors hover:bg-[#faf9f6] lg:grid-cols-[150px_1.1fr_0.9fr_0.8fr_0.8fr_178px] lg:items-center lg:px-5"
+                      className="grid gap-4 bg-white px-4 py-5 transition-colors hover:bg-[#faf9f6] lg:grid-cols-[150px_1.1fr_0.9fr_0.8fr_0.8fr_300px] lg:items-center lg:px-5"
                     >
                       <p className="text-xs tracking-[0.1em] text-[#616161] md:text-sm">
                         {memorial.birthDate} - {memorial.deathDate}
@@ -342,7 +394,30 @@ export default function AdminMemorials() {
                         {formatDate(memorial.updatedAt)}
                       </p>
 
-                      <div className="flex flex-wrap gap-2 lg:justify-end">
+                      <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                        <label
+                          className="sr-only"
+                          htmlFor={`memorial-status-${memorial.id}`}
+                        >
+                          {memorial.name} 게시 상태
+                        </label>
+                        <select
+                          id={`memorial-status-${memorial.id}`}
+                          value={memorial.status}
+                          disabled={updateStatus.isPending}
+                          onChange={event =>
+                            changeStatus(
+                              memorial,
+                              event.target.value as MemorialStatus
+                            )
+                          }
+                          className="h-10 border border-[#dbdad7] bg-white px-3 text-sm text-[#121212] outline-none focus:border-[#18181b] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <option value="pending">검토 대기</option>
+                          <option value="published">게시 중</option>
+                          <option value="private">비공개 보관</option>
+                        </select>
+
                         <Link href={memorial.editHref}>
                           <button className="inline-flex h-10 items-center justify-center gap-2 border border-[#18181b] px-4 text-sm text-[#121212] transition-colors hover:bg-[#18181b] hover:text-white">
                             <Edit3 className="h-4 w-4" strokeWidth={1.7} />
@@ -411,12 +486,7 @@ function VisibilityBadge({ visibility }: { visibility: string }) {
 }
 
 function MemorialStatusBadge({ status }: { status: string }) {
-  const label =
-    status === "published"
-      ? "게시 중"
-      : status === "pending"
-        ? "검토 대기"
-        : "비공개";
+  const label = statusLabels[status as MemorialStatus] ?? "비공개 보관";
 
   return (
     <span className="inline-flex w-fit items-center border border-[#dbdad7] bg-[#f8f7f4] px-2 py-1 text-xs text-[#616161]">
