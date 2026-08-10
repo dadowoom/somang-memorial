@@ -301,10 +301,14 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
+    // Only record the sign-in time here. This runs on every authenticated
+    // request, so writing approvalStatus would silently revert an account an
+    // administrator has rejected back to "approved". Approval is set by account
+    // creation (the column defaults to "approved") and changed only by an
+    // administrator. The owner account still becomes admin/approved through the
+    // dedicated handling inside upsertUser.
     await db.upsertUser({
       openId: user.openId,
-      approvalStatus: "approved",
-      approvedAt: user.approvedAt ?? signedInAt,
       lastSignedIn: signedInAt,
     });
 
