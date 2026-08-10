@@ -1,4 +1,5 @@
 import "dotenv/config";
+import compression from "compression";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
@@ -40,6 +41,9 @@ async function startServer() {
   }
   const server = createServer(app);
   registerSecurityHeaders(app);
+  // Compress text responses (HTML, JS, CSS, JSON). Already-compressed images
+  // are skipped by the middleware's default content-type filter.
+  app.use(compression());
   // 20MB is the largest permitted source image; base64 encoding needs a
   // little additional room without allowing arbitrary 50MB request bodies.
   app.use(express.json({ limit: "30mb" }));
