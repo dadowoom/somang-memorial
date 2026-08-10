@@ -11,6 +11,7 @@ import { startReminderNotificationScheduler } from "./reminderScheduler";
 import { isDatabaseHealthy } from "../db";
 import { validateRuntimeConfig } from "./runtimeConfig";
 import { registerSecurityHeaders } from "./securityHeaders";
+import { registerErrorHandler, registerRequestLogging } from "./requestLogging";
 import { serveStatic, setupVite } from "./vite";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -40,6 +41,7 @@ async function startServer() {
   }
   const server = createServer(app);
   registerSecurityHeaders(app);
+  registerRequestLogging(app);
   // 20MB is the largest permitted source image; base64 encoding needs a
   // little additional room without allowing arbitrary 50MB request bodies.
   app.use(express.json({ limit: "30mb" }));
@@ -72,6 +74,9 @@ async function startServer() {
   } else {
     serveStatic(app);
   }
+
+  // Registered last so it catches errors that bubble up from any route above.
+  registerErrorHandler(app);
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port =
