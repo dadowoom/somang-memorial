@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import AdminNavigation from "@/components/admin/AdminNavigation";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { downloadCsv } from "@/lib/csvExport";
@@ -121,7 +122,8 @@ export default function AdminOperations() {
     <div className="min-h-screen bg-white text-[#121212]">
       <Navbar />
 
-      <main className="pt-16">
+      <main className="pt-16 lg:pl-60">
+        <AdminNavigation />
         <section className="border-b border-[#dbdad7]">
           <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.85fr)] lg:items-end">
             <div>
@@ -255,12 +257,20 @@ export default function AdminOperations() {
                           <button
                             type="button"
                             disabled={updateLetter.isPending}
-                            onClick={() =>
+                            onClick={() => {
+                              const nextStatus = hidden ? "published" : "hidden";
+                              const action = hidden ? "공개" : "숨김";
+                              if (
+                                !window.confirm(
+                                  `${letter.memorialName} 추모관의 편지를 ${action}하시겠습니까?`
+                                )
+                              )
+                                return;
                               updateLetter.mutate({
                                 id: letter.id,
-                                status: hidden ? "published" : "hidden",
-                              })
-                            }
+                                status: nextStatus,
+                              });
+                            }}
                             className="inline-flex h-10 items-center justify-center gap-2 border border-[#18181b] px-4 text-sm text-[#121212] transition-colors hover:bg-[#18181b] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {hidden ? (
@@ -317,6 +327,12 @@ export default function AdminOperations() {
                     onSubmit={event => {
                       event.preventDefault();
                       setTestMessage("");
+                      if (
+                        !window.confirm(
+                          `${testPhone} 번호로 테스트 문자를 발송하시겠습니까?`
+                        )
+                      )
+                        return;
                       testSend.mutate({ phone: testPhone });
                     }}
                   >
@@ -411,12 +427,22 @@ export default function AdminOperations() {
                           <button
                             type="button"
                             disabled={updateReminder.isPending}
-                            onClick={() =>
+                            onClick={() => {
+                              const nextStatus = active ? "cancelled" : "active";
+                              const action = active
+                                ? "추도일 알림을 취소"
+                                : "추도일 알림을 다시 활성화";
+                              if (
+                                !window.confirm(
+                                  `${reminder.memorialName}의 ${action}하시겠습니까?`
+                                )
+                              )
+                                return;
                               updateReminder.mutate({
                                 id: reminder.id,
-                                status: active ? "cancelled" : "active",
-                              })
-                            }
+                                status: nextStatus,
+                              });
+                            }}
                             className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 border border-[#dbdad7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2] disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {active ? (
