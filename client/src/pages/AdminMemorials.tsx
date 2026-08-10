@@ -33,11 +33,15 @@ type AdminMemorial = {
   editHref: string;
 };
 
+type MemorialStatusFilter = "all" | "pending" | "published" | "private";
+
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 
 export default function AdminMemorials() {
   const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] =
+    useState<MemorialStatusFilter>("all");
   const memorialsQuery = trpc.memorial.adminList.useQuery(undefined, {
     enabled: user?.role === "admin",
   });
@@ -45,27 +49,34 @@ export default function AdminMemorials() {
   const keyword = query.trim().toLowerCase();
 
   const filteredMemorials = useMemo(() => {
-    if (!keyword) return memorials;
-    return memorials.filter(memorial =>
-      [
-        memorial.name,
-        memorial.role,
-        memorial.church,
-        memorial.slug,
-        memorial.familyContact ?? "",
-        memorial.familyPhone ?? "",
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(keyword)
-    );
-  }, [keyword, memorials]);
+    return memorials.filter(memorial => {
+      const matchesStatus =
+        statusFilter === "all" || memorial.status === statusFilter;
+      const matchesKeyword =
+        !keyword ||
+        [
+          memorial.name,
+          memorial.role,
+          memorial.church,
+          memorial.slug,
+          memorial.familyContact ?? "",
+          memorial.familyPhone ?? "",
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(keyword);
+      return matchesStatus && matchesKeyword;
+    });
+  }, [keyword, memorials, statusFilter]);
 
-  const publicCount = memorials.filter(
-    memorial => memorial.visibility === "public"
+  const publishedCount = memorials.filter(
+    memorial => memorial.status === "published"
+  ).length;
+  const pendingCount = memorials.filter(
+    memorial => memorial.status === "pending"
   ).length;
   const privateCount = memorials.filter(
-    memorial => memorial.visibility === "private"
+    memorial => memorial.status === "private"
   ).length;
 
   if (loading) {
@@ -99,17 +110,18 @@ export default function AdminMemorials() {
               </p>
             </div>
 
-            <div className="grid gap-px border border-[#dbdad7] bg-[#dbdad7] sm:grid-cols-3">
+            <div className="grid gap-px border border-[#dbdad7] bg-[#dbdad7] sm:grid-cols-4">
               <Stat label="전체" value={`${memorials.length}`} />
-              <Stat label="전체 공개" value={`${publicCount}`} />
-              <Stat label="비공개" value={`${privateCount}`} />
+              <Stat label="검토 대기" value={`${pendingCount}`} />
+              <Stat label="게시 중" value={`${publishedCount}`} />
+              <Stat label="비공개 보관" value={`${privateCount}`} />
             </div>
           </div>
         </section>
 
         <section className="py-8 md:py-12">
           <div className="container">
-            <div className="mb-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center">
+            <div className="mb-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-center">
               <label className="flex min-w-0 items-center gap-3 border border-[#dbdad7] px-4 py-3">
                 <Search className="h-4 w-4 shrink-0 text-[#616161]" />
                 <input
@@ -119,6 +131,20 @@ export default function AdminMemorials() {
                   className="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#9a9a9a]"
                 />
               </label>
+
+              <select
+                aria-label="게시 상태 필터"
+                value={statusFilter}
+                onChange={event =>
+                  setStatusFilter(event.target.value as MemorialStatusFilter)
+                }
+                className="h-12 border border-[#dbdad7] bg-white px-4 text-sm text-[#121212] outline-none focus:border-[#18181b]"
+              >
+                <option value="all">모든 상태</option>
+                <option value="pending">검토 대기</option>
+                <option value="published">게시 중</option>
+                <option value="private">비공개 보관</option>
+              </select>
 
               <button
                 type="button"
