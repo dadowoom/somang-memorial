@@ -1,3 +1,4 @@
+import "dotenv/config";
 import {
   ADMIN_LOGIN_ID,
   createBootstrapAdmin,
