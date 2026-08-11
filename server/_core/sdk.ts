@@ -301,14 +301,17 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
+    // Approval is controlled by administrators. A routine authenticated request
+    // must never reactivate a user whose account has been disabled.
     await db.upsertUser({
       openId: user.openId,
-      approvalStatus: "approved",
-      approvedAt: user.approvedAt ?? signedInAt,
       lastSignedIn: signedInAt,
     });
 
-    return user;
+    return {
+      ...user,
+      lastSignedIn: signedInAt,
+    };
   }
 }
 
