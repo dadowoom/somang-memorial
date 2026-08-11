@@ -10,16 +10,13 @@ import { KioskKeyboardProvider } from "./components/kiosk/KioskKeyboard";
 // Kiosk routes stay in the first download. Less frequently used web and admin
 // pages load only when opened, keeping the kiosk's first screen responsive.
 const Home = lazy(() => import("./pages/Home"));
-const MemorialDemo = lazy(() => import("./pages/MemorialDemo"));
 const MemorialCreate = lazy(() => import("./pages/MemorialCreate"));
-const HomeWarm = lazy(() => import("./pages/HomeWarm"));
 const Letters = lazy(() => import("./pages/Letters"));
 const Login = lazy(() => import("./pages/Login"));
 const AdminMemorials = lazy(() => import("./pages/AdminMemorials"));
 const AdminOperations = lazy(() => import("./pages/AdminOperations"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const MemorialSearch = lazy(() => import("./pages/MemorialSearch"));
-const MemorialDark = lazy(() => import("./pages/MemorialDark"));
 const MemorialPublicDetail = lazy(() => import("./pages/MemorialPublicDetail"));
 const SomangHill = lazy(() => import("./pages/SomangHill"));
 const MemorialArchivePage = lazy(() => import("./pages/MemorialArchivePage"));
@@ -62,12 +59,9 @@ function Router() {
         <Route path={"/my/memorials"} component={MyMemorials} />
         <Route path={"/my/find-parent"} component={ParentFinder} />
         <Route path={"/my/memorials/:slug/edit"} component={MemorialEdit} />
-        <Route path={"/memorial/demo"} component={MemorialDemo} />
         <Route path={"/memorial/create"} component={MemorialCreate} />
-        <Route path={"/memorial/warm"} component={HomeWarm} />
         <Route path={"/letters"} component={Letters} />
         <Route path={"/memorial/search"} component={MemorialSearch} />
-        <Route path={"/memorial/dark"} component={MemorialDark} />
         <Route path={"/somang-hill"} component={SomangHill} />
         <Route path={"/memorial/:slug/archive"} component={MemorialArchivePage} />
         <Route path={"/memorial/:slug/family"} component={MemorialFamilyPage} />
