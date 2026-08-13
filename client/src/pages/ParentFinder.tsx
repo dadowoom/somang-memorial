@@ -18,16 +18,24 @@ type ParentSearchRecord = {
   id: number;
   name: string;
   role: string | null;
+  affiliation: string | null;
   birthDate: string;
   deathDate: string;
-  burialPlace: string;
-  burialDate: string | null;
   memorial: {
     state: "owned" | "public" | "restricted";
     href: string | null;
     editHref: string | null;
   } | null;
 };
+
+// Interment records store 0000-00-00 (or an empty value) when the birth date is
+// unknown. Show a plain label instead of the placeholder in that case.
+function formatBirthDate(value: string) {
+  if (!value || value.startsWith("0000") || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return "정보 없음";
+  }
+  return value;
+}
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 const inputClass =
@@ -49,8 +57,8 @@ export default function ParentFinder() {
     event.preventDefault();
     const normalizedName = name.trim();
 
-    if (normalizedName.length < 2 || !birthDate) {
-      setNotice("부모님 성함과 생년월일을 모두 입력해 주세요.");
+    if (normalizedName.length < 2) {
+      setNotice("부모님 성함을 두 글자 이상 입력해 주세요.");
       return;
     }
 
@@ -60,7 +68,7 @@ export default function ParentFinder() {
       setHasSearched(false);
       const found = await searchMutation.mutateAsync({
         name: normalizedName,
-        birthDate,
+        birthDate: birthDate || undefined,
       });
       setRecords(found as ParentSearchRecord[]);
       setHasSearched(true);
@@ -84,8 +92,8 @@ export default function ParentFinder() {
       setNotice("");
       const result = await createMutation.mutateAsync({
         recordId: record.id,
-        name: name.trim(),
-        birthDate,
+        name: record.name,
+        birthDate: birthDate || undefined,
         familyConfirmation: true,
       });
 
@@ -161,8 +169,8 @@ export default function ParentFinder() {
                 가족 확인 후 시작합니다
               </p>
               <p className="mt-2 text-xs leading-5 text-[#616161]">
-                검색 결과는 성함과 생년월일이 모두 맞을 때만 보여드립니다.
-                전화번호와 연락처는 사용하지 않습니다.
+                성함만으로 찾을 수 있으며, 생년월일을 넣으면 더 정확히 좁혀
+                집니다. 전화번호와 연락처는 사용하지 않습니다.
               </p>
             </aside>
           </div>
@@ -190,7 +198,7 @@ export default function ParentFinder() {
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-xs font-medium text-[#616161]">
-                    생년월일
+                    생년월일 (선택)
                   </span>
                   <input
                     type="date"
@@ -209,8 +217,8 @@ export default function ParentFinder() {
                 </button>
               </div>
               <p className="mt-4 text-xs leading-5 text-[#777]">
-                생년월일 정보가 없는 분은 이 첫 검색 기능에서는 찾을 수
-                없습니다.
+                성함이 같은 분이 여러 명이면 소천일자로 우리 부모님을 확인해
+                주세요.
               </p>
             </form>
 
@@ -226,7 +234,7 @@ export default function ParentFinder() {
                   일치하는 소망동산 안장 기록을 찾지 못했습니다.
                 </p>
                 <p className="mt-2 text-xs leading-5 text-[#777]">
-                  성함과 생년월일을 다시 확인해 주세요.
+                  성함을 다시 확인해 주세요.
                 </p>
               </div>
             )}
@@ -271,23 +279,18 @@ export default function ParentFinder() {
                           <div className="mt-5 grid gap-3 text-sm text-[#444] sm:grid-cols-2">
                             <Meta
                               icon={<CalendarDays className="h-4 w-4" />}
-                              label="생년월일"
-                              value={record.birthDate}
-                            />
-                            <Meta
-                              icon={<CalendarDays className="h-4 w-4" />}
                               label="소천일자"
                               value={record.deathDate}
                             />
                             <Meta
-                              icon={<MapPin className="h-4 w-4" />}
-                              label="장지"
-                              value={record.burialPlace}
+                              icon={<CalendarDays className="h-4 w-4" />}
+                              label="생년월일"
+                              value={formatBirthDate(record.birthDate)}
                             />
                             <Meta
-                              icon={<CalendarDays className="h-4 w-4" />}
-                              label="안장일자"
-                              value={record.burialDate || "기록 없음"}
+                              icon={<MapPin className="h-4 w-4" />}
+                              label="소속"
+                              value={record.affiliation || "정보 없음"}
                             />
                           </div>
                         </div>

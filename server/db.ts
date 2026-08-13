@@ -469,6 +469,7 @@ type SomangIntermentSearchResult = Pick<
   | "sourceId"
   | "name"
   | "role"
+  | "affiliation"
   | "birthDate"
   | "deathDate"
   | "burialPlace"
@@ -486,6 +487,7 @@ const somangIntermentSearchSelection = {
   sourceId: somangIntermentRecords.sourceId,
   name: somangIntermentRecords.name,
   role: somangIntermentRecords.role,
+  affiliation: somangIntermentRecords.affiliation,
   birthDate: somangIntermentRecords.birthDate,
   deathDate: somangIntermentRecords.deathDate,
   burialPlace: somangIntermentRecords.burialPlace,
@@ -499,11 +501,26 @@ const somangIntermentSearchSelection = {
 
 export async function searchSomangIntermentRecords(input: {
   name: string;
-  birthDate: string;
+  birthDate?: string;
 }): Promise<SomangIntermentSearchResult[]> {
   const db = await getDb();
   if (!db) {
     throw new Error("Database is not available");
+  }
+
+  // Many interment records have no birth date (stored as 0000-00-00) and some
+  // names carry a title, so the parent finder matches on a name substring and
+  // only narrows by birth date when the family actually provides one.
+  const normalizedName = normalizeIntermentName(input.name);
+  if (normalizedName.length < 2) return [];
+  const escapedName = escapeMemorialSearchKeyword(normalizedName);
+  const birthDate = input.birthDate?.trim();
+
+  const conditions = [
+    like(somangIntermentRecords.nameNormalized, `%${escapedName}%`),
+  ];
+  if (birthDate) {
+    conditions.push(eq(somangIntermentRecords.birthDate, birthDate));
   }
 
   return db
@@ -513,27 +530,33 @@ export async function searchSomangIntermentRecords(input: {
       memorials,
       eq(memorials.intermentRecordId, somangIntermentRecords.id)
     )
-    .where(
-      and(
-        eq(
-          somangIntermentRecords.nameNormalized,
-          normalizeIntermentName(input.name)
-        ),
-        eq(somangIntermentRecords.birthDate, input.birthDate)
-      )
-    )
-    .orderBy(asc(somangIntermentRecords.id))
-    .limit(3);
+    .where(and(...conditions))
+    .orderBy(asc(somangIntermentRecords.name), asc(somangIntermentRecords.id))
+    .limit(20);
 }
 
 export async function getSomangIntermentRecordForClaim(input: {
   id: number;
   name: string;
-  birthDate: string;
+  birthDate?: string;
 }): Promise<SomangIntermentSearchResult | null> {
   const db = await getDb();
   if (!db) {
     throw new Error("Database is not available");
+  }
+
+  // The record id identifies the person; the name is a safety check. The birth
+  // date is only enforced when supplied, because many records have none.
+  const birthDate = input.birthDate?.trim();
+  const conditions = [
+    eq(somangIntermentRecords.id, input.id),
+    eq(
+      somangIntermentRecords.nameNormalized,
+      normalizeIntermentName(input.name)
+    ),
+  ];
+  if (birthDate) {
+    conditions.push(eq(somangIntermentRecords.birthDate, birthDate));
   }
 
   const records = await db
@@ -543,16 +566,7 @@ export async function getSomangIntermentRecordForClaim(input: {
       memorials,
       eq(memorials.intermentRecordId, somangIntermentRecords.id)
     )
-    .where(
-      and(
-        eq(somangIntermentRecords.id, input.id),
-        eq(
-          somangIntermentRecords.nameNormalized,
-          normalizeIntermentName(input.name)
-        ),
-        eq(somangIntermentRecords.birthDate, input.birthDate)
-      )
-    )
+    .where(and(...conditions))
     .limit(1);
 
   return records[0] ?? null;
