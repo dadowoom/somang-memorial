@@ -24,7 +24,11 @@ import {
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
-import { normalizeIntermentName } from "../shared/parentFinder";
+import {
+  getIntermentPersonName,
+  isSameIntermentPersonName,
+  normalizeIntermentName,
+} from "../shared/parentFinder";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -506,7 +510,10 @@ export async function searchSomangIntermentRecords(input: {
     throw new Error("Database is not available");
   }
 
-  return db
+  const normalizedName = normalizeIntermentName(input.name);
+  if (normalizedName.length < 2) return [];
+  const escapedNamePrefix = escapeMemorialSearchKeyword(normalizedName);
+  const records = await db
     .select(somangIntermentSearchSelection)
     .from(somangIntermentRecords)
     .leftJoin(
@@ -515,15 +522,20 @@ export async function searchSomangIntermentRecords(input: {
     )
     .where(
       and(
-        eq(
-          somangIntermentRecords.nameNormalized,
-          normalizeIntermentName(input.name)
-        ),
+        like(somangIntermentRecords.nameNormalized, `${escapedNamePrefix}%`),
         eq(somangIntermentRecords.birthDate, input.birthDate)
       )
     )
     .orderBy(asc(somangIntermentRecords.id))
-    .limit(3);
+    .limit(20);
+
+  return records
+    .filter(record => isSameIntermentPersonName(record.name, input.name))
+    .slice(0, 3)
+    .map(record => ({
+      ...record,
+      name: getIntermentPersonName(record.name),
+    }));
 }
 
 export async function getSomangIntermentRecordForClaim(input: {
@@ -546,16 +558,20 @@ export async function getSomangIntermentRecordForClaim(input: {
     .where(
       and(
         eq(somangIntermentRecords.id, input.id),
-        eq(
-          somangIntermentRecords.nameNormalized,
-          normalizeIntermentName(input.name)
-        ),
         eq(somangIntermentRecords.birthDate, input.birthDate)
       )
     )
     .limit(1);
 
-  return records[0] ?? null;
+  const record = records[0];
+  if (!record || !isSameIntermentPersonName(record.name, input.name)) {
+    return null;
+  }
+
+  return {
+    ...record,
+    name: getIntermentPersonName(record.name),
+  };
 }
 
 /**
@@ -573,7 +589,7 @@ export async function searchKioskSomangIntermentRecords(keyword: string) {
   if (normalizedKeyword.length < 2) return [];
   const escapedKeyword = escapeMemorialSearchKeyword(normalizedKeyword);
 
-  return db
+  const records = await db
     .select({
       id: somangIntermentRecords.id,
       name: somangIntermentRecords.name,
@@ -582,6 +598,11 @@ export async function searchKioskSomangIntermentRecords(keyword: string) {
     .where(like(somangIntermentRecords.nameNormalized, `%${escapedKeyword}%`))
     .orderBy(asc(somangIntermentRecords.name), asc(somangIntermentRecords.id))
     .limit(20);
+
+  return records.map(record => ({
+    ...record,
+    name: getIntermentPersonName(record.name),
+  }));
 }
 
 export async function listPublicMemorials() {

@@ -2,13 +2,44 @@ import { describe, expect, it } from "vitest";
 import {
   createIntermentMemorialCopy,
   formatMemorialDay,
+  getIntermentPersonName,
   isSearchableIntermentBirthDate,
+  isSameIntermentPersonName,
   normalizeIntermentName,
 } from "./parentFinder";
 
 describe("parent finder helpers", () => {
   it("normalizes spaces in a name for an exact lookup", () => {
     expect(normalizeIntermentName("김 소망 ")).toBe("김소망");
+  });
+
+  it.each([
+    ["이한수 장로(타)", "이한수"],
+    ["권숙자 성도", "권숙자"],
+    ["윤영오 은퇴집사", "윤영오"],
+    ["국현주 권사(은256)", "국현주"],
+    ["김의학 사모(타)", "김의학"],
+    ["박문자 전도사", "박문자"],
+    ["이정숙 (타교)권사", "이정숙"],
+    ["김문숙(김서은) 집사", "김문숙"],
+    ["권마이클(윤준)", "권마이클"],
+    ["최옥순 마리아(타)", "최옥순"],
+    ["김창복 은퇴집사타)", "김창복"],
+    ["조 훈", "조훈"],
+  ])("extracts the person name from %s", (rawName, expected) => {
+    expect(getIntermentPersonName(rawName)).toBe(expected);
+  });
+
+  it("preserves legitimate names instead of truncating to three characters", () => {
+    expect(getIntermentPersonName("신현 권사(타)")).toBe("신현");
+    expect(getIntermentPersonName("권마이클(윤준)")).toBe("권마이클");
+    expect(getIntermentPersonName("김성도")).toBe("김성도");
+  });
+
+  it("matches a clean search name against a legacy role-suffixed name", () => {
+    expect(isSameIntermentPersonName("이한수", "이한수 장로(타)")).toBe(true);
+    expect(isSameIntermentPersonName("권숙자", "권숙자 성도")).toBe(true);
+    expect(isSameIntermentPersonName("이한수", "이한순 장로(타)")).toBe(false);
   });
 
   it("accepts only a complete birth date for the first search flow", () => {

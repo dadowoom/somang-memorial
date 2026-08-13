@@ -1,7 +1,74 @@
 export const SOMANG_INTERMENT_BIRTH_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+const INTERMENT_NAME_SUFFIXES = [
+  "은퇴안수집사",
+  "집사 아가",
+  "원로장로",
+  "은퇴장로",
+  "명예장로",
+  "협동장로",
+  "원로권사",
+  "은퇴권사",
+  "명예권사",
+  "안수집사",
+  "은퇴집사",
+  "(타교)권사",
+  "타교권사",
+  "선교사",
+  "전도사",
+  "목사",
+  "사모",
+  "장로",
+  "권사",
+  "집사",
+  "성도",
+  "교우",
+  "아가",
+  "님",
+] as const;
+
+function escapeRegularExpression(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const INTERMENT_NAME_SUFFIX_PATTERN = new RegExp(
+  `\\s+(?:${INTERMENT_NAME_SUFFIXES.map(escapeRegularExpression).join("|")})` +
+    `(?:\\s*(?:\\([^)]*\\)|타\\)))?\\s*$`,
+);
+
+const EXTERNAL_BAPTISMAL_NAME_PATTERN = /^(\S{2,5})\s+\S+\(타\)$/;
+const PARENTHESIZED_ALIAS_PATTERN = /^([^()]+?)\s*\([^)]*\)(?:타)?$/;
+
+/**
+ * Keeps the person's actual name while removing role and source-only labels
+ * that were historically stored in the Excel name column.
+ *
+ * It deliberately does not truncate to three characters: Korean names in the
+ * source include legitimate two- and four-character names.
+ */
+export function getIntermentPersonName(value: string) {
+  let name = value.normalize("NFKC").trim().replace(/\s+/g, " ");
+  name = name.replace(INTERMENT_NAME_SUFFIX_PATTERN, "").trim();
+
+  const externalBaptismalName = name.match(EXTERNAL_BAPTISMAL_NAME_PATTERN);
+  if (externalBaptismalName) {
+    name = externalBaptismalName[1];
+  }
+
+  const parenthesizedAlias = name.match(PARENTHESIZED_ALIAS_PATTERN);
+  if (parenthesizedAlias) {
+    name = parenthesizedAlias[1].trim();
+  }
+
+  return name.replace(/\s+/g, "");
+}
+
 export function normalizeIntermentName(value: string) {
-  return value.replace(/\s+/g, "").trim();
+  return getIntermentPersonName(value);
+}
+
+export function isSameIntermentPersonName(left: string, right: string) {
+  return normalizeIntermentName(left) === normalizeIntermentName(right);
 }
 
 export function isSearchableIntermentBirthDate(value: string) {
