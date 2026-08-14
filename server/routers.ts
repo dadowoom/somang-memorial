@@ -224,9 +224,16 @@ const familyRoomVerifyInput = z.object({
 
 const parentFinderSearchInput = z.object({
   name: z.string().trim().min(2).max(120),
+  // Optional: families can search by name alone. When a birth date is given it
+  // must be a real date, and it narrows the results.
   birthDate: z
     .string()
-    .refine(isSearchableIntermentBirthDate, "생년월일을 정확히 입력해주세요."),
+    .trim()
+    .refine(
+      value => value === "" || isSearchableIntermentBirthDate(value),
+      "생년월일을 정확히 입력해주세요."
+    )
+    .optional(),
 });
 
 const parentFinderCreateInput = parentFinderSearchInput.extend({
@@ -575,10 +582,9 @@ export const appRouter = router({
             id: record.id,
             name: record.name,
             role: record.role,
+            affiliation: record.affiliation,
             birthDate: record.birthDate,
             deathDate: record.deathDate,
-            burialPlace: record.burialPlace,
-            burialDate: record.burialDate,
             memorial: record.memorialId
               ? {
                   state: isOwner
@@ -654,7 +660,11 @@ export const appRouter = router({
           const created = await createMemorial({
             name: record.name,
             role: copy.role,
-            birthDate: record.birthDate,
+            // Some records store 0000-00-00 when the birth date is unknown; keep
+            // it out of the memorial so the family can fill it in later.
+            birthDate: isSearchableIntermentBirthDate(record.birthDate)
+              ? record.birthDate
+              : "",
             deathDate: record.deathDate,
             church: "소망교회",
             createdByUserId: ctx.user.id,
