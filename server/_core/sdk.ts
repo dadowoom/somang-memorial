@@ -1,4 +1,8 @@
-import { AXIOS_TIMEOUT_MS, COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import {
+  AXIOS_TIMEOUT_MS,
+  COOKIE_NAME,
+  SESSION_TTL_MS,
+} from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
@@ -192,7 +196,7 @@ class SDKServer {
     options: { expiresInMs?: number } = {}
   ): Promise<string> {
     const issuedAt = Date.now();
-    const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
+    const expiresInMs = options.expiresInMs ?? SESSION_TTL_MS;
     const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1000);
     const secretKey = this.getSessionSecret();
 
@@ -265,6 +269,31 @@ class SDKServer {
     } as GetUserInfoWithJwtResponse;
   }
 
+  /**
+   * 쿠키에 담긴 로그인 정보와 남은 기간을 읽습니다. 아직 쓰고 있는 세션을
+   * 조용히 연장할지 판단하는 데 씁니다(context.ts).
+   */
+  async readSession(req: Request) {
+    try {
+      const cookies = this.parseCookies(req.headers.cookie);
+      const cookieValue = cookies.get(COOKIE_NAME);
+      if (!cookieValue) return null;
+
+      const secretKey = this.getSessionSecret();
+      const { payload } = await jwtVerify(cookieValue, secretKey, {
+        algorithms: ["HS256"],
+      });
+
+      const { openId, name, exp } = payload as Record<string, unknown>;
+      if (typeof openId !== "string" || typeof name !== "string") return null;
+      if (typeof exp !== "number") return null;
+
+      return { openId, name, expiresAtMs: exp * 1000 };
+    } catch {
+      return null;
+    }
+  }
+
   async authenticateRequest(req: Request): Promise<User> {
     // Regular authentication flow
     const cookies = this.parseCookies(req.headers.cookie);
@@ -301,14 +330,17 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
+    // Approval is controlled by administrators. A routine authenticated request
+    // must never reactivate a user whose account has been disabled.
     await db.upsertUser({
       openId: user.openId,
-      approvalStatus: "approved",
-      approvedAt: user.approvedAt ?? signedInAt,
       lastSignedIn: signedInAt,
     });
 
-    return user;
+    return {
+      ...user,
+      lastSignedIn: signedInAt,
+    };
   }
 }
 

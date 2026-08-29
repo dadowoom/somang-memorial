@@ -26,7 +26,7 @@ function enterTokens(
 
 describe("insertKioskKeyboardToken", () => {
   it.each([
-    ["ㄱㅣㅁㅇㅕㅇㅅㅜ", "김영수"],
+    ["ㄱㅣㅁㅅㅗㅁㅏㅇ", "김소망"],
     ["ㅎㅏㄴㄱㅡㄹ", "한글"],
     ["ㅇㅏㄱㄱㅣ", "악기"],
     ["ㅇㅏㄲㅣ", "아끼"],
@@ -51,7 +51,7 @@ describe("insertKioskKeyboardToken", () => {
   });
 
   it("replaces a selection and preserves its suffix", () => {
-    const first = insertKioskKeyboardToken("김영수", 1, 2, "ㅎ");
+    const first = insertKioskKeyboardToken("김소망", 1, 2, "ㅎ");
     const second = insertKioskKeyboardToken(
       first.value,
       first.cursor,
@@ -65,7 +65,7 @@ describe("insertKioskKeyboardToken", () => {
       "ㄴ"
     );
 
-    expect(third).toEqual({ value: "김한수", cursor: 2 });
+    expect(third).toEqual({ value: "김한망", cursor: 2 });
   });
 
   it("checks maxLength against the assembled display value", () => {
@@ -111,8 +111,8 @@ describe("backspaceKioskKeyboardValue", () => {
   });
 
   it("removes a selection without changing the surrounding text", () => {
-    expect(backspaceKioskKeyboardValue("김영수", 1, 2)).toEqual({
-      value: "김수",
+    expect(backspaceKioskKeyboardValue("김소망", 1, 2)).toEqual({
+      value: "김망",
       cursor: 1,
     });
   });

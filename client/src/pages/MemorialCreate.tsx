@@ -507,7 +507,7 @@ export default function MemorialCreate() {
                       onChange={event =>
                         updateField("name", event.target.value)
                       }
-                      placeholder="김영수"
+                      placeholder="김소망"
                       aria-invalid={Boolean(errors.name)}
                     />
                   </Field>

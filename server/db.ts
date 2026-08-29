@@ -24,7 +24,11 @@ import {
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
-import { normalizeIntermentName } from "../shared/parentFinder";
+import {
+  getIntermentPersonName,
+  isSameIntermentPersonName,
+  normalizeIntermentName,
+} from "../shared/parentFinder";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -469,6 +473,7 @@ type SomangIntermentSearchResult = Pick<
   | "sourceId"
   | "name"
   | "role"
+  | "affiliation"
   | "birthDate"
   | "deathDate"
   | "burialPlace"
@@ -486,6 +491,7 @@ const somangIntermentSearchSelection = {
   sourceId: somangIntermentRecords.sourceId,
   name: somangIntermentRecords.name,
   role: somangIntermentRecords.role,
+  affiliation: somangIntermentRecords.affiliation,
   birthDate: somangIntermentRecords.birthDate,
   deathDate: somangIntermentRecords.deathDate,
   burialPlace: somangIntermentRecords.burialPlace,
@@ -499,41 +505,26 @@ const somangIntermentSearchSelection = {
 
 export async function searchSomangIntermentRecords(input: {
   name: string;
-  birthDate: string;
+  birthDate?: string;
 }): Promise<SomangIntermentSearchResult[]> {
   const db = await getDb();
   if (!db) {
     throw new Error("Database is not available");
   }
 
-  return db
-    .select(somangIntermentSearchSelection)
-    .from(somangIntermentRecords)
-    .leftJoin(
-      memorials,
-      eq(memorials.intermentRecordId, somangIntermentRecords.id)
-    )
-    .where(
-      and(
-        eq(
-          somangIntermentRecords.nameNormalized,
-          normalizeIntermentName(input.name)
-        ),
-        eq(somangIntermentRecords.birthDate, input.birthDate)
-      )
-    )
-    .orderBy(asc(somangIntermentRecords.id))
-    .limit(3);
-}
+  // Many interment records have no birth date (stored as 0000-00-00) and some
+  // names carry a title, so the parent finder matches on a name substring and
+  // only narrows by birth date when the family actually provides one.
+  const normalizedName = normalizeIntermentName(input.name);
+  if (normalizedName.length < 2) return [];
+  const escapedName = escapeMemorialSearchKeyword(normalizedName);
+  const birthDate = input.birthDate?.trim();
 
-export async function getSomangIntermentRecordForClaim(input: {
-  id: number;
-  name: string;
-  birthDate: string;
-}): Promise<SomangIntermentSearchResult | null> {
-  const db = await getDb();
-  if (!db) {
-    throw new Error("Database is not available");
+  const conditions = [
+    like(somangIntermentRecords.nameNormalized, `%${escapedName}%`),
+  ];
+  if (birthDate) {
+    conditions.push(eq(somangIntermentRecords.birthDate, birthDate));
   }
 
   const records = await db
@@ -543,19 +534,55 @@ export async function getSomangIntermentRecordForClaim(input: {
       memorials,
       eq(memorials.intermentRecordId, somangIntermentRecords.id)
     )
-    .where(
-      and(
-        eq(somangIntermentRecords.id, input.id),
-        eq(
-          somangIntermentRecords.nameNormalized,
-          normalizeIntermentName(input.name)
-        ),
-        eq(somangIntermentRecords.birthDate, input.birthDate)
-      )
+    .where(and(...conditions))
+    .orderBy(asc(somangIntermentRecords.name), asc(somangIntermentRecords.id))
+    .limit(20);
+
+  // The stored name still carries the title it had in the source spreadsheet.
+  // Families should see the person, not `이한수 장로(타)`.
+  return records.map(record => ({
+    ...record,
+    name: getIntermentPersonName(record.name),
+  }));
+}
+
+export async function getSomangIntermentRecordForClaim(input: {
+  id: number;
+  name: string;
+  birthDate?: string;
+}): Promise<SomangIntermentSearchResult | null> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  // The record id identifies the person; the name is a safety check. The birth
+  // date is only enforced when supplied, because many records have none.
+  const birthDate = input.birthDate?.trim();
+  const conditions = [eq(somangIntermentRecords.id, input.id)];
+  if (birthDate) {
+    conditions.push(eq(somangIntermentRecords.birthDate, birthDate));
+  }
+
+  const records = await db
+    .select(somangIntermentSearchSelection)
+    .from(somangIntermentRecords)
+    .leftJoin(
+      memorials,
+      eq(memorials.intermentRecordId, somangIntermentRecords.id)
     )
+    .where(and(...conditions))
     .limit(1);
 
-  return records[0] ?? null;
+  // The name is a safety check, not a lookup key. It is compared after the
+  // query because the caller sends back the cleaned-up name it was shown,
+  // while the stored name still has the title attached.
+  const record = records[0];
+  if (!record || !isSameIntermentPersonName(record.name, input.name)) {
+    return null;
+  }
+
+  return { ...record, name: getIntermentPersonName(record.name) };
 }
 
 /**
@@ -573,7 +600,7 @@ export async function searchKioskSomangIntermentRecords(keyword: string) {
   if (normalizedKeyword.length < 2) return [];
   const escapedKeyword = escapeMemorialSearchKeyword(normalizedKeyword);
 
-  return db
+  const records = await db
     .select({
       id: somangIntermentRecords.id,
       name: somangIntermentRecords.name,
@@ -582,6 +609,11 @@ export async function searchKioskSomangIntermentRecords(keyword: string) {
     .where(like(somangIntermentRecords.nameNormalized, `%${escapedKeyword}%`))
     .orderBy(asc(somangIntermentRecords.name), asc(somangIntermentRecords.id))
     .limit(20);
+
+  return records.map(record => ({
+    ...record,
+    name: getIntermentPersonName(record.name),
+  }));
 }
 
 export async function listPublicMemorials() {
@@ -1165,7 +1197,10 @@ export async function createMemorialLetter(input: {
       recipientRole: memorial[0].role,
       author: input.author,
       content: input.content,
-      status: "hidden",
+      // Letters appear as soon as they are written. Families should see the
+      // comfort arriving, not wait for someone to approve it. An administrator
+      // can hide a letter afterwards from the admin screen.
+      status: "published",
     });
 
     const created = await db
@@ -1197,7 +1232,7 @@ export async function createMemorialLetter(input: {
     recipientRole: input.recipientRole?.trim() || null,
     author: input.author,
     content: input.content,
-    status: "hidden",
+    status: "published",
   });
 
   const created = await db
@@ -1797,4 +1832,41 @@ export async function deleteMemorialBookPage(id: number) {
   }
 
   await db.delete(memorialBookPages).where(eq(memorialBookPages.id, id));
+}
+
+
+/**
+ * 회원 탈퇴. 개인정보보호법상 정보주체는 자기 정보를 지워 달라고 요구할 수
+ * 있으므로 반드시 있어야 하는 기능입니다.
+ *
+ * 회원 행(row)만 지웁니다. 이미 만들어진 추모관은 고인을 기억하는 공동의
+ * 기록이므로 남고, 소유자 표시만 비워집니다(외래키가 SET NULL).
+ * 추모관까지 지우려면 탈퇴 전에 따로 지워야 합니다 — 이용약관에 그렇게
+ * 적어 두었습니다.
+ */
+export async function deleteUserAccount(input: {
+  userId: number;
+  password: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({ id: users.id, passwordHash: users.passwordHash })
+    .from(users)
+    .where(eq(users.id, input.userId))
+    .limit(1);
+
+  const user = rows[0];
+  if (!user) return false;
+
+  // 비밀번호로 가입한 계정만 스스로 지울 수 있습니다. 외부 로그인 계정은
+  // 확인할 비밀번호가 없으므로 관리자를 통해 처리해야 합니다.
+  if (!user.passwordHash) return false;
+  if (!verifyUserPassword(input.password, user.passwordHash)) return false;
+
+  await db.delete(users).where(eq(users.id, user.id));
+  return true;
 }
