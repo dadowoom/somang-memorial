@@ -13,6 +13,8 @@ const Home = lazy(() => import("./pages/Home"));
 const MemorialCreate = lazy(() => import("./pages/MemorialCreate"));
 const Letters = lazy(() => import("./pages/Letters"));
 const Login = lazy(() => import("./pages/Login"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const Terms = lazy(() => import("./pages/Terms"));
 const AdminMemorials = lazy(() => import("./pages/AdminMemorials"));
 const AdminOperations = lazy(() => import("./pages/AdminOperations"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
@@ -68,6 +70,8 @@ function Router() {
         <Route path={"/memorial/:slug/archive"} component={MemorialArchivePage} />
         <Route path={"/memorial/:slug/family"} component={MemorialFamilyPage} />
         <Route path={"/memorial/:slug"} component={MemorialPublicDetail} />
+        <Route path={"/privacy"} component={PrivacyPolicy} />
+        <Route path={"/terms"} component={Terms} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

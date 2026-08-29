@@ -1,3 +1,4 @@
+import { ORG_INFO } from "@/lib/orgInfo";
 import { Plus } from "lucide-react";
 import { Link } from "wouter";
 
@@ -67,7 +68,7 @@ export default function Footer() {
               소망교회
             </h2>
             <ul className="space-y-3 text-sm">
-              <li>서울특별시 강남구 소망길</li>
+              <li>{ORG_INFO.address}</li>
               <li>온라인 추모 서비스</li>
             </ul>
           </div>
@@ -75,7 +76,23 @@ export default function Footer() {
 
         <div className="mt-12 flex flex-col justify-between gap-3 border-t border-[#dbdad7] pt-6 text-xs md:flex-row">
           <p>© 2026 소망교회. All rights reserved.</p>
-          <p>소망이 있는 곳 - 온라인 추모 서비스</p>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/privacy"
+              className="font-medium text-[#121212] transition-colors hover:text-[#616161]"
+            >
+              개인정보처리방침
+            </Link>
+            <span aria-hidden="true" className="text-[#dbdad7]">
+              |
+            </span>
+            <Link
+              href="/terms"
+              className="transition-colors hover:text-[#121212]"
+            >
+              이용약관
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
