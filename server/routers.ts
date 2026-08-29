@@ -19,6 +19,7 @@ import {
   getMemorialAccessStatus,
   getSomangIntermentRecordForClaim,
   getPublicMemorialBySlug,
+  createPasswordResetToken,
   hashMemorialAccessPassword,
   listAdminMemorials,
   listAdminMemorialLetters,
@@ -31,6 +32,8 @@ import {
   listRecentMemorialLetters,
   normalizeEmail,
   isAdminLoginIdentifier,
+  PASSWORD_RESET_TTL_MINUTES,
+  resetPasswordWithToken,
   normalizeLocalLoginIdentifier,
   searchKioskMemorials,
   searchPublicMemorials,
@@ -56,6 +59,8 @@ import {
   passwordAttemptKey,
 } from "./_core/passwordAttemptLimiter";
 import { sdk } from "./_core/sdk";
+import { sendPasswordResetEmail } from "./_core/email";
+import { ENV } from "./_core/env";
 import {
   getSmsConfigStatus,
   sendReminderConfirmationSms,
@@ -95,6 +100,12 @@ const signupLimiter = createPasswordAttemptLimiter({
   blockMs: 15 * 60 * 1000,
 });
 const loginAttemptLimiter = createPasswordAttemptLimiter();
+// 재설정 메일은 남의 메일함으로 가는 것이라, 같은 곳에서 반복 요청하지 못하게 막는다.
+const passwordResetRequestLimiter = createPasswordAttemptLimiter({
+  failureLimit: 5,
+  failureWindowMs: 60 * 60 * 1000,
+  blockMs: 60 * 60 * 1000,
+});
 const letterSubmissionLimiter = createPasswordAttemptLimiter({
   failureLimit: 6,
   failureWindowMs: 10 * 60 * 1000,
@@ -316,6 +327,15 @@ const authLoginInput = z.object({
       "아이디 또는 이메일 형식으로 입력해주세요."
     ),
   password: z.string().min(1, "비밀번호를 입력해주세요.").max(100),
+});
+
+const passwordResetRequestInput = z.object({
+  email: z.string().trim().email("이메일 형식으로 입력해주세요.").max(320),
+});
+
+const passwordResetConfirmInput = z.object({
+  token: z.string().trim().min(1).max(200),
+  password: z.string().min(8, "비밀번호는 8자 이상 입력해주세요.").max(100),
 });
 
 const textDisplaySizeSchema = z.enum(["auto", "small", "normal", "large"]);
@@ -541,6 +561,56 @@ export const appRouter = router({
           }),
         };
       }),
+    requestPasswordReset: publicProcedure
+      .input(passwordResetRequestInput)
+      .mutation(async ({ ctx, input }) => {
+        ensurePasswordAttemptAllowed(
+          passwordAttemptKey(ctx.req, "password-reset"),
+          passwordResetRequestLimiter
+        );
+        passwordResetRequestLimiter.recordFailure(
+          passwordAttemptKey(ctx.req, "password-reset")
+        );
+
+        const created = await createPasswordResetToken(input.email);
+
+        // 있는 이메일인지 아닌지를 응답으로 알 수 있으면, 누가 가입했는지
+        // 확인하는 데 쓰입니다. 결과와 무관하게 같은 답을 돌려줍니다.
+        if (created) {
+          const base = ENV.publicSiteUrl || "";
+          const resetUrl = `${base}/reset-password?token=${encodeURIComponent(created.token)}`;
+          try {
+            await sendPasswordResetEmail({
+              to: created.email,
+              resetUrl,
+              expiresInMinutes: PASSWORD_RESET_TTL_MINUTES,
+            });
+          } catch (error) {
+            console.error("[PasswordReset] 메일 발송 실패", error);
+          }
+        }
+
+        return {
+          success: true,
+          expiresInMinutes: PASSWORD_RESET_TTL_MINUTES,
+        } as const;
+      }),
+
+    confirmPasswordReset: publicProcedure
+      .input(passwordResetConfirmInput)
+      .mutation(async ({ input }) => {
+        const changed = await resetPasswordWithToken(input);
+        if (!changed) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "링크가 만료되었거나 이미 사용되었습니다. 다시 요청해 주세요.",
+          });
+        }
+
+        return { success: true } as const;
+      }),
+
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

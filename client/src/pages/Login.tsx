@@ -265,6 +265,15 @@ export default function Login() {
                     pendingLabel="확인 중"
                   />
 
+                  <div className="pt-1 text-sm leading-6">
+                    <Link
+                      href="/forgot-password"
+                      className="text-[#616161] underline underline-offset-4 transition-colors hover:text-[#121212]"
+                    >
+                      비밀번호를 잊으셨나요?
+                    </Link>
+                  </div>
+
                   <div className="border-t border-[#dbdad7] pt-5 text-sm leading-6 text-[#616161]">
                     처음 이용하시나요?{" "}
                     <button

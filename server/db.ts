@@ -21,6 +21,7 @@ import {
   memorialVideos,
   memorials,
   somangIntermentRecords,
+  passwordResetTokens,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -1882,4 +1883,93 @@ export async function deleteMemorialBookPage(id: number) {
   }
 
   await db.delete(memorialBookPages).where(eq(memorialBookPages.id, id));
+}
+
+
+/* ------------------------------------------------------------------ *
+ * 비밀번호 재설정
+ * ------------------------------------------------------------------ */
+
+export const PASSWORD_RESET_TTL_MINUTES = 30;
+
+/**
+ * 링크에 담을 값은 한 번만 돌려주고, 데이터베이스에는 해시만 남깁니다.
+ * 비밀번호와 같은 이유입니다 — 저장된 것을 가져가도 그대로 쓸 수 없어야 합니다.
+ */
+function hashResetToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export async function createPasswordResetToken(email: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const user = await getUserByEmail(normalizeEmail(email));
+  // 없는 이메일이어도 밖에서는 구분할 수 없어야 하므로, 여기서는 조용히 끝냅니다.
+  if (!user || !user.passwordHash) return null;
+  if (user.approvalStatus === "rejected") return null;
+
+  // 아직 쓰지 않은 이전 링크는 무효로 만듭니다. 링크가 여러 개 살아 있으면
+  // 그만큼 새어 나갈 틈이 늘어납니다.
+  const now = new Date();
+  await db
+    .update(passwordResetTokens)
+    .set({ usedAt: now })
+    .where(
+      and(
+        eq(passwordResetTokens.userId, user.id),
+        isNull(passwordResetTokens.usedAt)
+      )
+    );
+
+  const token = randomBytes(32).toString("base64url");
+  await db.insert(passwordResetTokens).values({
+    userId: user.id,
+    tokenHash: hashResetToken(token),
+    expiresAt: new Date(now.getTime() + PASSWORD_RESET_TTL_MINUTES * 60 * 1000),
+  });
+
+  return { token, email: user.email ?? "" };
+}
+
+export async function resetPasswordWithToken(input: {
+  token: string;
+  password: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({
+      id: passwordResetTokens.id,
+      userId: passwordResetTokens.userId,
+      expiresAt: passwordResetTokens.expiresAt,
+      usedAt: passwordResetTokens.usedAt,
+    })
+    .from(passwordResetTokens)
+    .where(eq(passwordResetTokens.tokenHash, hashResetToken(input.token)))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || row.usedAt || row.expiresAt.getTime() <= Date.now()) {
+    return false;
+  }
+
+  const now = new Date();
+  await db
+    .update(users)
+    .set({ passwordHash: hashUserPassword(input.password) })
+    .where(eq(users.id, row.userId));
+
+  // 한 번 쓴 링크는 즉시 닫습니다.
+  await db
+    .update(passwordResetTokens)
+    .set({ usedAt: now })
+    .where(eq(passwordResetTokens.id, row.id));
+
+  return true;
 }

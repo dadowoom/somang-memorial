@@ -11,6 +11,11 @@ export const ENV = {
   solapiApiSecret: process.env.SOLAPI_API_SECRET ?? "",
   solapiFromNumber: process.env.SOLAPI_FROM_NUMBER ?? "",
   publicSiteUrl: process.env.PUBLIC_SITE_URL ?? "",
+  smtpHost: process.env.SMTP_HOST ?? "",
+  smtpPort: Number(process.env.SMTP_PORT ?? "587"),
+  smtpUser: process.env.SMTP_USER ?? "",
+  smtpPassword: process.env.SMTP_PASSWORD ?? "",
+  smtpFrom: process.env.SMTP_FROM ?? "",
   reminderDaysBefore: Number(process.env.REMINDER_DAYS_BEFORE ?? "1"),
   reminderSchedulerEnabled: process.env.REMINDER_SCHEDULER_ENABLED !== "false",
 };
