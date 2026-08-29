@@ -1,5 +1,6 @@
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
+import { isOrgInfoIncomplete } from "@/lib/orgInfo";
 import type { ReactNode } from "react";
 
 type LegalPageProps = {
@@ -30,6 +31,19 @@ export default function LegalPage({
         </h1>
         <p className="mt-6 text-sm leading-7 text-[#616161]">{intro}</p>
         <p className="mt-4 text-xs text-[#8a8a8a]">시행일 {effectiveDate}</p>
+
+        {/* 교회 정보가 아직 채워지지 않았다면 숨기지 않고 그대로 알립니다.
+            빈칸을 아무 말 없이 두면 읽는 분이 잘못 이해합니다. */}
+        {isOrgInfoIncomplete() ? (
+          <p
+            role="status"
+            className="mt-8 border border-[#e0d4b8] bg-[#fbf7ee] px-5 py-4 text-sm leading-6 text-[#7a5c1e]"
+          >
+            일부 항목(교회 주소, 문의 연락처, 개인정보 보호책임자)은 아직 확인
+            중이며 곧 채워집니다. 그 전에 문의하실 일이 있으면 교회 사무실로
+            연락해 주십시오.
+          </p>
+        ) : null}
 
         <div className="mt-14 space-y-12">{children}</div>
       </main>
