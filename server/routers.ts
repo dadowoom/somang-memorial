@@ -1,4 +1,4 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, SESSION_TTL_MS } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import type { User } from "../drizzle/schema";
@@ -454,12 +454,12 @@ export const appRouter = router({
         if (created.approvalStatus === "approved") {
           const sessionToken = await sdk.createSessionToken(created.openId, {
             name: created.name || normalizeEmail(input.email),
-            expiresInMs: ONE_YEAR_MS,
+            expiresInMs: SESSION_TTL_MS,
           });
           const cookieOptions = getSessionCookieOptions(ctx.req);
           ctx.res.cookie(COOKIE_NAME, sessionToken, {
             ...cookieOptions,
-            maxAge: ONE_YEAR_MS,
+            maxAge: SESSION_TTL_MS,
           });
         }
 
@@ -506,12 +506,12 @@ export const appRouter = router({
 
         const sessionToken = await sdk.createSessionToken(user.openId, {
           name: user.name || normalizeLocalLoginIdentifier(input.identifier),
-          expiresInMs: ONE_YEAR_MS,
+          expiresInMs: SESSION_TTL_MS,
         });
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie(COOKIE_NAME, sessionToken, {
           ...cookieOptions,
-          maxAge: ONE_YEAR_MS,
+          maxAge: SESSION_TTL_MS,
         });
 
         return {
