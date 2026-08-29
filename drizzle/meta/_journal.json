@@ -113,6 +113,20 @@
       "when": 1780571200000,
       "tag": "0015_add_reminder_notification_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1781151537000,
+      "tag": "0016_add_admin_audit_logs",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1785985004000,
+      "tag": "0017_add_somang_interment_records",
+      "breakpoints": true
     }
   ]
 }

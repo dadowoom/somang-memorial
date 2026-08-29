@@ -113,3 +113,9 @@ temp/
 
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
+
+# 업로드된 사진 — 저장소에 절대 들어가면 안 됩니다.
+# 개발 중 UPLOAD_DIR 을 지정하지 않으면 사진이 ./uploads 에 쌓입니다.
+# 이 저장소는 공개이므로 실수로 커밋되면 유가족 사진이 그대로 공개됩니다.
+uploads/
+.local-uploads/
