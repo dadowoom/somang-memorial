@@ -398,12 +398,14 @@ export default function Login() {
                         onChange={setPrivacyConsent}
                         label="개인정보 수집 및 이용 동의"
                         description="성함, 이메일, 휴대폰 번호를 회원 확인과 추모관 작성 안내에 사용합니다."
+                        documentHref="/privacy"
                       />
                       <ConsentCheckbox
                         checked={serviceConsent}
                         onChange={setServiceConsent}
                         label="서비스 이용 동의"
                         description="소망교회 디지털 추모관 회원가입과 추모관 생성 절차에 동의합니다."
+                        documentHref="/terms"
                       />
                     </div>
                   </div>
@@ -474,11 +476,13 @@ function ConsentCheckbox({
   onChange,
   label,
   description,
+  documentHref,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
   description: string;
+  documentHref: string;
 }) {
   return (
     <label className="flex gap-3 text-sm leading-6 text-[#616161]">
