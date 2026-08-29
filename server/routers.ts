@@ -185,7 +185,17 @@ const memorialCreateInput = z.object({
   serviceTime: z.string().trim().max(40).optional(),
   memorialDay: z.string().trim().max(40).optional(),
   visibility: z.enum(["public", "private"]).default("public"),
-  accessPassword: z.string().trim().max(80).optional(),
+  // A blank value means "leave the current password alone", so the minimum
+  // only applies to a password the family is actually setting.
+  accessPassword: z
+    .string()
+    .trim()
+    .max(80)
+    .refine(
+      value => value === "" || value.length >= 6,
+      "입장 비밀번호는 6자 이상으로 정해 주세요."
+    )
+    .optional(),
   managerMemo: z.string().trim().max(2000).optional(),
   timeline: z
     .array(
@@ -329,7 +339,17 @@ const memorialUpdateInput = z.object({
   serviceTime: z.string().trim().max(40).nullable().optional(),
   memorialDay: z.string().trim().max(40).nullable().optional(),
   visibility: z.enum(["public", "private"]).optional(),
-  accessPassword: z.string().trim().max(80).optional(),
+  // A blank value means "leave the current password alone", so the minimum
+  // only applies to a password the family is actually setting.
+  accessPassword: z
+    .string()
+    .trim()
+    .max(80)
+    .refine(
+      value => value === "" || value.length >= 6,
+      "입장 비밀번호는 6자 이상으로 정해 주세요."
+    )
+    .optional(),
   status: z.enum(["pending", "published", "private"]).optional(),
   managerMemo: z.string().trim().max(2000).nullable().optional(),
   timeline: z

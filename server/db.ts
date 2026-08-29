@@ -882,8 +882,54 @@ export async function updateMemorial(
   await db.update(memorials).set(data).where(eq(memorials.id, id));
 }
 
+/**
+ * Room passwords used to be a single unsalted SHA-256 pass, which a leaked
+ * database gives up almost immediately — these are short passwords a family
+ * picks together. They now use the same salted scrypt scheme as account
+ * passwords. Values stored in the old format are still accepted on entry so
+ * nothing locks out, and are rewritten in the new format on the next
+ * successful entry.
+ */
+const ROOM_SECRET_SCHEME = "scrypt";
+
+function hashRoomSecret(purpose: string, password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(`${purpose}:${password}`, salt, 64).toString("hex");
+  return `${ROOM_SECRET_SCHEME}:${salt}:${hash}`;
+}
+
+function isLegacyRoomSecret(stored: string) {
+  return !stored.startsWith(`${ROOM_SECRET_SCHEME}:`);
+}
+
+function verifyRoomSecret(purpose: string, password: string, stored: string) {
+  if (isLegacyRoomSecret(stored)) {
+    const legacy = createHash("sha256")
+      .update(`${purpose}:${password}`)
+      .digest("hex");
+    if (legacy.length !== stored.length) return false;
+    return timingSafeEqual(Buffer.from(legacy), Buffer.from(stored));
+  }
+
+  const [, salt, storedHash] = stored.split(":");
+  if (!salt || !storedHash) return false;
+
+  const expected = Buffer.from(storedHash, "hex");
+  const actual = scryptSync(`${purpose}:${password}`, salt, expected.length);
+  if (actual.length !== expected.length) return false;
+
+  return timingSafeEqual(actual, expected);
+}
+
+const FAMILY_ROOM_PURPOSE = "somang-family";
+const MEMORIAL_ACCESS_PURPOSE = "somang-memorial-access";
+
 export function hashFamilyRoomPassword(password: string) {
-  return createHash("sha256").update(`somang-family:${password}`).digest("hex");
+  return hashRoomSecret(FAMILY_ROOM_PURPOSE, password);
+}
+
+export function verifyFamilyRoomPassword(password: string, stored: string) {
+  return verifyRoomSecret(FAMILY_ROOM_PURPOSE, password, stored);
 }
 
 const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
@@ -903,9 +949,14 @@ export function getMemorialFamilyRoomVideo(slug: string) {
 }
 
 export function hashMemorialAccessPassword(password: string) {
-  return createHash("sha256")
-    .update(`somang-memorial-access:${password}`)
-    .digest("hex");
+  return hashRoomSecret(MEMORIAL_ACCESS_PURPOSE, password);
+}
+
+export function verifyMemorialAccessPasswordHash(
+  password: string,
+  stored: string
+) {
+  return verifyRoomSecret(MEMORIAL_ACCESS_PURPOSE, password, stored);
 }
 
 export function createMemorialAccessToken(
@@ -1005,6 +1056,7 @@ export async function verifyMemorialAccessPassword(input: {
 
   const result = await db
     .select({
+      id: memorials.id,
       slug: memorials.slug,
       name: memorials.name,
       visibility: memorials.visibility,
@@ -1033,19 +1085,31 @@ export async function verifyMemorialAccessPassword(input: {
 
   if (
     !memorial.accessPasswordHash ||
-    memorial.accessPasswordHash !== hashMemorialAccessPassword(input.password)
+    !verifyMemorialAccessPasswordHash(
+      input.password,
+      memorial.accessPasswordHash
+    )
   ) {
     return false;
+  }
+
+  // The entry token is derived from the stored hash, so it has to be built
+  // from whatever we end up storing — otherwise the visitor walks away with a
+  // token for a value the database no longer holds.
+  let passwordHash = memorial.accessPasswordHash;
+  if (isLegacyRoomSecret(passwordHash)) {
+    passwordHash = hashMemorialAccessPassword(input.password);
+    await db
+      .update(memorials)
+      .set({ accessPasswordHash: passwordHash })
+      .where(eq(memorials.id, memorial.id));
   }
 
   return {
     slug: memorial.slug,
     name: memorial.name,
     href: `/memorial/${memorial.slug}`,
-    accessToken: createMemorialAccessToken(
-      memorial.slug,
-      memorial.accessPasswordHash
-    ),
+    accessToken: createMemorialAccessToken(memorial.slug, passwordHash),
   };
 }
 
@@ -1117,8 +1181,15 @@ export async function verifyMemorialFamilyRoomPassword(
   const room = result[0];
   if (!room) return null;
 
-  if (room.passwordHash !== hashFamilyRoomPassword(password)) {
+  if (!verifyFamilyRoomPassword(password, room.passwordHash)) {
     return false;
+  }
+
+  if (isLegacyRoomSecret(room.passwordHash)) {
+    await db
+      .update(memorialFamilyRooms)
+      .set({ passwordHash: hashFamilyRoomPassword(password) })
+      .where(eq(memorialFamilyRooms.memorialId, room.memorialId));
   }
 
   return {
