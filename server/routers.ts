@@ -30,6 +30,7 @@ import {
   listPublicMemorials,
   listRecentMemorialLetters,
   normalizeEmail,
+  deleteUserAccount,
   isAdminLoginIdentifier,
   normalizeLocalLoginIdentifier,
   searchKioskMemorials,
@@ -521,6 +522,38 @@ export const appRouter = router({
           }),
         };
       }),
+    deleteAccount: protectedProcedure
+      .input(
+        z.object({
+          password: z.string().min(1, "비밀번호를 입력해주세요.").max(100),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        // 계정을 지우는 일은 되돌릴 수 없으므로 비밀번호를 한 번 더 확인합니다.
+        // 남이 잠깐 자리를 비운 사이 지워 버리는 일을 막습니다.
+        const attemptKey = passwordAttemptKey(ctx.req, "delete-account");
+        ensurePasswordAttemptAllowed(attemptKey, loginAttemptLimiter);
+
+        const removed = await deleteUserAccount({
+          userId: ctx.user.id,
+          password: input.password,
+        });
+
+        if (!removed) {
+          loginAttemptLimiter.recordFailure(attemptKey);
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "비밀번호가 맞지 않습니다.",
+          });
+        }
+
+        loginAttemptLimiter.recordSuccess(attemptKey);
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+
+        return { success: true } as const;
+      }),
+
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
