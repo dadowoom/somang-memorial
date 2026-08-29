@@ -1179,7 +1179,10 @@ export async function createMemorialLetter(input: {
       recipientRole: memorial[0].role,
       author: input.author,
       content: input.content,
-      status: "hidden",
+      // Letters appear as soon as they are written. Families should see the
+      // comfort arriving, not wait for someone to approve it. An administrator
+      // can hide a letter afterwards from the admin screen.
+      status: "published",
     });
 
     const created = await db
@@ -1211,7 +1214,7 @@ export async function createMemorialLetter(input: {
     recipientRole: input.recipientRole?.trim() || null,
     author: input.author,
     content: input.content,
-    status: "hidden",
+    status: "published",
   });
 
   const created = await db

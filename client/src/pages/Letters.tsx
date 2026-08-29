@@ -55,10 +55,6 @@ function wrapLetterContent(value: string, maxLineLength = 32) {
     .join("\n");
 }
 
-function getLetterViews(id: number) {
-  return 56 + ((id * 17) % 164);
-}
-
 function getLetterImage(index: number) {
   return letterImages[index % letterImages.length];
 }
@@ -326,7 +322,6 @@ export default function Letters() {
                     <LetterCard
                       key={letter.id}
                       serial={serial}
-                      views={getLetterViews(letter.id)}
                       toName={toName}
                       toRole={toRole}
                       content={letter.content}
@@ -380,7 +375,6 @@ function StateBox({ text }: { text: string }) {
 
 function LetterCard({
   serial,
-  views,
   toName,
   toRole,
   content,
@@ -391,7 +385,6 @@ function LetterCard({
   stagger,
 }: {
   serial: number;
-  views: number;
   toName: string;
   toRole: string;
   content: string;
@@ -412,7 +405,6 @@ function LetterCard({
       <div className="flex min-w-0 flex-col overflow-hidden p-6 md:p-8">
         <div className="flex items-center justify-between gap-3 text-sm text-[#7a7771]">
           <p>No.{String(serial).padStart(3, "0")}</p>
-          <p>조회수 : {views}</p>
         </div>
 
         <div className="mt-8 grid min-w-0 grid-cols-[88px_minmax(0,1fr)] gap-4 md:grid-cols-[108px_minmax(0,1fr)] md:gap-6">
