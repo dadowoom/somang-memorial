@@ -78,7 +78,7 @@ export default function Navbar() {
                     </button>
                   </Link>
                 )}
-                <Link href="/">
+                <Link href="/my/account">
                   <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
                     {user?.name || "계정"}
                   </span>
@@ -177,6 +177,16 @@ export default function Navbar() {
                   className="py-3 text-sm font-medium text-[#121212]"
                 >
                   관리자
+                </span>
+              </Link>
+            )}
+            {isAuthenticated && (
+              <Link href="/my/account">
+                <span
+                  onClick={closeMobile}
+                  className="py-3 text-sm font-medium text-[#121212]"
+                >
+                  내 계정
                 </span>
               </Link>
             )}

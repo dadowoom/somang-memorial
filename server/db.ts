@@ -1830,3 +1830,40 @@ export async function deleteMemorialBookPage(id: number) {
 
   await db.delete(memorialBookPages).where(eq(memorialBookPages.id, id));
 }
+
+
+/**
+ * 회원 탈퇴. 개인정보보호법상 정보주체는 자기 정보를 지워 달라고 요구할 수
+ * 있으므로 반드시 있어야 하는 기능입니다.
+ *
+ * 회원 행(row)만 지웁니다. 이미 만들어진 추모관은 고인을 기억하는 공동의
+ * 기록이므로 남고, 소유자 표시만 비워집니다(외래키가 SET NULL).
+ * 추모관까지 지우려면 탈퇴 전에 따로 지워야 합니다 — 이용약관에 그렇게
+ * 적어 두었습니다.
+ */
+export async function deleteUserAccount(input: {
+  userId: number;
+  password: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({ id: users.id, passwordHash: users.passwordHash })
+    .from(users)
+    .where(eq(users.id, input.userId))
+    .limit(1);
+
+  const user = rows[0];
+  if (!user) return false;
+
+  // 비밀번호로 가입한 계정만 스스로 지울 수 있습니다. 외부 로그인 계정은
+  // 확인할 비밀번호가 없으므로 관리자를 통해 처리해야 합니다.
+  if (!user.passwordHash) return false;
+  if (!verifyUserPassword(input.password, user.passwordHash)) return false;
+
+  await db.delete(users).where(eq(users.id, user.id));
+  return true;
+}
