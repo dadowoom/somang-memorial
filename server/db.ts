@@ -24,7 +24,11 @@ import {
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
-import { normalizeIntermentName } from "../shared/parentFinder";
+import {
+  getIntermentPersonName,
+  isSameIntermentPersonName,
+  normalizeIntermentName,
+} from "../shared/parentFinder";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -523,7 +527,7 @@ export async function searchSomangIntermentRecords(input: {
     conditions.push(eq(somangIntermentRecords.birthDate, birthDate));
   }
 
-  return db
+  const records = await db
     .select(somangIntermentSearchSelection)
     .from(somangIntermentRecords)
     .leftJoin(
@@ -533,6 +537,13 @@ export async function searchSomangIntermentRecords(input: {
     .where(and(...conditions))
     .orderBy(asc(somangIntermentRecords.name), asc(somangIntermentRecords.id))
     .limit(20);
+
+  // The stored name still carries the title it had in the source spreadsheet.
+  // Families should see the person, not `이한수 장로(타)`.
+  return records.map(record => ({
+    ...record,
+    name: getIntermentPersonName(record.name),
+  }));
 }
 
 export async function getSomangIntermentRecordForClaim(input: {
@@ -548,13 +559,7 @@ export async function getSomangIntermentRecordForClaim(input: {
   // The record id identifies the person; the name is a safety check. The birth
   // date is only enforced when supplied, because many records have none.
   const birthDate = input.birthDate?.trim();
-  const conditions = [
-    eq(somangIntermentRecords.id, input.id),
-    eq(
-      somangIntermentRecords.nameNormalized,
-      normalizeIntermentName(input.name)
-    ),
-  ];
+  const conditions = [eq(somangIntermentRecords.id, input.id)];
   if (birthDate) {
     conditions.push(eq(somangIntermentRecords.birthDate, birthDate));
   }
@@ -569,7 +574,15 @@ export async function getSomangIntermentRecordForClaim(input: {
     .where(and(...conditions))
     .limit(1);
 
-  return records[0] ?? null;
+  // The name is a safety check, not a lookup key. It is compared after the
+  // query because the caller sends back the cleaned-up name it was shown,
+  // while the stored name still has the title attached.
+  const record = records[0];
+  if (!record || !isSameIntermentPersonName(record.name, input.name)) {
+    return null;
+  }
+
+  return { ...record, name: getIntermentPersonName(record.name) };
 }
 
 /**
@@ -587,7 +600,7 @@ export async function searchKioskSomangIntermentRecords(keyword: string) {
   if (normalizedKeyword.length < 2) return [];
   const escapedKeyword = escapeMemorialSearchKeyword(normalizedKeyword);
 
-  return db
+  const records = await db
     .select({
       id: somangIntermentRecords.id,
       name: somangIntermentRecords.name,
@@ -596,6 +609,11 @@ export async function searchKioskSomangIntermentRecords(keyword: string) {
     .where(like(somangIntermentRecords.nameNormalized, `%${escapedKeyword}%`))
     .orderBy(asc(somangIntermentRecords.name), asc(somangIntermentRecords.id))
     .limit(20);
+
+  return records.map(record => ({
+    ...record,
+    name: getIntermentPersonName(record.name),
+  }));
 }
 
 export async function listPublicMemorials() {
