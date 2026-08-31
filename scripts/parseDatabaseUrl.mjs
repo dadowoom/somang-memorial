@@ -12,7 +12,8 @@
  *   DB_NAME='somang'
  */
 
-import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 export function parseDatabaseUrl(value) {
   if (!value) {
@@ -67,10 +68,24 @@ export function toShellAssignments(parsed) {
     .join("\n");
 }
 
-// 이 파일을 직접 실행했는지 확인한다. 경로를 문자열로 이어 붙이면 윈도우에서
-// 형식이 달라 항상 거짓이 되므로, 표준 변환 함수로 비교한다.
-const isDirectRun =
-  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+// 이 파일을 직접 실행했는지 확인한다.
+//
+// 경로 문자열을 그대로 비교하면 두 가지 경우에 어긋난다.
+//   - 윈도우: 경로 형식이 달라 항상 거짓이 된다.
+//   - 바로가기(symlink): 운영 서버는 current 라는 바로가기를 통해 실행하는데,
+//     node 는 import.meta.url 을 실제 경로로 바꿔 주므로 argv[1] 과 달라진다.
+// 그래서 양쪽 모두 실제 경로로 바꾼 뒤 비교한다.
+const isDirectRun = (() => {
+  if (!process.argv[1]) return false;
+  try {
+    return (
+      realpathSync(fileURLToPath(import.meta.url)) ===
+      realpathSync(process.argv[1])
+    );
+  } catch {
+    return false;
+  }
+})();
 
 if (isDirectRun) {
   try {
