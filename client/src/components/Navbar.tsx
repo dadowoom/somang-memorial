@@ -19,7 +19,7 @@ export default function Navbar() {
   const closeMobile = () => setMobileOpen(false);
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 border-b border-[#dbdad7] bg-white/95 backdrop-blur">
+    <header className="fixed left-0 right-0 top-0 z-50 border-b border-[#b5b0a7] bg-white/95 backdrop-blur">
       <div className="container">
         <div className="flex h-16 items-center justify-between">
           <Link href="/">
@@ -59,7 +59,7 @@ export default function Navbar() {
 
           <div className="hidden items-center gap-3 lg:flex">
             <Link href="/memorial/search">
-              <button className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#dbdad7] bg-white px-4 text-xs font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+              <button className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#b5b0a7] bg-white px-4 text-xs font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
                 <Search className="h-3.5 w-3.5" />
                 추모관
               </button>
@@ -90,7 +90,7 @@ export default function Navbar() {
                 </Link>
                 <button
                   onClick={() => logout()}
-                  className="h-9 border border-[#dbdad7] bg-white px-4 text-xs font-medium text-[#616161] transition-colors hover:bg-[#f6f5f2] hover:text-[#121212]"
+                  className="h-9 border border-[#b5b0a7] bg-white px-4 text-xs font-medium text-[#616161] transition-colors hover:bg-[#f6f5f2] hover:text-[#121212]"
                 >
                   로그아웃
                 </button>
@@ -98,7 +98,7 @@ export default function Navbar() {
             ) : (
               <>
                 <Link href="/login?redirect=/admin">
-                  <button className="h-9 border border-[#dbdad7] bg-white px-4 text-xs font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                  <button className="h-9 border border-[#b5b0a7] bg-white px-4 text-xs font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
                     관리자 로그인
                   </button>
                 </Link>
@@ -113,7 +113,7 @@ export default function Navbar() {
 
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center border border-[#dbdad7] bg-white text-[#121212] lg:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center border border-[#b5b0a7] bg-white text-[#121212] lg:hidden"
             onClick={() => setMobileOpen(open => !open)}
             aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"}
           >
@@ -127,7 +127,7 @@ export default function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-[#dbdad7] bg-white lg:hidden">
+        <div className="border-t border-[#b5b0a7] bg-white lg:hidden">
           <div className="container flex flex-col gap-1 py-4">
             {navItems.map(item => (
               <a
@@ -139,14 +139,6 @@ export default function Navbar() {
                 {item.label}
               </a>
             ))}
-            <Link href="/memorial/search">
-              <span
-                onClick={closeMobile}
-                className="py-3 text-sm text-[#121212]"
-              >
-                추모관
-              </span>
-            </Link>
             <Link href="/memorial/create">
               <span
                 onClick={closeMobile}
@@ -195,21 +187,21 @@ export default function Navbar() {
                 </span>
               </Link>
             )}
-            <div className="mt-3 border-t border-[#dbdad7] pt-4">
+            <div className="mt-3 border-t border-[#b5b0a7] pt-4">
               {isAuthenticated ? (
                 <button
                   onClick={() => {
                     logout();
                     closeMobile();
                   }}
-                  className="h-10 w-full border border-[#dbdad7] bg-white text-sm text-[#121212]"
+                  className="h-10 w-full border border-[#b5b0a7] bg-white text-sm text-[#121212]"
                 >
                   로그아웃
                 </button>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <Link href="/login?redirect=/admin" onClick={closeMobile}>
-                    <button className="h-10 w-full border border-[#dbdad7] bg-white text-sm font-medium text-[#121212]">
+                    <button className="h-10 w-full border border-[#b5b0a7] bg-white text-sm font-medium text-[#121212]">
                       관리자 로그인
                     </button>
                   </Link>

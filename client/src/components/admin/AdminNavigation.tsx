@@ -37,8 +37,8 @@ export default function AdminNavigation() {
 
   return (
     <>
-      <aside className="fixed inset-y-16 left-0 z-40 hidden w-60 border-r border-[#dbdad7] bg-[#faf9f6] lg:flex lg:flex-col">
-        <div className="border-b border-[#dbdad7] px-6 py-6">
+      <aside className="fixed inset-y-16 left-0 z-40 hidden w-60 border-r border-[#b5b0a7] bg-[#faf9f6] lg:flex lg:flex-col">
+        <div className="border-b border-[#b5b0a7] px-6 py-6">
           <div className="flex items-center gap-3">
             <span className="flex h-8 w-8 items-center justify-center bg-[#18181b] text-white">
               <Plus className="h-4 w-4" strokeWidth={1.8} />
@@ -88,7 +88,7 @@ export default function AdminNavigation() {
           </div>
         </nav>
 
-        <div className="border-t border-[#dbdad7] p-3">
+        <div className="border-t border-[#b5b0a7] p-3">
           <Link href="/">
             <span className="flex h-10 items-center justify-between px-3 text-xs text-[#616161] transition-colors hover:bg-white hover:text-[#121212]">
               웹사이트 보기
@@ -100,7 +100,7 @@ export default function AdminNavigation() {
 
       <nav
         aria-label="관리자 메뉴"
-        className="border-b border-[#dbdad7] bg-[#faf9f6] lg:hidden"
+        className="border-b border-[#b5b0a7] bg-[#faf9f6] lg:hidden"
       >
         <div className="container flex min-h-12 items-center gap-1 overflow-x-auto py-2">
           <span className="mr-2 shrink-0 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777]">
