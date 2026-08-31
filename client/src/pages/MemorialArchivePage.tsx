@@ -211,17 +211,23 @@ export default function MemorialArchivePage() {
                       />
                     </div>
 
-                    <div className="mt-10 grid max-w-xl grid-cols-1 gap-px overflow-hidden border border-[#d5c9b4] bg-[#d5c9b4] sm:grid-cols-3">
+                    <div
+                      className={`mt-10 grid max-w-xl grid-cols-1 gap-px overflow-hidden border border-[#d5c9b4] bg-[#d5c9b4] ${
+                        memorial.deathDate ? "sm:grid-cols-3" : "sm:grid-cols-2"
+                      }`}
+                    >
                       <ArchiveFact
                         icon={<CalendarDays className="h-4 w-4" />}
                         label="출생"
                         value={memorial.birthDate}
                       />
-                      <ArchiveFact
-                        icon={<CalendarDays className="h-4 w-4" />}
-                        label="소천"
-                        value={memorial.deathDate}
-                      />
+                      {memorial.deathDate ? (
+                        <ArchiveFact
+                          icon={<CalendarDays className="h-4 w-4" />}
+                          label="소천"
+                          value={memorial.deathDate}
+                        />
+                      ) : null}
                       <ArchiveFact
                         icon={<Church className="h-4 w-4" />}
                         label="교회"

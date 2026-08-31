@@ -1,4 +1,5 @@
 import Footer from "@/components/Footer";
+import { formatLifespan } from "@/lib/lifespan";
 import Navbar from "@/components/Navbar";
 import { toImgUrl } from "@/lib/imageUrl";
 import { trpc } from "@/lib/trpc";
@@ -187,7 +188,7 @@ function PrivateMemorialGate({
             {status && (
               <>
                 <p className="mt-4 text-sm leading-7 text-[#616161]">
-                  {status.birthDate} - {status.deathDate} · {status.church} ·{" "}
+                  {formatLifespan(status.birthDate, status.deathDate)} · {status.church} ·{" "}
                   {status.role}
                 </p>
                 <p className="mt-8 max-w-xl text-base leading-8 text-[#333333]">
@@ -310,9 +311,15 @@ function MemorialContent({
                 {memorial.summary}
               </p>
 
-              <div className="mt-10 grid max-w-xl grid-cols-1 gap-px overflow-hidden border border-[#d5c9b4] bg-[#d5c9b4] sm:grid-cols-3">
+              <div
+                className={`mt-10 grid max-w-xl grid-cols-1 gap-px overflow-hidden border border-[#d5c9b4] bg-[#d5c9b4] ${
+                  memorial.deathDate ? "sm:grid-cols-3" : "sm:grid-cols-2"
+                }`}
+              >
                 <HeroFact label="출생" value={memorial.birthDate} />
-                <HeroFact label="소천" value={memorial.deathDate} />
+                {memorial.deathDate ? (
+                  <HeroFact label="소천" value={memorial.deathDate} />
+                ) : null}
                 <HeroFact label="교회" value={memorial.church} />
               </div>
 
@@ -695,7 +702,7 @@ function MemorialPortrait({
             />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#7a5428]/85 to-transparent px-5 py-5 text-center">
               <p className="text-xs italic text-white" style={serifStyle}>
-                {memorial.birthDate} - {memorial.deathDate}
+                {formatLifespan(memorial.birthDate, memorial.deathDate)}
               </p>
             </div>
           </>
@@ -738,7 +745,7 @@ function MemorialPortrait({
                 className="text-sm font-light"
                 style={{ ...serifStyle, color: warmText }}
               >
-                {memorial.birthDate} - {memorial.deathDate}
+                {formatLifespan(memorial.birthDate, memorial.deathDate)}
               </p>
               <div
                 className="mx-auto mt-5 h-px w-16"

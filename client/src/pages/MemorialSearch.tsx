@@ -1,4 +1,5 @@
 import Footer from "@/components/Footer";
+import { formatLifespan } from "@/lib/lifespan";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, LockKeyhole, Search } from "lucide-react";
@@ -118,7 +119,7 @@ export default function MemorialSearch() {
                       className="grid gap-3 bg-white px-4 py-4 transition-colors hover:bg-[#faf9f6] md:grid-cols-[150px_1.1fr_1fr_0.8fr_128px] md:items-center md:px-5"
                     >
                       <p className="text-xs tracking-[0.1em] text-[#616161] md:text-sm">
-                        {memorial.birthDate} - {memorial.deathDate}
+                        {formatLifespan(memorial.birthDate, memorial.deathDate)}
                       </p>
                       <h2
                         className="flex flex-wrap items-center gap-2 text-2xl font-normal md:text-xl"

@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { formatLifespan } from "@/lib/lifespan";
 import { ORG_INFO } from "@/lib/orgInfo";
 import {
   getKioskPasswordErrorMessage,
@@ -156,7 +157,7 @@ export default function Kiosk() {
         slug: memorial.slug,
         name: memorial.name,
         role: memorial.role,
-        years: `${memorial.birthDate} - ${memorial.deathDate}`,
+        years: formatLifespan(memorial.birthDate, memorial.deathDate),
       });
       setPassword("");
       setPasswordMessage("");
@@ -400,7 +401,7 @@ export default function Kiosk() {
                         )}
                       </span>
                       <span className="mt-2 block text-[15px] leading-6 text-[#616161]">
-                        {memorial.birthDate} - {memorial.deathDate} ·{" "}
+                        {formatLifespan(memorial.birthDate, memorial.deathDate)} ·{" "}
                         {memorial.church} · {memorial.role}
                       </span>
                     </span>

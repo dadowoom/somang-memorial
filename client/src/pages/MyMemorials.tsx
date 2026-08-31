@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { formatLifespan } from "@/lib/lifespan";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
@@ -151,7 +152,7 @@ export default function MyMemorials() {
                           {memorial.role}
                         </p>
                         <p className="mt-3 text-xs leading-5 text-[#777]">
-                          {memorial.birthDate} - {memorial.deathDate}
+                          {formatLifespan(memorial.birthDate, memorial.deathDate)}
                         </p>
                         <p className="mt-1 text-xs leading-5 text-[#777]">
                           {memorial.church}
