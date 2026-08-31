@@ -155,7 +155,7 @@ export default function Letters() {
                   Letters
                 </p>
                 <h1
-                  className="max-w-3xl text-5xl font-light leading-[1.12] md:text-7xl"
+                  className="max-w-3xl text-4xl font-light leading-[1.15] md:text-7xl"
                   style={{ ...serifStyle, color: warmText }}
                 >
                   하늘로 보내는 편지
@@ -409,7 +409,7 @@ function LetterCard({
 
         <div className="mt-8 grid min-w-0 grid-cols-[88px_minmax(0,1fr)] gap-4 md:grid-cols-[108px_minmax(0,1fr)] md:gap-6">
           <p
-            className="pt-1 text-6xl italic leading-none text-[#2d2b28] md:text-7xl"
+            className="pt-1 text-5xl italic leading-none text-[#2d2b28] md:text-7xl"
             style={{ fontFamily: "'Cormorant Garamond', serif" }}
           >
             To

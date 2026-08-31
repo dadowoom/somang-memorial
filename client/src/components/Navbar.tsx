@@ -139,14 +139,6 @@ export default function Navbar() {
                 {item.label}
               </a>
             ))}
-            <Link href="/memorial/search">
-              <span
-                onClick={closeMobile}
-                className="py-3 text-sm text-[#121212]"
-              >
-                추모관
-              </span>
-            </Link>
             <Link href="/memorial/create">
               <span
                 onClick={closeMobile}

@@ -72,7 +72,7 @@ export default function Home() {
                 소망교회 온라인 추모 서비스
               </p>
               <h1
-                className="max-w-3xl text-5xl font-normal leading-[1.08] sm:text-6xl md:text-8xl"
+                className="max-w-3xl text-4xl font-normal leading-[1.12] sm:text-6xl md:text-8xl"
                 style={{ fontFamily: "'Noto Serif KR', serif" }}
               >
                 소망이 있는 곳

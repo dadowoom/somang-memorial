@@ -630,14 +630,14 @@ function MemorialReminderForm({
           className="h-11 w-full border border-[#e6ded1] bg-white px-3 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#8a6a3e]"
         />
         <label
-          className="flex items-start gap-2 text-xs leading-5"
+          className="flex cursor-pointer items-start gap-3 py-2 text-xs leading-5"
           style={{ color: mutedText }}
         >
           <input
             type="checkbox"
             checked={consent}
             onChange={event => setConsent(event.target.checked)}
-            className="mt-1"
+            className="mt-0.5 h-5 w-5 shrink-0"
           />
           <span>
             추도일 알림 신청을 위해 휴대폰 번호를 저장하는 데 동의합니다.

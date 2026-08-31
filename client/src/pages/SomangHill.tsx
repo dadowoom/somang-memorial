@@ -70,7 +70,7 @@ export default function SomangHill() {
                   Somang Hill
                 </p>
                 <h1
-                  className="text-5xl font-normal leading-[1.12] tracking-[-0.025em] md:text-7xl"
+                  className="text-4xl font-normal leading-[1.15] tracking-[-0.025em] md:text-7xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
                   소망동산

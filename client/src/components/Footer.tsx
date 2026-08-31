@@ -47,17 +47,17 @@ export default function Footer() {
             <h2 className="mb-4 text-xs font-medium tracking-[0.22em] text-[#121212] uppercase">
               서비스
             </h2>
-            <ul className="space-y-3 text-sm">
+            <ul className="text-sm">
               {serviceLinks.map((link) => (
                 <li key={link.href}>
                   {link.type === "route" ? (
                     <Link href={link.href}>
-                      <span className="cursor-pointer transition-colors hover:text-[#121212]">
+                      <span className="block cursor-pointer py-2 transition-colors hover:text-[#121212]">
                         {link.label}
                       </span>
                     </Link>
                   ) : (
-                    <a href={link.href} className="transition-colors hover:text-[#121212]">
+                    <a href={link.href} className="block py-2 transition-colors hover:text-[#121212]">
                       {link.label}
                     </a>
                   )}
@@ -70,7 +70,7 @@ export default function Footer() {
             <h2 className="mb-4 text-xs font-medium tracking-[0.22em] text-[#121212] uppercase">
               {ORG_INFO.name}
             </h2>
-            <ul className="space-y-3 text-sm">
+            <ul className="text-sm">
               <li>{ORG_INFO.address}</li>
               <li>온라인 추모 서비스</li>
             </ul>
