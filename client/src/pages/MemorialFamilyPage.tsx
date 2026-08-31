@@ -113,7 +113,7 @@ export default function MemorialFamilyPage() {
           <section className="border-b border-[#d5c9b4] bg-white">
             <div className="container py-12 md:py-20">
               <Link href={`/memorial/${slug}/archive`}>
-                <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#faf9f7]">
+                <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
                   <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
                   기념관으로 돌아가기
                 </button>
@@ -142,7 +142,7 @@ export default function MemorialFamilyPage() {
                   </p>
                 </div>
 
-                <div className="border border-[#d5c9b4] bg-[#fbfaf8] p-6 md:p-7">
+                <div className="border border-[#d5c9b4] bg-[#ffffff] p-6 md:p-7">
                   <div className="flex items-start gap-4">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-[#1f1d1a] text-white">
                       <ShieldCheck className="h-5 w-5" strokeWidth={1.7} />
@@ -218,7 +218,7 @@ function PasswordGate({
   return (
     <div className="mx-auto max-w-3xl">
       <Link href={backHref}>
-        <button className="mb-6 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#faf9f7]">
+        <button className="mb-6 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
           <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
           기념관으로 돌아가기
         </button>
@@ -282,7 +282,7 @@ function UnlockedRoom({ room }: { room: FamilyRoom }) {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="border border-[#d5c9b4] bg-[#fbfaf8] p-6 md:p-10">
+      <div className="border border-[#d5c9b4] bg-[#ffffff] p-6 md:p-10">
         <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.28em] text-[#7f673d]">
           Unlocked
         </p>

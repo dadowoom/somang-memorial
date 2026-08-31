@@ -32,7 +32,7 @@ export default function AccountSettings() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f7]">
+    <div className="min-h-screen bg-[#f9f9f9]">
       <Navbar />
       <main className="mx-auto w-full max-w-[620px] px-6 pb-24 pt-28 sm:pt-32">
         <p className="text-xs font-medium tracking-[0.18em] text-[#8a8a8a]">
@@ -43,7 +43,7 @@ export default function AccountSettings() {
         </h1>
 
         <section className="mt-12">
-          <h2 className="border-b border-[#e5e3df] pb-3 text-lg font-medium text-[#121212]">
+          <h2 className="border-b border-[#e2e2e2] pb-3 text-lg font-medium text-[#121212]">
             가입 정보
           </h2>
           <dl className="mt-5 space-y-4 text-sm">
@@ -75,7 +75,7 @@ export default function AccountSettings() {
         </section>
 
         <section className="mt-16">
-          <h2 className="border-b border-[#e5e3df] pb-3 text-lg font-medium text-[#121212]">
+          <h2 className="border-b border-[#e2e2e2] pb-3 text-lg font-medium text-[#121212]">
             회원 탈퇴
           </h2>
 

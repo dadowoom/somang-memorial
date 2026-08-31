@@ -64,7 +64,7 @@ export default function Home() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="relative min-h-[calc(100svh-4rem)] overflow-hidden border-b border-[#b5b0a7] bg-[#fbfaf7]">
+        <section className="relative min-h-[calc(100svh-4rem)] overflow-hidden border-b border-[#b5b0a7] bg-[#ffffff]">
           <HeroStillBackground />
           <div className="container relative z-10 flex min-h-[calc(100svh-4rem)] flex-col justify-center py-14 md:py-20">
             <div className="max-w-3xl">
@@ -94,7 +94,7 @@ export default function Home() {
                   </button>
                 </Link>
                 <Link href="/memorial/create" className="w-full sm:w-auto">
-                  <button className="inline-flex h-12 w-full items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                  <button className="inline-flex h-12 w-full items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                     <Plus className="h-4 w-4" />
                     소망 만들기
                   </button>
@@ -167,7 +167,7 @@ export default function Home() {
 
         <section
           id="services"
-          className="border-b border-[#b5b0a7] bg-[#f6f5f2] py-16 md:py-24"
+          className="border-b border-[#b5b0a7] bg-[#f5f5f5] py-16 md:py-24"
         >
           <div className="container">
             <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
@@ -288,10 +288,10 @@ export default function Home() {
 function HeroStillBackground() {
   return (
     <div
-      className="pointer-events-none absolute inset-0 overflow-hidden bg-[#fbfaf7]"
+      className="pointer-events-none absolute inset-0 overflow-hidden bg-[#ffffff]"
       aria-hidden="true"
     >
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,#ffffff_0%,#ffffff_38%,#f7f4ee_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,#ffffff_0%,#ffffff_38%,#f7f7f7_100%)]" />
 
       <div
         className="absolute inset-y-0 right-0 hidden w-[68vw] bg-cover bg-right-center opacity-90 md:block"
@@ -304,7 +304,7 @@ function HeroStillBackground() {
 
       <div className="absolute inset-y-0 left-0 w-[72vw] bg-gradient-to-r from-white via-white/96 to-white/18" />
       <div className="absolute inset-y-0 right-0 hidden w-[72vw] bg-gradient-to-r from-white via-white/72 to-white/0 md:block" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_12%,rgba(180,168,132,0.14),transparent_28%),radial-gradient(circle_at_90%_88%,rgba(142,151,132,0.12),transparent_32%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_12%,rgba(160,160,160,0.10),transparent_28%),radial-gradient(circle_at_90%_88%,rgba(150,150,150,0.09),transparent_32%)]" />
       <div className="absolute inset-0 bg-gradient-to-b from-white/22 via-transparent to-white/58" />
     </div>
   );

@@ -317,7 +317,7 @@ function KioskKeyboard({
       ref={panelRef}
       role="region"
       aria-label="화면 키보드"
-      className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#c8c5c0] bg-[#efede9] shadow-[0_-12px_32px_rgba(0,0,0,0.16)]"
+      className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#c8c5c0] bg-[#ececec] shadow-[0_-12px_32px_rgba(0,0,0,0.16)]"
       onPointerDown={keepInputFocused}
     >
       <div className="mx-auto w-full max-w-[760px] px-2 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 sm:px-3 sm:pt-3">
@@ -328,7 +328,7 @@ function KioskKeyboard({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 items-center gap-1.5 rounded-md border border-[#bdb8b0] bg-white px-3 text-sm font-medium active:bg-[#dedad3]"
+            className="flex h-9 items-center gap-1.5 rounded-md border border-[#bdb8b0] bg-white px-3 text-sm font-medium active:bg-[#d9d9d9]"
             aria-label="화면 키보드 닫기"
           >
             <X className="h-4 w-4" />
@@ -613,9 +613,9 @@ function KeyboardKey({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex min-w-0 flex-1 touch-manipulation select-none items-center justify-center rounded-md border border-[#cbc6be] bg-white text-xl font-medium text-[#18181b] shadow-sm active:bg-[#d9d5ce] sm:text-2xl",
+        "flex min-w-0 flex-1 touch-manipulation select-none items-center justify-center rounded-md border border-[#cbc6be] bg-white text-xl font-medium text-[#18181b] shadow-sm active:bg-[#d4d4d4] sm:text-2xl",
         compact ? "h-[clamp(30px,4.3dvh,36px)]" : "h-[clamp(36px,5.6dvh,48px)]",
-        active && "border-[#18181b] bg-[#d7d3cc]",
+        active && "border-[#18181b] bg-[#d2d2d2]",
         disabled && "cursor-not-allowed opacity-45 active:bg-white",
         className
       )}

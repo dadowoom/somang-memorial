@@ -164,7 +164,7 @@ type KioskResourceStatus = {
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 const muted = "#64615d";
-const line = "#dedbd5";
+const line = "#dadada";
 const KIOSK_VIDEO_IDLE_RESET_MS = 15 * 60_000;
 
 function readAccessToken(slug: string) {
@@ -348,7 +348,7 @@ export default function KioskMemorial() {
           <button
             type="button"
             onClick={returnToKiosk}
-            className="pointer-events-auto inline-flex h-14 items-center gap-2 rounded-full border border-[#d9d6d0] bg-white/95 px-5 text-[15px] font-medium text-[#343434] shadow-[0_8px_28px_rgba(0,0,0,0.16)] backdrop-blur focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#18181b] active:bg-[#f4f2ed]"
+            className="pointer-events-auto inline-flex h-14 items-center gap-2 rounded-full border border-[#d5d5d5] bg-white/95 px-5 text-[15px] font-medium text-[#343434] shadow-[0_8px_28px_rgba(0,0,0,0.16)] backdrop-blur focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#18181b] active:bg-[#f1f1f1]"
             aria-label="처음으로: 키오스크 검색 화면으로 돌아가기"
           >
             <House className="h-5 w-5" strokeWidth={1.7} aria-hidden="true" />
@@ -374,7 +374,7 @@ export default function KioskMemorial() {
 
 function KioskMemorialHeader({ onBack }: { onBack: () => void }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-[#e8e5df] bg-white/96 px-8 py-6 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-[#e4e4e4] bg-white/96 px-8 py-6 backdrop-blur">
       <div className="flex items-center justify-between gap-5">
         <button type="button" onClick={onBack} className="text-left">
           <span className="block text-[24px] leading-tight" style={serifStyle}>
@@ -387,7 +387,7 @@ function KioskMemorialHeader({ onBack }: { onBack: () => void }) {
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex h-12 items-center gap-2 border border-[#d9d6d0] px-4 text-sm font-medium text-[#343434]"
+          className="inline-flex h-12 items-center gap-2 border border-[#d5d5d5] px-4 text-sm font-medium text-[#343434]"
         >
           <House className="h-4 w-4" />
           처음으로
@@ -427,7 +427,7 @@ function KioskLoadableImage({
   return (
     <div
       className={cn(
-        "relative overflow-hidden bg-[#f3f1ec]",
+        "relative overflow-hidden bg-[#f0f0f0]",
         containerClassName
       )}
       aria-busy={status === "loading"}
@@ -462,7 +462,7 @@ function KioskLoadableImage({
             className="absolute inset-0 h-full w-full object-cover opacity-[0.16] grayscale"
           />
           <span
-            className="absolute inset-0 bg-[#f3f1ec]/70"
+            className="absolute inset-0 bg-[#f0f0f0]/70"
             aria-hidden="true"
           />
         </>
@@ -853,7 +853,7 @@ function KioskMemorialContent({
           </p>
         </div>
 
-        <div className="mt-8 overflow-hidden border border-[#dedbd5] bg-[#f8f7f4]">
+        <div className="mt-8 overflow-hidden border border-[#dadada] bg-[#f7f7f7]">
           {photosStatus.loading ? (
             <div
               className="flex h-[360px] flex-col items-center justify-center gap-3 text-sm text-[#6f6b65]"
@@ -897,7 +897,7 @@ function KioskMemorialContent({
         </div>
 
         <div
-          className={`mt-8 grid border border-[#dedbd5] ${
+          className={`mt-8 grid border border-[#dadada] ${
             memorial.deathDate ? "grid-cols-3" : "grid-cols-2"
           }`}
         >
@@ -914,7 +914,7 @@ function KioskMemorialContent({
               key={item.id}
               type="button"
               onClick={() => scrollToSection(item.id)}
-              className="h-14 border border-[#d9d6d0] text-base font-medium active:bg-[#f4f2ed]"
+              className="h-14 border border-[#d5d5d5] text-base font-medium active:bg-[#f1f1f1]"
             >
               {item.label}
             </button>
@@ -924,7 +924,7 @@ function KioskMemorialContent({
 
       <KioskSection id="story" eyebrow="Story" title="삶과 신앙">
         {memorial.verse && (
-          <article className="border border-[#dedbd5] p-6">
+          <article className="border border-[#dadada] p-6">
             <p className="text-[22px] leading-10" style={serifStyle}>
               {memorial.verse}
             </p>
@@ -934,7 +934,7 @@ function KioskMemorialContent({
           </article>
         )}
 
-        <article className="mt-4 border border-[#dedbd5] p-6">
+        <article className="mt-4 border border-[#dadada] p-6">
           <p className="mb-4 text-sm font-medium tracking-[0.22em] text-[#777]">
             기억으로 남은 삶
           </p>
@@ -950,7 +950,7 @@ function KioskMemorialContent({
           </div>
         </article>
 
-        <article className="mt-4 border border-[#dedbd5] p-6">
+        <article className="mt-4 border border-[#dadada] p-6">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-5 w-5" />
             <p className="text-lg font-medium">추도일</p>
@@ -980,7 +980,7 @@ function KioskMemorialContent({
                 key={photo.id}
                 type="button"
                 onClick={() => onPhoto(photo)}
-                className="overflow-hidden border border-[#dedbd5] bg-white text-left"
+                className="overflow-hidden border border-[#dadada] bg-white text-left"
                 aria-label={`${photo.caption || "추억 사진"} 크게 보기`}
               >
                 <KioskLoadableImage
@@ -1021,7 +1021,7 @@ function KioskMemorialContent({
             onRetry={videosStatus.onRetry}
           />
         ) : (
-          <div className="overflow-hidden border border-[#dedbd5]">
+          <div className="overflow-hidden border border-[#dadada]">
             {featuredVideo ? (
               <button
                 type="button"
@@ -1090,7 +1090,7 @@ function KioskMemorialContent({
                       key={video.id}
                       type="button"
                       onClick={() => onVideo(video)}
-                      className="flex min-h-14 w-full items-center justify-between gap-4 border-t border-[#dedbd5] py-3 text-left text-base text-[#4f4c48]"
+                      className="flex min-h-14 w-full items-center justify-between gap-4 border-t border-[#dadada] py-3 text-left text-base text-[#4f4c48]"
                     >
                       <span>{video.title}</span>
                       <Play className="h-4 w-4 shrink-0 fill-current" />
@@ -1109,11 +1109,11 @@ function KioskMemorialContent({
 
       <KioskSection id="book" eyebrow="Archive" title="책장과 연표">
         {memorial.timeline.length ? (
-          <div className="border-t border-[#dedbd5]">
+          <div className="border-t border-[#dadada]">
             {memorial.timeline.slice(0, 6).map((item, index) => (
               <article
                 key={`${item.year}-${item.title}-${index}`}
-                className="border-b border-[#dedbd5] py-5"
+                className="border-b border-[#dadada] py-5"
               >
                 <p className="text-sm text-[#7a643e]">{item.year || "기록"}</p>
                 <h3 className="mt-2 text-[24px]" style={serifStyle}>
@@ -1143,7 +1143,7 @@ function KioskMemorialContent({
         ) : books.length ? (
           <div className="mt-5 space-y-3">
             {books.slice(0, 3).map(book => (
-              <article key={book.id} className="border border-[#dedbd5] p-5">
+              <article key={book.id} className="border border-[#dadada] p-5">
                 <p className="text-sm text-[#7a643e]">
                   {book.publishedYear || "기록"}
                 </p>
@@ -1184,7 +1184,7 @@ function KioskMemorialContent({
         isPrivate={memorial.visibility === "private"}
       />
 
-      <div aria-hidden="true" className="h-[52vh] border-t border-[#dedbd5]" />
+      <div aria-hidden="true" className="h-[52vh] border-t border-[#dadada]" />
     </>
   );
 }
@@ -1260,13 +1260,13 @@ function KioskMemorialGate({
       <button
         type="button"
         onClick={onBack}
-        className="mb-8 inline-flex h-12 items-center gap-2 border border-[#dedbd5] px-4 text-sm font-medium"
+        className="mb-8 inline-flex h-12 items-center gap-2 border border-[#dadada] px-4 text-sm font-medium"
       >
         <ArrowLeft className="h-4 w-4" />
         검색으로
       </button>
 
-      <form onSubmit={submit} className="border border-[#dedbd5] p-7">
+      <form onSubmit={submit} className="border border-[#dadada] p-7">
         <LockKeyhole className="mb-6 h-7 w-7" />
         <p className="mb-3 text-sm font-medium tracking-[0.24em] text-[#777]">
           PRIVATE MEMORIAL
@@ -1410,7 +1410,7 @@ function KioskFamilySection({
         />
       ) : room ? (
         <div className="space-y-4">
-          <article className="border border-[#dedbd5] p-6">
+          <article className="border border-[#dadada] p-6">
             <p className="text-sm text-[#7a643e]">가족관 입장 완료</p>
             <h3 className="mt-3 text-[28px]" style={serifStyle}>
               {room.title}
@@ -1430,7 +1430,7 @@ function KioskFamilySection({
                   youtubeVideoId: room.video!.youtubeVideoId,
                 })
               }
-              className="block w-full overflow-hidden border border-[#dedbd5] bg-white text-left active:bg-[#f4f2ed]"
+              className="block w-full overflow-hidden border border-[#dadada] bg-white text-left active:bg-[#f1f1f1]"
               aria-label={`${room.video.title} 눌러서 영상 재생`}
             >
               <span className="relative block aspect-video overflow-hidden bg-[#1f1d1a]">
@@ -1462,7 +1462,7 @@ function KioskFamilySection({
             </button>
           )}
           {room.notes.map(note => (
-            <article key={note.title} className="border border-[#dedbd5] p-5">
+            <article key={note.title} className="border border-[#dadada] p-5">
               <h4 className="text-[22px]" style={serifStyle}>
                 {note.title}
               </h4>
@@ -1473,7 +1473,7 @@ function KioskFamilySection({
           ))}
         </div>
       ) : (
-        <form onSubmit={submit} className="border border-[#dedbd5] p-6">
+        <form onSubmit={submit} className="border border-[#dadada] p-6">
           <p className="text-base leading-8 text-[#64615d]">
             가족에게만 열린 공간입니다. 전달받은 비밀번호를 입력해 주세요.
           </p>
@@ -1618,8 +1618,8 @@ function KioskLettersSection({
 
   return (
     <KioskSection id="letters" eyebrow="Letters" title="하늘로 보내는 편지">
-      <form onSubmit={submit} className="border border-[#dedbd5]">
-        <div className="border-b border-[#dedbd5] p-5">
+      <form onSubmit={submit} className="border border-[#dadada]">
+        <div className="border-b border-[#dadada] p-5">
           <p className="text-sm text-[#7a643e]">To {memorialName}</p>
           <input
             ref={authorKeyboard.ref}
@@ -1629,7 +1629,7 @@ function KioskLettersSection({
               setMessage("");
             }}
             placeholder="작성자"
-            className="mt-4 h-12 w-full border-b border-[#dedbd5] bg-transparent text-xl outline-none placeholder:text-[#aaa]"
+            className="mt-4 h-12 w-full border-b border-[#dadada] bg-transparent text-xl outline-none placeholder:text-[#aaa]"
             autoComplete="off"
             maxLength={80}
             inputMode={authorKeyboard.inputMode}
@@ -1670,9 +1670,9 @@ function KioskLettersSection({
         </div>
       </form>
 
-      <div className="mt-5 border-t border-[#dedbd5]">
+      <div className="mt-5 border-t border-[#dadada]">
         {lettersQuery.isLoading ? (
-          <p className="border-b border-[#dedbd5] py-5 text-base text-[#64615d]">
+          <p className="border-b border-[#dadada] py-5 text-base text-[#64615d]">
             편지를 불러오고 있습니다.
           </p>
         ) : lettersQuery.isError || lettersQuery.isPaused ? (
@@ -1683,7 +1683,7 @@ function KioskLettersSection({
           />
         ) : letters.length ? (
           letters.slice(0, 4).map(letter => (
-            <article key={letter.id} className="border-b border-[#dedbd5] py-5">
+            <article key={letter.id} className="border-b border-[#dadada] py-5">
               <div className="flex items-center justify-between gap-4">
                 <p className="text-base font-medium">From {letter.author}</p>
                 <p className="text-sm text-[#777]">
@@ -1696,7 +1696,7 @@ function KioskLettersSection({
             </article>
           ))
         ) : (
-          <p className="border-b border-[#dedbd5] py-5 text-base text-[#64615d]">
+          <p className="border-b border-[#dadada] py-5 text-base text-[#64615d]">
             아직 남겨진 편지가 없습니다.
           </p>
         )}
@@ -1719,7 +1719,7 @@ function KioskSection({
   return (
     <section
       id={id}
-      className="scroll-mt-28 border-t border-[#dedbd5] px-8 py-10"
+      className="scroll-mt-28 border-t border-[#dadada] px-8 py-10"
     >
       <p className="mb-3 text-[12px] font-medium tracking-[0.26em] text-[#777]">
         {eyebrow}
@@ -1737,7 +1737,7 @@ function KioskSection({
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border-r border-[#dedbd5] px-4 py-4 last:border-r-0">
+    <div className="border-r border-[#dadada] px-4 py-4 last:border-r-0">
       <p className="text-[12px] font-medium tracking-[0.18em] text-[#777]">
         {label}
       </p>
@@ -1748,7 +1748,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 function EmptyBox({ icon, text }: { icon: ReactNode; text: string }) {
   return (
-    <div className="flex min-h-[150px] items-center justify-center gap-3 border border-[#dedbd5] text-base text-[#64615d]">
+    <div className="flex min-h-[150px] items-center justify-center gap-3 border border-[#dadada] text-base text-[#64615d]">
       {icon}
       {text}
     </div>
@@ -1765,7 +1765,7 @@ function RetryBox({
   onRetry: () => void;
 }) {
   return (
-    <div className="flex min-h-[170px] flex-col items-center justify-center border border-[#dedbd5] px-6 text-center">
+    <div className="flex min-h-[170px] flex-col items-center justify-center border border-[#dadada] px-6 text-center">
       <p className="text-base text-[#64615d]">{text}</p>
       <button
         type="button"
@@ -1797,7 +1797,7 @@ function KioskState({
 }) {
   return (
     <section className="px-8 py-16">
-      <div className="flex min-h-[240px] flex-col items-center justify-center border border-[#dedbd5] px-6 py-12 text-center">
+      <div className="flex min-h-[240px] flex-col items-center justify-center border border-[#dadada] px-6 py-12 text-center">
         <p className="text-lg font-medium text-[#34312d]">{children}</p>
         {description && (
           <p className="mt-3 max-w-md text-base leading-7 text-[#64615d]">

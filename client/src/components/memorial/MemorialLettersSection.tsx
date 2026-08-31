@@ -107,7 +107,7 @@ export default function MemorialLettersSection({
                 />
               </label>
             </div>
-            <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#fbfaf8] p-5 sm:flex-row sm:items-center">
+            <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
               <p className="text-xs leading-6" style={{ color: mutedText }}>
                 {message ||
                   (isPrivate
@@ -171,7 +171,7 @@ export default function MemorialLettersSection({
           <div className="mt-8 text-center">
             <Link href="/letters">
               <span
-                className="inline-flex h-11 items-center justify-center border border-[#d5c9b4] bg-white px-5 text-sm font-medium transition-colors hover:bg-[#faf9f7]"
+                className="inline-flex h-11 items-center justify-center border border-[#d5c9b4] bg-white px-5 text-sm font-medium transition-colors hover:bg-[#f9f9f9]"
                 style={{ color: "#4f4638" }}
               >
                 모든 편지 보기

@@ -59,7 +59,7 @@ export default function Navbar() {
 
           <div className="hidden items-center gap-3 lg:flex">
             <Link href="/memorial/search">
-              <button className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#b5b0a7] bg-white px-4 text-xs font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+              <button className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#b5b0a7] bg-white px-4 text-xs font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                 <Search className="h-3.5 w-3.5" />
                 추모관
               </button>
@@ -90,7 +90,7 @@ export default function Navbar() {
                 </Link>
                 <button
                   onClick={() => logout()}
-                  className="h-9 border border-[#b5b0a7] bg-white px-4 text-xs font-medium text-[#616161] transition-colors hover:bg-[#f6f5f2] hover:text-[#121212]"
+                  className="h-9 border border-[#b5b0a7] bg-white px-4 text-xs font-medium text-[#616161] transition-colors hover:bg-[#f5f5f5] hover:text-[#121212]"
                 >
                   로그아웃
                 </button>
@@ -98,7 +98,7 @@ export default function Navbar() {
             ) : (
               <>
                 <Link href="/login?redirect=/admin">
-                  <button className="h-9 border border-[#b5b0a7] bg-white px-4 text-xs font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                  <button className="h-9 border border-[#b5b0a7] bg-white px-4 text-xs font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                     관리자 로그인
                   </button>
                 </Link>

@@ -159,7 +159,7 @@ export default function ParentFinder() {
               </p>
             </div>
 
-            <aside className="border border-[#b5b0a7] bg-[#f8f7f4] p-6">
+            <aside className="border border-[#b5b0a7] bg-[#f7f7f7] p-6">
               <ShieldCheck
                 className="h-5 w-5 text-[#121212]"
                 strokeWidth={1.5}
@@ -222,7 +222,7 @@ export default function ParentFinder() {
             </form>
 
             {notice && (
-              <div className="mt-5 border border-[#d8b3ad] bg-[#fff8f7] px-5 py-4 text-sm leading-6 text-[#7d3025]">
+              <div className="mt-5 border border-[#d8b3ad] bg-[#fafafa] px-5 py-4 text-sm leading-6 text-[#7d3025]">
                 {notice}
               </div>
             )}
@@ -244,7 +244,7 @@ export default function ParentFinder() {
                   <HeartHandshake className="h-4 w-4" strokeWidth={1.7} />
                   확인된 부모님 기록
                 </div>
-                <label className="mb-4 flex items-start gap-3 border border-[#b5b0a7] bg-[#f8f7f4] p-4 text-sm leading-6 text-[#444]">
+                <label className="mb-4 flex items-start gap-3 border border-[#b5b0a7] bg-[#f7f7f7] p-4 text-sm leading-6 text-[#444]">
                   <input
                     type="checkbox"
                     checked={familyConfirmed}

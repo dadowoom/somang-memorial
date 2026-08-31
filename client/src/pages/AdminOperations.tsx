@@ -172,7 +172,7 @@ export default function AdminOperations() {
                 <button
                   type="button"
                   onClick={() => exportLetters(filteredLetters)}
-                  className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]"
+                  className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]"
                 >
                   <Download className="h-4 w-4" strokeWidth={1.7} />
                   편지 CSV
@@ -180,13 +180,13 @@ export default function AdminOperations() {
                 <button
                   type="button"
                   onClick={() => exportReminders(filteredReminders)}
-                  className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]"
+                  className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]"
                 >
                   <Download className="h-4 w-4" strokeWidth={1.7} />
                   알림 CSV
                 </button>
                 <Link href="/admin">
-                  <button className="h-12 border border-[#b5b0a7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                  <button className="h-12 border border-[#b5b0a7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                     추모관 관리
                   </button>
                 </Link>
@@ -443,7 +443,7 @@ export default function AdminOperations() {
                                 status: nextStatus,
                               });
                             }}
-                            className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2] disabled:cursor-not-allowed disabled:opacity-50"
+                            className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {active ? (
                               <XCircle className="h-4 w-4" />

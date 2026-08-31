@@ -536,7 +536,7 @@ export default function MemorialCreate() {
                     <span
                       key={item.id}
                       className={`h-1 flex-1 ${
-                        index <= step ? "bg-[#18181b]" : "bg-[#dedbd5]"
+                        index <= step ? "bg-[#18181b]" : "bg-[#dadada]"
                       }`}
                     />
                   ))}
@@ -802,7 +802,7 @@ export default function MemorialCreate() {
                 <button
                   type="button"
                   onClick={addTimeline}
-                  className="mt-6 inline-flex h-11 items-center gap-2 border border-[#b5b0a7] px-4 text-sm transition-colors hover:bg-[#f6f5f2]"
+                  className="mt-6 inline-flex h-11 items-center gap-2 border border-[#b5b0a7] px-4 text-sm transition-colors hover:bg-[#f5f5f5]"
                 >
                   <Plus className="h-4 w-4" strokeWidth={1.6} />
                   기록 추가
@@ -886,7 +886,7 @@ export default function MemorialCreate() {
                 <SectionHeader number="05" title="공개 설정" />
 
                 {!isAdmin && (
-                  <p className="mb-6 border-l-2 border-[#18181b] bg-[#f8f7f4] px-4 py-3 text-sm leading-6 text-[#414141]">
+                  <p className="mb-6 border-l-2 border-[#18181b] bg-[#f7f7f7] px-4 py-3 text-sm leading-6 text-[#414141]">
                     작성한 추모관은 관리자 확인을 거친 뒤 게시됩니다. 확인 전에는
                     검색 결과와 키오스크에 보이지 않습니다.
                   </p>
@@ -907,7 +907,7 @@ export default function MemorialCreate() {
                             className={`min-h-24 bg-white p-4 text-left transition-colors ${
                               selected
                                 ? "text-[#121212] ring-1 ring-inset ring-[#18181b]"
-                                : "text-[#616161] hover:bg-[#faf9f6]"
+                                : "text-[#616161] hover:bg-[#fafafa]"
                             }`}
                           >
                             <span className="block text-base font-medium">
@@ -966,7 +966,7 @@ export default function MemorialCreate() {
                     <button
                       type="button"
                       onClick={saveDraft}
-                      className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f6f5f2]"
+                      className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5]"
                     >
                       <Save className="h-4 w-4" strokeWidth={1.6} />
                       임시저장
@@ -975,7 +975,7 @@ export default function MemorialCreate() {
                       <button
                         type="button"
                         onClick={() => goToStep(step - 1)}
-                        className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f6f5f2]"
+                        className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5]"
                       >
                         <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
                         이전
@@ -984,7 +984,7 @@ export default function MemorialCreate() {
                       <Link href="/">
                         <button
                           type="button"
-                          className="h-11 w-full border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f6f5f2] sm:w-auto"
+                          className="h-11 w-full border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5] sm:w-auto"
                         >
                           홈으로
                         </button>
@@ -1054,14 +1054,14 @@ export default function MemorialCreate() {
                           </button>
                         </Link>
                         <Link href="/my/memorials">
-                          <button className="inline-flex h-10 items-center justify-center border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                          <button className="inline-flex h-10 items-center justify-center border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                             내 추모관
                           </button>
                         </Link>
                         <Link
                           href={createdMemorial?.editHref || "/my/memorials"}
                         >
-                          <button className="inline-flex h-10 items-center justify-center border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                          <button className="inline-flex h-10 items-center justify-center border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                             이어서 수정
                           </button>
                         </Link>

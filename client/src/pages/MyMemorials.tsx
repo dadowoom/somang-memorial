@@ -127,7 +127,7 @@ export default function MyMemorials() {
               <EmptyPanel />
             ) : (
               <div className="overflow-hidden border-y border-[#b5b0a7]">
-                <div className="hidden grid-cols-[minmax(210px,1.25fr)_minmax(150px,0.8fr)_minmax(130px,0.65fr)_minmax(150px,0.75fr)_178px] border-b border-[#b5b0a7] bg-[#f8f7f4] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
+                <div className="hidden grid-cols-[minmax(210px,1.25fr)_minmax(150px,0.8fr)_minmax(130px,0.65fr)_minmax(150px,0.75fr)_178px] border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
                   <span>Name</span>
                   <span>Status</span>
                   <span>Memorial Day</span>
@@ -139,7 +139,7 @@ export default function MyMemorials() {
                   {memorials.map(memorial => (
                     <article
                       key={memorial.id}
-                      className="grid gap-5 bg-white px-4 py-5 transition-colors hover:bg-[#faf9f6] lg:grid-cols-[minmax(210px,1.25fr)_minmax(150px,0.8fr)_minmax(130px,0.65fr)_minmax(150px,0.75fr)_178px] lg:items-center lg:px-5"
+                      className="grid gap-5 bg-white px-4 py-5 transition-colors hover:bg-[#fafafa] lg:grid-cols-[minmax(210px,1.25fr)_minmax(150px,0.8fr)_minmax(130px,0.65fr)_minmax(150px,0.75fr)_178px] lg:items-center lg:px-5"
                     >
                       <div>
                         <h2
@@ -253,7 +253,7 @@ function StatusBadge({ status }: { status: string }) {
         : status || "상태 확인";
 
   return (
-    <span className="inline-flex w-fit items-center border border-[#b5b0a7] bg-[#f8f7f4] px-2 py-1 text-xs text-[#616161]">
+    <span className="inline-flex w-fit items-center border border-[#b5b0a7] bg-[#f7f7f7] px-2 py-1 text-xs text-[#616161]">
       {label}
     </span>
   );

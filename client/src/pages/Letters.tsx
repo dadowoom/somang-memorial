@@ -208,7 +208,7 @@ export default function Letters() {
                     className={`h-12 px-4 text-sm transition-colors ${
                       field === value
                         ? "bg-[#1f1d1a] text-white"
-                        : "bg-white text-[#4f4638] hover:bg-[#faf9f7]"
+                        : "bg-white text-[#4f4638] hover:bg-[#f9f9f9]"
                     }`}
                   >
                     {label}
@@ -270,7 +270,7 @@ export default function Letters() {
                     className="mt-4 w-full resize-none bg-transparent text-sm leading-7 text-[#121212] outline-none placeholder:text-[#9a9a9a]"
                   />
                 </label>
-                <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#fbfaf8] p-5 sm:flex-row sm:items-center">
+                <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
                   <p className="text-xs leading-6" style={{ color: mutedText }}>
                     {message ||
                       "이곳에서 남긴 편지도 추모관 편지와 함께 모입니다."}
@@ -298,7 +298,7 @@ export default function Letters() {
                   : `최근 편지 ${results.length}건`}
               </p>
               <Link href="/memorial/search">
-                <button className="h-10 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                <button className="h-10 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                   추모관
                 </button>
               </Link>
@@ -347,7 +347,7 @@ export default function Letters() {
                       className={`h-10 min-w-10 border px-3 text-sm transition-colors ${
                         safePage === pageNumber
                           ? "border-[#1f1d1a] bg-[#1f1d1a] text-white"
-                          : "border-[#b5b0a7] bg-white text-[#4f4638] hover:bg-[#faf9f7]"
+                          : "border-[#b5b0a7] bg-white text-[#4f4638] hover:bg-[#f9f9f9]"
                       }`}
                     >
                       {pageNumber}
@@ -468,7 +468,7 @@ function LetterCard({
       </div>
 
       <div
-        className="hidden bg-[#d7d2ca] bg-cover bg-center md:block"
+        className="hidden bg-[#d1d1d1] bg-cover bg-center md:block"
         style={{
           backgroundImage: `linear-gradient(180deg, rgba(31,29,26,0.08), rgba(31,29,26,0.18)), url(${imageUrl})`,
           filter: "grayscale(0.18) saturate(0.68) contrast(0.94)",

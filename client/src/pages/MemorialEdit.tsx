@@ -708,7 +708,7 @@ export default function MemorialEdit() {
                     <button
                       type="button"
                       onClick={addTimeline}
-                      className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f6f5f2]"
+                      className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5]"
                     >
                       <Plus className="h-4 w-4" strokeWidth={1.7} />
                       기록 추가
@@ -737,7 +737,7 @@ export default function MemorialEdit() {
                               className={`min-h-24 bg-white p-4 text-left transition-colors ${
                                 selected
                                   ? "text-[#121212] ring-1 ring-inset ring-[#18181b]"
-                                  : "text-[#616161] hover:bg-[#faf9f6]"
+                                  : "text-[#616161] hover:bg-[#fafafa]"
                               }`}
                             >
                               <span className="block text-base font-medium">
@@ -829,7 +829,7 @@ export default function MemorialEdit() {
                       <Link href={memorial.href}>
                         <button
                           type="button"
-                          className="h-11 w-full border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f6f5f2] sm:w-auto"
+                          className="h-11 w-full border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5] sm:w-auto"
                         >
                           추모관 보기
                         </button>

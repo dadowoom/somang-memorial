@@ -82,7 +82,7 @@ function Router() {
 
 function RouteLoading() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f8f7f4] text-sm text-[#616161]">
+    <main className="flex min-h-screen items-center justify-center bg-[#f7f7f7] text-sm text-[#616161]">
       화면을 불러오는 중입니다.
     </main>
   );
