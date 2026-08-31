@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { ORG_INFO } from "@/lib/orgInfo";
 import {
   getKioskPasswordErrorMessage,
   KIOSK_CONNECTION_ERROR_MESSAGE,
@@ -222,15 +223,28 @@ export default function Kiosk() {
     <main className="min-h-[100dvh] bg-white text-[#121212]">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-[680px] flex-col bg-white">
         <header className="px-8 py-8">
-          <button type="button" onClick={resetKiosk} className="text-left">
-            <span
-              className="block text-[26px] font-normal leading-tight"
-              style={serifStyle}
-            >
-              소망이 있는 곳
-            </span>
-            <span className="mt-1 block text-sm text-[#777]">
-              소망교회 추모관
+          <button
+            type="button"
+            onClick={resetKiosk}
+            className="flex items-center gap-4 text-left"
+          >
+            <img
+              src={ORG_INFO.logoSrc}
+              alt="소망교회 로고"
+              width={512}
+              height={372}
+              className="h-12 w-auto"
+            />
+            <span className="block">
+              <span
+                className="block text-[26px] font-normal leading-tight"
+                style={serifStyle}
+              >
+                소망이 있는 곳
+              </span>
+              <span className="mt-1 block text-sm text-[#777]">
+                소망교회 추모관
+              </span>
             </span>
           </button>
         </header>

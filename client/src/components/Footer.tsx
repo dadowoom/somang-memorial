@@ -1,5 +1,4 @@
 import { ORG_INFO } from "@/lib/orgInfo";
-import { Plus } from "lucide-react";
 import { Link } from "wouter";
 
 const serviceLinks = [
@@ -20,9 +19,13 @@ export default function Footer() {
         <div className="grid gap-10 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
             <div className="mb-5 flex items-center gap-3">
-              <span className="flex h-8 w-8 items-center justify-center bg-[#18181b] text-white">
-                <Plus className="h-4 w-4" strokeWidth={1.7} />
-              </span>
+              <img
+                src={ORG_INFO.logoSrc}
+                alt="소망교회 로고"
+                width={512}
+                height={372}
+                className="h-8 w-auto"
+              />
               <div className="leading-tight">
                 <span
                   className="block text-sm font-normal text-[#121212]"
