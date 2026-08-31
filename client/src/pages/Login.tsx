@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import { inputClass, labelClass } from "@/lib/formStyles";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowRight,
@@ -14,9 +15,6 @@ import { Link, useLocation } from "wouter";
 
 type Mode = "login" | "signup";
 
-const inputClass =
-  "h-12 w-full border-0 border-b border-[#b5b0a7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
-const labelClass = "mb-2 block text-xs font-medium text-[#616161]";
 const helpTextClass = "mt-2 text-xs leading-5 text-[#8a8a8a]";
 const phonePattern = /^[0-9\-\s+()]+$/;
 
