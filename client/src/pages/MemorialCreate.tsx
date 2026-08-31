@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import {
+  ArrowLeft,
   ArrowRight,
   Check,
   ImagePlus,
@@ -80,6 +81,22 @@ const requiredFields: Array<{ key: keyof MemorialForm; label: string }> = [
   { key: "story", label: "삶의 기록" },
 ];
 
+/**
+ * 등록 화면을 한 번에 다 보여주면 채울 칸이 스무 개가 넘는다. 한 단계씩 나눠
+ * 보여주고, 그 단계의 필수 항목만 확인한 뒤 다음으로 넘어가게 한다.
+ */
+const steps: Array<{
+  id: string;
+  label: string;
+  required: Array<keyof MemorialForm>;
+}> = [
+  { id: "basic", label: "기본 정보", required: ["name", "role", "birthDate"] },
+  { id: "story", label: "신앙 이야기", required: ["summary", "story"] },
+  { id: "timeline", label: "생애 기록", required: [] },
+  { id: "photos", label: "사진", required: [] },
+  { id: "settings", label: "공개 설정", required: ["accessPassword"] },
+];
+
 const visibilityOptions: Array<{
   value: Visibility;
   label: string;
@@ -143,6 +160,8 @@ export default function MemorialCreate() {
     Partial<Record<keyof MemorialForm, string>>
   >({});
   const [notice, setNotice] = useState("");
+  const [step, setStep] = useState(0);
+  const isLastStep = step === steps.length - 1;
   const [submitted, setSubmitted] = useState(false);
   const [createdMemorial, setCreatedMemorial] =
     useState<CreatedMemorial | null>(null);
@@ -264,6 +283,26 @@ export default function MemorialCreate() {
     setCreatedMemorial(null);
   };
 
+  const goToStep = (index: number) => {
+    setStep(Math.min(Math.max(index, 0), steps.length - 1));
+    setNotice("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // 이 단계에서 비운 칸만 짚어 준다. 아직 오지 않은 단계까지 미리 지적하면
+  // 무엇을 고쳐야 하는지 알기 어렵다.
+  const goNext = () => {
+    const nextErrors = collectErrors();
+    const blocking = steps[step].required.filter(key => nextErrors[key]);
+    if (blocking.length > 0) {
+      setErrors(nextErrors);
+      setNotice("이 단계에서 비어 있는 항목을 먼저 채워 주세요.");
+      return;
+    }
+    setErrors({});
+    goToStep(step + 1);
+  };
+
   const saveDraft = () => {
     localStorage.setItem(draftKey, JSON.stringify({ form, timeline }));
     setNotice(
@@ -272,7 +311,7 @@ export default function MemorialCreate() {
     setSubmitted(false);
   };
 
-  const validate = () => {
+  const collectErrors = () => {
     const nextErrors: Partial<Record<keyof MemorialForm, string>> = {};
 
     requiredFields.forEach(({ key, label }) => {
@@ -286,6 +325,11 @@ export default function MemorialCreate() {
         "비공개 추모관 입장 비밀번호를 입력해 주세요.";
     }
 
+    return nextErrors;
+  };
+
+  const validate = () => {
+    const nextErrors = collectErrors();
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -294,11 +338,17 @@ export default function MemorialCreate() {
     event.preventDefault();
 
     if (!validate()) {
-      setNotice("필수 항목을 먼저 채워 주세요.");
+      // 비운 칸이 다른 단계에 있으면 그 단계로 데려간다. 그러지 않으면
+      // "채워 주세요"라는 말만 보이고 어디를 채워야 할지 알 수 없다.
+      const nextErrors = collectErrors();
+      const firstStep = steps.findIndex(item =>
+        item.required.some(key => nextErrors[key])
+      );
+      if (firstStep >= 0 && firstStep !== step) {
+        goToStep(firstStep);
+      }
+      setNotice("비어 있는 항목을 먼저 채워 주세요.");
       setSubmitted(false);
-      document
-        .getElementById("basic")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
 
@@ -442,37 +492,24 @@ export default function MemorialCreate() {
             <aside className="hidden lg:block">
               <div className="sticky top-24 border border-[#b5b0a7] p-5">
                 <p className="text-sm font-medium text-[#121212]">입력 항목</p>
-                <nav className="mt-5 space-y-3 text-sm text-[#616161]">
-                  <a
-                    href="#basic"
-                    className="block transition-colors hover:text-[#121212]"
-                  >
-                    기본 정보
-                  </a>
-                  <a
-                    href="#story"
-                    className="block transition-colors hover:text-[#121212]"
-                  >
-                    신앙 이야기
-                  </a>
-                  <a
-                    href="#timeline"
-                    className="block transition-colors hover:text-[#121212]"
-                  >
-                    생애 기록
-                  </a>
-                  <a
-                    href="#photos"
-                    className="block transition-colors hover:text-[#121212]"
-                  >
-                    사진
-                  </a>
-                  <a
-                    href="#settings"
-                    className="block transition-colors hover:text-[#121212]"
-                  >
-                    공개 설정
-                  </a>
+                <nav className="mt-5 space-y-1 text-sm">
+                  {steps.map((item, index) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => goToStep(index)}
+                      className={`block w-full py-2 text-left transition-colors ${
+                        index === step
+                          ? "font-medium text-[#121212]"
+                          : "text-[#616161] hover:text-[#121212]"
+                      }`}
+                    >
+                      <span className="mr-2 text-xs text-[#9a9a9a]">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      {item.label}
+                    </button>
+                  ))}
                 </nav>
 
                 <div className="mt-8 border-t border-[#b5b0a7] pt-5">
@@ -485,9 +522,31 @@ export default function MemorialCreate() {
             </aside>
 
             <div className="space-y-8">
+              <div className="lg:hidden">
+                <div className="flex items-baseline justify-between">
+                  <p className="text-sm font-medium text-[#121212]">
+                    {steps[step].label}
+                  </p>
+                  <p className="text-xs text-[#616161]">
+                    {step + 1} / {steps.length}
+                  </p>
+                </div>
+                <div className="mt-3 flex gap-1">
+                  {steps.map((item, index) => (
+                    <span
+                      key={item.id}
+                      className={`h-1 flex-1 ${
+                        index <= step ? "bg-[#18181b]" : "bg-[#dedbd5]"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
               <section
                 id="basic"
-                className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
+                className={`scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8 ${
+                  step === 0 ? "" : "hidden"
+                }`}
               >
                 <SectionHeader number="01" title="기본 정보" />
 
@@ -594,7 +653,9 @@ export default function MemorialCreate() {
 
               <section
                 id="story"
-                className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
+                className={`scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8 ${
+                  step === 1 ? "" : "hidden"
+                }`}
               >
                 <SectionHeader number="02" title="신앙 이야기" />
 
@@ -675,7 +736,9 @@ export default function MemorialCreate() {
 
               <section
                 id="timeline"
-                className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
+                className={`scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8 ${
+                  step === 2 ? "" : "hidden"
+                }`}
               >
                 <SectionHeader number="03" title="생애 기록" />
 
@@ -748,7 +811,9 @@ export default function MemorialCreate() {
 
               <section
                 id="photos"
-                className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
+                className={`scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8 ${
+                  step === 3 ? "" : "hidden"
+                }`}
               >
                 <SectionHeader number="04" title="사진" />
 
@@ -814,7 +879,9 @@ export default function MemorialCreate() {
 
               <section
                 id="settings"
-                className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
+                className={`scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8 ${
+                  step === 4 ? "" : "hidden"
+                }`}
               >
                 <SectionHeader number="05" title="공개 설정" />
 
@@ -904,24 +971,46 @@ export default function MemorialCreate() {
                       <Save className="h-4 w-4" strokeWidth={1.6} />
                       임시저장
                     </button>
-                    <Link href="/">
+                    {step > 0 ? (
                       <button
                         type="button"
-                        className="h-11 w-full border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f6f5f2] sm:w-auto"
+                        onClick={() => goToStep(step - 1)}
+                        className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f6f5f2]"
                       >
-                        홈으로
+                        <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
+                        이전
                       </button>
-                    </Link>
-                    <button
-                      type="submit"
-                      disabled={createMemorialMutation.isPending}
-                      className="inline-flex h-11 items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-                    >
-                      {createMemorialMutation.isPending
-                        ? "저장 중"
-                        : "추모관 생성"}
-                      <ArrowRight className="h-4 w-4" strokeWidth={1.6} />
-                    </button>
+                    ) : (
+                      <Link href="/">
+                        <button
+                          type="button"
+                          className="h-11 w-full border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f6f5f2] sm:w-auto"
+                        >
+                          홈으로
+                        </button>
+                      </Link>
+                    )}
+                    {isLastStep ? (
+                      <button
+                        type="submit"
+                        disabled={createMemorialMutation.isPending}
+                        className="inline-flex h-11 items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                      >
+                        {createMemorialMutation.isPending
+                          ? "저장 중"
+                          : "추모관 생성"}
+                        <ArrowRight className="h-4 w-4" strokeWidth={1.6} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={goNext}
+                        className="inline-flex h-11 items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                      >
+                        다음
+                        <ArrowRight className="h-4 w-4" strokeWidth={1.6} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </section>
