@@ -72,9 +72,9 @@ export default function MemorialLettersSection({
         <div className="mx-auto max-w-5xl">
           <form
             onSubmit={submitLetter}
-            className="border border-[#e6ded1] bg-white"
+            className="border border-[#d5c9b4] bg-white"
           >
-            <div className="grid gap-px bg-[#e6ded1] md:grid-cols-[190px_1fr]">
+            <div className="grid gap-px bg-[#d5c9b4] md:grid-cols-[190px_1fr]">
               <label className="bg-white p-5">
                 <span
                   className="text-xs font-medium uppercase tracking-[0.16em]"
@@ -107,7 +107,7 @@ export default function MemorialLettersSection({
                 />
               </label>
             </div>
-            <div className="flex flex-col justify-between gap-3 border-t border-[#e6ded1] bg-[#fbfaf8] p-5 sm:flex-row sm:items-center">
+            <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#fbfaf8] p-5 sm:flex-row sm:items-center">
               <p className="text-xs leading-6" style={{ color: mutedText }}>
                 {message ||
                   (isPrivate
@@ -125,10 +125,10 @@ export default function MemorialLettersSection({
             </div>
           </form>
 
-          <div className="mt-8 border-t border-[#e6ded1]">
+          <div className="mt-8 border-t border-[#d5c9b4]">
             {lettersQuery.isLoading ? (
               <p
-                className="border-b border-[#e6ded1] py-7 text-sm"
+                className="border-b border-[#d5c9b4] py-7 text-sm"
                 style={{ color: mutedText }}
               >
                 편지를 불러오고 있습니다.
@@ -137,7 +137,7 @@ export default function MemorialLettersSection({
               lettersQuery.data.map(letter => (
                 <article
                   key={letter.id}
-                  className="border-b border-[#e6ded1] py-7"
+                  className="border-b border-[#d5c9b4] py-7"
                 >
                   <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
                     <p
@@ -160,7 +160,7 @@ export default function MemorialLettersSection({
               ))
             ) : (
               <p
-                className="border-b border-[#e6ded1] py-7 text-sm"
+                className="border-b border-[#d5c9b4] py-7 text-sm"
                 style={{ color: mutedText }}
               >
                 아직 남겨진 편지가 없습니다.
@@ -171,7 +171,7 @@ export default function MemorialLettersSection({
           <div className="mt-8 text-center">
             <Link href="/letters">
               <span
-                className="inline-flex h-11 items-center justify-center border border-[#e6ded1] bg-white px-5 text-sm font-medium transition-colors hover:bg-[#faf9f7]"
+                className="inline-flex h-11 items-center justify-center border border-[#d5c9b4] bg-white px-5 text-sm font-medium transition-colors hover:bg-[#faf9f7]"
                 style={{ color: "#4f4638" }}
               >
                 모든 편지 보기

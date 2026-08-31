@@ -119,7 +119,7 @@ const ContentPage = forwardRef<HTMLDivElement, { page: BookPage }>(
           </p>
         )}
         {page.photoUrl && (
-          <div className="mb-4 h-[38%] shrink-0 overflow-hidden border border-[#e6ded1]">
+          <div className="mb-4 h-[38%] shrink-0 overflow-hidden border border-[#d5c9b4]">
             <img
               src={toImgUrl(page.photoUrl)}
               alt={page.title || date || "기록 사진"}
@@ -253,7 +253,7 @@ export default function MemorialBookSection({
   if (!booksQuery.isLoading && books.length === 0 && !isAdmin) return null;
 
   return (
-    <section className="border-t border-[#e6ded1] bg-white py-20 md:py-28">
+    <section className="border-t border-[#d5c9b4] bg-white py-20 md:py-28">
       <div className="container">
         <div className="mx-auto mb-10 max-w-3xl text-center">
           <p className="mb-3 text-xs font-medium uppercase tracking-[0.28em] text-[#7f673d]">
@@ -272,7 +272,7 @@ export default function MemorialBookSection({
 
         {books.length > 0 && (
           <div className="mb-7 flex flex-wrap items-center justify-center gap-2">
-            <div className="inline-flex border border-[#e6ded1] bg-white p-1">
+            <div className="inline-flex border border-[#d5c9b4] bg-white p-1">
               <button
                 type="button"
                 onClick={() => setViewMode("book")}
@@ -314,7 +314,7 @@ export default function MemorialBookSection({
                 className={`border px-4 py-2 text-xs ${
                   index === selectedBookIndex
                     ? "border-[#1f1d1a] bg-[#1f1d1a] text-white"
-                    : "border-[#e6ded1] bg-white text-[#4f4638]"
+                    : "border-[#d5c9b4] bg-white text-[#4f4638]"
                 }`}
               >
                 {book.title}
@@ -340,7 +340,7 @@ export default function MemorialBookSection({
                     if (event.key === "Escape") setAddingBook(false);
                   }}
                   placeholder="책 제목"
-                  className="h-10 border border-[#e6ded1] bg-white px-3 text-sm outline-none"
+                  className="h-10 border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
                   autoFocus
                 />
                 <button
@@ -361,7 +361,7 @@ export default function MemorialBookSection({
                 <button
                   type="button"
                   onClick={() => setAddingBook(false)}
-                  className="h-10 border border-[#e6ded1] bg-white px-3 text-[#4f4638]"
+                  className="h-10 border border-[#d5c9b4] bg-white px-3 text-[#4f4638]"
                   aria-label="취소"
                 >
                   <X className="h-4 w-4" />
@@ -382,7 +382,7 @@ export default function MemorialBookSection({
                 <button
                   type="button"
                   onClick={() => setEditingPage({ bookId: selectedBook.id })}
-                  className="inline-flex h-10 items-center gap-2 border border-[#e6ded1] bg-white px-4 text-sm text-[#4f4638]"
+                  className="inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638]"
                 >
                   <Plus className="h-4 w-4" />
                   페이지 추가
@@ -406,7 +406,7 @@ export default function MemorialBookSection({
         )}
 
         {booksQuery.isLoading ? (
-          <div className="border border-[#e6ded1] bg-white py-16 text-center text-sm text-[#6f6a61]">
+          <div className="border border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]">
             책장을 불러오고 있습니다.
           </div>
         ) : selectedBook ? (
@@ -444,7 +444,7 @@ export default function MemorialBookSection({
           )
         ) : (
           isAdmin && (
-            <div className="border border-dashed border-[#e6ded1] bg-white py-16 text-center text-sm text-[#6f6a61]">
+            <div className="border border-dashed border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]">
               첫 번째 책을 추가해 주세요.
             </div>
           )
@@ -572,7 +572,7 @@ function BookView({
         <button
           type="button"
           onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
-          className="flex h-10 w-10 items-center justify-center border border-[#e6ded1] bg-white text-[#4f4638]"
+          className="flex h-10 w-10 items-center justify-center border border-[#d5c9b4] bg-white text-[#4f4638]"
           aria-label="이전 페이지"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -583,7 +583,7 @@ function BookView({
         <button
           type="button"
           onClick={() => bookRef.current?.pageFlip()?.flipNext()}
-          className="flex h-10 w-10 items-center justify-center border border-[#e6ded1] bg-white text-[#4f4638]"
+          className="flex h-10 w-10 items-center justify-center border border-[#d5c9b4] bg-white text-[#4f4638]"
           aria-label="다음 페이지"
         >
           <ChevronRight className="h-4 w-4" />
@@ -595,7 +595,7 @@ function BookView({
           <button
             type="button"
             onClick={() => onEditPage(editablePage)}
-            className="inline-flex h-9 items-center gap-2 border border-[#e6ded1] bg-white px-3 text-xs text-[#4f4638]"
+            className="inline-flex h-9 items-center gap-2 border border-[#d5c9b4] bg-white px-3 text-xs text-[#4f4638]"
           >
             <Pencil className="h-3.5 w-3.5" />
             페이지 편집
@@ -627,7 +627,7 @@ function TimelineView({
 }) {
   if (pages.length === 0) {
     return (
-      <div className="border border-[#e6ded1] bg-white py-16 text-center text-sm text-[#6f6a61]">
+      <div className="border border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]">
         등록된 페이지가 없습니다.
       </div>
     );
@@ -639,7 +639,7 @@ function TimelineView({
         const date = formatDate(page.dateYear, page.dateMonth, page.dateDay);
         return (
           <article key={page.id} className="border-l border-[#7f673d] pl-5">
-            <div className="border border-[#e6ded1] bg-white p-5 md:p-6">
+            <div className="border border-[#d5c9b4] bg-white p-5 md:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   {date && (
@@ -661,7 +661,7 @@ function TimelineView({
                     <button
                       type="button"
                       onClick={() => onEditPage(page)}
-                      className="inline-flex h-8 items-center gap-1 border border-[#e6ded1] px-3 text-xs text-[#4f4638]"
+                      className="inline-flex h-8 items-center gap-1 border border-[#d5c9b4] px-3 text-xs text-[#4f4638]"
                     >
                       <Pencil className="h-3 w-3" />
                       편집
@@ -681,7 +681,7 @@ function TimelineView({
                 <img
                   src={toImgUrl(page.photoUrl)}
                   alt={page.title || date || "기록 사진"}
-                  className="mt-5 max-h-[420px] w-full border border-[#e6ded1] object-contain"
+                  className="mt-5 max-h-[420px] w-full border border-[#d5c9b4] object-contain"
                   style={{ filter: memorialPhotoFilter }}
                 />
               )}
@@ -749,7 +749,7 @@ function PageEditModal({
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto border border-[#e6ded1] bg-white p-5 shadow-2xl md:p-6">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto border border-[#d5c9b4] bg-white p-5 shadow-2xl md:p-6">
         <div className="mb-5 flex items-center justify-between">
           <h3
             className="text-xl font-light text-[#2e2218]"
@@ -771,7 +771,7 @@ function PageEditModal({
                 onChange={event => setDateYear(event.target.value)}
                 placeholder="연도"
                 type="number"
-                className="h-10 border border-[#e6ded1] bg-white px-3 text-sm outline-none"
+                className="h-10 border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
               />
               <input
                 value={dateMonth}
@@ -780,7 +780,7 @@ function PageEditModal({
                 type="number"
                 min={1}
                 max={12}
-                className="h-10 border border-[#e6ded1] bg-white px-3 text-sm outline-none"
+                className="h-10 border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
               />
               <input
                 value={dateDay}
@@ -789,7 +789,7 @@ function PageEditModal({
                 type="number"
                 min={1}
                 max={31}
-                className="h-10 border border-[#e6ded1] bg-white px-3 text-sm outline-none"
+                className="h-10 border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
               />
             </div>
           </div>
@@ -799,7 +799,7 @@ function PageEditModal({
             <input
               value={title}
               onChange={event => setTitle(event.target.value)}
-              className="h-10 w-full border border-[#e6ded1] bg-white px-3 text-sm outline-none"
+              className="h-10 w-full border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
             />
           </label>
 
@@ -817,18 +817,18 @@ function PageEditModal({
               }}
             />
             {photoUrl ? (
-              <div className="overflow-hidden border border-[#e6ded1] bg-white">
+              <div className="overflow-hidden border border-[#d5c9b4] bg-white">
                 <img
                   src={toImgUrl(photoUrl)}
                   alt="페이지 사진"
                   className="h-44 w-full object-cover"
                   style={{ filter: memorialPhotoFilter }}
                 />
-                <div className="flex gap-2 border-t border-[#e6ded1] p-2">
+                <div className="flex gap-2 border-t border-[#d5c9b4] p-2">
                   <button
                     type="button"
                     onClick={() => inputRef.current?.click()}
-                    className="flex-1 border border-[#e6ded1] py-2 text-xs text-[#4f4638]"
+                    className="flex-1 border border-[#d5c9b4] py-2 text-xs text-[#4f4638]"
                   >
                     사진 교체
                   </button>
@@ -849,7 +849,7 @@ function PageEditModal({
                 type="button"
                 onClick={() => inputRef.current?.click()}
                 disabled={uploading}
-                className="flex h-28 w-full flex-col items-center justify-center gap-2 border border-dashed border-[#e6ded1] bg-white text-sm text-[#6f6a61] disabled:opacity-50"
+                className="flex h-28 w-full flex-col items-center justify-center gap-2 border border-dashed border-[#d5c9b4] bg-white text-sm text-[#6f6a61] disabled:opacity-50"
               >
                 <Upload className="h-5 w-5" />
                 {uploading ? "업로드 중" : "사진 추가"}
@@ -863,7 +863,7 @@ function PageEditModal({
               value={content}
               onChange={event => setContent(event.target.value)}
               rows={6}
-              className="w-full resize-y border border-[#e6ded1] bg-white px-3 py-2 text-sm leading-7 outline-none"
+              className="w-full resize-y border border-[#d5c9b4] bg-white px-3 py-2 text-sm leading-7 outline-none"
             />
           </label>
         </div>
@@ -872,7 +872,7 @@ function PageEditModal({
           <button
             type="button"
             onClick={onClose}
-            className="h-10 flex-1 border border-[#e6ded1] text-sm text-[#4f4638]"
+            className="h-10 flex-1 border border-[#d5c9b4] text-sm text-[#4f4638]"
           >
             취소
           </button>

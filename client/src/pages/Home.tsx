@@ -64,7 +64,7 @@ export default function Home() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="relative min-h-[calc(100svh-4rem)] overflow-hidden border-b border-[#dbdad7] bg-[#fbfaf7]">
+        <section className="relative min-h-[calc(100svh-4rem)] overflow-hidden border-b border-[#b5b0a7] bg-[#fbfaf7]">
           <HeroStillBackground />
           <div className="container relative z-10 flex min-h-[calc(100svh-4rem)] flex-col justify-center py-14 md:py-20">
             <div className="max-w-3xl">
@@ -94,7 +94,7 @@ export default function Home() {
                   </button>
                 </Link>
                 <Link href="/memorial/create" className="w-full sm:w-auto">
-                  <button className="inline-flex h-12 w-full items-center justify-center gap-2 border border-[#dbdad7] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                  <button className="inline-flex h-12 w-full items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
                     <Plus className="h-4 w-4" />
                     소망 만들기
                   </button>
@@ -115,10 +115,10 @@ export default function Home() {
 
         <section
           id="memorials"
-          className="scroll-mt-16 border-b border-[#dbdad7] bg-white"
+          className="scroll-mt-16 border-b border-[#b5b0a7] bg-white"
         >
           <div className="container py-12 md:py-16">
-            <div className="mx-auto max-w-6xl border-y border-[#dbdad7] py-10 md:py-12">
+            <div className="mx-auto max-w-6xl border-y border-[#b5b0a7] py-10 md:py-12">
               <div className="grid gap-7 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
                 <div className="flex items-center gap-5 md:block">
                   <p className="text-[11px] font-medium tracking-[0.28em] text-[#616161] uppercase">
@@ -142,11 +142,11 @@ export default function Home() {
                 </h2>
               </div>
 
-              <div className="mt-10 grid border-t border-[#dbdad7] md:grid-cols-3">
+              <div className="mt-10 grid border-t border-[#b5b0a7] md:grid-cols-3">
                 {VALUES.map(value => (
                   <article
                     key={value.number}
-                    className="border-b border-[#dbdad7] py-5 md:border-b-0 md:border-r md:px-7 md:last:border-r-0"
+                    className="border-b border-[#b5b0a7] py-5 md:border-b-0 md:border-r md:px-7 md:last:border-r-0"
                   >
                     <p className="text-sm text-[#616161]">{value.number}</p>
                     <h3
@@ -167,7 +167,7 @@ export default function Home() {
 
         <section
           id="services"
-          className="border-b border-[#dbdad7] bg-[#f6f5f2] py-16 md:py-24"
+          className="border-b border-[#b5b0a7] bg-[#f6f5f2] py-16 md:py-24"
         >
           <div className="container">
             <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
@@ -187,7 +187,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-px bg-[#dbdad7] md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-px bg-[#b5b0a7] md:grid-cols-3">
               {SERVICES.map(service => {
                 const Icon = service.icon;
                 return (
@@ -219,7 +219,7 @@ export default function Home() {
 
         <section
           id="process"
-          className="border-b border-[#dbdad7] bg-white py-16 md:py-24"
+          className="border-b border-[#b5b0a7] bg-white py-16 md:py-24"
         >
           <div className="container grid gap-10 md:grid-cols-[0.8fr_1.2fr]">
             <div>
@@ -235,11 +235,11 @@ export default function Home() {
                 절차
               </h2>
             </div>
-            <div className="border-t border-[#dbdad7]">
+            <div className="border-t border-[#b5b0a7]">
               {STEPS.map((step, index) => (
                 <div
                   key={step}
-                  className="grid gap-6 border-b border-[#dbdad7] py-6 md:grid-cols-[96px_1fr]"
+                  className="grid gap-6 border-b border-[#b5b0a7] py-6 md:grid-cols-[96px_1fr]"
                 >
                   <span className="text-sm text-[#616161]">
                     {String(index + 1).padStart(2, "0")}
@@ -253,7 +253,7 @@ export default function Home() {
 
         <section id="membership" className="bg-white py-16 md:py-24">
           <div className="container">
-            <div className="grid gap-10 border border-[#dbdad7] p-6 md:grid-cols-[1fr_auto] md:items-center md:p-10">
+            <div className="grid gap-10 border border-[#b5b0a7] p-6 md:grid-cols-[1fr_auto] md:items-center md:p-10">
               <div>
                 <p className="mb-4 text-[11px] font-medium tracking-[0.28em] text-[#616161] uppercase">
                   소망교회 성도 전용

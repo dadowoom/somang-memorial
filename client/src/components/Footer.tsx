@@ -14,7 +14,7 @@ const serviceLinks = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#dbdad7] bg-white text-[#616161]">
+    <footer className="border-t border-[#b5b0a7] bg-white text-[#616161]">
       <div className="container py-12 md:py-16">
         <div className="grid gap-10 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
@@ -77,7 +77,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col justify-between gap-3 border-t border-[#dbdad7] pt-6 text-xs md:flex-row">
+        <div className="mt-12 flex flex-col justify-between gap-3 border-t border-[#b5b0a7] pt-6 text-xs md:flex-row">
           <p>© 2026 {ORG_INFO.name}. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link
@@ -86,7 +86,7 @@ export default function Footer() {
             >
               개인정보처리방침
             </Link>
-            <span aria-hidden="true" className="text-[#dbdad7]">
+            <span aria-hidden="true" className="text-[#b5b0a7]">
               |
             </span>
             <Link

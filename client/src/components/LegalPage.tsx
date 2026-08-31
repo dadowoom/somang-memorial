@@ -103,7 +103,7 @@ export function LegalTable({
               <th
                 key={column}
                 scope="col"
-                className="border-b border-[#dbdad7] py-3 pr-4 text-left font-medium text-[#121212]"
+                className="border-b border-[#b5b0a7] py-3 pr-4 text-left font-medium text-[#121212]"
               >
                 {column}
               </th>

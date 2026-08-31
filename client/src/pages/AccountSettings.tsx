@@ -5,7 +5,7 @@ import { FormEvent, useState } from "react";
 import { Link, useLocation } from "wouter";
 
 const inputClass =
-  "h-12 w-full border-0 border-b border-[#dbdad7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
+  "h-12 w-full border-0 border-b border-[#b5b0a7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
 
 export default function AccountSettings() {
   const [, setLocation] = useLocation();
@@ -97,7 +97,7 @@ export default function AccountSettings() {
             <button
               type="button"
               onClick={() => setConfirming(true)}
-              className="mt-8 h-12 w-full border border-[#dbdad7] text-sm font-medium text-[#616161] transition-colors hover:border-[#a3322b] hover:text-[#a3322b]"
+              className="mt-8 h-12 w-full border border-[#b5b0a7] text-sm font-medium text-[#616161] transition-colors hover:border-[#a3322b] hover:text-[#a3322b]"
             >
               회원 탈퇴 진행하기
             </button>
@@ -145,7 +145,7 @@ export default function AccountSettings() {
                     setAcknowledged(false);
                     setMessage("");
                   }}
-                  className="h-12 flex-1 border border-[#dbdad7] text-sm font-medium text-[#616161] transition-colors hover:border-[#18181b] hover:text-[#121212]"
+                  className="h-12 flex-1 border border-[#b5b0a7] text-sm font-medium text-[#616161] transition-colors hover:border-[#18181b] hover:text-[#121212]"
                 >
                   취소
                 </button>

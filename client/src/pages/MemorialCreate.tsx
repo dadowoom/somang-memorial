@@ -98,11 +98,11 @@ const visibilityOptions: Array<{
 ];
 
 const inputClass =
-  "h-12 w-full border-0 border-b border-[#dbdad7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
+  "h-12 w-full border-0 border-b border-[#b5b0a7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
 const selectClass =
-  "h-12 w-full border-0 border-b border-[#dbdad7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors focus:border-[#18181b]";
+  "h-12 w-full border-0 border-b border-[#b5b0a7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors focus:border-[#18181b]";
 const textAreaClass =
-  "min-h-36 w-full resize-y border border-[#dbdad7] bg-transparent p-4 text-sm leading-7 text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
+  "min-h-36 w-full resize-y border border-[#b5b0a7] bg-transparent p-4 text-sm leading-7 text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
 const labelClass = "mb-2 block text-xs font-medium text-[#616161]";
 const errorClass = "mt-2 text-xs text-[#9f2a2a]";
 
@@ -339,7 +339,7 @@ export default function MemorialCreate() {
       <div className="min-h-screen bg-white text-[#121212]">
         <Navbar />
         <main className="container pt-32">
-          <div className="border border-[#dbdad7] py-20 text-center">
+          <div className="border border-[#b5b0a7] py-20 text-center">
             <p className="text-sm text-[#616161]">
               로그인 상태를 확인하고 있습니다.
             </p>
@@ -354,7 +354,7 @@ export default function MemorialCreate() {
       <div className="min-h-screen bg-white text-[#121212]">
         <Navbar />
         <main className="container pt-32">
-          <div className="border border-[#dbdad7] py-20 text-center">
+          <div className="border border-[#b5b0a7] py-20 text-center">
             <p className="text-sm text-[#616161]">
               회원가입 또는 로그인 후 추모관을 생성할 수 있습니다.
             </p>
@@ -369,7 +369,7 @@ export default function MemorialCreate() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="border-b border-[#dbdad7]">
+        <section className="border-b border-[#b5b0a7]">
           <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)]">
             <div>
               <p className="mb-5 text-xs font-medium text-[#616161]">
@@ -393,7 +393,7 @@ export default function MemorialCreate() {
               </p>
             </div>
 
-            <aside className="border border-[#dbdad7] p-5 md:p-6">
+            <aside className="border border-[#b5b0a7] p-5 md:p-6">
               <div className="flex items-start justify-between gap-6">
                 <div>
                   <p className="text-sm font-medium text-[#121212]">
@@ -408,14 +408,14 @@ export default function MemorialCreate() {
                 </span>
               </div>
 
-              <div className="mt-6 h-px bg-[#dbdad7]">
+              <div className="mt-6 h-px bg-[#b5b0a7]">
                 <div
                   className="h-px bg-[#18181b] transition-all"
                   style={{ width: `${completion.percent}%` }}
                 />
               </div>
 
-              <div className="mt-6 grid gap-px bg-[#dbdad7] sm:grid-cols-3">
+              <div className="mt-6 grid gap-px bg-[#b5b0a7] sm:grid-cols-3">
                 {["정보 입력", "기록 정리", "등록 완료"].map((step, index) => (
                   <div key={step} className="bg-white p-4">
                     <p className="text-xs text-[#616161]">
@@ -433,7 +433,7 @@ export default function MemorialCreate() {
                     {missingLabels.map(label => (
                       <span
                         key={label}
-                        className="border border-[#dbdad7] px-2 py-1 text-xs text-[#616161]"
+                        className="border border-[#b5b0a7] px-2 py-1 text-xs text-[#616161]"
                       >
                         {label}
                       </span>
@@ -448,7 +448,7 @@ export default function MemorialCreate() {
         <form onSubmit={handleSubmit} className="py-8 md:py-12">
           <div className="container grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
             <aside className="hidden lg:block">
-              <div className="sticky top-24 border border-[#dbdad7] p-5">
+              <div className="sticky top-24 border border-[#b5b0a7] p-5">
                 <p className="text-sm font-medium text-[#121212]">입력 항목</p>
                 <nav className="mt-5 space-y-3 text-sm text-[#616161]">
                   <a
@@ -483,7 +483,7 @@ export default function MemorialCreate() {
                   </a>
                 </nav>
 
-                <div className="mt-8 border-t border-[#dbdad7] pt-5">
+                <div className="mt-8 border-t border-[#b5b0a7] pt-5">
                   <p className="text-xs text-[#616161]">예상 주소</p>
                   <p className="mt-2 break-all text-sm text-[#121212]">
                     /memorial/{slugPreview}
@@ -495,7 +495,7 @@ export default function MemorialCreate() {
             <div className="space-y-8">
               <section
                 id="basic"
-                className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
               >
                 <SectionHeader number="01" title="기본 정보" />
 
@@ -602,7 +602,7 @@ export default function MemorialCreate() {
 
               <section
                 id="story"
-                className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
               >
                 <SectionHeader number="02" title="신앙 이야기" />
 
@@ -683,7 +683,7 @@ export default function MemorialCreate() {
 
               <section
                 id="timeline"
-                className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
               >
                 <SectionHeader number="03" title="생애 기록" />
 
@@ -691,7 +691,7 @@ export default function MemorialCreate() {
                   {timeline.map((item, index) => (
                     <div
                       key={item.id}
-                      className="grid gap-4 border-b border-[#dbdad7] pb-6 last:border-b-0 last:pb-0"
+                      className="grid gap-4 border-b border-[#b5b0a7] pb-6 last:border-b-0 last:pb-0"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <p className="text-sm text-[#616161]">
@@ -729,7 +729,7 @@ export default function MemorialCreate() {
                       </div>
 
                       <textarea
-                        className="min-h-24 w-full resize-y border border-[#dbdad7] bg-transparent p-4 text-sm leading-7 text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
+                        className="min-h-24 w-full resize-y border border-[#b5b0a7] bg-transparent p-4 text-sm leading-7 text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
                         value={item.description}
                         onChange={event =>
                           updateTimeline(
@@ -747,7 +747,7 @@ export default function MemorialCreate() {
                 <button
                   type="button"
                   onClick={addTimeline}
-                  className="mt-6 inline-flex h-11 items-center gap-2 border border-[#dbdad7] px-4 text-sm transition-colors hover:bg-[#f6f5f2]"
+                  className="mt-6 inline-flex h-11 items-center gap-2 border border-[#b5b0a7] px-4 text-sm transition-colors hover:bg-[#f6f5f2]"
                 >
                   <Plus className="h-4 w-4" strokeWidth={1.6} />
                   기록 추가
@@ -756,14 +756,14 @@ export default function MemorialCreate() {
 
               <section
                 id="photos"
-                className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
               >
                 <SectionHeader number="04" title="사진" />
 
                 <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
                   <div>
                     <label className={labelClass}>대표 사진</label>
-                    <label className="flex aspect-[4/5] w-full flex-col items-center justify-center border border-dashed border-[#dbdad7] bg-[#fafafa] text-center text-sm text-[#616161] transition-colors hover:border-[#18181b] hover:text-[#121212]">
+                    <label className="flex aspect-[4/5] w-full flex-col items-center justify-center border border-dashed border-[#b5b0a7] bg-[#fafafa] text-center text-sm text-[#616161] transition-colors hover:border-[#18181b] hover:text-[#121212]">
                       {portraitPreview ? (
                         <img
                           src={portraitPreview}
@@ -792,7 +792,7 @@ export default function MemorialCreate() {
 
                   <div>
                     <label className={labelClass}>추억 사진</label>
-                    <label className="flex min-h-36 w-full flex-col items-center justify-center gap-3 border border-dashed border-[#dbdad7] text-center text-sm text-[#616161] transition-colors hover:border-[#18181b] hover:text-[#121212]">
+                    <label className="flex min-h-36 w-full flex-col items-center justify-center gap-3 border border-dashed border-[#b5b0a7] text-center text-sm text-[#616161] transition-colors hover:border-[#18181b] hover:text-[#121212]">
                       <ImagePlus className="h-6 w-6" strokeWidth={1.5} />
                       최대 6장 선택
                       <input
@@ -805,7 +805,7 @@ export default function MemorialCreate() {
                     </label>
 
                     {galleryPreviews.length > 0 && (
-                      <div className="mt-4 grid grid-cols-3 gap-px bg-[#dbdad7] sm:grid-cols-6">
+                      <div className="mt-4 grid grid-cols-3 gap-px bg-[#b5b0a7] sm:grid-cols-6">
                         {galleryPreviews.map((preview, index) => (
                           <img
                             key={preview}
@@ -822,7 +822,7 @@ export default function MemorialCreate() {
 
               <section
                 id="settings"
-                className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
               >
                 <SectionHeader number="05" title="공개 설정" />
 
@@ -835,7 +835,7 @@ export default function MemorialCreate() {
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <Field label="공개 범위">
-                    <div className="grid gap-px border border-[#dbdad7] bg-[#dbdad7] sm:grid-cols-2">
+                    <div className="grid gap-px border border-[#b5b0a7] bg-[#b5b0a7] sm:grid-cols-2">
                       {visibilityOptions.map(option => {
                         const selected = form.visibility === option.value;
 
@@ -889,7 +889,7 @@ export default function MemorialCreate() {
                 </div>
               </section>
 
-              <section className="border border-[#dbdad7] p-5 md:p-6">
+              <section className="border border-[#b5b0a7] p-5 md:p-6">
                 <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div>
                     <p className="text-sm font-medium text-[#121212]">
@@ -907,7 +907,7 @@ export default function MemorialCreate() {
                     <button
                       type="button"
                       onClick={saveDraft}
-                      className="inline-flex h-11 items-center justify-center gap-2 border border-[#dbdad7] px-5 text-sm transition-colors hover:bg-[#f6f5f2]"
+                      className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f6f5f2]"
                     >
                       <Save className="h-4 w-4" strokeWidth={1.6} />
                       임시저장
@@ -915,7 +915,7 @@ export default function MemorialCreate() {
                     <Link href="/">
                       <button
                         type="button"
-                        className="h-11 w-full border border-[#dbdad7] px-5 text-sm transition-colors hover:bg-[#f6f5f2] sm:w-auto"
+                        className="h-11 w-full border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f6f5f2] sm:w-auto"
                       >
                         홈으로
                       </button>
@@ -973,14 +973,14 @@ export default function MemorialCreate() {
                           </button>
                         </Link>
                         <Link href="/my/memorials">
-                          <button className="inline-flex h-10 items-center justify-center border border-[#dbdad7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                          <button className="inline-flex h-10 items-center justify-center border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
                             내 추모관
                           </button>
                         </Link>
                         <Link
                           href={createdMemorial?.editHref || "/my/memorials"}
                         >
-                          <button className="inline-flex h-10 items-center justify-center border border-[#dbdad7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                          <button className="inline-flex h-10 items-center justify-center border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
                             이어서 수정
                           </button>
                         </Link>
@@ -1001,7 +1001,7 @@ export default function MemorialCreate() {
 
 function SectionHeader({ number, title }: { number: string; title: string }) {
   return (
-    <div className="mb-8 flex items-baseline justify-between gap-4 border-b border-[#dbdad7] pb-5">
+    <div className="mb-8 flex items-baseline justify-between gap-4 border-b border-[#b5b0a7] pb-5">
       <h2
         className="text-2xl font-normal"
         style={{ fontFamily: "'Noto Serif KR', serif" }}
@@ -1038,7 +1038,7 @@ function Field({
 
 function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border-t border-[#dbdad7] pt-3">
+    <div className="border-t border-[#b5b0a7] pt-3">
       <dt className="text-xs text-[#616161]">{label}</dt>
       <dd className="mt-1 break-all text-[#121212]">{value || "-"}</dd>
     </div>

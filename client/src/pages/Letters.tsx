@@ -144,7 +144,7 @@ export default function Letters() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="border-b border-[#dbdad7]">
+        <section className="border-b border-[#b5b0a7]">
           <div className="container py-12 md:py-16">
             <div className="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.55fr)] lg:items-end">
               <div>
@@ -162,7 +162,7 @@ export default function Letters() {
                 </h1>
               </div>
 
-              <div className="border-l border-[#e6ded1] pl-0 lg:pl-8">
+              <div className="border-l border-[#d5c9b4] pl-0 lg:pl-8">
                 <p className="text-base leading-8" style={{ color: mutedText }}>
                   고인에게 하고 싶은 이야기를 적어 하늘로 보내세요.
                   추모관에 남겨진 편지와 이곳에서 직접 남긴 편지가 함께
@@ -180,7 +180,7 @@ export default function Letters() {
             </div>
 
             <div className="mt-10 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-              <div className="border border-[#dbdad7]">
+              <div className="border border-[#b5b0a7]">
                 <label className="flex items-center gap-3 px-5 py-4">
                   <Search
                     className="h-5 w-5 shrink-0 text-[#616161]"
@@ -194,7 +194,7 @@ export default function Letters() {
                   />
                 </label>
               </div>
-              <div className="grid grid-cols-4 border border-[#dbdad7] sm:flex">
+              <div className="grid grid-cols-4 border border-[#b5b0a7] sm:flex">
                 {[
                   ["all", "전체"],
                   ["to", "고인"],
@@ -220,9 +220,9 @@ export default function Letters() {
             {formOpen && (
               <form
                 onSubmit={submitLetter}
-                className="mt-6 border border-[#e6ded1] bg-white"
+                className="mt-6 border border-[#d5c9b4] bg-white"
               >
-                <div className="grid gap-px bg-[#e6ded1] md:grid-cols-[1fr_1fr]">
+                <div className="grid gap-px bg-[#d5c9b4] md:grid-cols-[1fr_1fr]">
                   <label className="bg-white p-5">
                     <span
                       className="text-xs font-medium uppercase tracking-[0.16em]"
@@ -254,7 +254,7 @@ export default function Letters() {
                     />
                   </label>
                 </div>
-                <label className="block border-t border-[#e6ded1] bg-white p-5">
+                <label className="block border-t border-[#d5c9b4] bg-white p-5">
                   <span
                     className="text-xs font-medium uppercase tracking-[0.16em]"
                     style={{ color: warmGold }}
@@ -270,7 +270,7 @@ export default function Letters() {
                     className="mt-4 w-full resize-none bg-transparent text-sm leading-7 text-[#121212] outline-none placeholder:text-[#9a9a9a]"
                   />
                 </label>
-                <div className="flex flex-col justify-between gap-3 border-t border-[#e6ded1] bg-[#fbfaf8] p-5 sm:flex-row sm:items-center">
+                <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#fbfaf8] p-5 sm:flex-row sm:items-center">
                   <p className="text-xs leading-6" style={{ color: mutedText }}>
                     {message ||
                       "이곳에서 남긴 편지도 추모관 편지와 함께 모입니다."}
@@ -298,7 +298,7 @@ export default function Letters() {
                   : `최근 편지 ${results.length}건`}
               </p>
               <Link href="/memorial/search">
-                <button className="h-10 border border-[#dbdad7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                <button className="h-10 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
                   추모관
                 </button>
               </Link>
@@ -347,7 +347,7 @@ export default function Letters() {
                       className={`h-10 min-w-10 border px-3 text-sm transition-colors ${
                         safePage === pageNumber
                           ? "border-[#1f1d1a] bg-[#1f1d1a] text-white"
-                          : "border-[#dbdad7] bg-white text-[#4f4638] hover:bg-[#faf9f7]"
+                          : "border-[#b5b0a7] bg-white text-[#4f4638] hover:bg-[#faf9f7]"
                       }`}
                     >
                       {pageNumber}
@@ -367,7 +367,7 @@ export default function Letters() {
 
 function StateBox({ text }: { text: string }) {
   return (
-    <div className="border border-[#dbdad7] py-20 text-center">
+    <div className="border border-[#b5b0a7] py-20 text-center">
       <p className="text-sm text-[#616161]">{text}</p>
     </div>
   );
@@ -398,7 +398,7 @@ function LetterCard({
 
   return (
     <article
-      className={`grid h-[300px] overflow-hidden bg-white shadow-[0_10px_28px_rgba(31,29,26,0.14)] ring-1 ring-[#e6ded1] transition-transform duration-300 hover:-translate-y-1 md:grid-cols-[minmax(0,1fr)_92px] lg:grid-cols-[minmax(0,1fr)_112px] ${
+      className={`grid h-[300px] overflow-hidden bg-white shadow-[0_10px_28px_rgba(31,29,26,0.14)] ring-1 ring-[#d5c9b4] transition-transform duration-300 hover:-translate-y-1 md:grid-cols-[minmax(0,1fr)_92px] lg:grid-cols-[minmax(0,1fr)_112px] ${
         stagger ? "md:mt-10" : ""
       }`}
     >

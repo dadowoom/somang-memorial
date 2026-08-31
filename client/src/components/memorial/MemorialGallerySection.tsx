@@ -228,7 +228,7 @@ export default function MemorialGallerySection({
                 className="group relative overflow-hidden bg-white shadow-[0_10px_30px_rgba(31,29,26,0.05)]"
                 style={{
                   gridRow: index % 5 === 0 ? "span 2" : "span 1",
-                  border: "1px solid #e6ded1",
+                  border: "1px solid #d5c9b4",
                 }}
               >
                 <button
@@ -304,7 +304,7 @@ export default function MemorialGallerySection({
                     </div>
 
                     <div
-                      className="absolute bottom-2 left-2 right-2 z-10 border border-[#e6ded1] bg-white/95 p-2 text-xs shadow-sm"
+                      className="absolute bottom-2 left-2 right-2 z-10 border border-[#d5c9b4] bg-white/95 p-2 text-xs shadow-sm"
                       onClick={event => event.stopPropagation()}
                     >
                       <InlineEditText
@@ -334,7 +334,7 @@ export default function MemorialGallerySection({
         ) : (
           <button
             type="button"
-            className="w-full border border-dashed border-[#e6ded1] bg-white py-16 text-center text-sm text-[#6f6a61]"
+            className="w-full border border-dashed border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]"
             onClick={() => fileInputRef.current?.click()}
           >
             사진을 추가해 주세요.
@@ -424,7 +424,7 @@ function Lightbox({
           style={{ filter: memorialPhotoFilter }}
         />
         {(photo.caption || photo.year) && (
-          <div className="border-t border-[#e6ded1] bg-white px-5 py-4 text-center">
+          <div className="border-t border-[#d5c9b4] bg-white px-5 py-4 text-center">
             {photo.caption && (
               <p className="text-sm text-[#2e2218]">{photo.caption}</p>
             )}
@@ -465,7 +465,7 @@ function SectionHeading({
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div className="border border-[#e6ded1] bg-white py-16 text-center text-sm text-[#6f6a61]">
+    <div className="border border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]">
       {text}
     </div>
   );
@@ -497,7 +497,7 @@ function IconButton({
       className={`flex h-8 w-8 items-center justify-center border shadow-sm transition-colors disabled:opacity-35 ${
         danger
           ? "border-red-200 bg-red-500 text-white hover:bg-red-600"
-          : "border-[#e6ded1] bg-white/90 text-[#4f4638] hover:bg-white"
+          : "border-[#d5c9b4] bg-white/90 text-[#4f4638] hover:bg-white"
       }`}
     >
       {children}
