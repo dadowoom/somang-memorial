@@ -12,6 +12,8 @@
  *   DB_NAME='somang'
  */
 
+import { pathToFileURL } from "node:url";
+
 export function parseDatabaseUrl(value) {
   if (!value) {
     throw new Error("DATABASE_URL 이 비어 있습니다.");
@@ -65,8 +67,10 @@ export function toShellAssignments(parsed) {
     .join("\n");
 }
 
+// 이 파일을 직접 실행했는지 확인한다. 경로를 문자열로 이어 붙이면 윈도우에서
+// 형식이 달라 항상 거짓이 되므로, 표준 변환 함수로 비교한다.
 const isDirectRun =
-  process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isDirectRun) {
   try {
