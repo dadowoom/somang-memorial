@@ -1,11 +1,10 @@
 import Footer from "@/components/Footer";
+import { inputClass } from "@/lib/formStyles";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import { FormEvent, useState } from "react";
 import { Link, useLocation } from "wouter";
 
-const inputClass =
-  "h-12 w-full border-0 border-b border-[#b5b0a7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
 
 export default function AccountSettings() {
   const [, setLocation] = useLocation();

@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { inputClass } from "@/lib/formStyles";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
@@ -38,8 +39,6 @@ function formatBirthDate(value: string) {
 }
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
-const inputClass =
-  "h-12 w-full border border-[#b5b0a7] bg-white px-4 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
 
 export default function ParentFinder() {
   const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
