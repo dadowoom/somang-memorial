@@ -65,7 +65,7 @@ export default function Footer() {
 
           <div>
             <h2 className="mb-4 text-xs font-medium tracking-[0.22em] text-[#121212] uppercase">
-              소망교회
+              {ORG_INFO.name}
             </h2>
             <ul className="space-y-3 text-sm">
               <li>{ORG_INFO.address}</li>
@@ -75,7 +75,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col justify-between gap-3 border-t border-[#dbdad7] pt-6 text-xs md:flex-row">
-          <p>© 2026 소망교회. All rights reserved.</p>
+          <p>© 2026 {ORG_INFO.name}. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link
               href="/privacy"
