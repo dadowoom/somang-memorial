@@ -38,6 +38,24 @@
 아직 아무도 사진을 올리지 않았으면 사진 폴더 자체가 없다. 그때는 사진 묶기를
 건너뛰고 데이터베이스만 백업한다(백업이 실패하지 않는다).
 
+## 1-3. rclone 으로 올리기 (이 서버에서 쓰는 방식)
+
+이 서버에는 `aws` 명령이 없고 대신 **rclone** 이 깔려 있으며, 네이버 클라우드 접속이
+이미 등록되어 있다(`rclone listremotes` 로 확인). 새로 설치할 것 없이 그대로 쓴다.
+
+```bash
+RCLONE_REMOTE=ncp:somang-memorial-backup ./scripts/backup.sh --check
+RCLONE_REMOTE=ncp:somang-memorial-backup ./scripts/backup.sh
+```
+
+- `RCLONE_REMOTE` 가 설정되어 있으면 `aws` 대신 rclone 으로 올린다.
+- 실제 저장 위치는 `RCLONE_REMOTE` 아래 `S3_PREFIX`(기본 `somang-memorial`) 폴더다.
+  예: `ncp:somang-memorial-backup/somang-memorial/db/db-날짜-시각.sql.gz`
+- 접속 키는 rclone 설정에 들어 있으므로 이 저장소나 `.env` 에 넣지 않는다.
+- 보관 기간 정리, 파일 이름 규칙은 다른 방식과 같다.
+
+버킷은 **공개하지 않은 상태**여야 한다. 유가족 사진과 개인정보가 들어간다.
+
 ## 2. 저장소 준비
 
 Cloudflare R2와 네이버 클라우드 오브젝트 스토리지는 **둘 다 S3 방식**이라

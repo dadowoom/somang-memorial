@@ -29,6 +29,11 @@
 #   ./scripts/backup.sh --local-only            서버 안에만 백업 (클라우드 계정 없이도 됨)
 #   ./scripts/backup.sh --local-only --check    서버 안 백업 준비 상태만 확인
 #
+# rclone 에 원격 저장소가 이미 등록돼 있다면 aws 명령 없이도 올릴 수 있다.
+# RCLONE_REMOTE 를 지정하면 그쪽으로 올린다.
+#   RCLONE_REMOTE=ncp:somang-memorial-backup ./scripts/backup.sh --check
+#   RCLONE_REMOTE=ncp:somang-memorial-backup ./scripts/backup.sh
+#
 # --local-only 는 클라우드 계정이 준비되기 전까지 쓰는 임시 방편이다.
 # 서버가 통째로 사라지는 사고까지는 막지 못하므로, 계정이 생기면 클라우드 백업으로 바꿀 것.
 #
@@ -55,12 +60,30 @@ done
 # 1. 준비 확인
 # ---------------------------------------------------------------------------
 
+# 어디에 보관할지 정한다.
+#   local  : 서버 안. 클라우드 계정이 아직 없을 때 쓰는 임시 방편.
+#   rclone : rclone 에 이미 등록된 원격 저장소. RCLONE_REMOTE 로 지정한다.
+#   s3     : aws 명령으로 S3 방식 저장소에 직접 올린다.
+MODE=s3
+if [ "$LOCAL_ONLY" = "1" ]; then
+  MODE=local
+elif [ -n "${RCLONE_REMOTE:-}" ]; then
+  MODE=rclone
+fi
+
 REQUIRED_CMDS="node mysqldump tar"
 REQUIRED_VARS="DATABASE_URL"
-if [ "$LOCAL_ONLY" = "0" ]; then
-  REQUIRED_CMDS="$REQUIRED_CMDS aws"
-  REQUIRED_VARS="$REQUIRED_VARS S3_BUCKET S3_ENDPOINT AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY"
-fi
+case "$MODE" in
+  local) ;;
+  rclone)
+    REQUIRED_CMDS="$REQUIRED_CMDS rclone"
+    REQUIRED_VARS="$REQUIRED_VARS RCLONE_REMOTE"
+    ;;
+  s3)
+    REQUIRED_CMDS="$REQUIRED_CMDS aws"
+    REQUIRED_VARS="$REQUIRED_VARS S3_BUCKET S3_ENDPOINT AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY"
+    ;;
+esac
 
 for cmd in $REQUIRED_CMDS; do
   command -v "$cmd" >/dev/null 2>&1 || fail "$cmd 명령이 없습니다. 먼저 설치해 주세요."
@@ -100,13 +123,17 @@ eval "$DB_VARS"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 DAY="${STAMP%%-*}"
 
-# 서버 안에만 백업할 때는 S3 설정이 아예 없다. set -u 에 걸리지 않도록 그때는 만들지 않는다.
+# 쓰지 않는 모드의 설정은 아예 없을 수 있다. set -u 에 걸리지 않도록 해당 모드에서만 만든다.
 DEST=""
 AWS_ARGS=()
-if [ "$LOCAL_ONLY" = "0" ]; then
-  DEST="s3://${S3_BUCKET}/${S3_PREFIX}"
-  AWS_ARGS=(--endpoint-url "$S3_ENDPOINT" --region "$S3_REGION")
-fi
+case "$MODE" in
+  local)  DEST="$BACKUP_LOCAL_DIR" ;;
+  rclone) DEST="${RCLONE_REMOTE%/}/${S3_PREFIX}" ;;
+  s3)
+    DEST="s3://${S3_BUCKET}/${S3_PREFIX}"
+    AWS_ARGS=(--endpoint-url "$S3_ENDPOINT" --region "$S3_REGION")
+    ;;
+esac
 
 if [ "$CHECK_ONLY" = "1" ]; then
   log "명령 확인 완료 ($REQUIRED_CMDS)"
@@ -118,20 +145,26 @@ if [ "$CHECK_ONLY" = "1" ]; then
   fi
   log "DB: ${DB_NAME} @ ${DB_HOST}:${DB_PORT}"
   log "보관 기간: ${RETENTION_DAYS}일"
-  if [ "$LOCAL_ONLY" = "1" ]; then
-    log "저장 위치: ${BACKUP_LOCAL_DIR}/ (서버 안)"
-    mkdir -p "${BACKUP_LOCAL_DIR}/db" \
-      || fail "백업 폴더를 만들지 못했습니다: ${BACKUP_LOCAL_DIR}"
-    [ -w "${BACKUP_LOCAL_DIR}/db" ] \
-      || fail "백업 폴더에 쓸 수 없습니다: ${BACKUP_LOCAL_DIR}"
-    log "백업 폴더 쓰기 정상. 준비가 끝났습니다. (--check 였으므로 백업하지 않았습니다)"
-  else
-    log "저장 위치: ${DEST}/"
-    log "버킷 접근 확인 중..."
-    aws "${AWS_ARGS[@]}" s3 ls "s3://${S3_BUCKET}/" >/dev/null \
-      || fail "버킷에 접근하지 못했습니다. 키와 주소, 버킷 이름을 확인해 주세요."
-    log "버킷 접근 정상. 준비가 끝났습니다. (--check 였으므로 아무것도 올리지 않았습니다)"
-  fi
+  case "$MODE" in
+    local)
+      log "저장 위치: ${BACKUP_LOCAL_DIR}/ (서버 안)"
+      mkdir -p "${BACKUP_LOCAL_DIR}/db"         || fail "백업 폴더를 만들지 못했습니다: ${BACKUP_LOCAL_DIR}"
+      [ -w "${BACKUP_LOCAL_DIR}/db" ]         || fail "백업 폴더에 쓸 수 없습니다: ${BACKUP_LOCAL_DIR}"
+      log "백업 폴더 쓰기 정상. 준비가 끝났습니다. (--check 였으므로 백업하지 않았습니다)"
+      ;;
+    rclone)
+      log "저장 위치: ${DEST}/ (rclone 원격 저장소)"
+      log "원격 저장소 접근 확인 중..."
+      rclone lsf --max-depth 1 "${RCLONE_REMOTE%/}/" >/dev/null         || fail "원격 저장소에 접근하지 못했습니다: ${RCLONE_REMOTE}"
+      log "접근 정상. 준비가 끝났습니다. (--check 였으므로 아무것도 올리지 않았습니다)"
+      ;;
+    s3)
+      log "저장 위치: ${DEST}/"
+      log "버킷 접근 확인 중..."
+      aws "${AWS_ARGS[@]}" s3 ls "s3://${S3_BUCKET}/" >/dev/null         || fail "버킷에 접근하지 못했습니다. 키와 주소, 버킷 이름을 확인해 주세요."
+      log "버킷 접근 정상. 준비가 끝났습니다. (--check 였으므로 아무것도 올리지 않았습니다)"
+      ;;
+  esac
   exit 0
 fi
 
@@ -211,37 +244,46 @@ fi
 # 5. 올리기
 # ---------------------------------------------------------------------------
 
-if [ "$LOCAL_ONLY" = "1" ]; then
-  log "서버 안에 보관하는 중... (${BACKUP_LOCAL_DIR})"
-  mkdir -p "${BACKUP_LOCAL_DIR}/db" "${BACKUP_LOCAL_DIR}/uploads" \
-    || fail "백업 폴더를 만들지 못했습니다: ${BACKUP_LOCAL_DIR}"
-  chmod 700 "$BACKUP_LOCAL_DIR" "${BACKUP_LOCAL_DIR}/db" "${BACKUP_LOCAL_DIR}/uploads"
+case "$MODE" in
+  local)
+    log "서버 안에 보관하는 중... (${BACKUP_LOCAL_DIR})"
+    mkdir -p "${BACKUP_LOCAL_DIR}/db" "${BACKUP_LOCAL_DIR}/uploads"       || fail "백업 폴더를 만들지 못했습니다: ${BACKUP_LOCAL_DIR}"
+    chmod 700 "$BACKUP_LOCAL_DIR" "${BACKUP_LOCAL_DIR}/db" "${BACKUP_LOCAL_DIR}/uploads"
 
-  cp "$DB_FILE" "${BACKUP_LOCAL_DIR}/db/$(basename "$DB_FILE")" \
-    || fail "데이터베이스 백업 파일을 옮기지 못했습니다."
-  if [ "$HAS_UPLOADS" = "1" ]; then
-    cp "$UPLOADS_FILE" "${BACKUP_LOCAL_DIR}/uploads/$(basename "$UPLOADS_FILE")" \
-      || fail "사진 백업 파일을 옮기지 못했습니다."
-  fi
+    cp "$DB_FILE" "${BACKUP_LOCAL_DIR}/db/$(basename "$DB_FILE")"       || fail "데이터베이스 백업 파일을 옮기지 못했습니다."
+    if [ "$HAS_UPLOADS" = "1" ]; then
+      cp "$UPLOADS_FILE" "${BACKUP_LOCAL_DIR}/uploads/$(basename "$UPLOADS_FILE")"         || fail "사진 백업 파일을 옮기지 못했습니다."
+    fi
 
-  # 옮겨진 것이 실제로 있고 읽을 수 있는지 확인한다.
-  gzip -t "${BACKUP_LOCAL_DIR}/db/$(basename "$DB_FILE")" \
-    || fail "보관된 데이터베이스 파일을 확인하지 못했습니다."
-  log "보관 완료"
-else
-  log "클라우드 저장소로 올리는 중..."
-  aws "${AWS_ARGS[@]}" s3 cp "$DB_FILE" "${DEST}/db/$(basename "$DB_FILE")" \
-    || fail "데이터베이스 파일 업로드에 실패했습니다."
-  if [ "$HAS_UPLOADS" = "1" ]; then
-    aws "${AWS_ARGS[@]}" s3 cp "$UPLOADS_FILE" "${DEST}/uploads/$(basename "$UPLOADS_FILE")" \
-      || fail "사진 파일 업로드에 실패했습니다."
-  fi
+    # 옮겨진 것이 실제로 있고 읽을 수 있는지 확인한다.
+    gzip -t "${BACKUP_LOCAL_DIR}/db/$(basename "$DB_FILE")"       || fail "보관된 데이터베이스 파일을 확인하지 못했습니다."
+    log "보관 완료"
+    ;;
 
-  # 올라간 것이 실제로 있는지 확인한다.
-  aws "${AWS_ARGS[@]}" s3 ls "${DEST}/db/$(basename "$DB_FILE")" >/dev/null \
-    || fail "업로드된 데이터베이스 파일을 확인하지 못했습니다."
-  log "업로드 완료"
-fi
+  rclone)
+    log "원격 저장소로 올리는 중... (${DEST})"
+    rclone copyto "$DB_FILE" "${DEST}/db/$(basename "$DB_FILE")"       || fail "데이터베이스 파일 업로드에 실패했습니다."
+    if [ "$HAS_UPLOADS" = "1" ]; then
+      rclone copyto "$UPLOADS_FILE" "${DEST}/uploads/$(basename "$UPLOADS_FILE")"         || fail "사진 파일 업로드에 실패했습니다."
+    fi
+
+    # 올라간 것이 실제로 목록에 잡히는지 확인한다.
+    [ -n "$(rclone lsf "${DEST}/db/$(basename "$DB_FILE")" 2>/dev/null)" ]       || fail "업로드된 데이터베이스 파일을 확인하지 못했습니다."
+    log "업로드 완료"
+    ;;
+
+  s3)
+    log "클라우드 저장소로 올리는 중..."
+    aws "${AWS_ARGS[@]}" s3 cp "$DB_FILE" "${DEST}/db/$(basename "$DB_FILE")"       || fail "데이터베이스 파일 업로드에 실패했습니다."
+    if [ "$HAS_UPLOADS" = "1" ]; then
+      aws "${AWS_ARGS[@]}" s3 cp "$UPLOADS_FILE" "${DEST}/uploads/$(basename "$UPLOADS_FILE")"         || fail "사진 파일 업로드에 실패했습니다."
+    fi
+
+    # 올라간 것이 실제로 있는지 확인한다.
+    aws "${AWS_ARGS[@]}" s3 ls "${DEST}/db/$(basename "$DB_FILE")" >/dev/null       || fail "업로드된 데이터베이스 파일을 확인하지 못했습니다."
+    log "업로드 완료"
+    ;;
+esac
 
 # ---------------------------------------------------------------------------
 # 6. 오래된 백업 정리
@@ -253,30 +295,43 @@ log "${CUTOFF} 이전 백업을 정리합니다 (${RETENTION_DAYS}일 보관)"
 
 removed=0
 for folder in db uploads; do
-  if [ "$LOCAL_ONLY" = "1" ]; then
-    [ -d "${BACKUP_LOCAL_DIR}/${folder}" ] || continue
-    while read -r path; do
-      [ -n "$path" ] || continue
-      key="$(basename "$path")"
-      # 파일 이름은 db-20260814-031500.sql.gz 형태다. 가운데 날짜를 꺼낸다.
-      day="$(printf '%s' "$key" | sed -n 's/^[a-z]*-\([0-9]\{8\}\)-.*/\1/p')"
-      [ -n "$day" ] || continue
-      if [ "$day" -lt "$CUTOFF" ]; then
-        rm -f "$path" && removed=$((removed + 1))
-      fi
-    done < <(find "${BACKUP_LOCAL_DIR}/${folder}" -maxdepth 1 -type f -name '*.gz')
-  else
-    while read -r key; do
-      [ -n "$key" ] || continue
-      # 파일 이름은 db-20260814-031500.sql.gz 형태다. 가운데 날짜를 꺼낸다.
-      day="$(printf '%s' "$key" | sed -n 's/^[a-z]*-\([0-9]\{8\}\)-.*/\1/p')"
-      [ -n "$day" ] || continue
-      if [ "$day" -lt "$CUTOFF" ]; then
-        aws "${AWS_ARGS[@]}" s3 rm "${DEST}/${folder}/${key}" >/dev/null \
-          && removed=$((removed + 1))
-      fi
-    done < <(aws "${AWS_ARGS[@]}" s3 ls "${DEST}/${folder}/" | awk '{print $4}')
-  fi
+  case "$MODE" in
+    local)
+      [ -d "${BACKUP_LOCAL_DIR}/${folder}" ] || continue
+      while read -r path; do
+        [ -n "$path" ] || continue
+        key="$(basename "$path")"
+        # 파일 이름은 db-20260814-031500.sql.gz 형태다. 가운데 날짜를 꺼낸다.
+        day="$(printf '%s' "$key" | sed -n 's/^[a-z]*-\([0-9]\{8\}\)-.*/\1/p')"
+        [ -n "$day" ] || continue
+        if [ "$day" -lt "$CUTOFF" ]; then
+          rm -f "$path" && removed=$((removed + 1))
+        fi
+      done < <(find "${BACKUP_LOCAL_DIR}/${folder}" -maxdepth 1 -type f -name '*.gz')
+      ;;
+
+    rclone)
+      while read -r key; do
+        [ -n "$key" ] || continue
+        day="$(printf '%s' "$key" | sed -n 's/^[a-z]*-\([0-9]\{8\}\)-.*/\1/p')"
+        [ -n "$day" ] || continue
+        if [ "$day" -lt "$CUTOFF" ]; then
+          rclone deletefile "${DEST}/${folder}/${key}" >/dev/null 2>&1             && removed=$((removed + 1))
+        fi
+      done < <(rclone lsf "${DEST}/${folder}/" 2>/dev/null)
+      ;;
+
+    s3)
+      while read -r key; do
+        [ -n "$key" ] || continue
+        day="$(printf '%s' "$key" | sed -n 's/^[a-z]*-\([0-9]\{8\}\)-.*/\1/p')"
+        [ -n "$day" ] || continue
+        if [ "$day" -lt "$CUTOFF" ]; then
+          aws "${AWS_ARGS[@]}" s3 rm "${DEST}/${folder}/${key}" >/dev/null             && removed=$((removed + 1))
+        fi
+      done < <(aws "${AWS_ARGS[@]}" s3 ls "${DEST}/${folder}/" | awk '{print $4}')
+      ;;
+  esac
 done
 log "오래된 백업 ${removed}개를 지웠습니다."
 
