@@ -173,7 +173,8 @@ const memorialCreateInput = z.object({
   name: z.string().trim().min(1).max(120),
   role: z.string().trim().min(1).max(80),
   birthDate: z.string().trim().min(1).max(20),
-  deathDate: z.string().trim().min(1).max(20),
+  // 소천 전에 미리 추모관을 준비하는 경우가 있어 비워둘 수 있게 한다.
+  deathDate: z.string().trim().max(20).default(""),
   church: z.string().trim().max(160).default("소망교회"),
   familyContact: z.string().trim().max(120).optional(),
   familyPhone: z.string().trim().max(80).optional(),

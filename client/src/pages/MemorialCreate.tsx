@@ -75,7 +75,6 @@ const requiredFields: Array<{ key: keyof MemorialForm; label: string }> = [
   { key: "name", label: "성함" },
   { key: "role", label: "직분" },
   { key: "birthDate", label: "출생일" },
-  { key: "deathDate", label: "소천일" },
   { key: "summary", label: "한 줄 소개" },
   { key: "story", label: "삶의 기록" },
 ];
@@ -542,7 +541,7 @@ export default function MemorialCreate() {
                     />
                   </Field>
 
-                  <Field label="소천일" error={errors.deathDate} required>
+                  <Field label="소천일" error={errors.deathDate}>
                     <input
                       type="date"
                       className={inputClass}

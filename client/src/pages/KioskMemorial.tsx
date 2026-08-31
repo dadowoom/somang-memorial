@@ -1,4 +1,5 @@
 import { toImgUrl } from "@/lib/imageUrl";
+import { formatLifespan } from "@/lib/lifespan";
 import {
   createKioskVideoFrameState,
   KIOSK_VIDEO_IFRAME_SANDBOX,
@@ -845,7 +846,7 @@ function KioskMemorialContent({
             {memorial.role}
           </p>
           <p className="mt-3 text-base leading-7 text-[#64615d]">
-            {memorial.birthDate} - {memorial.deathDate} · {memorial.church}
+            {formatLifespan(memorial.birthDate, memorial.deathDate)} · {memorial.church}
           </p>
           <p className="mt-7 text-[19px] leading-9 text-[#34312d]">
             {memorial.summary}
@@ -895,9 +896,15 @@ function KioskMemorialContent({
           )}
         </div>
 
-        <div className="mt-8 grid grid-cols-3 border border-[#dedbd5]">
+        <div
+          className={`mt-8 grid border border-[#dedbd5] ${
+            memorial.deathDate ? "grid-cols-3" : "grid-cols-2"
+          }`}
+        >
           <Fact label="출생" value={memorial.birthDate} />
-          <Fact label="소천" value={memorial.deathDate} />
+          {memorial.deathDate ? (
+            <Fact label="소천" value={memorial.deathDate} />
+          ) : null}
           <Fact label="교회" value={memorial.church} />
         </div>
 
@@ -1269,7 +1276,7 @@ function KioskMemorialGate({
         </h1>
         {status && (
           <p className="mt-4 text-base leading-7 text-[#64615d]">
-            {status.birthDate} - {status.deathDate} · {status.church} ·{" "}
+            {formatLifespan(status.birthDate, status.deathDate)} · {status.church} ·{" "}
             {status.role}
           </p>
         )}

@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { formatLifespan } from "@/lib/lifespan";
 import AdminNavigation from "@/components/admin/AdminNavigation";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
@@ -366,7 +367,7 @@ export default function AdminMemorials() {
                       className="grid gap-4 bg-white px-4 py-5 transition-colors hover:bg-[#faf9f6] lg:grid-cols-[150px_1.1fr_0.9fr_0.8fr_0.8fr_300px] lg:items-center lg:px-5"
                     >
                       <p className="text-xs tracking-[0.1em] text-[#616161] md:text-sm">
-                        {memorial.birthDate} - {memorial.deathDate}
+                        {formatLifespan(memorial.birthDate, memorial.deathDate)}
                       </p>
 
                       <div>
