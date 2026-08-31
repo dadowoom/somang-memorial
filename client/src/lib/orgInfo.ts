@@ -7,6 +7,9 @@ export const ORG_INFO = {
   name: "소망교회수양관",
   serviceName: "소망이 있는 곳",
 
+  // 교회 로고. client/public 에 있으므로 주소는 / 로 시작한다.
+  logoSrc: "/somang-church-logo.png",
+
   address: "(06023) 서울특별시 강남구 압구정로36길 55 (신사동)",
 
   // 개인정보 관련 문의를 받는 주소.

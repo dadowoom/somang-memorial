@@ -1,6 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { Menu, Plus, Search, X } from "lucide-react";
+import { ORG_INFO } from "@/lib/orgInfo";
+import { Menu, Search, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
 
@@ -23,9 +24,13 @@ export default function Navbar() {
         <div className="flex h-16 items-center justify-between">
           <Link href="/">
             <div className="flex cursor-pointer items-center gap-3">
-              <span className="flex h-8 w-8 items-center justify-center bg-[#18181b] text-white">
-                <Plus className="h-4 w-4" strokeWidth={1.7} />
-              </span>
+              <img
+                src={ORG_INFO.logoSrc}
+                alt="소망교회 로고"
+                width={512}
+                height={372}
+                className="h-8 w-auto"
+              />
               <div className="leading-tight">
                 <span
                   className="block text-sm font-normal text-[#121212]"
