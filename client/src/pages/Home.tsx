@@ -87,20 +87,23 @@ export default function Home() {
                 </span>
               </p>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-                <Link href="/memorial/search">
-                  <button className="inline-flex h-12 items-center justify-center gap-2 bg-[#18181b] px-6 text-sm font-medium text-white transition-opacity hover:opacity-90">
+                <Link href="/memorial/search" className="w-full sm:w-auto">
+                  <button className="inline-flex h-12 w-full items-center justify-center gap-2 bg-[#18181b] px-6 text-sm font-medium text-white transition-opacity hover:opacity-90">
                     <Search className="h-4 w-4" />
                     추모관
                   </button>
                 </Link>
-                <Link href="/memorial/create">
-                  <button className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#dbdad7] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                <Link href="/memorial/create" className="w-full sm:w-auto">
+                  <button className="inline-flex h-12 w-full items-center justify-center gap-2 border border-[#dbdad7] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
                     <Plus className="h-4 w-4" />
                     소망 만들기
                   </button>
                 </Link>
-                <Link href="/login?redirect=/my/find-parent&mode=signup">
-                  <button className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#18181b] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#18181b] hover:text-white">
+                <Link
+                  href="/login?redirect=/my/find-parent&mode=signup"
+                  className="w-full sm:w-auto"
+                >
+                  <button className="inline-flex h-12 w-full items-center justify-center gap-2 border border-[#18181b] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#18181b] hover:text-white">
                     <HeartHandshake className="h-4 w-4" />
                     우리 부모님 찾기
                   </button>
