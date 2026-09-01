@@ -33,12 +33,12 @@ export default function Navbar() {
               />
               <div className="leading-tight">
                 <span
-                  className="block text-sm font-normal text-[#121212]"
+                  className="block text-base font-medium text-[#121212]"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
                   소망이 있는 곳
                 </span>
-                <span className="block text-[10px] tracking-[0.16em] text-[#616161]">
+                <span className="block text-[11px] tracking-[0.14em] text-[#5a5a5a]">
                   소망교회 추모관
                 </span>
               </div>
@@ -50,7 +50,7 @@ export default function Navbar() {
               <a
                 key={item.href}
                 href={item.href}
-                className="text-sm text-[#616161] transition-colors hover:text-[#121212]"
+                className="text-[15px] font-medium text-[#3f3f3f] transition-colors hover:text-[#121212]"
               >
                 {item.label}
               </a>
@@ -59,7 +59,7 @@ export default function Navbar() {
 
           <div className="hidden items-center gap-3 lg:flex">
             <Link href="/memorial/search">
-              <button className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#b5b0a7] bg-white px-4 text-xs font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]">
+              <button className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#b5b0a7] bg-white px-4 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                 <Search className="h-3.5 w-3.5" />
                 추모관
               </button>
@@ -67,30 +67,30 @@ export default function Navbar() {
             {isAuthenticated ? (
               <>
                 <Link href="/my/memorials">
-                  <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
+                  <span className="text-[15px] font-medium text-[#3f3f3f] transition-colors hover:text-[#121212]">
                     내 추모관
                   </span>
                 </Link>
                 <Link href="/my/find-parent">
-                  <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
+                  <span className="text-[15px] font-medium text-[#3f3f3f] transition-colors hover:text-[#121212]">
                     내 부모 찾기
                   </span>
                 </Link>
                 {user?.role === "admin" && (
                   <Link href="/admin">
-                    <button className="h-9 border border-[#18181b] bg-[#18181b] px-4 text-xs font-medium text-white transition-opacity hover:opacity-90">
+                    <button className="h-9 border border-[#18181b] bg-[#18181b] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90">
                       관리자
                     </button>
                   </Link>
                 )}
                 <Link href="/my/account">
-                  <span className="text-sm text-[#616161] transition-colors hover:text-[#121212]">
+                  <span className="text-[15px] font-medium text-[#3f3f3f] transition-colors hover:text-[#121212]">
                     {user?.name || "계정"}
                   </span>
                 </Link>
                 <button
                   onClick={() => logout()}
-                  className="h-9 border border-[#b5b0a7] bg-white px-4 text-xs font-medium text-[#616161] transition-colors hover:bg-[#f5f5f5] hover:text-[#121212]"
+                  className="h-9 border border-[#b5b0a7] bg-white px-4 text-sm font-medium text-[#616161] transition-colors hover:bg-[#f5f5f5] hover:text-[#121212]"
                 >
                   로그아웃
                 </button>
@@ -98,12 +98,12 @@ export default function Navbar() {
             ) : (
               <>
                 <Link href="/login?redirect=/admin">
-                  <button className="h-9 border border-[#b5b0a7] bg-white px-4 text-xs font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]">
+                  <button className="h-9 border border-[#b5b0a7] bg-white px-4 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                     관리자 로그인
                   </button>
                 </Link>
                 <a href={getLoginUrl()}>
-                  <button className="h-9 bg-[#18181b] px-4 text-xs font-medium text-white transition-opacity hover:opacity-90">
+                  <button className="h-9 bg-[#18181b] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90">
                     로그인
                   </button>
                 </a>
@@ -134,7 +134,7 @@ export default function Navbar() {
                 key={item.href}
                 href={item.href}
                 onClick={closeMobile}
-                className="py-3 text-sm text-[#121212]"
+                className="py-3 text-[15px] font-medium text-[#121212]"
               >
                 {item.label}
               </a>
@@ -142,7 +142,7 @@ export default function Navbar() {
             <Link href="/memorial/create">
               <span
                 onClick={closeMobile}
-                className="py-3 text-sm text-[#121212]"
+                className="py-3 text-[15px] font-medium text-[#121212]"
               >
                 소망 만들기
               </span>
@@ -151,7 +151,7 @@ export default function Navbar() {
               <Link href="/my/memorials">
                 <span
                   onClick={closeMobile}
-                  className="py-3 text-sm text-[#121212]"
+                  className="py-3 text-[15px] font-medium text-[#121212]"
                 >
                   내 추모관
                 </span>
@@ -161,7 +161,7 @@ export default function Navbar() {
               <Link href="/my/find-parent">
                 <span
                   onClick={closeMobile}
-                  className="py-3 text-sm text-[#121212]"
+                  className="py-3 text-[15px] font-medium text-[#121212]"
                 >
                   내 부모 찾기
                 </span>

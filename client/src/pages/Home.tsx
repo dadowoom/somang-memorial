@@ -118,7 +118,7 @@ export default function Home() {
           className="scroll-mt-16 border-b border-[#b5b0a7] bg-white"
         >
           <div className="container py-12 md:py-16">
-            <div className="mx-auto max-w-6xl border-y border-[#b5b0a7] py-10 md:py-12">
+            <div className="mx-auto max-w-6xl py-10 md:py-12">
               <div className="grid gap-7 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
                 <div className="flex items-center gap-5 md:block">
                   <p className="text-[11px] font-medium tracking-[0.28em] text-[#616161] uppercase">
@@ -146,16 +146,16 @@ export default function Home() {
                 {VALUES.map(value => (
                   <article
                     key={value.number}
-                    className="border-b border-[#b5b0a7] py-5 md:border-b-0 md:border-r md:px-7 md:last:border-r-0"
+                    className="border-b border-[#b5b0a7] py-6 md:border-b-0 md:border-r md:px-7 md:py-2 md:last:border-r-0 md:first:pl-0"
                   >
                     <p className="text-sm text-[#616161]">{value.number}</p>
                     <h3
-                      className="mt-5 text-base font-normal"
+                      className="mt-4 text-lg font-normal md:text-xl"
                       style={{ fontFamily: "'Noto Serif KR', serif" }}
                     >
                       {value.title}
                     </h3>
-                    <p className="mt-4 text-sm leading-7 text-[#616161]">
+                    <p className="mt-4 text-[15px] leading-8 text-[#4a4a4a]">
                       {value.desc}
                     </p>
                   </article>
