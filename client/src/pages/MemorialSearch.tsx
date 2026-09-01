@@ -72,7 +72,7 @@ export default function MemorialSearch() {
             </div>
 
             {!canSearch ? (
-              <div className="border border-[#b5b0a7] bg-[#faf9f6] px-5 py-14 text-center md:py-20">
+              <div className="border border-[#b5b0a7] bg-[#fafafa] px-5 py-14 text-center md:py-20">
                 <p
                   className="text-2xl font-normal text-[#121212] md:text-3xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
@@ -104,7 +104,7 @@ export default function MemorialSearch() {
               </div>
             ) : (
               <div className="overflow-hidden border-y border-[#b5b0a7]">
-                <div className="hidden grid-cols-[150px_1.1fr_1fr_0.8fr_128px] border-b border-[#b5b0a7] bg-[#f8f7f4] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] md:grid">
+                <div className="hidden grid-cols-[150px_1.1fr_1fr_0.8fr_128px] border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] md:grid">
                   <span>Year</span>
                   <span>Name</span>
                   <span>Church</span>
@@ -116,7 +116,7 @@ export default function MemorialSearch() {
                   {results.map(memorial => (
                     <article
                       key={memorial.slug}
-                      className="grid gap-3 bg-white px-4 py-4 transition-colors hover:bg-[#faf9f6] md:grid-cols-[150px_1.1fr_1fr_0.8fr_128px] md:items-center md:px-5"
+                      className="grid gap-3 bg-white px-4 py-4 transition-colors hover:bg-[#fafafa] md:grid-cols-[150px_1.1fr_1fr_0.8fr_128px] md:items-center md:px-5"
                     >
                       <p className="text-xs tracking-[0.1em] text-[#616161] md:text-sm">
                         {formatLifespan(memorial.birthDate, memorial.deathDate)}

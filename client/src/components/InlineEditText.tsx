@@ -120,7 +120,7 @@ export default function InlineEditText({
             onChange={event => setEditValue(event.target.value)}
             onKeyDown={handleKeyDown}
             className={cn(
-              "w-full resize-y border border-[#d8c7a3] bg-[#fffdf8] px-3 py-2 text-sm leading-7 text-[#2e2218] outline-none focus:border-[#9c7437]",
+              "w-full resize-y border border-[#d8c7a3] bg-[#fcfcfc] px-3 py-2 text-sm leading-7 text-[#2e2218] outline-none focus:border-[#9c7437]",
               inputClassName
             )}
           />
@@ -131,7 +131,7 @@ export default function InlineEditText({
             onChange={event => setEditValue(event.target.value)}
             onKeyDown={handleKeyDown}
             className={cn(
-              "w-full border border-[#d8c7a3] bg-[#fffdf8] px-3 py-2 text-sm text-[#2e2218] outline-none focus:border-[#9c7437]",
+              "w-full border border-[#d8c7a3] bg-[#fcfcfc] px-3 py-2 text-sm text-[#2e2218] outline-none focus:border-[#9c7437]",
               inputClassName
             )}
           />
@@ -149,7 +149,7 @@ export default function InlineEditText({
                   "border border-[#d8c7a3] px-2 py-1 transition-colors",
                   editSize === size
                     ? "bg-[#8b642c] text-white"
-                    : "bg-white/65 hover:bg-[#fbf4e8]"
+                    : "bg-white/65 hover:bg-[#f2f2f2]"
                 )}
               >
                 {size === "auto" && "자동"}

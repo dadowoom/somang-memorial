@@ -383,7 +383,7 @@ export default function Kiosk() {
                     key={memorial.slug}
                     type="button"
                     onClick={() => openMemorial(memorial)}
-                    className="flex w-full items-center justify-between gap-5 border-b border-[#b5b0a7] px-8 py-5 text-left active:bg-[#f7f6f2]"
+                    className="flex w-full items-center justify-between gap-5 border-b border-[#b5b0a7] px-8 py-5 text-left active:bg-[#f5f5f5]"
                   >
                     <span className="min-w-0">
                       <span className="flex flex-wrap items-center gap-3">
@@ -412,7 +412,7 @@ export default function Kiosk() {
                 {intermentResults.map(record => (
                   <div
                     key={`interment-${record.id}`}
-                    className="flex w-full items-center justify-between gap-5 border-b border-[#b5b0a7] bg-[#faf9f6] px-8 py-5 text-left"
+                    className="flex w-full items-center justify-between gap-5 border-b border-[#b5b0a7] bg-[#fafafa] px-8 py-5 text-left"
                   >
                     <span className="min-w-0">
                       <span

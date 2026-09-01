@@ -177,7 +177,7 @@ export default function MemorialVideoSection({
             영상을 불러오고 있습니다.
           </div>
         ) : !canEdit && visibleVideos.length > 0 ? (
-          <div className="mx-auto grid max-w-5xl overflow-hidden border border-[#d5c9b4] bg-[#fbfaf8] md:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.72fr)]">
+          <div className="mx-auto grid max-w-5xl overflow-hidden border border-[#d5c9b4] bg-[#ffffff] md:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.72fr)]">
             <div className="relative min-h-[260px] overflow-hidden bg-[#2e2218] md:min-h-[420px]">
               {coverImageUrl ? (
                 <img
@@ -246,7 +246,7 @@ export default function MemorialVideoSection({
                   />
                 </div>
               ) : (
-                <div className="flex aspect-video items-center justify-center bg-[#fbfaf8]">
+                <div className="flex aspect-video items-center justify-center bg-[#ffffff]">
                   <Youtube className="h-10 w-10 text-[#7f673d]" />
                 </div>
               )}
@@ -264,7 +264,7 @@ export default function MemorialVideoSection({
                     className={`group relative flex gap-3 border p-2 transition-colors ${
                       active
                         ? "border-[#1f1d1a] bg-white"
-                        : "border-[#d5c9b4] bg-white hover:bg-[#faf9f7]"
+                        : "border-[#d5c9b4] bg-white hover:bg-[#f9f9f9]"
                     }`}
                     style={{ opacity: hidden ? 0.55 : 1 }}
                   >
@@ -273,7 +273,7 @@ export default function MemorialVideoSection({
                       className="flex min-w-0 flex-1 gap-3 text-left"
                       onClick={() => setSelectedVideoId(video.youtubeVideoId)}
                     >
-                      <span className="relative h-16 w-24 shrink-0 overflow-hidden bg-[#fbfaf8]">
+                      <span className="relative h-16 w-24 shrink-0 overflow-hidden bg-[#ffffff]">
                         <img
                           src={youtubeThumb(video.youtubeVideoId)}
                           alt={video.title}

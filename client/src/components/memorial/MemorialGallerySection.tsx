@@ -138,7 +138,7 @@ export default function MemorialGallerySection({
       id="gallery"
       className="relative overflow-hidden py-20 md:py-32"
       style={{
-        background: "linear-gradient(180deg, #ffffff, #fbfaf8, #ffffff)",
+        background: "linear-gradient(180deg, #ffffff, #ffffff, #ffffff)",
       }}
       onDragOver={event => {
         event.preventDefault();
@@ -171,7 +171,7 @@ export default function MemorialGallerySection({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex h-11 items-center justify-center gap-2 border border-dashed border-[#c8b383] bg-white px-5 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#faf9f7]"
+              className="inline-flex h-11 items-center justify-center gap-2 border border-dashed border-[#c8b383] bg-white px-5 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#f9f9f9]"
             >
               <ImagePlus className="h-4 w-4" />
               사진 추가

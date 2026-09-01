@@ -258,14 +258,14 @@ function MemorialContent({
       <section
         className="relative overflow-hidden"
         style={{
-          background: "linear-gradient(180deg, #ffffff 0%, #fbfaf8 100%)",
+          background: "linear-gradient(180deg, #ffffff 0%, #ffffff 100%)",
         }}
       >
         <GoldDust />
 
         <div className="container relative z-10 py-10 md:py-16 lg:py-20">
           <Link href="/memorial/search">
-            <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#faf9f7]">
+            <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
               <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
               추모관 목록
             </button>
@@ -332,20 +332,20 @@ function MemorialContent({
                 </Link>
                 <a
                   href="#letters"
-                  className="inline-flex h-11 items-center justify-center gap-2 border border-[#1f1d1a] bg-white px-5 text-sm font-medium text-[#1f1d1a] transition-colors hover:bg-[#faf9f7]"
+                  className="inline-flex h-11 items-center justify-center gap-2 border border-[#1f1d1a] bg-white px-5 text-sm font-medium text-[#1f1d1a] transition-colors hover:bg-[#f9f9f9]"
                 >
                   <Mail className="h-4 w-4" strokeWidth={1.7} />
                   편지 남기기
                 </a>
                 <a
                   href="#life"
-                  className="inline-flex h-11 items-center justify-center gap-2 border border-[#d5c9b4] bg-white px-5 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#faf9f7]"
+                  className="inline-flex h-11 items-center justify-center gap-2 border border-[#d5c9b4] bg-white px-5 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#f9f9f9]"
                 >
                   <BookOpenText className="h-4 w-4" strokeWidth={1.7} />
                   삶의 기록 보기
                 </a>
                 <Link href={`/memorial/${memorial.slug}/family`}>
-                  <span className="inline-flex h-11 items-center justify-center gap-2 border border-[#d5c9b4] bg-white px-5 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#faf9f7]">
+                  <span className="inline-flex h-11 items-center justify-center gap-2 border border-[#d5c9b4] bg-white px-5 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
                     <LockKeyhole className="h-4 w-4" strokeWidth={1.7} />
                     가족관
                   </span>
@@ -401,7 +401,7 @@ function MemorialContent({
                 </section>
               )}
 
-              <section className="border border-[#d5c9b4] bg-[#fbfaf8] p-6 md:p-8">
+              <section className="border border-[#d5c9b4] bg-[#ffffff] p-6 md:p-8">
                 <div className="mb-5 flex items-center gap-3">
                   <Church
                     className="h-5 w-5"
@@ -474,7 +474,7 @@ function MemorialContent({
       {memorial.timeline.length > 0 && (
         <section
           className="py-20 md:py-28"
-          style={{ background: "linear-gradient(180deg, #ffffff, #fbfaf8)" }}
+          style={{ background: "linear-gradient(180deg, #ffffff, #ffffff)" }}
         >
           <div className="container">
             <SectionHeader
@@ -936,7 +936,7 @@ function MemorialLetters({
                 />
               </label>
             </div>
-            <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#fbfaf8] p-5 sm:flex-row sm:items-center">
+            <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
               <p className="text-xs leading-6" style={{ color: mutedText }}>
                 {message ||
                   (isPrivate
@@ -1000,7 +1000,7 @@ function MemorialLetters({
           <div className="mt-8 text-center">
             <Link href="/letters">
               <span
-                className="inline-flex h-11 items-center justify-center border border-[#d5c9b4] bg-white px-5 text-sm font-medium transition-colors hover:bg-[#faf9f7]"
+                className="inline-flex h-11 items-center justify-center border border-[#d5c9b4] bg-white px-5 text-sm font-medium transition-colors hover:bg-[#f9f9f9]"
                 style={{ color: "#4f4638" }}
               >
                 모든 편지 보기

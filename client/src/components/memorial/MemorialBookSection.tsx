@@ -79,7 +79,7 @@ const CoverPage = forwardRef<HTMLDivElement, { book: MemorialBook }>(
     return (
       <div
         ref={ref}
-        className="flex h-full flex-col items-center justify-center bg-[#fffefa] p-8 text-center"
+        className="flex h-full flex-col items-center justify-center bg-[#fdfdfd] p-8 text-center"
       >
         <div className="mb-8 h-px w-16 bg-[#7f673d]" />
         <p className="mb-5 text-[11px] uppercase tracking-[0.28em] text-[#7f673d]">
@@ -111,7 +111,7 @@ const ContentPage = forwardRef<HTMLDivElement, { page: BookPage }>(
     return (
       <div
         ref={ref}
-        className="relative flex h-full flex-col overflow-hidden bg-[#fffefa] p-6 md:p-8"
+        className="relative flex h-full flex-col overflow-hidden bg-[#fdfdfd] p-6 md:p-8"
       >
         {date && (
           <p className="mb-3 text-xs uppercase tracking-[0.18em] text-[#7f673d]">
@@ -150,7 +150,7 @@ const EndPage = forwardRef<HTMLDivElement>(function EndPage(_, ref) {
   return (
     <div
       ref={ref}
-      className="flex h-full flex-col items-center justify-center bg-[#fffefa] p-8 text-center"
+      className="flex h-full flex-col items-center justify-center bg-[#fdfdfd] p-8 text-center"
     >
       <p className="text-xs uppercase tracking-[0.28em] text-[#7f673d]">
         Soli Deo Gloria
@@ -166,7 +166,7 @@ const EndPage = forwardRef<HTMLDivElement>(function EndPage(_, ref) {
 });
 
 const BlankPage = forwardRef<HTMLDivElement>(function BlankPage(_, ref) {
-  return <div ref={ref} className="h-full bg-[#fffefa]" />;
+  return <div ref={ref} className="h-full bg-[#fdfdfd]" />;
 });
 
 export default function MemorialBookSection({

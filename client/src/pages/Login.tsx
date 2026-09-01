@@ -212,7 +212,7 @@ export default function Login() {
                     className={`h-12 bg-white text-sm font-medium transition-colors ${
                       mode === value
                         ? "text-[#121212] ring-1 ring-inset ring-[#18181b]"
-                        : "text-[#777] hover:bg-[#faf9f6]"
+                        : "text-[#777] hover:bg-[#fafafa]"
                     }`}
                   >
                     {value === "login" ? "로그인" : "회원가입"}

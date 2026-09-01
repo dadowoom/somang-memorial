@@ -92,7 +92,7 @@ export default function SomangHill() {
             </div>
 
             <div className="mt-10 grid gap-px bg-[#b5b0a7] md:grid-cols-[1.3fr_0.7fr]">
-              <figure className="bg-[#f6f5f2]">
+              <figure className="bg-[#f5f5f5]">
                 <img
                   src={HILL_PHOTOS[0].src}
                   alt={HILL_PHOTOS[0].alt}
@@ -101,7 +101,7 @@ export default function SomangHill() {
               </figure>
               <div className="grid gap-px bg-[#b5b0a7] sm:grid-cols-3 md:grid-cols-1">
                 {HILL_PHOTOS.slice(1).map(photo => (
-                  <figure key={photo.src} className="bg-[#f6f5f2]">
+                  <figure key={photo.src} className="bg-[#f5f5f5]">
                     <img
                       src={photo.src}
                       alt={photo.alt}
@@ -114,7 +114,7 @@ export default function SomangHill() {
           </div>
         </section>
 
-        <section className="border-b border-[#b5b0a7] bg-[#f6f5f2] py-16 md:py-24">
+        <section className="border-b border-[#b5b0a7] bg-[#f5f5f5] py-16 md:py-24">
           <div className="container">
             <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
               <div>
@@ -209,7 +209,7 @@ export default function SomangHill() {
                     href="http://rc.somang.net/main/map.jsp"
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-5 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]"
+                    className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-5 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]"
                   >
                     오시는 길
                     <MapPin className="h-4 w-4" />
@@ -236,7 +236,7 @@ export default function SomangHill() {
 
 function HillVideoCard() {
   return (
-    <div className="border border-[#b5b0a7] bg-[#f6f5f2] p-2 md:p-3">
+    <div className="border border-[#b5b0a7] bg-[#f5f5f5] p-2 md:p-3">
       <div className="overflow-hidden border border-[#b5b0a7] bg-white">
         <div className="flex min-h-12 items-center justify-between gap-4 border-b border-[#b5b0a7] px-4 py-3">
           <div className="flex min-w-0 items-center gap-2 text-sm text-[#616161]">
@@ -256,7 +256,7 @@ function HillVideoCard() {
           href={HILL_VIDEO_URL}
           target="_blank"
           rel="noreferrer"
-          className="group relative block aspect-video overflow-hidden bg-[#efeeeb]"
+          className="group relative block aspect-video overflow-hidden bg-[#ededed]"
           aria-label="소망동산 영상 Vimeo에서 보기"
         >
           <img

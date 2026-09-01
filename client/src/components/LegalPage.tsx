@@ -20,7 +20,7 @@ export default function LegalPage({
   children,
 }: LegalPageProps) {
   return (
-    <div className="min-h-screen bg-[#faf9f7]">
+    <div className="min-h-screen bg-[#f9f9f9]">
       <Navbar />
       <main className="mx-auto w-full max-w-[760px] px-6 pb-24 pt-28 sm:pt-32">
         <p className="text-xs font-medium tracking-[0.18em] text-[#8a8a8a]">
@@ -37,7 +37,7 @@ export default function LegalPage({
         {isOrgInfoIncomplete() ? (
           <p
             role="status"
-            className="mt-8 border border-[#e0d4b8] bg-[#fbf7ee] px-5 py-4 text-sm leading-6 text-[#7a5c1e]"
+            className="mt-8 border border-[#e0d4b8] bg-[#f5f5f5] px-5 py-4 text-sm leading-6 text-[#7a5c1e]"
           >
             일부 항목(교회 주소, 문의 연락처, 개인정보 보호책임자)은 아직 확인
             중이며 곧 채워집니다. 그 전에 문의하실 일이 있으면 교회 사무실로
@@ -61,7 +61,7 @@ export function LegalSection({
 }) {
   return (
     <section>
-      <h2 className="border-b border-[#e5e3df] pb-3 text-lg font-medium text-[#121212]">
+      <h2 className="border-b border-[#e2e2e2] pb-3 text-lg font-medium text-[#121212]">
         {heading}
       </h2>
       <div className="mt-5 space-y-4 text-sm leading-7 text-[#4a4a4a]">
@@ -116,7 +116,7 @@ export function LegalTable({
               {row.map((cell, cellIndex) => (
                 <td
                   key={cellIndex}
-                  className="border-b border-[#eceae6] py-3 pr-4 align-top leading-6 text-[#4a4a4a]"
+                  className="border-b border-[#e9e9e9] py-3 pr-4 align-top leading-6 text-[#4a4a4a]"
                 >
                   {cell}
                 </td>

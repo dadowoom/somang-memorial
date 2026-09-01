@@ -12,7 +12,7 @@
  */
 
 const boxBase =
-  "w-full border border-[#b5b0a7] bg-[#faf9f6] text-base text-[#121212] outline-none transition-colors focus:border-[#18181b] focus:bg-white";
+  "w-full border border-[#b5b0a7] bg-[#fafafa] text-base text-[#121212] outline-none transition-colors focus:border-[#18181b] focus:bg-white";
 
 export const inputClass = `h-12 px-4 placeholder:text-[#9a9a9a] ${boxBase}`;
 

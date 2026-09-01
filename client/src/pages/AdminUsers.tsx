@@ -152,7 +152,7 @@ export default function AdminUsers() {
               <button
                 type="button"
                 onClick={() => exportUsers(filteredUsers)}
-                className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]"
+                className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]"
               >
                 <Download className="h-4 w-4" strokeWidth={1.7} />
                 CSV
@@ -178,7 +178,7 @@ export default function AdminUsers() {
               <Panel text="조건에 맞는 회원이 없습니다." />
             ) : (
               <div className="overflow-hidden border-y border-[#b5b0a7]">
-                <div className="hidden grid-cols-[1fr_1.2fr_0.75fr_0.7fr_0.75fr_0.8fr_170px] border-b border-[#b5b0a7] bg-[#f8f7f4] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
+                <div className="hidden grid-cols-[1fr_1.2fr_0.75fr_0.7fr_0.75fr_0.8fr_170px] border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
                   <span>Name</span>
                   <span>Email</span>
                   <span>Phone</span>
@@ -192,7 +192,7 @@ export default function AdminUsers() {
                   {filteredUsers.map(item => (
                     <article
                       key={item.id}
-                      className="grid gap-3 bg-white px-4 py-5 transition-colors hover:bg-[#faf9f6] lg:grid-cols-[1fr_1.2fr_0.75fr_0.7fr_0.75fr_0.8fr_170px] lg:items-center lg:px-5"
+                      className="grid gap-3 bg-white px-4 py-5 transition-colors hover:bg-[#fafafa] lg:grid-cols-[1fr_1.2fr_0.75fr_0.7fr_0.75fr_0.8fr_170px] lg:items-center lg:px-5"
                     >
                       <div className="flex items-center gap-2">
                         {item.role === "admin" ? (

@@ -197,7 +197,7 @@ export default function AdminMemorials() {
           </div>
         </section>
 
-        <section className="border-b border-[#b5b0a7] bg-[#f8f7f4] py-8 md:py-10">
+        <section className="border-b border-[#b5b0a7] bg-[#f7f7f7] py-8 md:py-10">
           <div className="container">
             <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
               <div>
@@ -209,7 +209,7 @@ export default function AdminMemorials() {
                 </h2>
               </div>
               <Link href="/admin/operations">
-                <button className="inline-flex h-10 items-center gap-2 border border-[#b5b0a7] bg-white px-4 text-sm text-[#121212] transition-colors hover:bg-[#f1f0ed]">
+                <button className="inline-flex h-10 items-center gap-2 border border-[#b5b0a7] bg-white px-4 text-sm text-[#121212] transition-colors hover:bg-[#efefef]">
                   운영 관리 열기
                   <ArrowRight className="h-4 w-4" strokeWidth={1.7} />
                 </button>
@@ -220,7 +220,7 @@ export default function AdminMemorials() {
               <button
                 type="button"
                 onClick={() => setStatusFilter("pending")}
-                className="min-h-40 border border-[#b5b0a7] bg-white p-5 text-left transition-colors hover:bg-[#faf9f6]"
+                className="min-h-40 border border-[#b5b0a7] bg-white p-5 text-left transition-colors hover:bg-[#fafafa]"
               >
                 <span className="flex items-center justify-between text-[#616161]">
                   <LockKeyhole className="h-4 w-4" />
@@ -237,7 +237,7 @@ export default function AdminMemorials() {
               </button>
 
               <Link href="/admin/operations">
-                <button className="min-h-40 w-full border border-[#b5b0a7] bg-white p-5 text-left transition-colors hover:bg-[#faf9f6]">
+                <button className="min-h-40 w-full border border-[#b5b0a7] bg-white p-5 text-left transition-colors hover:bg-[#fafafa]">
                   <span className="flex items-center justify-between text-[#616161]">
                     <Mail className="h-4 w-4" />
                     <span className="text-2xl font-light text-[#121212]">
@@ -254,7 +254,7 @@ export default function AdminMemorials() {
               </Link>
 
               <Link href="/admin/users">
-                <button className="min-h-40 w-full border border-[#b5b0a7] bg-white p-5 text-left transition-colors hover:bg-[#faf9f6]">
+                <button className="min-h-40 w-full border border-[#b5b0a7] bg-white p-5 text-left transition-colors hover:bg-[#fafafa]">
                   <span className="flex items-center justify-between text-[#616161]">
                     <UsersRound className="h-4 w-4" />
                     <span className="text-2xl font-light text-[#121212]">
@@ -271,7 +271,7 @@ export default function AdminMemorials() {
               </Link>
 
               <Link href="/admin/operations">
-                <button className="min-h-40 w-full border border-[#b5b0a7] bg-white p-5 text-left transition-colors hover:bg-[#faf9f6]">
+                <button className="min-h-40 w-full border border-[#b5b0a7] bg-white p-5 text-left transition-colors hover:bg-[#fafafa]">
                   <span className="flex items-center justify-between text-[#616161]">
                     <Bell className="h-4 w-4" />
                     <span className="text-right text-2xl font-light text-[#121212]">
@@ -320,7 +320,7 @@ export default function AdminMemorials() {
               <button
                 type="button"
                 onClick={() => exportMemorials(filteredMemorials)}
-                className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]"
+                className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]"
               >
                 <Download className="h-4 w-4" strokeWidth={1.7} />
                 CSV
@@ -351,7 +351,7 @@ export default function AdminMemorials() {
               <Panel text="조건에 맞는 추모관이 없습니다." />
             ) : (
               <div className="overflow-hidden border-y border-[#b5b0a7]">
-                <div className="hidden grid-cols-[150px_1.1fr_0.9fr_0.8fr_0.8fr_300px] border-b border-[#b5b0a7] bg-[#f8f7f4] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
+                <div className="hidden grid-cols-[150px_1.1fr_0.9fr_0.8fr_0.8fr_300px] border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
                   <span>Year</span>
                   <span>Name</span>
                   <span>Church</span>
@@ -364,7 +364,7 @@ export default function AdminMemorials() {
                   {filteredMemorials.map(memorial => (
                     <article
                       key={memorial.id}
-                      className="grid gap-4 bg-white px-4 py-5 transition-colors hover:bg-[#faf9f6] lg:grid-cols-[150px_1.1fr_0.9fr_0.8fr_0.8fr_300px] lg:items-center lg:px-5"
+                      className="grid gap-4 bg-white px-4 py-5 transition-colors hover:bg-[#fafafa] lg:grid-cols-[150px_1.1fr_0.9fr_0.8fr_0.8fr_300px] lg:items-center lg:px-5"
                     >
                       <p className="text-xs tracking-[0.1em] text-[#616161] md:text-sm">
                         {formatLifespan(memorial.birthDate, memorial.deathDate)}
@@ -490,7 +490,7 @@ function MemorialStatusBadge({ status }: { status: string }) {
   const label = statusLabels[status as MemorialStatus] ?? "비공개 보관";
 
   return (
-    <span className="inline-flex w-fit items-center border border-[#b5b0a7] bg-[#f8f7f4] px-2 py-1 text-xs text-[#616161]">
+    <span className="inline-flex w-fit items-center border border-[#b5b0a7] bg-[#f7f7f7] px-2 py-1 text-xs text-[#616161]">
       {label}
     </span>
   );
