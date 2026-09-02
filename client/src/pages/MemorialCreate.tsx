@@ -284,9 +284,14 @@ export default function MemorialCreate() {
   };
 
   const goToStep = (index: number) => {
-    setStep(Math.min(Math.max(index, 0), steps.length - 1));
+    const nextStep = Math.min(Math.max(index, 0), steps.length - 1);
+    setStep(nextStep);
     setNotice("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.requestAnimationFrame(() => {
+      const section = document.getElementById(steps[nextStep].id);
+      section?.scrollIntoView({ behavior: "smooth", block: "start" });
+      section?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+    });
   };
 
   // 이 단계에서 비운 칸만 짚어 준다. 아직 오지 않은 단계까지 미리 지적하면
@@ -498,6 +503,7 @@ export default function MemorialCreate() {
                       key={item.id}
                       type="button"
                       onClick={() => goToStep(index)}
+                      aria-current={index === step ? "step" : undefined}
                       className={`block w-full py-2 text-left transition-colors ${
                         index === step
                           ? "font-medium text-[#121212]"
@@ -1085,6 +1091,7 @@ function SectionHeader({ number, title }: { number: string; title: string }) {
     <div className="mb-8 flex items-baseline justify-between gap-4 border-b border-[#b5b0a7] pb-5">
       <h2
         className="text-2xl font-normal"
+        tabIndex={-1}
         style={{ fontFamily: "'Noto Serif KR', serif" }}
       >
         {title}

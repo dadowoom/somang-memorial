@@ -37,7 +37,7 @@ export default function LegalPage({
         {isOrgInfoIncomplete() ? (
           <p
             role="status"
-            className="mt-8 border border-[#e0d4b8] bg-[#f5f5f5] px-5 py-4 text-sm leading-6 text-[#7a5c1e]"
+            className="mt-8 border border-[#e0d4b8] bg-[#fbf7ee] px-5 py-4 text-sm leading-6 text-[#7a5c1e]"
           >
             일부 항목(교회 주소, 문의 연락처, 개인정보 보호책임자)은 아직 확인
             중이며 곧 채워집니다. 그 전에 문의하실 일이 있으면 교회 사무실로
