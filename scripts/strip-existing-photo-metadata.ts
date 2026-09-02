@@ -32,8 +32,20 @@ function parseArgs(argv: string[]): Options {
     const arg = argv[i];
     if (arg === "--apply") options.apply = true;
     else if (arg === "--dry-run") options.apply = false;
-    else if (arg === "--dir") options.dir = argv[i + 1];
-    else if (arg.startsWith("--dir=")) options.dir = arg.slice("--dir=".length);
+    else if (arg === "--dir") {
+      const value = argv[i + 1];
+      if (!value || value.startsWith("-")) {
+        throw new Error("--dir 뒤에 사진 폴더 경로를 입력해 주세요.");
+      }
+      options.dir = value;
+      i += 1;
+    } else if (arg.startsWith("--dir=")) {
+      const value = arg.slice("--dir=".length);
+      if (!value) throw new Error("--dir= 뒤에 사진 폴더 경로를 입력해 주세요.");
+      options.dir = value;
+    } else {
+      throw new Error(`알 수 없는 옵션입니다: ${arg}`);
+    }
   }
   return options;
 }
@@ -146,6 +158,11 @@ async function main(): Promise<void> {
   console.log(`${apply ? "숨은 정보를 지운 사진" : "지울 사진"}: ${changed}  (절약 ${bytesSaved} bytes)`);
   console.log(`건너뜀(사진 아님 또는 지울 것 없음): ${skipped}`);
   console.log(`실패: ${failed}`);
+
+  if (failed > 0) {
+    console.error("일부 사진을 처리하지 못했습니다. 위 실패 항목을 확인해 주세요.");
+    process.exitCode = 1;
+  }
 
   if (!apply && changed > 0) {
     console.log("");

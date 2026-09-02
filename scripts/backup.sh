@@ -20,6 +20,8 @@
 #   S3_REGION       기본 auto (R2용). 네이버는 kr-standard 로 설정.
 #   S3_PREFIX       버킷 안 폴더 이름. 기본 somang-memorial
 #   UPLOAD_DIR      사진 폴더. 기본 /var/www/somang-memorial/uploads
+#   ALLOW_MISSING_UPLOAD_DIR
+#                    사진 폴더가 아직 없는 최초 설치에서만 1. 기본 0(없으면 실패).
 #   RETENTION_DAYS  며칠 치를 보관할지. 기본 30
 #   BACKUP_TMP_DIR  작업용 임시 폴더. 기본 /var/tmp
 #
@@ -101,16 +103,28 @@ UPLOAD_DIR="${UPLOAD_DIR:-/var/www/somang-memorial/uploads}"
 RETENTION_DAYS="${RETENTION_DAYS:-30}"
 BACKUP_TMP_DIR="${BACKUP_TMP_DIR:-/var/tmp}"
 BACKUP_LOCAL_DIR="${BACKUP_LOCAL_DIR:-/var/www/somang-memorial/backups/daily}"
+ALLOW_MISSING_UPLOAD_DIR="${ALLOW_MISSING_UPLOAD_DIR:-0}"
 
 case "$RETENTION_DAYS" in
   ''|*[!0-9]*) fail "RETENTION_DAYS 는 숫자여야 합니다: $RETENTION_DAYS" ;;
 esac
 [ "$RETENTION_DAYS" -ge 1 ] || fail "RETENTION_DAYS 는 1 이상이어야 합니다."
 
-# 아직 아무도 사진을 올리지 않았으면 사진 폴더 자체가 없다(앱이 첫 업로드 때 만든다).
-# 그것 때문에 데이터베이스 백업까지 멈추면 안 되므로, 없으면 건너뛰고 계속한다.
+case "$ALLOW_MISSING_UPLOAD_DIR" in
+  0|1) ;;
+  *) fail "ALLOW_MISSING_UPLOAD_DIR 는 0 또는 1이어야 합니다: $ALLOW_MISSING_UPLOAD_DIR" ;;
+esac
+
+# 사진 폴더가 사라진 것은 경로 오타나 디스크 연결 장애일 수도 있다. 기본적으로
+# 실패시키고, 사진이 전혀 없는 최초 설치에서만 명시적으로 예외를 허용한다.
 HAS_UPLOADS=1
-[ -d "$UPLOAD_DIR" ] || HAS_UPLOADS=0
+if [ ! -d "$UPLOAD_DIR" ]; then
+  if [ "$ALLOW_MISSING_UPLOAD_DIR" = "1" ]; then
+    HAS_UPLOADS=0
+  else
+    fail "사진 폴더가 없습니다: $UPLOAD_DIR (최초 설치라면 ALLOW_MISSING_UPLOAD_DIR=1을 명시하세요.)"
+  fi
+fi
 
 [ -d "$BACKUP_TMP_DIR" ] || fail "임시 폴더가 없습니다: $BACKUP_TMP_DIR"
 
@@ -181,13 +195,27 @@ trap cleanup EXIT
 # 권한 600 인 설정 파일로 넘긴다.
 MYSQL_CNF="${WORK_DIR}/my.cnf"
 umask 077
-cat >"$MYSQL_CNF" <<EOF
-[client]
-host=${DB_HOST}
-port=${DB_PORT}
-user=${DB_USER}
-password=${DB_PASS}
-EOF
+
+# MySQL 옵션 파일은 #과 역슬래시를 다시 해석한다. URL에서 정확히 꺼낸 값이
+# 바뀌지 않도록 큰따옴표로 감싸고 옵션 파일 규칙에 맞게 이스케이프한다.
+mysql_cnf_quote() {
+  local value=$1
+  value=${value//\\/\\\\}
+  value=${value//\"/\\\"}
+  value=${value//$'\b'/\\b}
+  value=${value//$'\t'/\\t}
+  value=${value//$'\n'/\\n}
+  value=${value//$'\r'/\\r}
+  printf '"%s"' "$value"
+}
+
+{
+  printf '[client]\n'
+  printf 'host=%s\n' "$(mysql_cnf_quote "$DB_HOST")"
+  printf 'port=%s\n' "$DB_PORT"
+  printf 'user=%s\n' "$(mysql_cnf_quote "$DB_USER")"
+  printf 'password=%s\n' "$(mysql_cnf_quote "$DB_PASS")"
+} >"$MYSQL_CNF"
 
 # ---------------------------------------------------------------------------
 # 3. 데이터베이스 내보내기
@@ -298,6 +326,8 @@ for folder in db uploads; do
   case "$MODE" in
     local)
       [ -d "${BACKUP_LOCAL_DIR}/${folder}" ] || continue
+      local_paths="$(find "${BACKUP_LOCAL_DIR}/${folder}" -maxdepth 1 -type f -name '*.gz')" \
+        || fail "새 백업은 만들었지만 로컬 보관 목록을 읽지 못했습니다: ${BACKUP_LOCAL_DIR}/${folder}"
       while read -r path; do
         [ -n "$path" ] || continue
         key="$(basename "$path")"
@@ -305,31 +335,41 @@ for folder in db uploads; do
         day="$(printf '%s' "$key" | sed -n 's/^[a-z]*-\([0-9]\{8\}\)-.*/\1/p')"
         [ -n "$day" ] || continue
         if [ "$day" -lt "$CUTOFF" ]; then
-          rm -f "$path" && removed=$((removed + 1))
+          rm -f -- "$path" \
+            || fail "새 백업은 만들었지만 오래된 로컬 백업을 지우지 못했습니다: $path"
+          removed=$((removed + 1))
         fi
-      done < <(find "${BACKUP_LOCAL_DIR}/${folder}" -maxdepth 1 -type f -name '*.gz')
+      done <<< "$local_paths"
       ;;
 
     rclone)
+      rclone_keys="$(rclone lsf "${DEST}/${folder}/" 2>/dev/null)" \
+        || fail "새 백업은 올렸지만 rclone 보관 목록을 읽지 못했습니다: ${DEST}/${folder}/"
       while read -r key; do
         [ -n "$key" ] || continue
         day="$(printf '%s' "$key" | sed -n 's/^[a-z]*-\([0-9]\{8\}\)-.*/\1/p')"
         [ -n "$day" ] || continue
         if [ "$day" -lt "$CUTOFF" ]; then
-          rclone deletefile "${DEST}/${folder}/${key}" >/dev/null 2>&1             && removed=$((removed + 1))
+          rclone deletefile "${DEST}/${folder}/${key}" >/dev/null 2>&1 \
+            || fail "새 백업은 올렸지만 오래된 rclone 백업을 지우지 못했습니다: ${DEST}/${folder}/${key}"
+          removed=$((removed + 1))
         fi
-      done < <(rclone lsf "${DEST}/${folder}/" 2>/dev/null)
+      done <<< "$rclone_keys"
       ;;
 
     s3)
+      s3_keys="$(aws "${AWS_ARGS[@]}" s3 ls "${DEST}/${folder}/" | awk '{print $4}')" \
+        || fail "새 백업은 올렸지만 S3 보관 목록을 읽지 못했습니다: ${DEST}/${folder}/"
       while read -r key; do
         [ -n "$key" ] || continue
         day="$(printf '%s' "$key" | sed -n 's/^[a-z]*-\([0-9]\{8\}\)-.*/\1/p')"
         [ -n "$day" ] || continue
         if [ "$day" -lt "$CUTOFF" ]; then
-          aws "${AWS_ARGS[@]}" s3 rm "${DEST}/${folder}/${key}" >/dev/null             && removed=$((removed + 1))
+          aws "${AWS_ARGS[@]}" s3 rm "${DEST}/${folder}/${key}" >/dev/null \
+            || fail "새 백업은 올렸지만 오래된 S3 백업을 지우지 못했습니다: ${DEST}/${folder}/${key}"
+          removed=$((removed + 1))
         fi
-      done < <(aws "${AWS_ARGS[@]}" s3 ls "${DEST}/${folder}/" | awk '{print $4}')
+      done <<< "$s3_keys"
       ;;
   esac
 done
