@@ -12,6 +12,7 @@ import {
   LockKeyhole,
   Mail,
   Phone,
+  Scroll,
   Send,
   Images,
 } from "lucide-react";
@@ -350,6 +351,14 @@ function MemorialContent({
                     가족관
                   </span>
                 </Link>
+                {memorial.deathDate ? (
+                  <Link href={`/memorial/${memorial.slug}/obituary`}>
+                    <span className="inline-flex h-11 items-center justify-center gap-2 border border-[#d5c9b4] bg-white px-5 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
+                      <Scroll className="h-4 w-4" strokeWidth={1.7} />
+                      부고장
+                    </span>
+                  </Link>
+                ) : null}
               </div>
             </div>
 

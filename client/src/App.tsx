@@ -23,6 +23,7 @@ const MemorialPublicDetail = lazy(() => import("./pages/MemorialPublicDetail"));
 const SomangHill = lazy(() => import("./pages/SomangHill"));
 const MemorialArchivePage = lazy(() => import("./pages/MemorialArchivePage"));
 const MemorialFamilyPage = lazy(() => import("./pages/MemorialFamilyPage"));
+const MemorialObituary = lazy(() => import("./pages/MemorialObituary"));
 const MemorialEdit = lazy(() => import("./pages/MemorialEdit"));
 const MyMemorials = lazy(() => import("./pages/MyMemorials"));
 const AccountSettings = lazy(() => import("./pages/AccountSettings"));
@@ -69,6 +70,7 @@ function Router() {
         <Route path={"/somang-hill"} component={SomangHill} />
         <Route path={"/memorial/:slug/archive"} component={MemorialArchivePage} />
         <Route path={"/memorial/:slug/family"} component={MemorialFamilyPage} />
+        <Route path={"/memorial/:slug/obituary"} component={MemorialObituary} />
         <Route path={"/memorial/:slug"} component={MemorialPublicDetail} />
         <Route path={"/privacy"} component={PrivacyPolicy} />
         <Route path={"/terms"} component={Terms} />
