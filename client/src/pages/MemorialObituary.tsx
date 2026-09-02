@@ -1,4 +1,4 @@
-import { formatLifespan } from "@/lib/lifespan";
+import { formatLifespan, formatPassingDate } from "@/lib/lifespan";
 import { toImgUrl } from "@/lib/imageUrl";
 import { ORG_INFO } from "@/lib/orgInfo";
 import { buildCalendarFile, parseServiceMoment } from "@/lib/serviceSchedule";
@@ -47,14 +47,6 @@ const readStoredAccessToken = (slug: string) => {
   if (!slug || typeof window === "undefined") return "";
   return sessionStorage.getItem(getMemorialAccessStorageKey(slug)) || "";
 };
-
-/** "2026-05-20" 을 "2026년 5월 20일" 로 보여줍니다. 다른 형식이면 그대로 둡니다. */
-function formatKoreanDate(value?: string | null) {
-  const text = (value ?? "").trim();
-  const match = /^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})$/.exec(text);
-  if (!match) return text;
-  return `${match[1]}년 ${Number(match[2])}월 ${Number(match[3])}일`;
-}
 
 export default function MemorialObituary() {
   const [, params] = useRoute<{ slug: string }>("/memorial/:slug/obituary");
@@ -266,7 +258,7 @@ function ObituarySheet({
           >
             {memorial.church} {memorial.name} {memorial.role}께서
             <br />
-            {formatKoreanDate(memorial.deathDate)} 소천하셨기에
+            {formatPassingDate(memorial.deathDate)} 소천하셨기에
             <br />
             삼가 알려 드립니다.
           </p>
