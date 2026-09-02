@@ -35,8 +35,10 @@
 > 랜섬웨어에는 무력하다. 데이터베이스가 깨지거나 자료를 실수로 지웠을 때를 위한
 > **임시 방편**이다. 계정이 준비되면 곧바로 클라우드 백업으로 바꿀 것.
 
-아직 아무도 사진을 올리지 않았으면 사진 폴더 자체가 없다. 그때는 사진 묶기를
-건너뛰고 데이터베이스만 백업한다(백업이 실패하지 않는다).
+사진 폴더가 없으면 경로 오타나 디스크 연결 장애일 수 있으므로 기본적으로 실패한다.
+아직 아무도 사진을 올리지 않은 최초 설치에서만 환경파일에
+`ALLOW_MISSING_UPLOAD_DIR=1`을 명시해 데이터베이스만 백업한다. 사진이 한 번이라도
+올라온 뒤에는 이 값을 `0`으로 되돌리고 업로드 폴더를 항상 유지한다.
 
 ## 1-3. rclone 으로 올리기 (이 서버에서 쓰는 방식)
 
@@ -78,6 +80,16 @@ Cloudflare R2와 네이버 클라우드 오브젝트 스토리지는 **둘 다 S
 
 ```bash
 DATABASE_URL=mysql://사용자:비밀번호@주소:3306/DB이름
+
+# 이 서버에서 사용하는 rclone 방식
+RCLONE_REMOTE=ncp:somang-memorial-backup
+RCLONE_CONFIG=/root/.config/rclone/rclone.conf
+S3_PREFIX=somang-memorial
+
+# 사진 폴더가 아직 없는 최초 설치에서만 1, 평소에는 0
+ALLOW_MISSING_UPLOAD_DIR=0
+
+# aws S3 방식을 쓸 때만 아래 항목을 설정
 S3_BUCKET=버킷이름
 S3_ENDPOINT=https://...
 S3_REGION=auto            # 네이버는 kr-standard
@@ -91,7 +103,8 @@ AWS_SECRET_ACCESS_KEY=...
 chmod 600 /etc/somang-memorial/backup.env
 ```
 
-필요한 명령: `node`, `mysqldump`, `tar`, `aws` (AWS CLI v2).
+필요한 명령: 공통으로 `node`, `mysqldump`, `tar`가 필요하다. rclone 방식은
+`rclone`, S3 방식은 `aws`(AWS CLI v2)가 추가로 필요하다.
 
 데이터베이스 사용자는 **읽기 권한만** 있으면 된다 (`SELECT`, `SHOW VIEW`, `TRIGGER`).
 `--single-transaction`으로 내보내므로 서비스를 멈출 필요가 없고 `LOCK TABLES` 권한도 필요 없다.
@@ -108,17 +121,23 @@ set -a && . /etc/somang-memorial/backup.env && set +a && ./scripts/backup.sh --c
 
 ## 5. 매일 자동 실행
 
-방문이 적은 새벽에 하루 한 번 실행한다. `crontab -e`:
+방문이 적은 새벽에 하루 한 번 실행한다. 현재처럼 `/etc/cron.d` 파일을 쓸 때는
+사용자(`root`) 칸이 반드시 필요하다. `/etc/cron.d/somang-memorial` 예시:
 
 ```
-15 3 * * * set -a; . /etc/somang-memorial/backup.env; set +a; /var/www/somang-memorial/scripts/backup.sh >> /var/log/somang-backup.log 2>&1
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+HOME=/root
+37 4 * * * root set -a; . /etc/somang-memorial/backup.env; set +a; /var/www/somang-memorial/current/scripts/backup.sh >> /var/log/somang-memorial-backup.log 2>&1
 ```
+
+`crontab -e`를 쓰는 경우에는 같은 실행 줄에서 `root` 칸만 뺀다.
 
 실패하면 종료 코드가 0이 아니고 로그 마지막 줄에 `[backup] 실패:` 가 남는다.
 **로그를 아무도 보지 않으면 백업이 몇 달째 실패해도 모른다.** 주기적으로 확인한다.
 
 ```bash
-tail -20 /var/log/somang-backup.log
+tail -50 /var/log/somang-memorial-backup.log
 ```
 
 ## 6. 복구 방법
@@ -128,15 +147,36 @@ tail -20 /var/log/somang-backup.log
 
 ### 6-1. 백업 목록 보기
 
+환경파일을 먼저 읽고 현재 사용하는 방식의 명령 하나만 실행한다.
+
 ```bash
-aws --endpoint-url "$S3_ENDPOINT" --region "$S3_REGION" s3 ls "s3://$S3_BUCKET/somang-memorial/db/"
+set -a; . /etc/somang-memorial/backup.env; set +a
+
+# rclone
+rclone lsf "${RCLONE_REMOTE%/}/${S3_PREFIX:-somang-memorial}/db/"
+
+# 서버 안 local-only
+ls -lh "${BACKUP_LOCAL_DIR:-/var/www/somang-memorial/backups/daily}/db/"
+
+# S3
+aws --endpoint-url "$S3_ENDPOINT" --region "${S3_REGION:-auto}" \
+  s3 ls "s3://$S3_BUCKET/${S3_PREFIX:-somang-memorial}/db/"
 ```
 
 ### 6-2. 내려받기
 
 ```bash
-aws --endpoint-url "$S3_ENDPOINT" --region "$S3_REGION" \
-  s3 cp "s3://$S3_BUCKET/somang-memorial/db/db-20260814-031500.sql.gz" /var/tmp/
+# rclone
+rclone copyto \
+  "${RCLONE_REMOTE%/}/${S3_PREFIX:-somang-memorial}/db/db-20260814-031500.sql.gz" \
+  /var/tmp/db-20260814-031500.sql.gz
+
+# 서버 안 local-only
+cp "${BACKUP_LOCAL_DIR:-/var/www/somang-memorial/backups/daily}/db/db-20260814-031500.sql.gz" /var/tmp/
+
+# S3
+aws --endpoint-url "$S3_ENDPOINT" --region "${S3_REGION:-auto}" \
+  s3 cp "s3://$S3_BUCKET/${S3_PREFIX:-somang-memorial}/db/db-20260814-031500.sql.gz" /var/tmp/
 ```
 
 ### 6-3. 데이터베이스 되돌리기
@@ -168,8 +208,17 @@ gzip -dc /var/tmp/db-20260814-031500.sql.gz | mysql 운영DB이름
 ### 6-4. 사진 되돌리기
 
 ```bash
-aws --endpoint-url "$S3_ENDPOINT" --region "$S3_REGION" \
-  s3 cp "s3://$S3_BUCKET/somang-memorial/uploads/uploads-20260814-031500.tar.gz" /var/tmp/
+# rclone
+rclone copyto \
+  "${RCLONE_REMOTE%/}/${S3_PREFIX:-somang-memorial}/uploads/uploads-20260814-031500.tar.gz" \
+  /var/tmp/uploads-20260814-031500.tar.gz
+
+# 서버 안 local-only
+cp "${BACKUP_LOCAL_DIR:-/var/www/somang-memorial/backups/daily}/uploads/uploads-20260814-031500.tar.gz" /var/tmp/
+
+# S3
+aws --endpoint-url "$S3_ENDPOINT" --region "${S3_REGION:-auto}" \
+  s3 cp "s3://$S3_BUCKET/${S3_PREFIX:-somang-memorial}/uploads/uploads-20260814-031500.tar.gz" /var/tmp/
 
 tar -tzf /var/tmp/uploads-20260814-031500.tar.gz | head    # 내용 먼저 확인
 ```
