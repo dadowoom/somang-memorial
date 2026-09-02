@@ -13,7 +13,14 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link } from "wouter";
 
 type TimelineItem = {
@@ -284,15 +291,28 @@ export default function MemorialCreate() {
   };
 
   const goToStep = (index: number) => {
-    const nextStep = Math.min(Math.max(index, 0), steps.length - 1);
-    setStep(nextStep);
+    setStep(Math.min(Math.max(index, 0), steps.length - 1));
     setNotice("");
-    window.requestAnimationFrame(() => {
-      const section = document.getElementById(steps[nextStep].id);
-      section?.scrollIntoView({ behavior: "smooth", block: "start" });
-      section?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
-    });
   };
+
+  // 단계를 옮기면 그 단계의 제목이 화면 맨 위에 오게 하고 읽어 주도록 한다.
+  //
+  // 이 일은 화면이 다시 그려진 뒤에 해야 한다. 단계를 바꾸는 순간에 하면
+  // 새 단계는 아직 숨어 있어서 스크롤도 포커스도 먹지 않는다. 그래서
+  // requestAnimationFrame 이 아니라 useEffect 로 둔다.
+  //
+  // 처음 화면을 열었을 때는 건너뛴다. 사용자가 옮긴 것이 아니기 때문이다.
+  const isFirstStepRender = useRef(true);
+  useEffect(() => {
+    if (isFirstStepRender.current) {
+      isFirstStepRender.current = false;
+      return;
+    }
+
+    const section = document.getElementById(steps[step].id);
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
+    section?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+  }, [step]);
 
   // 이 단계에서 비운 칸만 짚어 준다. 아직 오지 않은 단계까지 미리 지적하면
   // 무엇을 고쳐야 하는지 알기 어렵다.
