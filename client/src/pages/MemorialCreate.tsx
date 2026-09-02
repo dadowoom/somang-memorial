@@ -13,7 +13,14 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link } from "wouter";
 
 type TimelineItem = {
@@ -286,8 +293,26 @@ export default function MemorialCreate() {
   const goToStep = (index: number) => {
     setStep(Math.min(Math.max(index, 0), steps.length - 1));
     setNotice("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  // 단계를 옮기면 그 단계의 제목이 화면 맨 위에 오게 하고 읽어 주도록 한다.
+  //
+  // 이 일은 화면이 다시 그려진 뒤에 해야 한다. 단계를 바꾸는 순간에 하면
+  // 새 단계는 아직 숨어 있어서 스크롤도 포커스도 먹지 않는다. 그래서
+  // requestAnimationFrame 이 아니라 useEffect 로 둔다.
+  //
+  // 처음 화면을 열었을 때는 건너뛴다. 사용자가 옮긴 것이 아니기 때문이다.
+  const isFirstStepRender = useRef(true);
+  useEffect(() => {
+    if (isFirstStepRender.current) {
+      isFirstStepRender.current = false;
+      return;
+    }
+
+    const section = document.getElementById(steps[step].id);
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
+    section?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+  }, [step]);
 
   // 이 단계에서 비운 칸만 짚어 준다. 아직 오지 않은 단계까지 미리 지적하면
   // 무엇을 고쳐야 하는지 알기 어렵다.
@@ -498,6 +523,7 @@ export default function MemorialCreate() {
                       key={item.id}
                       type="button"
                       onClick={() => goToStep(index)}
+                      aria-current={index === step ? "step" : undefined}
                       className={`block w-full py-2 text-left transition-colors ${
                         index === step
                           ? "font-medium text-[#121212]"
@@ -1085,6 +1111,7 @@ function SectionHeader({ number, title }: { number: string; title: string }) {
     <div className="mb-8 flex items-baseline justify-between gap-4 border-b border-[#b5b0a7] pb-5">
       <h2
         className="text-2xl font-normal"
+        tabIndex={-1}
         style={{ fontFamily: "'Noto Serif KR', serif" }}
       >
         {title}

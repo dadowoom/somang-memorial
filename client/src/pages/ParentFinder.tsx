@@ -222,7 +222,7 @@ export default function ParentFinder() {
             </form>
 
             {notice && (
-              <div className="mt-5 border border-[#d8b3ad] bg-[#fafafa] px-5 py-4 text-sm leading-6 text-[#7d3025]">
+              <div className="mt-5 border border-[#d8b3ad] bg-[#fff8f7] px-5 py-4 text-sm leading-6 text-[#7d3025]">
                 {notice}
               </div>
             )}

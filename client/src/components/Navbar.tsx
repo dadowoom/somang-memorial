@@ -57,7 +57,7 @@ export default function Navbar() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-3 lg:flex">
+          <div className="hidden items-center gap-3 xl:flex">
             <Link href="/memorial/search">
               <button className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#b5b0a7] bg-white px-4 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                 <Search className="h-3.5 w-3.5" />
@@ -113,7 +113,7 @@ export default function Navbar() {
 
           <button
             type="button"
-            className="inline-flex h-10 w-10 items-center justify-center border border-[#b5b0a7] bg-white text-[#121212] lg:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center border border-[#b5b0a7] bg-white text-[#121212] xl:hidden"
             onClick={() => setMobileOpen(open => !open)}
             aria-label={mobileOpen ? "메뉴 닫기" : "메뉴 열기"}
           >
@@ -127,14 +127,14 @@ export default function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-[#b5b0a7] bg-white lg:hidden">
+        <div className="border-t border-[#b5b0a7] bg-white xl:hidden">
           <div className="container flex flex-col gap-1 py-4">
             {navItems.map(item => (
               <a
                 key={item.href}
                 href={item.href}
                 onClick={closeMobile}
-                className="py-3 text-[15px] font-medium text-[#121212]"
+                className="block py-3 text-[15px] font-medium text-[#121212]"
               >
                 {item.label}
               </a>
@@ -142,7 +142,7 @@ export default function Navbar() {
             <Link href="/memorial/create">
               <span
                 onClick={closeMobile}
-                className="py-3 text-[15px] font-medium text-[#121212]"
+                className="block py-3 text-[15px] font-medium text-[#121212]"
               >
                 소망 만들기
               </span>
@@ -151,7 +151,7 @@ export default function Navbar() {
               <Link href="/my/memorials">
                 <span
                   onClick={closeMobile}
-                  className="py-3 text-[15px] font-medium text-[#121212]"
+                  className="block py-3 text-[15px] font-medium text-[#121212]"
                 >
                   내 추모관
                 </span>
@@ -161,7 +161,7 @@ export default function Navbar() {
               <Link href="/my/find-parent">
                 <span
                   onClick={closeMobile}
-                  className="py-3 text-[15px] font-medium text-[#121212]"
+                  className="block py-3 text-[15px] font-medium text-[#121212]"
                 >
                   내 부모 찾기
                 </span>
@@ -171,7 +171,7 @@ export default function Navbar() {
               <Link href="/admin">
                 <span
                   onClick={closeMobile}
-                  className="py-3 text-sm font-medium text-[#121212]"
+                  className="block py-3 text-sm font-medium text-[#121212]"
                 >
                   관리자
                 </span>
@@ -181,7 +181,7 @@ export default function Navbar() {
               <Link href="/my/account">
                 <span
                   onClick={closeMobile}
-                  className="py-3 text-sm font-medium text-[#121212]"
+                  className="block py-3 text-sm font-medium text-[#121212]"
                 >
                   내 계정
                 </span>
