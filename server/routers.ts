@@ -312,12 +312,12 @@ const authLoginInput = z.object({
 
 const textDisplaySizeSchema = z.enum(["auto", "small", "normal", "large"]);
 
-const memorialUpdateInput = z.object({
+export const memorialUpdateInput = z.object({
   id: z.number(),
   name: z.string().trim().min(1).max(120).optional(),
   role: z.string().trim().min(1).max(80).optional(),
   birthDate: z.string().trim().min(1).max(20).optional(),
-  deathDate: z.string().trim().min(1).max(20).optional(),
+  deathDate: z.string().trim().max(20).optional(),
   church: z.string().trim().min(1).max(160).optional(),
   familyContact: z.string().trim().max(120).nullable().optional(),
   familyPhone: z.string().trim().max(80).nullable().optional(),
