@@ -727,10 +727,10 @@ export async function searchKioskMemorials(keyword: string) {
     .where(
       and(
         eq(memorials.status, "published"),
-        or(
-          eq(memorials.visibility, "public"),
-          eq(memorials.visibility, "private")
-        ),
+        // 키오스크는 교회에 놓인 공개 단말이다. 비공개 추모관은 가족만 보도록
+        // 정한 것이므로, 이름과 생년월일이 지나가는 사람 눈에 띄면 안 된다.
+        // 링크 공개도 링크를 받은 사람만 보는 것이라 검색에서 뺀다.
+        eq(memorials.visibility, "public"),
         like(memorials.name, `%${escapedKeyword}%`)
       )
     )
