@@ -609,7 +609,7 @@ export default function MemorialCreate() {
 
                   <Field label="출생일" error={errors.birthDate} required>
                     <input
-                      type="date"
+                      placeholder="1933 또는 1933-01-01"
                       className={inputClass}
                       value={form.birthDate}
                       onChange={event =>
@@ -621,7 +621,7 @@ export default function MemorialCreate() {
 
                   <Field label="소천일" error={errors.deathDate}>
                     <input
-                      type="date"
+                      placeholder="2026 또는 2026-01-01"
                       className={inputClass}
                       value={form.deathDate}
                       onChange={event =>
@@ -748,7 +748,7 @@ export default function MemorialCreate() {
 
                     <Field label="추도일">
                       <input
-                        type="date"
+                        placeholder="매년 3월 1일"
                         className={inputClass}
                         value={form.memorialDay}
                         onChange={event =>
