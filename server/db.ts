@@ -900,8 +900,58 @@ export async function updateMemorial(
   await db.update(memorials).set(data).where(eq(memorials.id, id));
 }
 
+/**
+ * 가족관과 비공개 추모관의 입장 비밀번호.
+ *
+ * 예전에는 소금 없는 SHA-256 한 번이었다. 가족이 함께 쓰려고 짧게 정하는
+ * 비밀번호라, 데이터베이스가 한 번 새면 사실상 즉시 풀린다. 소금이 없으니
+ * 같은 비밀번호를 쓴 추모관은 저장값도 똑같아서, 어느 집과 어느 집이 같은
+ * 비밀번호를 쓰는지까지 드러났다.
+ *
+ * 회원 비밀번호는 이미 scrypt 로 제대로 하고 있었고 이 두 곳만 빠져 있었다.
+ * 같은 방식으로 맞춘다. 옛 형식으로 저장된 값도 그대로 받아주고, 입장에
+ * 성공하면 새 형식으로 다시 저장한다. 아무도 잠기지 않는다.
+ */
+const ROOM_SECRET_SCHEME = "scrypt";
+
+function hashRoomSecret(purpose: string, password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(`${purpose}:${password}`, salt, 64).toString("hex");
+  return `${ROOM_SECRET_SCHEME}:${salt}:${hash}`;
+}
+
+export function isLegacyRoomSecret(stored: string) {
+  return !stored.startsWith(`${ROOM_SECRET_SCHEME}:`);
+}
+
+function verifyRoomSecret(purpose: string, password: string, stored: string) {
+  if (isLegacyRoomSecret(stored)) {
+    const legacy = createHash("sha256")
+      .update(`${purpose}:${password}`)
+      .digest("hex");
+    if (legacy.length !== stored.length) return false;
+    return timingSafeEqual(Buffer.from(legacy), Buffer.from(stored));
+  }
+
+  const [, salt, storedHash] = stored.split(":");
+  if (!salt || !storedHash) return false;
+
+  const expected = Buffer.from(storedHash, "hex");
+  const actual = scryptSync(`${purpose}:${password}`, salt, expected.length);
+  if (actual.length !== expected.length) return false;
+
+  return timingSafeEqual(actual, expected);
+}
+
+const FAMILY_ROOM_PURPOSE = "somang-family";
+const MEMORIAL_ACCESS_PURPOSE = "somang-memorial-access";
+
 export function hashFamilyRoomPassword(password: string) {
-  return createHash("sha256").update(`somang-family:${password}`).digest("hex");
+  return hashRoomSecret(FAMILY_ROOM_PURPOSE, password);
+}
+
+export function verifyFamilyRoomPassword(password: string, stored: string) {
+  return verifyRoomSecret(FAMILY_ROOM_PURPOSE, password, stored);
 }
 
 const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
@@ -921,9 +971,14 @@ export function getMemorialFamilyRoomVideo(slug: string) {
 }
 
 export function hashMemorialAccessPassword(password: string) {
-  return createHash("sha256")
-    .update(`somang-memorial-access:${password}`)
-    .digest("hex");
+  return hashRoomSecret(MEMORIAL_ACCESS_PURPOSE, password);
+}
+
+export function verifyMemorialAccessPasswordHash(
+  password: string,
+  stored: string
+) {
+  return verifyRoomSecret(MEMORIAL_ACCESS_PURPOSE, password, stored);
 }
 
 export function createMemorialAccessToken(
@@ -1055,6 +1110,7 @@ export async function verifyMemorialAccessPassword(input: {
 
   const result = await db
     .select({
+      id: memorials.id,
       slug: memorials.slug,
       name: memorials.name,
       visibility: memorials.visibility,
@@ -1083,19 +1139,31 @@ export async function verifyMemorialAccessPassword(input: {
 
   if (
     !memorial.accessPasswordHash ||
-    memorial.accessPasswordHash !== hashMemorialAccessPassword(input.password)
+    !verifyMemorialAccessPasswordHash(
+      input.password,
+      memorial.accessPasswordHash
+    )
   ) {
     return false;
+  }
+
+  // 입장 열쇠는 저장값에서 만들어지므로, 승격이 일어난 요청에서는 새 저장값으로
+  // 열쇠를 만들어야 한다. 안 그러면 방문자가 데이터베이스에 없는 값의 열쇠를
+  // 들고 가게 된다.
+  let passwordHash = memorial.accessPasswordHash;
+  if (isLegacyRoomSecret(passwordHash)) {
+    passwordHash = hashMemorialAccessPassword(input.password);
+    await db
+      .update(memorials)
+      .set({ accessPasswordHash: passwordHash })
+      .where(eq(memorials.id, memorial.id));
   }
 
   return {
     slug: memorial.slug,
     name: memorial.name,
     href: `/memorial/${memorial.slug}`,
-    accessToken: createMemorialAccessToken(
-      memorial.slug,
-      memorial.accessPasswordHash
-    ),
+    accessToken: createMemorialAccessToken(memorial.slug, passwordHash),
   };
 }
 
@@ -1167,8 +1235,15 @@ export async function verifyMemorialFamilyRoomPassword(
   const room = result[0];
   if (!room) return null;
 
-  if (room.passwordHash !== hashFamilyRoomPassword(password)) {
+  if (!verifyFamilyRoomPassword(password, room.passwordHash)) {
     return false;
+  }
+
+  if (isLegacyRoomSecret(room.passwordHash)) {
+    await db
+      .update(memorialFamilyRooms)
+      .set({ passwordHash: hashFamilyRoomPassword(password) })
+      .where(eq(memorialFamilyRooms.memorialId, room.memorialId));
   }
 
   return {

@@ -149,7 +149,7 @@ export const memorials = mysqlTable(
     visibility: mysqlEnum("visibility", ["public", "link", "private"])
       .default("public")
       .notNull(),
-    accessPasswordHash: varchar("accessPasswordHash", { length: 128 }),
+    accessPasswordHash: varchar("accessPasswordHash", { length: 255 }),
     status: mysqlEnum("status", ["pending", "published", "private"])
       .default("published")
       .notNull(),
@@ -309,7 +309,7 @@ export const memorialFamilyRooms = mysqlTable(
       .notNull()
       .references(() => memorials.id, { onDelete: "cascade" })
       .unique(),
-    passwordHash: varchar("passwordHash", { length: 128 }).notNull(),
+    passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
     title: varchar("title", { length: 160 }).notNull(),
     intro: text("intro").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),

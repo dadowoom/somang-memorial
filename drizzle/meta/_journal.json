@@ -120,6 +120,13 @@
       "when": 1788000000000,
       "tag": "0018_ensure_interment_and_audit_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1788100000000,
+      "tag": "0019_widen_room_password_hash",
+      "breakpoints": true
     }
   ]
 }
