@@ -7,6 +7,24 @@ describe("formatLifespan", () => {
     expect(formatLifespan("1933", "2026")).toBe("1933 - 2026");
   });
 
+  // 출생 연도만 아는 분이 드물지 않다. 그때 소천일만 정확히 적히면
+  // "1930 - 2008-02-06" 처럼 잘못 적은 것처럼 읽힌다.
+  it("한쪽만 연도면 양쪽을 연도로 맞춘다", () => {
+    expect(formatLifespan("1930", "2008-02-06")).toBe("1930 - 2008");
+    expect(formatLifespan("1933-04-02", "2026")).toBe("1933 - 2026");
+    expect(formatLifespan("1930", "2008-02")).toBe("1930 - 2008");
+  });
+
+  it("양쪽 다 온전한 날짜면 그대로 둔다", () => {
+    expect(formatLifespan("1933-05-22", "2019-11-03")).toBe(
+      "1933-05-22 - 2019-11-03"
+    );
+  });
+
+  it("연도로 시작하지 않는 값은 건드리지 않는다", () => {
+    expect(formatLifespan("미상", "2026")).toBe("미상 - 2026");
+  });
+
   it("소천 전에 준비한 추모관은 꼬리를 남기지 않는다", () => {
     expect(formatLifespan("1933-04-02", "")).toBe("1933-04-02");
     expect(formatLifespan("1933-04-02", null)).toBe("1933-04-02");
