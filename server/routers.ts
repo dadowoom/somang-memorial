@@ -1329,13 +1329,15 @@ export const appRouter = router({
             confirmationMessage: "확인 문자를 발송했습니다.",
           };
         } catch (error) {
+          // 실제 원인은 서버 로그에만 남긴다. "SOLAPI 발신번호가 설정되지
+          // 않았습니다" 같은 내부 사정이 유가족 화면에 그대로 보이면
+          // 무슨 말인지도 모르고 불안하기만 하다.
+          console.error("[Reminder] 확인 문자 발송 실패", error);
           return {
             ...subscribed,
             confirmationSent: false,
             confirmationMessage:
-              error instanceof Error
-                ? error.message
-                : "확인 문자 발송은 처리되지 않았습니다.",
+              "확인 문자는 보내드리지 못했지만, 추도일 알림 신청은 저장되었습니다.",
           };
         }
       }),
