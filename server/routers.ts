@@ -708,7 +708,10 @@ export const appRouter = router({
             story: copy.story,
             memorialDay: copy.memorialDay,
             visibility: "private",
-            status: "private",
+            // 관리자 확인을 기다리는 상태로 시작한다. 예전에는 "private" 이었는데,
+            // 그건 관리자가 내린 상태를 뜻한다. 그래서 관리자 할 일 목록에도
+            // 안 잡히고, 가족이 비밀번호를 알아도 들어오지 못했다.
+            status: "pending",
           });
 
           return {

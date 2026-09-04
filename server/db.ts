@@ -1,5 +1,5 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
-import { and, asc, desc, eq, isNull, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
@@ -935,6 +935,20 @@ export function createMemorialAccessToken(
     .digest("hex");
 }
 
+/**
+ * 가족이 비밀번호로 들어올 수 있는 상태.
+ *
+ * - published : 정상 공개
+ * - pending   : 관리자 확인을 기다리는 중. 공개 검색에는 나오지 않지만,
+ *               유가족이 정한 비밀번호로는 들어올 수 있어야 한다.
+ *               그러지 않으면 가족에게 비밀번호를 알려주고도 아무도 못 들어간다.
+ *
+ * private 은 관리자가 내린 상태이므로 뺀다. 비밀번호를 아는 사람이라도
+ * 들어오지 못해야 관리자의 조치가 의미를 가진다. 소유자와 관리자는
+ * canUserReadMemorial 에서 따로 통과시킨다.
+ */
+export const FAMILY_READABLE_STATUSES = ["published", "pending"] as const;
+
 export function canReadMemorial(
   memorial: {
     slug: string;
@@ -944,13 +958,31 @@ export function canReadMemorial(
   },
   accessToken?: string | null
 ) {
-  if (memorial.status !== "published") return false;
-  if (memorial.visibility !== "private") return true;
-  if (!memorial.accessPasswordHash || !accessToken) return false;
-  return (
+  const hasValidToken = () =>
+    Boolean(memorial.accessPasswordHash) &&
+    Boolean(accessToken) &&
     accessToken ===
-    createMemorialAccessToken(memorial.slug, memorial.accessPasswordHash)
-  );
+      createMemorialAccessToken(
+        memorial.slug,
+        memorial.accessPasswordHash as string
+      );
+
+  if (memorial.status === "published") {
+    if (memorial.visibility !== "private") return true;
+    return hasValidToken();
+  }
+
+  // 관리자 확인을 기다리는 중에는 공개하지 않는다. 다만 유가족이 정한
+  // 비밀번호를 가진 분은 들어올 수 있어야 한다. 그러지 않으면 가족에게
+  // 비밀번호를 알려주고도 아무도 못 들어간다.
+  if (memorial.status === "pending") {
+    if (memorial.visibility !== "private") return false;
+    return hasValidToken();
+  }
+
+  // private 은 관리자가 내린 상태다. 비밀번호를 알아도 들어올 수 없어야
+  // 관리자의 조치가 의미를 가진다. 소유자와 관리자는 위쪽에서 통과시킨다.
+  return false;
 }
 
 export function canUserReadMemorial(
@@ -989,7 +1021,7 @@ export async function getMemorialAccessStatus(slug: string) {
     })
     .from(memorials)
     .where(
-      and(eq(memorials.slug, slug), eq(memorials.status, "published"))
+      and(eq(memorials.slug, slug), inArray(memorials.status, [...FAMILY_READABLE_STATUSES]))
     )
     .limit(1);
 
@@ -1032,7 +1064,7 @@ export async function verifyMemorialAccessPassword(input: {
     .where(
       and(
         eq(memorials.slug, input.slug),
-        eq(memorials.status, "published")
+        inArray(memorials.status, [...FAMILY_READABLE_STATUSES])
       )
     )
     .limit(1);
@@ -1086,7 +1118,7 @@ export async function getMemorialFamilyRoomStatus(slug: string) {
       eq(memorialFamilyRooms.memorialId, memorials.id)
     )
     .where(
-      and(eq(memorials.slug, slug), eq(memorials.status, "published"))
+      and(eq(memorials.slug, slug), inArray(memorials.status, [...FAMILY_READABLE_STATUSES]))
     )
     .limit(1);
 
@@ -1128,7 +1160,7 @@ export async function verifyMemorialFamilyRoomPassword(
       eq(memorialFamilyRooms.memorialId, memorials.id)
     )
     .where(
-      and(eq(memorials.slug, slug), eq(memorials.status, "published"))
+      and(eq(memorials.slug, slug), inArray(memorials.status, [...FAMILY_READABLE_STATUSES]))
     )
     .limit(1);
 
