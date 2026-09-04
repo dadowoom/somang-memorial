@@ -113,6 +113,13 @@
       "when": 1780571200000,
       "tag": "0015_add_reminder_notification_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1788000000000,
+      "tag": "0018_ensure_interment_and_audit_tables",
+      "breakpoints": true
     }
   ]
 }
