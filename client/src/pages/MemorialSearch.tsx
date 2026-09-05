@@ -1,4 +1,5 @@
 import Footer from "@/components/Footer";
+import { formatLifespan } from "@/lib/lifespan";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, LockKeyhole, Search } from "lucide-react";
@@ -20,7 +21,7 @@ export default function MemorialSearch() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="border-b border-[#dbdad7]">
+        <section className="border-b border-[#b5b0a7]">
           <div className="container py-14 md:py-20">
             <div className="max-w-3xl">
               <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.28em] text-[#616161]">
@@ -38,7 +39,7 @@ export default function MemorialSearch() {
               </p>
             </div>
 
-            <div className="mt-10 max-w-3xl border border-[#dbdad7]">
+            <div className="mt-10 max-w-3xl border border-[#b5b0a7]">
               <label className="flex items-center gap-3 px-5 py-4">
                 <Search
                   className="h-5 w-5 shrink-0 text-[#616161]"
@@ -71,7 +72,7 @@ export default function MemorialSearch() {
             </div>
 
             {!canSearch ? (
-              <div className="border border-[#dbdad7] bg-[#faf9f6] px-5 py-14 text-center md:py-20">
+              <div className="border border-[#b5b0a7] bg-[#fafafa] px-5 py-14 text-center md:py-20">
                 <p
                   className="text-2xl font-normal text-[#121212] md:text-3xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
@@ -84,26 +85,26 @@ export default function MemorialSearch() {
                 </p>
               </div>
             ) : memorialsQuery.isLoading ? (
-              <div className="border border-[#dbdad7] py-20 text-center">
+              <div className="border border-[#b5b0a7] py-20 text-center">
                 <p className="text-sm text-[#616161]">
                   추모관을 검색하고 있습니다.
                 </p>
               </div>
             ) : memorialsQuery.isError ? (
-              <div className="border border-[#dbdad7] py-20 text-center">
+              <div className="border border-[#b5b0a7] py-20 text-center">
                 <p className="text-sm text-[#616161]">
                   추모관을 검색하지 못했습니다.
                 </p>
               </div>
             ) : results.length === 0 ? (
-              <div className="border border-[#dbdad7] py-20 text-center">
+              <div className="border border-[#b5b0a7] py-20 text-center">
                 <p className="text-sm text-[#616161]">
                   일치하는 추모관이 없습니다.
                 </p>
               </div>
             ) : (
-              <div className="overflow-hidden border-y border-[#dbdad7]">
-                <div className="hidden grid-cols-[150px_1.1fr_1fr_0.8fr_128px] border-b border-[#dbdad7] bg-[#f8f7f4] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] md:grid">
+              <div className="overflow-hidden border-y border-[#b5b0a7]">
+                <div className="hidden grid-cols-[150px_1.1fr_1fr_0.8fr_128px] border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] md:grid">
                   <span>Year</span>
                   <span>Name</span>
                   <span>Church</span>
@@ -111,14 +112,14 @@ export default function MemorialSearch() {
                   <span className="text-right">Link</span>
                 </div>
 
-                <div className="divide-y divide-[#dbdad7]">
+                <div className="divide-y divide-[#b5b0a7]">
                   {results.map(memorial => (
                     <article
                       key={memorial.slug}
-                      className="grid gap-3 bg-white px-4 py-4 transition-colors hover:bg-[#faf9f6] md:grid-cols-[150px_1.1fr_1fr_0.8fr_128px] md:items-center md:px-5"
+                      className="grid gap-3 bg-white px-4 py-4 transition-colors hover:bg-[#fafafa] md:grid-cols-[150px_1.1fr_1fr_0.8fr_128px] md:items-center md:px-5"
                     >
                       <p className="text-xs tracking-[0.1em] text-[#616161] md:text-sm">
-                        {memorial.birthDate} - {memorial.deathDate}
+                        {formatLifespan(memorial.birthDate, memorial.deathDate)}
                       </p>
                       <h2
                         className="flex flex-wrap items-center gap-2 text-2xl font-normal md:text-xl"
@@ -126,7 +127,7 @@ export default function MemorialSearch() {
                       >
                         <span>{memorial.name}</span>
                         {memorial.isPrivate && (
-                          <span className="inline-flex items-center gap-1 border border-[#dbdad7] px-2 py-1 text-[11px] font-sans text-[#616161]">
+                          <span className="inline-flex items-center gap-1 border border-[#b5b0a7] px-2 py-1 text-[11px] font-sans text-[#616161]">
                             <LockKeyhole className="h-3 w-3" />
                             비공개
                           </span>
@@ -137,7 +138,7 @@ export default function MemorialSearch() {
                       </p>
                       <p className="text-sm text-[#616161]">{memorial.role}</p>
                       <Link href={memorial.href}>
-                        <button className="group inline-flex h-10 w-fit items-center justify-center gap-2 border border-[#dbdad7] px-4 text-sm text-[#121212] transition-colors hover:border-[#18181b] md:ml-auto">
+                        <button className="group inline-flex h-10 w-fit items-center justify-center gap-2 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:border-[#18181b] md:ml-auto">
                           {memorial.isPrivate ? "비밀번호 입력" : "추모관 보기"}
                           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                         </button>

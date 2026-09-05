@@ -130,14 +130,14 @@ export default function MemorialArchivePage() {
             <section
               className="relative flex min-h-[calc(100vh-4rem)] items-center overflow-hidden"
               style={{
-                background: "linear-gradient(180deg, #ffffff 0%, #fbfaf8 100%)",
+                background: "linear-gradient(180deg, #ffffff 0%, #ffffff 100%)",
               }}
             >
               <GoldDust />
 
               <div className="container relative z-10 py-12 md:py-20">
                 <Link href={`/memorial/${memorial.slug}`}>
-                  <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#e6ded1] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#faf9f7]">
+                  <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
                     <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
                     추모관으로 돌아가기
                   </button>
@@ -211,17 +211,23 @@ export default function MemorialArchivePage() {
                       />
                     </div>
 
-                    <div className="mt-10 grid max-w-xl grid-cols-1 gap-px overflow-hidden border border-[#e6ded1] bg-[#e6ded1] sm:grid-cols-3">
+                    <div
+                      className={`mt-10 grid max-w-xl grid-cols-1 gap-px overflow-hidden border border-[#d5c9b4] bg-[#d5c9b4] ${
+                        memorial.deathDate ? "sm:grid-cols-3" : "sm:grid-cols-2"
+                      }`}
+                    >
                       <ArchiveFact
                         icon={<CalendarDays className="h-4 w-4" />}
                         label="출생"
                         value={memorial.birthDate}
                       />
-                      <ArchiveFact
-                        icon={<CalendarDays className="h-4 w-4" />}
-                        label="소천"
-                        value={memorial.deathDate}
-                      />
+                      {memorial.deathDate ? (
+                        <ArchiveFact
+                          icon={<CalendarDays className="h-4 w-4" />}
+                          label="소천"
+                          value={memorial.deathDate}
+                        />
+                      ) : null}
                       <ArchiveFact
                         icon={<Church className="h-4 w-4" />}
                         label="교회"
@@ -239,20 +245,20 @@ export default function MemorialArchivePage() {
                       </a>
                       <a
                         href="#video"
-                        className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap border border-[#1f1d1a] bg-white px-4 text-sm font-medium text-[#1f1d1a] transition-colors hover:bg-[#faf9f7]"
+                        className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap border border-[#1f1d1a] bg-white px-4 text-sm font-medium text-[#1f1d1a] transition-colors hover:bg-[#f9f9f9]"
                       >
                         <Video className="h-4 w-4" strokeWidth={1.7} />
                         영상 기록
                       </a>
                       <Link href={`/memorial/${memorial.slug}/family`}>
-                        <span className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap border border-[#1f1d1a] bg-white px-4 text-sm font-medium text-[#1f1d1a] transition-colors hover:bg-[#faf9f7]">
+                        <span className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap border border-[#1f1d1a] bg-white px-4 text-sm font-medium text-[#1f1d1a] transition-colors hover:bg-[#f9f9f9]">
                           <LockKeyhole className="h-4 w-4" strokeWidth={1.7} />
                           가족관
                         </span>
                       </Link>
                       <a
                         href="#book"
-                        className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap border border-[#e6ded1] bg-white px-4 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#faf9f7]"
+                        className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap border border-[#d5c9b4] bg-white px-4 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#f9f9f9]"
                       >
                         <BookOpenText className="h-4 w-4" strokeWidth={1.7} />
                         책장과 연표
@@ -324,7 +330,7 @@ export default function MemorialArchivePage() {
                 />
 
                 <div className="mx-auto grid max-w-5xl gap-10 md:grid-cols-[0.85fr_1.15fr] md:items-center">
-                  <div className="relative overflow-hidden border border-[#e6ded1] bg-white p-9 text-center md:p-12">
+                  <div className="relative overflow-hidden border border-[#d5c9b4] bg-white p-9 text-center md:p-12">
                     <GoldDust />
                     <div className="relative z-10">
                       <div
@@ -552,7 +558,7 @@ function getFallbackPortrait(memorial?: ArchiveMemorial) {
 function StateBlock({ text }: { text: string }) {
   return (
     <section className="container py-20">
-      <div className="border border-[#e6ded1] bg-white py-20 text-center">
+      <div className="border border-[#d5c9b4] bg-white py-20 text-center">
         <p className="text-sm text-[#7a674a]">{text}</p>
       </div>
     </section>

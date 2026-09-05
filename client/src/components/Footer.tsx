@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { ORG_INFO } from "@/lib/orgInfo";
 import { Link } from "wouter";
 
 const serviceLinks = [
@@ -14,14 +14,18 @@ const serviceLinks = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#dbdad7] bg-white text-[#616161]">
+    <footer className="border-t border-[#b5b0a7] bg-white text-[#616161]">
       <div className="container py-12 md:py-16">
         <div className="grid gap-10 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
             <div className="mb-5 flex items-center gap-3">
-              <span className="flex h-8 w-8 items-center justify-center bg-[#18181b] text-white">
-                <Plus className="h-4 w-4" strokeWidth={1.7} />
-              </span>
+              <img
+                src={ORG_INFO.logoSrc}
+                alt="소망교회 로고"
+                width={512}
+                height={372}
+                className="h-8 w-auto"
+              />
               <div className="leading-tight">
                 <span
                   className="block text-sm font-normal text-[#121212]"
@@ -43,17 +47,17 @@ export default function Footer() {
             <h2 className="mb-4 text-xs font-medium tracking-[0.22em] text-[#121212] uppercase">
               서비스
             </h2>
-            <ul className="space-y-3 text-sm">
+            <ul className="text-sm">
               {serviceLinks.map((link) => (
                 <li key={link.href}>
                   {link.type === "route" ? (
                     <Link href={link.href}>
-                      <span className="cursor-pointer transition-colors hover:text-[#121212]">
+                      <span className="block cursor-pointer py-2 transition-colors hover:text-[#121212]">
                         {link.label}
                       </span>
                     </Link>
                   ) : (
-                    <a href={link.href} className="transition-colors hover:text-[#121212]">
+                    <a href={link.href} className="block py-2 transition-colors hover:text-[#121212]">
                       {link.label}
                     </a>
                   )}
@@ -64,18 +68,34 @@ export default function Footer() {
 
           <div>
             <h2 className="mb-4 text-xs font-medium tracking-[0.22em] text-[#121212] uppercase">
-              소망교회
+              {ORG_INFO.name}
             </h2>
-            <ul className="space-y-3 text-sm">
-              <li>서울특별시 강남구 소망길</li>
+            <ul className="text-sm">
+              <li>{ORG_INFO.address}</li>
               <li>온라인 추모 서비스</li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col justify-between gap-3 border-t border-[#dbdad7] pt-6 text-xs md:flex-row">
-          <p>© 2026 소망교회. All rights reserved.</p>
-          <p>소망이 있는 곳 - 온라인 추모 서비스</p>
+        <div className="mt-12 flex flex-col justify-between gap-3 border-t border-[#b5b0a7] pt-6 text-xs md:flex-row">
+          <p>© 2026 {ORG_INFO.name}. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/privacy"
+              className="font-medium text-[#121212] transition-colors hover:text-[#616161]"
+            >
+              개인정보처리방침
+            </Link>
+            <span aria-hidden="true" className="text-[#b5b0a7]">
+              |
+            </span>
+            <Link
+              href="/terms"
+              className="transition-colors hover:text-[#121212]"
+            >
+              이용약관
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

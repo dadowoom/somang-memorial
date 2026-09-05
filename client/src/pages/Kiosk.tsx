@@ -1,4 +1,6 @@
 import { trpc } from "@/lib/trpc";
+import { formatLifespan } from "@/lib/lifespan";
+import { ORG_INFO } from "@/lib/orgInfo";
 import {
   getKioskPasswordErrorMessage,
   KIOSK_CONNECTION_ERROR_MESSAGE,
@@ -155,7 +157,7 @@ export default function Kiosk() {
         slug: memorial.slug,
         name: memorial.name,
         role: memorial.role,
-        years: `${memorial.birthDate} - ${memorial.deathDate}`,
+        years: formatLifespan(memorial.birthDate, memorial.deathDate),
       });
       setPassword("");
       setPasswordMessage("");
@@ -222,15 +224,28 @@ export default function Kiosk() {
     <main className="min-h-[100dvh] bg-white text-[#121212]">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-[680px] flex-col bg-white">
         <header className="px-8 py-8">
-          <button type="button" onClick={resetKiosk} className="text-left">
-            <span
-              className="block text-[26px] font-normal leading-tight"
-              style={serifStyle}
-            >
-              소망이 있는 곳
-            </span>
-            <span className="mt-1 block text-sm text-[#777]">
-              소망교회 추모관
+          <button
+            type="button"
+            onClick={resetKiosk}
+            className="flex items-center gap-4 text-left"
+          >
+            <img
+              src={ORG_INFO.logoSrc}
+              alt="소망교회 로고"
+              width={512}
+              height={372}
+              className="h-12 w-auto"
+            />
+            <span className="block">
+              <span
+                className="block text-[26px] font-normal leading-tight"
+                style={serifStyle}
+              >
+                소망이 있는 곳
+              </span>
+              <span className="mt-1 block text-sm text-[#777]">
+                소망교회 추모관
+              </span>
             </span>
           </button>
         </header>
@@ -288,7 +303,7 @@ export default function Kiosk() {
                       setSubmittedKeyword("");
                       setMessage("");
                     }}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#dbdad7]"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#b5b0a7]"
                     aria-label="검색어 지우기"
                   >
                     <X className="h-5 w-5" strokeWidth={1.7} />
@@ -310,7 +325,7 @@ export default function Kiosk() {
             </form>
 
             {!submittedKeyword && (
-              <div className="mt-10 border-y border-[#dbdad7] py-6">
+              <div className="mt-10 border-y border-[#b5b0a7] py-6">
                 <p className="text-sm text-[#616161]">추모관 이용 안내</p>
                 <ol className="mt-4 grid grid-cols-3 gap-4 text-sm leading-6 text-[#454545]">
                   <li>
@@ -356,19 +371,19 @@ export default function Kiosk() {
           ) : totalResults === 0 ? (
             <EmptyPanel title="일치하는 추모관 또는 안장 기록이 없습니다." />
           ) : (
-            <div className="h-full overflow-y-auto border-t border-[#dbdad7]">
+            <div className="h-full overflow-y-auto border-t border-[#b5b0a7]">
               <div className="flex items-center justify-between px-8 py-4">
                 <p className="text-sm text-[#616161]">검색 결과</p>
                 <p className="text-base text-[#616161]">{totalResults}건</p>
               </div>
 
-              <div className="border-t border-[#dbdad7]">
+              <div className="border-t border-[#b5b0a7]">
                 {results.map(memorial => (
                   <button
                     key={memorial.slug}
                     type="button"
                     onClick={() => openMemorial(memorial)}
-                    className="flex w-full items-center justify-between gap-5 border-b border-[#dbdad7] px-8 py-5 text-left active:bg-[#f7f6f2]"
+                    className="flex w-full items-center justify-between gap-5 border-b border-[#b5b0a7] px-8 py-5 text-left active:bg-[#f5f5f5]"
                   >
                     <span className="min-w-0">
                       <span className="flex flex-wrap items-center gap-3">
@@ -379,14 +394,14 @@ export default function Kiosk() {
                           {memorial.name}
                         </span>
                         {memorial.isPrivate && (
-                          <span className="inline-flex items-center gap-1.5 border border-[#dbdad7] px-2.5 py-1 text-xs text-[#616161]">
+                          <span className="inline-flex items-center gap-1.5 border border-[#b5b0a7] px-2.5 py-1 text-xs text-[#616161]">
                             <LockKeyhole className="h-3.5 w-3.5" />
                             비공개
                           </span>
                         )}
                       </span>
                       <span className="mt-2 block text-[15px] leading-6 text-[#616161]">
-                        {memorial.birthDate} - {memorial.deathDate} ·{" "}
+                        {formatLifespan(memorial.birthDate, memorial.deathDate)} ·{" "}
                         {memorial.church} · {memorial.role}
                       </span>
                     </span>
@@ -397,7 +412,7 @@ export default function Kiosk() {
                 {intermentResults.map(record => (
                   <div
                     key={`interment-${record.id}`}
-                    className="flex w-full items-center justify-between gap-5 border-b border-[#dbdad7] bg-[#faf9f6] px-8 py-5 text-left"
+                    className="flex w-full items-center justify-between gap-5 border-b border-[#b5b0a7] bg-[#fafafa] px-8 py-5 text-left"
                   >
                     <span className="min-w-0">
                       <span
@@ -454,7 +469,7 @@ function EmptyPanel({
   onAction?: () => void;
 }) {
   return (
-    <div className="flex min-h-[180px] flex-col items-center justify-center border-t border-[#dbdad7] px-8 py-8 text-center">
+    <div className="flex min-h-[180px] flex-col items-center justify-center border-t border-[#b5b0a7] px-8 py-8 text-center">
       <p className="text-lg font-medium text-[#343434]">{title}</p>
       {description && (
         <p className="mt-3 text-base leading-7 text-[#616161]">{description}</p>
@@ -514,7 +529,7 @@ function PrivateAccessPanel({
       className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/30 p-8"
       style={{ paddingBottom: isOpen ? "min(370px, 56dvh)" : "2rem" }}
     >
-      <section className="w-full max-w-[600px] border border-[#dbdad7] bg-white p-8">
+      <section className="w-full max-w-[600px] border border-[#b5b0a7] bg-white p-8">
         <div className="mb-7 flex items-start justify-between gap-6">
           <div>
             <p className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#616161]">
@@ -532,7 +547,7 @@ function PrivateAccessPanel({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-12 w-12 items-center justify-center border border-[#dbdad7]"
+            className="flex h-12 w-12 items-center justify-center border border-[#b5b0a7]"
             aria-label="비밀번호 입력 닫기"
           >
             <X className="h-6 w-6" strokeWidth={1.7} />

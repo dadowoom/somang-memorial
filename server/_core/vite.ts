@@ -13,8 +13,19 @@ export async function setupVite(app: Express, server: Server) {
     allowedHosts: true as const,
   };
 
+  // vite.config.ts 는 함수를 내보낼 수도, 객체를 내보낼 수도 있다.
+  // 함수를 그대로 펼치면 빈 객체가 되어 root 와 plugins 가 모두 사라지고,
+  // 개발 서버가 /src/main.tsx 를 찾지 못한다.
+  const resolvedConfig =
+    typeof viteConfig === "function"
+      ? await viteConfig({
+          command: "serve",
+          mode: process.env.NODE_ENV || "development",
+        })
+      : viteConfig;
+
   const vite = await createViteServer({
-    ...viteConfig,
+    ...resolvedConfig,
     configFile: false,
     server: serverOptions,
     appType: "custom",

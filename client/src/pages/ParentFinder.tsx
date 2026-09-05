@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { inputClass } from "@/lib/formStyles";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
@@ -38,8 +39,6 @@ function formatBirthDate(value: string) {
 }
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
-const inputClass =
-  "h-12 w-full border border-[#dbdad7] bg-white px-4 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
 
 export default function ParentFinder() {
   const { user, loading } = useAuth({ redirectOnUnauthenticated: true });
@@ -137,11 +136,11 @@ export default function ParentFinder() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="border-b border-[#dbdad7]">
+        <section className="border-b border-[#b5b0a7]">
           <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.85fr)] lg:items-end">
             <div>
               <Link href="/my/memorials">
-                <button className="mb-8 inline-flex h-10 items-center gap-2 border border-[#dbdad7] bg-white px-4 text-sm text-[#616161] transition-colors hover:text-[#121212]">
+                <button className="mb-8 inline-flex h-10 items-center gap-2 border border-[#b5b0a7] bg-white px-4 text-sm text-[#616161] transition-colors hover:text-[#121212]">
                   <ArrowLeft className="h-4 w-4" strokeWidth={1.7} />내 추모관
                 </button>
               </Link>
@@ -160,7 +159,7 @@ export default function ParentFinder() {
               </p>
             </div>
 
-            <aside className="border border-[#dbdad7] bg-[#f8f7f4] p-6">
+            <aside className="border border-[#b5b0a7] bg-[#f7f7f7] p-6">
               <ShieldCheck
                 className="h-5 w-5 text-[#121212]"
                 strokeWidth={1.5}
@@ -180,7 +179,7 @@ export default function ParentFinder() {
           <div className="container max-w-4xl">
             <form
               onSubmit={handleSearch}
-              className="border border-[#dbdad7] bg-white p-5 md:p-8"
+              className="border border-[#b5b0a7] bg-white p-5 md:p-8"
             >
               <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
                 <label className="block">
@@ -229,7 +228,7 @@ export default function ParentFinder() {
             )}
 
             {hasSearched && records.length === 0 && !notice && (
-              <div className="mt-6 border border-[#dbdad7] py-14 text-center">
+              <div className="mt-6 border border-[#b5b0a7] py-14 text-center">
                 <p className="text-sm text-[#616161]">
                   일치하는 소망동산 안장 기록을 찾지 못했습니다.
                 </p>
@@ -245,7 +244,7 @@ export default function ParentFinder() {
                   <HeartHandshake className="h-4 w-4" strokeWidth={1.7} />
                   확인된 부모님 기록
                 </div>
-                <label className="mb-4 flex items-start gap-3 border border-[#dbdad7] bg-[#f8f7f4] p-4 text-sm leading-6 text-[#444]">
+                <label className="mb-4 flex items-start gap-3 border border-[#b5b0a7] bg-[#f7f7f7] p-4 text-sm leading-6 text-[#444]">
                   <input
                     type="checkbox"
                     checked={familyConfirmed}
@@ -261,7 +260,7 @@ export default function ParentFinder() {
                   {records.map(record => (
                     <article
                       key={record.id}
-                      className="border border-[#dbdad7] bg-white p-5 md:p-6"
+                      className="border border-[#b5b0a7] bg-white p-5 md:p-6"
                     >
                       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                         <div>
@@ -375,7 +374,7 @@ function StateScreen({ text }: { text: string }) {
     <div className="min-h-screen bg-white text-[#121212]">
       <Navbar />
       <main className="container pt-32">
-        <div className="border border-[#dbdad7] py-20 text-center">
+        <div className="border border-[#b5b0a7] py-20 text-center">
           <p className="text-sm text-[#616161]">{text}</p>
         </div>
       </main>

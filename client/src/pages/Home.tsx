@@ -64,7 +64,7 @@ export default function Home() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="relative min-h-[calc(100svh-4rem)] overflow-hidden border-b border-[#dbdad7] bg-[#fbfaf7]">
+        <section className="relative min-h-[calc(100svh-4rem)] overflow-hidden border-b border-[#b5b0a7] bg-[#ffffff]">
           <HeroStillBackground />
           <div className="container relative z-10 flex min-h-[calc(100svh-4rem)] flex-col justify-center py-14 md:py-20">
             <div className="max-w-3xl">
@@ -72,7 +72,7 @@ export default function Home() {
                 소망교회 온라인 추모 서비스
               </p>
               <h1
-                className="max-w-3xl text-5xl font-normal leading-[1.08] sm:text-6xl md:text-8xl"
+                className="max-w-3xl text-4xl font-normal leading-[1.12] sm:text-6xl md:text-8xl"
                 style={{ fontFamily: "'Noto Serif KR', serif" }}
               >
                 소망이 있는 곳
@@ -87,20 +87,23 @@ export default function Home() {
                 </span>
               </p>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-                <Link href="/memorial/search">
-                  <button className="inline-flex h-12 items-center justify-center gap-2 bg-[#18181b] px-6 text-sm font-medium text-white transition-opacity hover:opacity-90">
+                <Link href="/memorial/search" className="w-full sm:w-auto">
+                  <button className="inline-flex h-12 w-full items-center justify-center gap-2 bg-[#18181b] px-6 text-sm font-medium text-white transition-opacity hover:opacity-90">
                     <Search className="h-4 w-4" />
                     추모관
                   </button>
                 </Link>
-                <Link href="/memorial/create">
-                  <button className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#dbdad7] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                <Link href="/memorial/create" className="w-full sm:w-auto">
+                  <button className="inline-flex h-12 w-full items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                     <Plus className="h-4 w-4" />
                     소망 만들기
                   </button>
                 </Link>
-                <Link href="/login?redirect=/my/find-parent&mode=signup">
-                  <button className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[#18181b] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#18181b] hover:text-white">
+                <Link
+                  href="/login?redirect=/my/find-parent&mode=signup"
+                  className="w-full sm:w-auto"
+                >
+                  <button className="inline-flex h-12 w-full items-center justify-center gap-2 border border-[#18181b] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#18181b] hover:text-white">
                     <HeartHandshake className="h-4 w-4" />
                     우리 부모님 찾기
                   </button>
@@ -112,10 +115,10 @@ export default function Home() {
 
         <section
           id="memorials"
-          className="scroll-mt-16 border-b border-[#dbdad7] bg-white"
+          className="scroll-mt-16 border-b border-[#b5b0a7] bg-white"
         >
           <div className="container py-12 md:py-16">
-            <div className="mx-auto max-w-6xl border-y border-[#dbdad7] py-10 md:py-12">
+            <div className="mx-auto max-w-6xl py-10 md:py-12">
               <div className="grid gap-7 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
                 <div className="flex items-center gap-5 md:block">
                   <p className="text-[11px] font-medium tracking-[0.28em] text-[#616161] uppercase">
@@ -139,20 +142,20 @@ export default function Home() {
                 </h2>
               </div>
 
-              <div className="mt-10 grid border-t border-[#dbdad7] md:grid-cols-3">
+              <div className="mt-10 grid border-t border-[#b5b0a7] md:grid-cols-3">
                 {VALUES.map(value => (
                   <article
                     key={value.number}
-                    className="border-b border-[#dbdad7] py-5 md:border-b-0 md:border-r md:px-7 md:last:border-r-0"
+                    className="border-b border-[#b5b0a7] py-6 md:border-b-0 md:border-r md:px-7 md:py-2 md:last:border-r-0 md:first:pl-0"
                   >
                     <p className="text-sm text-[#616161]">{value.number}</p>
                     <h3
-                      className="mt-5 text-base font-normal"
+                      className="mt-4 text-lg font-normal md:text-xl"
                       style={{ fontFamily: "'Noto Serif KR', serif" }}
                     >
                       {value.title}
                     </h3>
-                    <p className="mt-4 text-sm leading-7 text-[#616161]">
+                    <p className="mt-4 text-[15px] leading-8 text-[#4a4a4a]">
                       {value.desc}
                     </p>
                   </article>
@@ -164,7 +167,7 @@ export default function Home() {
 
         <section
           id="services"
-          className="border-b border-[#dbdad7] bg-[#f6f5f2] py-16 md:py-24"
+          className="border-b border-[#b5b0a7] bg-[#f5f5f5] py-16 md:py-24"
         >
           <div className="container">
             <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
@@ -184,7 +187,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-px bg-[#dbdad7] md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-px bg-[#b5b0a7] md:grid-cols-3">
               {SERVICES.map(service => {
                 const Icon = service.icon;
                 return (
@@ -216,7 +219,7 @@ export default function Home() {
 
         <section
           id="process"
-          className="border-b border-[#dbdad7] bg-white py-16 md:py-24"
+          className="border-b border-[#b5b0a7] bg-white py-16 md:py-24"
         >
           <div className="container grid gap-10 md:grid-cols-[0.8fr_1.2fr]">
             <div>
@@ -232,11 +235,11 @@ export default function Home() {
                 절차
               </h2>
             </div>
-            <div className="border-t border-[#dbdad7]">
+            <div className="border-t border-[#b5b0a7]">
               {STEPS.map((step, index) => (
                 <div
                   key={step}
-                  className="grid gap-6 border-b border-[#dbdad7] py-6 md:grid-cols-[96px_1fr]"
+                  className="grid gap-6 border-b border-[#b5b0a7] py-6 md:grid-cols-[96px_1fr]"
                 >
                   <span className="text-sm text-[#616161]">
                     {String(index + 1).padStart(2, "0")}
@@ -250,7 +253,7 @@ export default function Home() {
 
         <section id="membership" className="bg-white py-16 md:py-24">
           <div className="container">
-            <div className="grid gap-10 border border-[#dbdad7] p-6 md:grid-cols-[1fr_auto] md:items-center md:p-10">
+            <div className="grid gap-10 border border-[#b5b0a7] p-6 md:grid-cols-[1fr_auto] md:items-center md:p-10">
               <div>
                 <p className="mb-4 text-[11px] font-medium tracking-[0.28em] text-[#616161] uppercase">
                   소망교회 성도 전용
@@ -285,10 +288,10 @@ export default function Home() {
 function HeroStillBackground() {
   return (
     <div
-      className="pointer-events-none absolute inset-0 overflow-hidden bg-[#fbfaf7]"
+      className="pointer-events-none absolute inset-0 overflow-hidden bg-[#ffffff]"
       aria-hidden="true"
     >
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,#ffffff_0%,#ffffff_38%,#f7f4ee_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,#ffffff_0%,#ffffff_38%,#f7f7f7_100%)]" />
 
       <div
         className="absolute inset-y-0 right-0 hidden w-[68vw] bg-cover bg-right-center opacity-90 md:block"
@@ -301,7 +304,7 @@ function HeroStillBackground() {
 
       <div className="absolute inset-y-0 left-0 w-[72vw] bg-gradient-to-r from-white via-white/96 to-white/18" />
       <div className="absolute inset-y-0 right-0 hidden w-[72vw] bg-gradient-to-r from-white via-white/72 to-white/0 md:block" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_12%,rgba(180,168,132,0.14),transparent_28%),radial-gradient(circle_at_90%_88%,rgba(142,151,132,0.12),transparent_32%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_12%,rgba(160,160,160,0.10),transparent_28%),radial-gradient(circle_at_90%_88%,rgba(150,150,150,0.09),transparent_32%)]" />
       <div className="absolute inset-0 bg-gradient-to-b from-white/22 via-transparent to-white/58" />
     </div>
   );

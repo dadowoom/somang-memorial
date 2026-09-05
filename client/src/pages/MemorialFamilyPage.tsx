@@ -110,10 +110,10 @@ export default function MemorialFamilyPage() {
 
       <main className="pt-16">
         {unlockedRoom ? (
-          <section className="border-b border-[#e6ded1] bg-white">
+          <section className="border-b border-[#d5c9b4] bg-white">
             <div className="container py-12 md:py-20">
               <Link href={`/memorial/${slug}/archive`}>
-                <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#e6ded1] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#faf9f7]">
+                <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
                   <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
                   기념관으로 돌아가기
                 </button>
@@ -142,7 +142,7 @@ export default function MemorialFamilyPage() {
                   </p>
                 </div>
 
-                <div className="border border-[#e6ded1] bg-[#fbfaf8] p-6 md:p-7">
+                <div className="border border-[#d5c9b4] bg-[#ffffff] p-6 md:p-7">
                   <div className="flex items-start gap-4">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-[#1f1d1a] text-white">
                       <ShieldCheck className="h-5 w-5" strokeWidth={1.7} />
@@ -218,7 +218,7 @@ function PasswordGate({
   return (
     <div className="mx-auto max-w-3xl">
       <Link href={backHref}>
-        <button className="mb-6 inline-flex h-10 items-center gap-2 border border-[#e6ded1] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#faf9f7]">
+        <button className="mb-6 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
           <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
           기념관으로 돌아가기
         </button>
@@ -226,9 +226,9 @@ function PasswordGate({
 
       <form
         onSubmit={onSubmit}
-        className="border border-[#e6ded1] bg-white p-6 md:p-10"
+        className="border border-[#d5c9b4] bg-white p-6 md:p-10"
       >
-        <div className="mb-8 border-b border-[#e6ded1] pb-8 text-center">
+        <div className="mb-8 border-b border-[#d5c9b4] pb-8 text-center">
           <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center bg-[#1f1d1a] text-white">
             <LockKeyhole className="h-5 w-5" strokeWidth={1.7} />
           </div>
@@ -259,7 +259,7 @@ function PasswordGate({
           type="password"
           placeholder="비밀번호를 입력해주세요"
           autoFocus
-          className="h-12 w-full border border-[#e6ded1] bg-white px-4 text-base outline-none transition-colors focus:border-[#1f1d1a]"
+          className="h-12 w-full border border-[#d5c9b4] bg-white px-4 text-base outline-none transition-colors focus:border-[#1f1d1a]"
         />
         {message && (
           <p className="mt-3 text-sm text-red-500">{message}</p>
@@ -282,7 +282,7 @@ function UnlockedRoom({ room }: { room: FamilyRoom }) {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="border border-[#e6ded1] bg-[#fbfaf8] p-6 md:p-10">
+      <div className="border border-[#d5c9b4] bg-[#ffffff] p-6 md:p-10">
         <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.28em] text-[#7f673d]">
           Unlocked
         </p>
@@ -298,12 +298,12 @@ function UnlockedRoom({ room }: { room: FamilyRoom }) {
         <FamilyVideoCard key={room.video.youtubeVideoId} video={room.video} />
       )}
 
-      <div className="mt-6 grid gap-px bg-[#e6ded1] md:grid-cols-3">
+      <div className="mt-6 grid gap-px bg-[#d5c9b4] md:grid-cols-3">
         {room.notes.map((note, index) => {
           const Icon = icons[index] ?? BookOpenText;
           return (
             <article key={note.title} className="bg-white p-6 md:p-7">
-              <div className="mb-8 flex h-10 w-10 items-center justify-center border border-[#e6ded1]">
+              <div className="mb-8 flex h-10 w-10 items-center justify-center border border-[#d5c9b4]">
                 <Icon className="h-5 w-5 text-[#1f1d1a]" strokeWidth={1.6} />
               </div>
               <h3 className="text-xl font-light" style={serifStyle}>
@@ -330,7 +330,7 @@ function FamilyVideoCard({
   if (!isValidYouTubeVideoId(video.youtubeVideoId) || !embedUrl) return null;
 
   return (
-    <section className="mt-6 overflow-hidden border border-[#e6ded1] bg-white">
+    <section className="mt-6 overflow-hidden border border-[#d5c9b4] bg-white">
       <div className="p-6 md:p-8">
         <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.24em] text-[#7f673d]">
           Family Video
@@ -386,7 +386,7 @@ function FamilyVideoCard({
 
 function StateBlock({ text }: { text: string }) {
   return (
-    <div className="border border-[#e6ded1] bg-white py-16 text-center text-sm text-[#6f6a61]">
+    <div className="border border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]">
       {text}
     </div>
   );

@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { formatLifespan } from "@/lib/lifespan";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
@@ -64,7 +65,7 @@ export default function MyMemorials() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="border-b border-[#dbdad7]">
+        <section className="border-b border-[#b5b0a7]">
           <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.85fr)] lg:items-end">
             <div>
               <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.28em] text-[#616161]">
@@ -82,7 +83,7 @@ export default function MyMemorials() {
               </p>
             </div>
 
-            <div className="grid gap-px border border-[#dbdad7] bg-[#dbdad7] sm:grid-cols-4">
+            <div className="grid gap-px border border-[#b5b0a7] bg-[#b5b0a7] sm:grid-cols-4">
               <Stat label="전체" value={`${memorials.length}`} />
               <Stat label="공개" value={`${publicCount}`} />
               <Stat label="링크" value={`${linkCount}`} />
@@ -93,7 +94,7 @@ export default function MyMemorials() {
 
         <section className="py-8 md:py-12">
           <div className="container">
-            <div className="mb-6 flex flex-col gap-4 border-b border-[#dbdad7] pb-5 md:flex-row md:items-center md:justify-between">
+            <div className="mb-6 flex flex-col gap-4 border-b border-[#b5b0a7] pb-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-sm font-medium text-[#121212]">
                   등록된 추모관
@@ -125,8 +126,8 @@ export default function MyMemorials() {
             ) : memorials.length === 0 ? (
               <EmptyPanel />
             ) : (
-              <div className="overflow-hidden border-y border-[#dbdad7]">
-                <div className="hidden grid-cols-[minmax(210px,1.25fr)_minmax(150px,0.8fr)_minmax(130px,0.65fr)_minmax(150px,0.75fr)_178px] border-b border-[#dbdad7] bg-[#f8f7f4] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
+              <div className="overflow-hidden border-y border-[#b5b0a7]">
+                <div className="hidden grid-cols-[minmax(210px,1.25fr)_minmax(150px,0.8fr)_minmax(130px,0.65fr)_minmax(150px,0.75fr)_178px] border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
                   <span>Name</span>
                   <span>Status</span>
                   <span>Memorial Day</span>
@@ -134,11 +135,11 @@ export default function MyMemorials() {
                   <span className="text-right">Action</span>
                 </div>
 
-                <div className="divide-y divide-[#dbdad7]">
+                <div className="divide-y divide-[#b5b0a7]">
                   {memorials.map(memorial => (
                     <article
                       key={memorial.id}
-                      className="grid gap-5 bg-white px-4 py-5 transition-colors hover:bg-[#faf9f6] lg:grid-cols-[minmax(210px,1.25fr)_minmax(150px,0.8fr)_minmax(130px,0.65fr)_minmax(150px,0.75fr)_178px] lg:items-center lg:px-5"
+                      className="grid gap-5 bg-white px-4 py-5 transition-colors hover:bg-[#fafafa] lg:grid-cols-[minmax(210px,1.25fr)_minmax(150px,0.8fr)_minmax(130px,0.65fr)_minmax(150px,0.75fr)_178px] lg:items-center lg:px-5"
                     >
                       <div>
                         <h2
@@ -151,7 +152,7 @@ export default function MyMemorials() {
                           {memorial.role}
                         </p>
                         <p className="mt-3 text-xs leading-5 text-[#777]">
-                          {memorial.birthDate} - {memorial.deathDate}
+                          {formatLifespan(memorial.birthDate, memorial.deathDate)}
                         </p>
                         <p className="mt-1 text-xs leading-5 text-[#777]">
                           {memorial.church}
@@ -169,7 +170,7 @@ export default function MyMemorials() {
                         value={formatNullableDate(memorial.memorialDay)}
                       />
 
-                      <div className="grid grid-cols-2 gap-3 border-y border-[#dbdad7] py-4 lg:block lg:border-0 lg:py-0">
+                      <div className="grid grid-cols-2 gap-3 border-y border-[#b5b0a7] py-4 lg:block lg:border-0 lg:py-0">
                         <MetaText
                           icon={<Clock3 className="h-4 w-4" />}
                           label="최근 수정"
@@ -190,7 +191,7 @@ export default function MyMemorials() {
                           </button>
                         </Link>
                         <Link href={memorial.href}>
-                          <button className="inline-flex h-10 flex-1 items-center justify-center gap-2 border border-[#dbdad7] px-4 text-sm text-[#121212] transition-colors hover:bg-white sm:flex-none">
+                          <button className="inline-flex h-10 flex-1 items-center justify-center gap-2 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-white sm:flex-none">
                             <Eye className="h-4 w-4" strokeWidth={1.7} />
                             보기
                             <ArrowRight className="h-4 w-4" strokeWidth={1.7} />
@@ -230,7 +231,7 @@ function VisibilityBadge({ visibility }: { visibility: string }) {
       : "전체 공개";
 
   return (
-    <span className="inline-flex w-fit items-center gap-1 border border-[#dbdad7] bg-white px-2 py-1 text-xs text-[#616161]">
+    <span className="inline-flex w-fit items-center gap-1 border border-[#b5b0a7] bg-white px-2 py-1 text-xs text-[#616161]">
       {privateMemorial ? (
         <LockKeyhole className="h-3 w-3" />
       ) : (
@@ -252,7 +253,7 @@ function StatusBadge({ status }: { status: string }) {
         : status || "상태 확인";
 
   return (
-    <span className="inline-flex w-fit items-center border border-[#dbdad7] bg-[#f8f7f4] px-2 py-1 text-xs text-[#616161]">
+    <span className="inline-flex w-fit items-center border border-[#b5b0a7] bg-[#f7f7f7] px-2 py-1 text-xs text-[#616161]">
       {label}
     </span>
   );
@@ -282,7 +283,7 @@ function MetaText({
 
 function EmptyPanel() {
   return (
-    <div className="border border-[#dbdad7] px-5 py-16 text-center">
+    <div className="border border-[#b5b0a7] px-5 py-16 text-center">
       <p className="text-sm font-medium text-[#121212]">
         아직 만든 추모관이 없습니다.
       </p>
@@ -290,7 +291,7 @@ function EmptyPanel() {
         소망 만들기에서 고인의 기본 정보와 삶의 기록을 입력하면 이곳에서 다시
         확인하고 수정할 수 있습니다.
       </p>
-      <div className="mx-auto mt-6 grid max-w-xl gap-px border border-[#dbdad7] bg-[#dbdad7] text-left sm:grid-cols-3">
+      <div className="mx-auto mt-6 grid max-w-xl gap-px border border-[#b5b0a7] bg-[#b5b0a7] text-left sm:grid-cols-3">
         {["고인 정보 입력", "공개 범위 선택", "추모관 관리"].map(item => (
           <div key={item} className="bg-white p-4 text-xs text-[#616161]">
             {item}
@@ -309,7 +310,7 @@ function EmptyPanel() {
 
 function Panel({ text }: { text: string }) {
   return (
-    <div className="border border-[#dbdad7] py-20 text-center">
+    <div className="border border-[#b5b0a7] py-20 text-center">
       <p className="text-sm text-[#616161]">{text}</p>
     </div>
   );

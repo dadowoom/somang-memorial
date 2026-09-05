@@ -62,7 +62,7 @@ export default function SomangHill() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="border-b border-[#dbdad7]">
+        <section className="border-b border-[#b5b0a7]">
           <div className="container py-12 md:py-16">
             <div className="grid gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:items-start">
               <div>
@@ -70,7 +70,7 @@ export default function SomangHill() {
                   Somang Hill
                 </p>
                 <h1
-                  className="text-5xl font-normal leading-[1.12] tracking-[-0.025em] md:text-7xl"
+                  className="text-4xl font-normal leading-[1.15] tracking-[-0.025em] md:text-7xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
                   소망동산
@@ -85,23 +85,23 @@ export default function SomangHill() {
               <HillVideoCard />
             </div>
 
-            <div className="mt-10 grid gap-px bg-[#dbdad7] sm:grid-cols-3">
+            <div className="mt-10 grid gap-px bg-[#b5b0a7] sm:grid-cols-3">
               <InfoTile label="공간" value="성도의 묘" />
               <InfoTile label="기억" value="소망의 항구" />
               <InfoTile label="장소" value="소망수양관" />
             </div>
 
-            <div className="mt-10 grid gap-px bg-[#dbdad7] md:grid-cols-[1.3fr_0.7fr]">
-              <figure className="bg-[#f6f5f2]">
+            <div className="mt-10 grid gap-px bg-[#b5b0a7] md:grid-cols-[1.3fr_0.7fr]">
+              <figure className="bg-[#f5f5f5]">
                 <img
                   src={HILL_PHOTOS[0].src}
                   alt={HILL_PHOTOS[0].alt}
                   className="aspect-[16/10] h-full w-full object-cover"
                 />
               </figure>
-              <div className="grid gap-px bg-[#dbdad7] sm:grid-cols-3 md:grid-cols-1">
+              <div className="grid gap-px bg-[#b5b0a7] sm:grid-cols-3 md:grid-cols-1">
                 {HILL_PHOTOS.slice(1).map(photo => (
-                  <figure key={photo.src} className="bg-[#f6f5f2]">
+                  <figure key={photo.src} className="bg-[#f5f5f5]">
                     <img
                       src={photo.src}
                       alt={photo.alt}
@@ -114,7 +114,7 @@ export default function SomangHill() {
           </div>
         </section>
 
-        <section className="border-b border-[#dbdad7] bg-[#f6f5f2] py-16 md:py-24">
+        <section className="border-b border-[#b5b0a7] bg-[#f5f5f5] py-16 md:py-24">
           <div className="container">
             <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
               <div>
@@ -134,7 +134,7 @@ export default function SomangHill() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-px bg-[#dbdad7] md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-px bg-[#b5b0a7] md:grid-cols-3">
               {HILL_NOTES.map(note => (
                 <article key={note.label} className="bg-white p-6 md:p-8">
                   <div className="mb-12 flex items-start justify-between">
@@ -163,7 +163,7 @@ export default function SomangHill() {
 
         <section className="bg-white py-16 md:py-24">
           <div className="container">
-            <div className="grid gap-8 border border-[#dbdad7] p-6 md:grid-cols-[1fr_1fr] md:p-10">
+            <div className="grid gap-8 border border-[#b5b0a7] p-6 md:grid-cols-[1fr_1fr] md:p-10">
               <div>
                 <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.28em] text-[#616161]">
                   Information
@@ -181,7 +181,7 @@ export default function SomangHill() {
               </div>
 
               <div>
-                <div className="grid gap-px bg-[#dbdad7]">
+                <div className="grid gap-px bg-[#b5b0a7]">
                   {CONTACTS.map(item => (
                     <div
                       key={item.label}
@@ -209,7 +209,7 @@ export default function SomangHill() {
                     href="http://rc.somang.net/main/map.jsp"
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex h-12 items-center justify-center gap-2 border border-[#dbdad7] bg-white px-5 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f6f5f2]"
+                    className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-5 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]"
                   >
                     오시는 길
                     <MapPin className="h-4 w-4" />
@@ -236,9 +236,9 @@ export default function SomangHill() {
 
 function HillVideoCard() {
   return (
-    <div className="border border-[#dbdad7] bg-[#f6f5f2] p-2 md:p-3">
-      <div className="overflow-hidden border border-[#dbdad7] bg-white">
-        <div className="flex min-h-12 items-center justify-between gap-4 border-b border-[#dbdad7] px-4 py-3">
+    <div className="border border-[#b5b0a7] bg-[#f5f5f5] p-2 md:p-3">
+      <div className="overflow-hidden border border-[#b5b0a7] bg-white">
+        <div className="flex min-h-12 items-center justify-between gap-4 border-b border-[#b5b0a7] px-4 py-3">
           <div className="flex min-w-0 items-center gap-2 text-sm text-[#616161]">
             <Film className="h-4 w-4 shrink-0" strokeWidth={1.6} />
             <span className="truncate">소망동산 영상</span>
@@ -256,7 +256,7 @@ function HillVideoCard() {
           href={HILL_VIDEO_URL}
           target="_blank"
           rel="noreferrer"
-          className="group relative block aspect-video overflow-hidden bg-[#efeeeb]"
+          className="group relative block aspect-video overflow-hidden bg-[#ededed]"
           aria-label="소망동산 영상 Vimeo에서 보기"
         >
           <img

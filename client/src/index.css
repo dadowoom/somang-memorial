@@ -42,9 +42,9 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-canvas-white: #ffffff;
   --color-ink-black: #121212;
-  --color-ash-gray: #dbdad7;
+  --color-ash-gray: #b5b0a7;
   --color-deep-graphite: #18181b;
-  --color-cool-gray-mist: #e6e4e0;
+  --color-cool-gray-mist: #e3e3e3;
   --color-muted-stone: #616161;
   --color-success-green: #4caf50;
   /* Warm Chronicle custom colors */
@@ -76,27 +76,27 @@
   --popover-foreground: #121212;
   --primary: #18181b;
   --primary-foreground: #ffffff;
-  --secondary: #e6e4e0;
+  --secondary: #e3e3e3;
   --secondary-foreground: #121212;
-  --muted: #e6e4e0;
+  --muted: #e3e3e3;
   --muted-foreground: #616161;
-  --accent: #e6e4e0;
+  --accent: #e3e3e3;
   --accent-foreground: #121212;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: #dbdad7;
-  --input: #dbdad7;
+  --border: #b5b0a7;
+  --input: #b5b0a7;
   --ring: #616161;
   --chart-1: #18181b;
   --chart-2: #616161;
-  --chart-3: #dbdad7;
+  --chart-3: #b5b0a7;
   --chart-4: #4caf50;
-  --chart-5: #e6e4e0;
+  --chart-5: #e3e3e3;
   --sidebar: #ffffff;
   --sidebar-foreground: #121212;
-  --sidebar-accent: #e6e4e0;
+  --sidebar-accent: #e3e3e3;
   --sidebar-accent-foreground: #121212;
-  --sidebar-border: #dbdad7;
+  --sidebar-border: #b5b0a7;
   --sidebar-ring: #616161;
   --sidebar-primary: #18181b;
   --sidebar-primary-foreground: #ffffff;
@@ -131,7 +131,7 @@
     background: #ffffff;
   }
   ::-webkit-scrollbar-thumb {
-    background: #dbdad7;
+    background: #b5b0a7;
   }
   ::-webkit-scrollbar-thumb:hover {
     background: #616161;
@@ -201,12 +201,12 @@
 
   /* Parchment/paper texture feel */
   .parchment-bg {
-    background: linear-gradient(135deg, #faf6ef 0%, #f5ede0 50%, #efe5d5 100%);
+    background: linear-gradient(135deg, #f5f5f5 0%, #ebebeb 50%, #e3e3e3 100%);
   }
 
   /* Book page style */
   .book-page-bg {
-    background: linear-gradient(to right, #f0e6d3 0%, #faf6ef 5%, #faf6ef 95%, #f0e6d3 100%);
+    background: linear-gradient(to right, #e3e3e3 0%, #f5f5f5 5%, #f5f5f5 95%, #e3e3e3 100%);
     box-shadow: inset 0 0 30px rgba(160, 120, 40, 0.05);
   }
 
@@ -224,7 +224,7 @@
     transform: translate(-50%, -50%);
     color: #a88734;
     font-size: 1.2rem;
-    background: #faf6ef;
+    background: #f5f5f5;
     padding: 0 1rem;
   }
 }
@@ -236,7 +236,7 @@ html {
 
 /* Selection color */
 ::selection {
-  background: #e6e4e0;
+  background: #e3e3e3;
   color: #121212;
 }
 

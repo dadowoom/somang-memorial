@@ -155,7 +155,7 @@ export default function MemorialVideoSection({
   }
 
   return (
-    <section className="border-t border-[#e6ded1] bg-white py-20 md:py-28">
+    <section className="border-t border-[#d5c9b4] bg-white py-20 md:py-28">
       <div className="container">
         <div className="mx-auto mb-10 max-w-3xl text-center">
           <p className="mb-3 text-xs font-medium uppercase tracking-[0.28em] text-[#7f673d]">
@@ -173,11 +173,11 @@ export default function MemorialVideoSection({
         </div>
 
         {videosQuery.isLoading ? (
-          <div className="border border-[#e6ded1] bg-white py-16 text-center text-sm text-[#6f6a61]">
+          <div className="border border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]">
             영상을 불러오고 있습니다.
           </div>
         ) : !canEdit && visibleVideos.length > 0 ? (
-          <div className="mx-auto grid max-w-5xl overflow-hidden border border-[#e6ded1] bg-[#fbfaf8] md:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.72fr)]">
+          <div className="mx-auto grid max-w-5xl overflow-hidden border border-[#d5c9b4] bg-[#ffffff] md:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.72fr)]">
             <div className="relative min-h-[260px] overflow-hidden bg-[#2e2218] md:min-h-[420px]">
               {coverImageUrl ? (
                 <img
@@ -216,7 +216,7 @@ export default function MemorialVideoSection({
                 사진과 글로 다 담기 어려운 고인의 표정과 목소리를 함께 기억할 수
                 있도록 영상 기록을 준비하는 공간입니다.
               </p>
-              <div className="mt-8 border-t border-[#e6ded1] pt-6">
+              <div className="mt-8 border-t border-[#d5c9b4] pt-6">
                 <p className="text-xs font-medium uppercase tracking-[0.24em] text-[#7f673d]">
                   Archive
                 </p>
@@ -234,7 +234,7 @@ export default function MemorialVideoSection({
           </div>
         ) : videos.length > 0 ? (
           <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-            <div className="overflow-hidden border border-[#e6ded1] bg-black">
+            <div className="overflow-hidden border border-[#d5c9b4] bg-black">
               {currentVideo ? (
                 <div className="aspect-video">
                   <iframe
@@ -246,7 +246,7 @@ export default function MemorialVideoSection({
                   />
                 </div>
               ) : (
-                <div className="flex aspect-video items-center justify-center bg-[#fbfaf8]">
+                <div className="flex aspect-video items-center justify-center bg-[#ffffff]">
                   <Youtube className="h-10 w-10 text-[#7f673d]" />
                 </div>
               )}
@@ -264,7 +264,7 @@ export default function MemorialVideoSection({
                     className={`group relative flex gap-3 border p-2 transition-colors ${
                       active
                         ? "border-[#1f1d1a] bg-white"
-                        : "border-[#e6ded1] bg-white hover:bg-[#faf9f7]"
+                        : "border-[#d5c9b4] bg-white hover:bg-[#f9f9f9]"
                     }`}
                     style={{ opacity: hidden ? 0.55 : 1 }}
                   >
@@ -273,7 +273,7 @@ export default function MemorialVideoSection({
                       className="flex min-w-0 flex-1 gap-3 text-left"
                       onClick={() => setSelectedVideoId(video.youtubeVideoId)}
                     >
-                      <span className="relative h-16 w-24 shrink-0 overflow-hidden bg-[#fbfaf8]">
+                      <span className="relative h-16 w-24 shrink-0 overflow-hidden bg-[#ffffff]">
                         <img
                           src={youtubeThumb(video.youtubeVideoId)}
                           alt={video.title}
@@ -300,7 +300,7 @@ export default function MemorialVideoSection({
                           )}
                         </span>
                         {hidden && (
-                          <span className="mt-1 inline-block border border-[#e6ded1] px-2 py-0.5 text-[11px] text-[#6f6a61]">
+                          <span className="mt-1 inline-block border border-[#d5c9b4] px-2 py-0.5 text-[11px] text-[#6f6a61]">
                             숨김
                           </span>
                         )}
@@ -359,7 +359,7 @@ export default function MemorialVideoSection({
         ) : (
           <button
             type="button"
-            className="mx-auto flex aspect-video w-full max-w-4xl flex-col items-center justify-center border border-dashed border-[#e6ded1] bg-white text-[#6f6a61]"
+            className="mx-auto flex aspect-video w-full max-w-4xl flex-col items-center justify-center border border-dashed border-[#d5c9b4] bg-white text-[#6f6a61]"
             onClick={() => setShowAddForm(true)}
           >
             <Youtube className="mb-3 h-10 w-10" />
@@ -370,7 +370,7 @@ export default function MemorialVideoSection({
         {canEdit && (
           <div className="mx-auto mt-6 max-w-xl">
             {showAddForm ? (
-              <div className="border border-[#e6ded1] bg-white p-4">
+              <div className="border border-[#d5c9b4] bg-white p-4">
                 <p className="mb-3 flex items-center gap-2 text-sm font-medium text-[#4f4638]">
                   <Youtube className="h-4 w-4" />새 영상 추가
                 </p>
@@ -378,7 +378,7 @@ export default function MemorialVideoSection({
                   value={newTitle}
                   onChange={event => setNewTitle(event.target.value)}
                   placeholder="영상 제목"
-                  className="mb-2 h-10 w-full border border-[#e6ded1] bg-white px-3 text-sm outline-none"
+                  className="mb-2 h-10 w-full border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
                 />
                 <input
                   value={newUrl}
@@ -388,7 +388,7 @@ export default function MemorialVideoSection({
                     if (event.key === "Escape") setShowAddForm(false);
                   }}
                   placeholder="유튜브 주소 또는 영상 ID"
-                  className="h-10 w-full border border-[#e6ded1] bg-white px-3 text-sm outline-none"
+                  className="h-10 w-full border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
                 />
                 <p className="mt-2 text-xs text-[#6f6a61]">
                   유튜브 주소를 붙여 넣으면 영상 ID를 자동으로 추출합니다.
@@ -397,7 +397,7 @@ export default function MemorialVideoSection({
                   <button
                     type="button"
                     onClick={() => setShowAddForm(false)}
-                    className="inline-flex h-9 items-center gap-1 border border-[#e6ded1] px-3 text-xs text-[#4f4638]"
+                    className="inline-flex h-9 items-center gap-1 border border-[#d5c9b4] px-3 text-xs text-[#4f4638]"
                   >
                     <X className="h-3 w-3" />
                     취소
@@ -458,7 +458,7 @@ function SmallButton({
       className={`flex h-6 w-6 items-center justify-center border text-xs disabled:opacity-30 ${
         danger
           ? "border-red-200 bg-red-500 text-white"
-          : "border-[#e6ded1] bg-white/90 text-[#4f4638]"
+          : "border-[#d5c9b4] bg-white/90 text-[#4f4638]"
       }`}
     >
       {children}

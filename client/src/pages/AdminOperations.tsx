@@ -124,7 +124,7 @@ export default function AdminOperations() {
 
       <main className="pt-16 lg:pl-60">
         <AdminNavigation />
-        <section className="border-b border-[#dbdad7]">
+        <section className="border-b border-[#b5b0a7]">
           <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.85fr)] lg:items-end">
             <div>
               <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.28em] text-[#616161]">
@@ -142,7 +142,7 @@ export default function AdminOperations() {
               </p>
             </div>
 
-            <div className="grid gap-px border border-[#dbdad7] bg-[#dbdad7] sm:grid-cols-3">
+            <div className="grid gap-px border border-[#b5b0a7] bg-[#b5b0a7] sm:grid-cols-3">
               <Stat label="전체 편지" value={`${letters.length}`} />
               <Stat
                 label="검토 대기·숨김"
@@ -159,7 +159,7 @@ export default function AdminOperations() {
         <section className="py-8 md:py-12">
           <div className="container">
             <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <label className="flex min-w-0 flex-1 items-center gap-3 border border-[#dbdad7] px-4 py-3">
+              <label className="flex min-w-0 flex-1 items-center gap-3 border border-[#b5b0a7] px-4 py-3">
                 <Search className="h-4 w-4 shrink-0 text-[#616161]" />
                 <input
                   value={query}
@@ -172,7 +172,7 @@ export default function AdminOperations() {
                 <button
                   type="button"
                   onClick={() => exportLetters(filteredLetters)}
-                  className="inline-flex h-12 items-center justify-center gap-2 border border-[#dbdad7] bg-white px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]"
+                  className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]"
                 >
                   <Download className="h-4 w-4" strokeWidth={1.7} />
                   편지 CSV
@@ -180,13 +180,13 @@ export default function AdminOperations() {
                 <button
                   type="button"
                   onClick={() => exportReminders(filteredReminders)}
-                  className="inline-flex h-12 items-center justify-center gap-2 border border-[#dbdad7] bg-white px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]"
+                  className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]"
                 >
                   <Download className="h-4 w-4" strokeWidth={1.7} />
                   알림 CSV
                 </button>
                 <Link href="/admin">
-                  <button className="h-12 border border-[#dbdad7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                  <button className="h-12 border border-[#b5b0a7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                     추모관 관리
                   </button>
                 </Link>
@@ -208,7 +208,7 @@ export default function AdminOperations() {
                 ) : filteredLetters.length === 0 ? (
                   <Panel text="조건에 맞는 편지가 없습니다." />
                 ) : (
-                  <div className="divide-y divide-[#dbdad7] border-y border-[#dbdad7]">
+                  <div className="divide-y divide-[#b5b0a7] border-y border-[#b5b0a7]">
                     {filteredLetters.map(letter => {
                       const hidden = letter.status === "hidden";
                       return (
@@ -288,7 +288,7 @@ export default function AdminOperations() {
               </section>
 
               <section>
-                <div className="mb-8 border border-[#dbdad7] p-5">
+                <div className="mb-8 border border-[#b5b0a7] p-5">
                   <div className="mb-4 flex items-start justify-between gap-4">
                     <div>
                       <p className="text-xs font-medium uppercase tracking-[0.24em] text-[#777]">
@@ -307,7 +307,7 @@ export default function AdminOperations() {
                     />
                   </div>
 
-                  <dl className="grid grid-cols-3 gap-px bg-[#dbdad7] text-center text-xs text-[#616161]">
+                  <dl className="grid grid-cols-3 gap-px bg-[#b5b0a7] text-center text-xs text-[#616161]">
                     <ConfigItem
                       label="API Key"
                       enabled={Boolean(smsStatusQuery.data?.hasApiKey)}
@@ -340,7 +340,7 @@ export default function AdminOperations() {
                       value={testPhone}
                       onChange={event => setTestPhone(event.target.value)}
                       placeholder="테스트 받을 휴대폰 번호"
-                      className="h-11 min-w-0 flex-1 border border-[#dbdad7] px-3 text-sm outline-none focus:border-[#18181b]"
+                      className="h-11 min-w-0 flex-1 border border-[#b5b0a7] px-3 text-sm outline-none focus:border-[#18181b]"
                     />
                     <button
                       type="submit"
@@ -371,7 +371,7 @@ export default function AdminOperations() {
                 ) : filteredReminders.length === 0 ? (
                   <Panel text="조건에 맞는 알림 신청이 없습니다." />
                 ) : (
-                  <div className="divide-y divide-[#dbdad7] border-y border-[#dbdad7]">
+                  <div className="divide-y divide-[#b5b0a7] border-y border-[#b5b0a7]">
                     {filteredReminders.map(reminder => {
                       const active = reminder.status === "active";
                       return (
@@ -443,7 +443,7 @@ export default function AdminOperations() {
                                 status: nextStatus,
                               });
                             }}
-                            className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 border border-[#dbdad7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2] disabled:cursor-not-allowed disabled:opacity-50"
+                            className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {active ? (
                               <XCircle className="h-4 w-4" />
@@ -506,7 +506,7 @@ function SectionTitle({
   count: number;
 }) {
   return (
-    <div className="mb-4 flex items-center justify-between border-b border-[#dbdad7] pb-4">
+    <div className="mb-4 flex items-center justify-between border-b border-[#b5b0a7] pb-4">
       <h2 className="flex items-center gap-2 text-base font-medium">
         {icon}
         {title}
@@ -537,7 +537,7 @@ function StatusBadge({
       className={`inline-flex w-fit items-center border px-2 py-1 text-xs ${
         tone === "normal"
           ? "border-[#18181b] text-[#121212]"
-          : "border-[#dbdad7] text-[#616161]"
+          : "border-[#b5b0a7] text-[#616161]"
       }`}
     >
       {label}
@@ -562,7 +562,7 @@ function ConfigItem({ label, enabled }: { label: string; enabled: boolean }) {
 
 function Panel({ text }: { text: string }) {
   return (
-    <div className="border border-[#dbdad7] py-16 text-center">
+    <div className="border border-[#b5b0a7] py-16 text-center">
       <p className="text-sm text-[#616161]">{text}</p>
     </div>
   );

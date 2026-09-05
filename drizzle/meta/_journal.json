@@ -113,6 +113,27 @@
       "when": 1780571200000,
       "tag": "0015_add_reminder_notification_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1788000000000,
+      "tag": "0018_ensure_interment_and_audit_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1788100000000,
+      "tag": "0019_widen_room_password_hash",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1788200000000,
+      "tag": "0020_add_password_reset_tokens",
+      "breakpoints": true
     }
   ]
 }

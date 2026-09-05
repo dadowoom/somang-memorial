@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import { inputClass, labelClass } from "@/lib/formStyles";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowRight,
@@ -14,9 +15,6 @@ import { Link, useLocation } from "wouter";
 
 type Mode = "login" | "signup";
 
-const inputClass =
-  "h-12 w-full border-0 border-b border-[#dbdad7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
-const labelClass = "mb-2 block text-xs font-medium text-[#616161]";
 const helpTextClass = "mt-2 text-xs leading-5 text-[#8a8a8a]";
 const phonePattern = /^[0-9\-\s+()]+$/;
 
@@ -169,7 +167,7 @@ export default function Login() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="border-b border-[#dbdad7]">
+        <section className="border-b border-[#b5b0a7]">
           <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.72fr)] lg:items-start">
             <div>
               <p className="mb-5 text-xs font-medium tracking-[0.24em] text-[#777]">
@@ -187,7 +185,7 @@ export default function Login() {
                 {introText}
               </p>
 
-              <div className="mt-10 grid gap-px border border-[#dbdad7] bg-[#dbdad7] sm:grid-cols-3">
+              <div className="mt-10 grid gap-px border border-[#b5b0a7] bg-[#b5b0a7] sm:grid-cols-3">
                 {[
                   ["01", "계정 확인"],
                   ["02", "필수 동의"],
@@ -201,8 +199,8 @@ export default function Login() {
               </div>
             </div>
 
-            <div className="border border-[#dbdad7] p-5 md:p-7">
-              <div className="grid grid-cols-2 gap-px bg-[#dbdad7]">
+            <div className="border border-[#b5b0a7] p-5 md:p-7">
+              <div className="grid grid-cols-2 gap-px bg-[#b5b0a7]">
                 {(["login", "signup"] as Mode[]).map(value => (
                   <button
                     key={value}
@@ -214,7 +212,7 @@ export default function Login() {
                     className={`h-12 bg-white text-sm font-medium transition-colors ${
                       mode === value
                         ? "text-[#121212] ring-1 ring-inset ring-[#18181b]"
-                        : "text-[#777] hover:bg-[#faf9f6]"
+                        : "text-[#777] hover:bg-[#fafafa]"
                     }`}
                   >
                     {value === "login" ? "로그인" : "회원가입"}
@@ -225,7 +223,7 @@ export default function Login() {
               {mode === "login" ? (
                 <form onSubmit={submitLogin} className="mt-8 space-y-6">
                   {isCreateRedirect && (
-                    <div className="border border-[#dbdad7] p-4 text-sm leading-6 text-[#616161]">
+                    <div className="border border-[#b5b0a7] p-4 text-sm leading-6 text-[#616161]">
                       소망 만들기는 로그인 후 이어집니다. 이미 계정이 있다면
                       로그인하면 작성 화면으로 바로 이동합니다.
                     </div>
@@ -265,7 +263,16 @@ export default function Login() {
                     pendingLabel="확인 중"
                   />
 
-                  <div className="border-t border-[#dbdad7] pt-5 text-sm leading-6 text-[#616161]">
+                  <div className="pt-1 text-sm leading-6">
+                    <Link
+                      href="/forgot-password"
+                      className="text-[#616161] underline underline-offset-4 transition-colors hover:text-[#121212]"
+                    >
+                      비밀번호를 잊으셨나요?
+                    </Link>
+                  </div>
+
+                  <div className="border-t border-[#b5b0a7] pt-5 text-sm leading-6 text-[#616161]">
                     처음 이용하시나요?{" "}
                     <button
                       type="button"
@@ -282,7 +289,7 @@ export default function Login() {
               ) : (
                 <form onSubmit={submitSignup} className="mt-8 space-y-6">
                   {isCreateRedirect && (
-                    <div className="border border-[#dbdad7] p-4 text-sm leading-6 text-[#616161]">
+                    <div className="border border-[#b5b0a7] p-4 text-sm leading-6 text-[#616161]">
                       처음 이용하시는 경우 필수 정보를 확인한 뒤 가입합니다.
                       가입이 완료되면 로그인 상태로 소망 만들기를 시작합니다.
                     </div>
@@ -378,7 +385,7 @@ export default function Login() {
                     )}
                   </Field>
 
-                  <div className="border border-[#dbdad7] p-4">
+                  <div className="border border-[#b5b0a7] p-4">
                     <label className="flex gap-3 text-sm font-medium leading-6 text-[#121212]">
                       <input
                         type="checkbox"
@@ -392,18 +399,20 @@ export default function Login() {
                       <span>필수 약관 모두 동의</span>
                     </label>
 
-                    <div className="mt-4 space-y-3 border-t border-[#dbdad7] pt-4">
+                    <div className="mt-4 space-y-3 border-t border-[#b5b0a7] pt-4">
                       <ConsentCheckbox
                         checked={privacyConsent}
                         onChange={setPrivacyConsent}
                         label="개인정보 수집 및 이용 동의"
                         description="성함, 이메일, 휴대폰 번호를 회원 확인과 추모관 작성 안내에 사용합니다."
+                        documentHref="/privacy"
                       />
                       <ConsentCheckbox
                         checked={serviceConsent}
                         onChange={setServiceConsent}
                         label="서비스 이용 동의"
                         description="소망교회 디지털 추모관 회원가입과 추모관 생성 절차에 동의합니다."
+                        documentHref="/terms"
                       />
                     </div>
                   </div>
@@ -414,7 +423,7 @@ export default function Login() {
                     pendingLabel="가입 중"
                   />
 
-                  <div className="border-t border-[#dbdad7] pt-5 text-sm leading-6 text-[#616161]">
+                  <div className="border-t border-[#b5b0a7] pt-5 text-sm leading-6 text-[#616161]">
                     이미 계정이 있으신가요?{" "}
                     <button
                       type="button"
@@ -431,7 +440,7 @@ export default function Login() {
               )}
 
               {message && (
-                <div className="mt-6 border border-[#dbdad7] p-4 text-sm leading-6 text-[#4f4638]">
+                <div className="mt-6 border border-[#b5b0a7] p-4 text-sm leading-6 text-[#4f4638]">
                   {message}
                 </div>
               )}
@@ -474,11 +483,13 @@ function ConsentCheckbox({
   onChange,
   label,
   description,
+  documentHref,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
   description: string;
+  documentHref: string;
 }) {
   return (
     <label className="flex gap-3 text-sm leading-6 text-[#616161]">

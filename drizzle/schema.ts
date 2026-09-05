@@ -149,7 +149,7 @@ export const memorials = mysqlTable(
     visibility: mysqlEnum("visibility", ["public", "link", "private"])
       .default("public")
       .notNull(),
-    accessPasswordHash: varchar("accessPasswordHash", { length: 128 }),
+    accessPasswordHash: varchar("accessPasswordHash", { length: 255 }),
     status: mysqlEnum("status", ["pending", "published", "private"])
       .default("published")
       .notNull(),
@@ -309,7 +309,7 @@ export const memorialFamilyRooms = mysqlTable(
       .notNull()
       .references(() => memorials.id, { onDelete: "cascade" })
       .unique(),
-    passwordHash: varchar("passwordHash", { length: 128 }).notNull(),
+    passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
     title: varchar("title", { length: 160 }).notNull(),
     intro: text("intro").notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -356,3 +356,25 @@ export type MemorialReminderSubscription =
   typeof memorialReminderSubscriptions.$inferSelect;
 export type InsertMemorialReminderSubscription =
   typeof memorialReminderSubscriptions.$inferInsert;
+
+/**
+ * 비밀번호 재설정 링크. 실제 값은 저장하지 않고 해시만 보관합니다 —
+ * 데이터베이스가 새더라도 그것만으로 남의 계정 비밀번호를 바꿀 수 없어야 합니다.
+ */
+export const passwordResetTokens = mysqlTable(
+  "password_reset_tokens",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: varchar("tokenHash", { length: 128 }).notNull().unique(),
+    expiresAt: timestamp("expiresAt").notNull(),
+    usedAt: timestamp("usedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("password_reset_tokens_userId_idx").on(table.userId),
+    index("password_reset_tokens_expiresAt_idx").on(table.expiresAt),
+  ]
+);

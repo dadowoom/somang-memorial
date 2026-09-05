@@ -1,5 +1,5 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
-import { and, asc, desc, eq, isNull, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
@@ -21,10 +21,15 @@ import {
   memorialVideos,
   memorials,
   somangIntermentRecords,
+  passwordResetTokens,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
-import { normalizeIntermentName } from "../shared/parentFinder";
+import {
+  getIntermentPersonName,
+  isSameIntermentPersonName,
+  normalizeIntermentName,
+} from "../shared/parentFinder";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -523,7 +528,7 @@ export async function searchSomangIntermentRecords(input: {
     conditions.push(eq(somangIntermentRecords.birthDate, birthDate));
   }
 
-  return db
+  const records = await db
     .select(somangIntermentSearchSelection)
     .from(somangIntermentRecords)
     .leftJoin(
@@ -533,6 +538,13 @@ export async function searchSomangIntermentRecords(input: {
     .where(and(...conditions))
     .orderBy(asc(somangIntermentRecords.name), asc(somangIntermentRecords.id))
     .limit(20);
+
+  // The stored name still carries the title it had in the source spreadsheet.
+  // Families should see the person, not `이한수 장로(타)`.
+  return records.map(record => ({
+    ...record,
+    name: getIntermentPersonName(record.name),
+  }));
 }
 
 export async function getSomangIntermentRecordForClaim(input: {
@@ -548,13 +560,7 @@ export async function getSomangIntermentRecordForClaim(input: {
   // The record id identifies the person; the name is a safety check. The birth
   // date is only enforced when supplied, because many records have none.
   const birthDate = input.birthDate?.trim();
-  const conditions = [
-    eq(somangIntermentRecords.id, input.id),
-    eq(
-      somangIntermentRecords.nameNormalized,
-      normalizeIntermentName(input.name)
-    ),
-  ];
+  const conditions = [eq(somangIntermentRecords.id, input.id)];
   if (birthDate) {
     conditions.push(eq(somangIntermentRecords.birthDate, birthDate));
   }
@@ -569,7 +575,15 @@ export async function getSomangIntermentRecordForClaim(input: {
     .where(and(...conditions))
     .limit(1);
 
-  return records[0] ?? null;
+  // The name is a safety check, not a lookup key. It is compared after the
+  // query because the caller sends back the cleaned-up name it was shown,
+  // while the stored name still has the title attached.
+  const record = records[0];
+  if (!record || !isSameIntermentPersonName(record.name, input.name)) {
+    return null;
+  }
+
+  return { ...record, name: getIntermentPersonName(record.name) };
 }
 
 /**
@@ -587,7 +601,7 @@ export async function searchKioskSomangIntermentRecords(keyword: string) {
   if (normalizedKeyword.length < 2) return [];
   const escapedKeyword = escapeMemorialSearchKeyword(normalizedKeyword);
 
-  return db
+  const records = await db
     .select({
       id: somangIntermentRecords.id,
       name: somangIntermentRecords.name,
@@ -596,6 +610,11 @@ export async function searchKioskSomangIntermentRecords(keyword: string) {
     .where(like(somangIntermentRecords.nameNormalized, `%${escapedKeyword}%`))
     .orderBy(asc(somangIntermentRecords.name), asc(somangIntermentRecords.id))
     .limit(20);
+
+  return records.map(record => ({
+    ...record,
+    name: getIntermentPersonName(record.name),
+  }));
 }
 
 export async function listPublicMemorials() {
@@ -709,10 +728,10 @@ export async function searchKioskMemorials(keyword: string) {
     .where(
       and(
         eq(memorials.status, "published"),
-        or(
-          eq(memorials.visibility, "public"),
-          eq(memorials.visibility, "private")
-        ),
+        // 키오스크는 교회에 놓인 공개 단말이다. 비공개 추모관은 가족만 보도록
+        // 정한 것이므로, 이름과 생년월일이 지나가는 사람 눈에 띄면 안 된다.
+        // 링크 공개도 링크를 받은 사람만 보는 것이라 검색에서 뺀다.
+        eq(memorials.visibility, "public"),
         like(memorials.name, `%${escapedKeyword}%`)
       )
     )
@@ -882,8 +901,58 @@ export async function updateMemorial(
   await db.update(memorials).set(data).where(eq(memorials.id, id));
 }
 
+/**
+ * 가족관과 비공개 추모관의 입장 비밀번호.
+ *
+ * 예전에는 소금 없는 SHA-256 한 번이었다. 가족이 함께 쓰려고 짧게 정하는
+ * 비밀번호라, 데이터베이스가 한 번 새면 사실상 즉시 풀린다. 소금이 없으니
+ * 같은 비밀번호를 쓴 추모관은 저장값도 똑같아서, 어느 집과 어느 집이 같은
+ * 비밀번호를 쓰는지까지 드러났다.
+ *
+ * 회원 비밀번호는 이미 scrypt 로 제대로 하고 있었고 이 두 곳만 빠져 있었다.
+ * 같은 방식으로 맞춘다. 옛 형식으로 저장된 값도 그대로 받아주고, 입장에
+ * 성공하면 새 형식으로 다시 저장한다. 아무도 잠기지 않는다.
+ */
+const ROOM_SECRET_SCHEME = "scrypt";
+
+function hashRoomSecret(purpose: string, password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(`${purpose}:${password}`, salt, 64).toString("hex");
+  return `${ROOM_SECRET_SCHEME}:${salt}:${hash}`;
+}
+
+export function isLegacyRoomSecret(stored: string) {
+  return !stored.startsWith(`${ROOM_SECRET_SCHEME}:`);
+}
+
+function verifyRoomSecret(purpose: string, password: string, stored: string) {
+  if (isLegacyRoomSecret(stored)) {
+    const legacy = createHash("sha256")
+      .update(`${purpose}:${password}`)
+      .digest("hex");
+    if (legacy.length !== stored.length) return false;
+    return timingSafeEqual(Buffer.from(legacy), Buffer.from(stored));
+  }
+
+  const [, salt, storedHash] = stored.split(":");
+  if (!salt || !storedHash) return false;
+
+  const expected = Buffer.from(storedHash, "hex");
+  const actual = scryptSync(`${purpose}:${password}`, salt, expected.length);
+  if (actual.length !== expected.length) return false;
+
+  return timingSafeEqual(actual, expected);
+}
+
+const FAMILY_ROOM_PURPOSE = "somang-family";
+const MEMORIAL_ACCESS_PURPOSE = "somang-memorial-access";
+
 export function hashFamilyRoomPassword(password: string) {
-  return createHash("sha256").update(`somang-family:${password}`).digest("hex");
+  return hashRoomSecret(FAMILY_ROOM_PURPOSE, password);
+}
+
+export function verifyFamilyRoomPassword(password: string, stored: string) {
+  return verifyRoomSecret(FAMILY_ROOM_PURPOSE, password, stored);
 }
 
 const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
@@ -903,9 +972,14 @@ export function getMemorialFamilyRoomVideo(slug: string) {
 }
 
 export function hashMemorialAccessPassword(password: string) {
-  return createHash("sha256")
-    .update(`somang-memorial-access:${password}`)
-    .digest("hex");
+  return hashRoomSecret(MEMORIAL_ACCESS_PURPOSE, password);
+}
+
+export function verifyMemorialAccessPasswordHash(
+  password: string,
+  stored: string
+) {
+  return verifyRoomSecret(MEMORIAL_ACCESS_PURPOSE, password, stored);
 }
 
 export function createMemorialAccessToken(
@@ -917,6 +991,20 @@ export function createMemorialAccessToken(
     .digest("hex");
 }
 
+/**
+ * 가족이 비밀번호로 들어올 수 있는 상태.
+ *
+ * - published : 정상 공개
+ * - pending   : 관리자 확인을 기다리는 중. 공개 검색에는 나오지 않지만,
+ *               유가족이 정한 비밀번호로는 들어올 수 있어야 한다.
+ *               그러지 않으면 가족에게 비밀번호를 알려주고도 아무도 못 들어간다.
+ *
+ * private 은 관리자가 내린 상태이므로 뺀다. 비밀번호를 아는 사람이라도
+ * 들어오지 못해야 관리자의 조치가 의미를 가진다. 소유자와 관리자는
+ * canUserReadMemorial 에서 따로 통과시킨다.
+ */
+export const FAMILY_READABLE_STATUSES = ["published", "pending"] as const;
+
 export function canReadMemorial(
   memorial: {
     slug: string;
@@ -926,13 +1014,31 @@ export function canReadMemorial(
   },
   accessToken?: string | null
 ) {
-  if (memorial.status !== "published") return false;
-  if (memorial.visibility !== "private") return true;
-  if (!memorial.accessPasswordHash || !accessToken) return false;
-  return (
+  const hasValidToken = () =>
+    Boolean(memorial.accessPasswordHash) &&
+    Boolean(accessToken) &&
     accessToken ===
-    createMemorialAccessToken(memorial.slug, memorial.accessPasswordHash)
-  );
+      createMemorialAccessToken(
+        memorial.slug,
+        memorial.accessPasswordHash as string
+      );
+
+  if (memorial.status === "published") {
+    if (memorial.visibility !== "private") return true;
+    return hasValidToken();
+  }
+
+  // 관리자 확인을 기다리는 중에는 공개하지 않는다. 다만 유가족이 정한
+  // 비밀번호를 가진 분은 들어올 수 있어야 한다. 그러지 않으면 가족에게
+  // 비밀번호를 알려주고도 아무도 못 들어간다.
+  if (memorial.status === "pending") {
+    if (memorial.visibility !== "private") return false;
+    return hasValidToken();
+  }
+
+  // private 은 관리자가 내린 상태다. 비밀번호를 알아도 들어올 수 없어야
+  // 관리자의 조치가 의미를 가진다. 소유자와 관리자는 위쪽에서 통과시킨다.
+  return false;
 }
 
 export function canUserReadMemorial(
@@ -971,7 +1077,7 @@ export async function getMemorialAccessStatus(slug: string) {
     })
     .from(memorials)
     .where(
-      and(eq(memorials.slug, slug), eq(memorials.status, "published"))
+      and(eq(memorials.slug, slug), inArray(memorials.status, [...FAMILY_READABLE_STATUSES]))
     )
     .limit(1);
 
@@ -1005,6 +1111,7 @@ export async function verifyMemorialAccessPassword(input: {
 
   const result = await db
     .select({
+      id: memorials.id,
       slug: memorials.slug,
       name: memorials.name,
       visibility: memorials.visibility,
@@ -1014,7 +1121,7 @@ export async function verifyMemorialAccessPassword(input: {
     .where(
       and(
         eq(memorials.slug, input.slug),
-        eq(memorials.status, "published")
+        inArray(memorials.status, [...FAMILY_READABLE_STATUSES])
       )
     )
     .limit(1);
@@ -1033,19 +1140,31 @@ export async function verifyMemorialAccessPassword(input: {
 
   if (
     !memorial.accessPasswordHash ||
-    memorial.accessPasswordHash !== hashMemorialAccessPassword(input.password)
+    !verifyMemorialAccessPasswordHash(
+      input.password,
+      memorial.accessPasswordHash
+    )
   ) {
     return false;
+  }
+
+  // 입장 열쇠는 저장값에서 만들어지므로, 승격이 일어난 요청에서는 새 저장값으로
+  // 열쇠를 만들어야 한다. 안 그러면 방문자가 데이터베이스에 없는 값의 열쇠를
+  // 들고 가게 된다.
+  let passwordHash = memorial.accessPasswordHash;
+  if (isLegacyRoomSecret(passwordHash)) {
+    passwordHash = hashMemorialAccessPassword(input.password);
+    await db
+      .update(memorials)
+      .set({ accessPasswordHash: passwordHash })
+      .where(eq(memorials.id, memorial.id));
   }
 
   return {
     slug: memorial.slug,
     name: memorial.name,
     href: `/memorial/${memorial.slug}`,
-    accessToken: createMemorialAccessToken(
-      memorial.slug,
-      memorial.accessPasswordHash
-    ),
+    accessToken: createMemorialAccessToken(memorial.slug, passwordHash),
   };
 }
 
@@ -1068,7 +1187,7 @@ export async function getMemorialFamilyRoomStatus(slug: string) {
       eq(memorialFamilyRooms.memorialId, memorials.id)
     )
     .where(
-      and(eq(memorials.slug, slug), eq(memorials.status, "published"))
+      and(eq(memorials.slug, slug), inArray(memorials.status, [...FAMILY_READABLE_STATUSES]))
     )
     .limit(1);
 
@@ -1110,15 +1229,22 @@ export async function verifyMemorialFamilyRoomPassword(
       eq(memorialFamilyRooms.memorialId, memorials.id)
     )
     .where(
-      and(eq(memorials.slug, slug), eq(memorials.status, "published"))
+      and(eq(memorials.slug, slug), inArray(memorials.status, [...FAMILY_READABLE_STATUSES]))
     )
     .limit(1);
 
   const room = result[0];
   if (!room) return null;
 
-  if (room.passwordHash !== hashFamilyRoomPassword(password)) {
+  if (!verifyFamilyRoomPassword(password, room.passwordHash)) {
     return false;
+  }
+
+  if (isLegacyRoomSecret(room.passwordHash)) {
+    await db
+      .update(memorialFamilyRooms)
+      .set({ passwordHash: hashFamilyRoomPassword(password) })
+      .where(eq(memorialFamilyRooms.memorialId, room.memorialId));
   }
 
   return {
@@ -1179,7 +1305,10 @@ export async function createMemorialLetter(input: {
       recipientRole: memorial[0].role,
       author: input.author,
       content: input.content,
-      status: "hidden",
+      // Letters appear as soon as they are written. Families should see the
+      // comfort arriving, not wait for someone to approve it. An administrator
+      // can hide a letter afterwards from the admin screen.
+      status: "published",
     });
 
     const created = await db
@@ -1211,7 +1340,7 @@ export async function createMemorialLetter(input: {
     recipientRole: input.recipientRole?.trim() || null,
     author: input.author,
     content: input.content,
-    status: "hidden",
+    status: "published",
   });
 
   const created = await db
@@ -1811,4 +1940,129 @@ export async function deleteMemorialBookPage(id: number) {
   }
 
   await db.delete(memorialBookPages).where(eq(memorialBookPages.id, id));
+}
+
+
+/**
+ * 회원 탈퇴. 개인정보보호법상 정보주체는 자기 정보를 지워 달라고 요구할 수
+ * 있으므로 반드시 있어야 하는 기능입니다.
+ *
+ * 회원 행(row)만 지웁니다. 이미 만들어진 추모관은 고인을 기억하는 공동의
+ * 기록이므로 남고, 소유자 표시만 비워집니다(외래키가 SET NULL).
+ * 추모관까지 지우려면 탈퇴 전에 따로 지워야 합니다 — 이용약관에 그렇게
+ * 적어 두었습니다.
+ */
+export async function deleteUserAccount(input: {
+  userId: number;
+  password: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({ id: users.id, passwordHash: users.passwordHash })
+    .from(users)
+    .where(eq(users.id, input.userId))
+    .limit(1);
+
+  const user = rows[0];
+  if (!user) return false;
+
+  // 비밀번호로 가입한 계정만 스스로 지울 수 있습니다. 외부 로그인 계정은
+  // 확인할 비밀번호가 없으므로 관리자를 통해 처리해야 합니다.
+  if (!user.passwordHash) return false;
+  if (!verifyUserPassword(input.password, user.passwordHash)) return false;
+
+  await db.delete(users).where(eq(users.id, user.id));
+  return true;
+}
+
+/* ------------------------------------------------------------------ *
+ * 비밀번호 재설정
+ * ------------------------------------------------------------------ */
+
+export const PASSWORD_RESET_TTL_MINUTES = 30;
+
+/**
+ * 링크에 담을 값은 한 번만 돌려주고, 데이터베이스에는 해시만 남깁니다.
+ * 비밀번호와 같은 이유입니다 — 저장된 것을 가져가도 그대로 쓸 수 없어야 합니다.
+ */
+function hashResetToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export async function createPasswordResetToken(email: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const user = await getUserByEmail(normalizeEmail(email));
+  // 없는 이메일이어도 밖에서는 구분할 수 없어야 하므로 조용히 끝냅니다.
+  if (!user || !user.passwordHash) return null;
+  if (user.approvalStatus === "rejected") return null;
+
+  // 아직 쓰지 않은 이전 링크는 무효로 만듭니다. 살아 있는 링크가 여러 개면
+  // 그만큼 새어 나갈 틈이 늘어납니다.
+  const now = new Date();
+  await db
+    .update(passwordResetTokens)
+    .set({ usedAt: now })
+    .where(
+      and(
+        eq(passwordResetTokens.userId, user.id),
+        isNull(passwordResetTokens.usedAt)
+      )
+    );
+
+  const token = randomBytes(32).toString("base64url");
+  await db.insert(passwordResetTokens).values({
+    userId: user.id,
+    tokenHash: hashResetToken(token),
+    expiresAt: new Date(now.getTime() + PASSWORD_RESET_TTL_MINUTES * 60 * 1000),
+  });
+
+  return { token, email: user.email ?? "" };
+}
+
+export async function resetPasswordWithToken(input: {
+  token: string;
+  password: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({
+      id: passwordResetTokens.id,
+      userId: passwordResetTokens.userId,
+      expiresAt: passwordResetTokens.expiresAt,
+      usedAt: passwordResetTokens.usedAt,
+    })
+    .from(passwordResetTokens)
+    .where(eq(passwordResetTokens.tokenHash, hashResetToken(input.token)))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || row.usedAt || row.expiresAt.getTime() <= Date.now()) {
+    return false;
+  }
+
+  const now = new Date();
+  await db
+    .update(users)
+    .set({ passwordHash: hashUserPassword(input.password) })
+    .where(eq(users.id, row.userId));
+
+  // 한 번 쓴 링크는 즉시 닫습니다.
+  await db
+    .update(passwordResetTokens)
+    .set({ usedAt: now })
+    .where(eq(passwordResetTokens.id, row.id));
+
+  return true;
 }

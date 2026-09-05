@@ -1,8 +1,10 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { errorClass, inputClass, labelClass, selectClass, textAreaClass } from "@/lib/formStyles";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import {
+  ArrowLeft,
   ArrowRight,
   Check,
   ImagePlus,
@@ -11,7 +13,14 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link } from "wouter";
 
 type TimelineItem = {
@@ -75,9 +84,24 @@ const requiredFields: Array<{ key: keyof MemorialForm; label: string }> = [
   { key: "name", label: "성함" },
   { key: "role", label: "직분" },
   { key: "birthDate", label: "출생일" },
-  { key: "deathDate", label: "소천일" },
   { key: "summary", label: "한 줄 소개" },
   { key: "story", label: "삶의 기록" },
+];
+
+/**
+ * 등록 화면을 한 번에 다 보여주면 채울 칸이 스무 개가 넘는다. 한 단계씩 나눠
+ * 보여주고, 그 단계의 필수 항목만 확인한 뒤 다음으로 넘어가게 한다.
+ */
+const steps: Array<{
+  id: string;
+  label: string;
+  required: Array<keyof MemorialForm>;
+}> = [
+  { id: "basic", label: "기본 정보", required: ["name", "role", "birthDate"] },
+  { id: "story", label: "신앙 이야기", required: ["summary", "story"] },
+  { id: "timeline", label: "생애 기록", required: [] },
+  { id: "photos", label: "사진", required: [] },
+  { id: "settings", label: "공개 설정", required: ["accessPassword"] },
 ];
 
 const visibilityOptions: Array<{
@@ -97,14 +121,6 @@ const visibilityOptions: Array<{
   },
 ];
 
-const inputClass =
-  "h-12 w-full border-0 border-b border-[#dbdad7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
-const selectClass =
-  "h-12 w-full border-0 border-b border-[#dbdad7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors focus:border-[#18181b]";
-const textAreaClass =
-  "min-h-36 w-full resize-y border border-[#dbdad7] bg-transparent p-4 text-sm leading-7 text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
-const labelClass = "mb-2 block text-xs font-medium text-[#616161]";
-const errorClass = "mt-2 text-xs text-[#9f2a2a]";
 
 const readFileAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -151,6 +167,8 @@ export default function MemorialCreate() {
     Partial<Record<keyof MemorialForm, string>>
   >({});
   const [notice, setNotice] = useState("");
+  const [step, setStep] = useState(0);
+  const isLastStep = step === steps.length - 1;
   const [submitted, setSubmitted] = useState(false);
   const [createdMemorial, setCreatedMemorial] =
     useState<CreatedMemorial | null>(null);
@@ -272,6 +290,44 @@ export default function MemorialCreate() {
     setCreatedMemorial(null);
   };
 
+  const goToStep = (index: number) => {
+    setStep(Math.min(Math.max(index, 0), steps.length - 1));
+    setNotice("");
+  };
+
+  // 단계를 옮기면 그 단계의 제목이 화면 맨 위에 오게 하고 읽어 주도록 한다.
+  //
+  // 이 일은 화면이 다시 그려진 뒤에 해야 한다. 단계를 바꾸는 순간에 하면
+  // 새 단계는 아직 숨어 있어서 스크롤도 포커스도 먹지 않는다. 그래서
+  // requestAnimationFrame 이 아니라 useEffect 로 둔다.
+  //
+  // 처음 화면을 열었을 때는 건너뛴다. 사용자가 옮긴 것이 아니기 때문이다.
+  const isFirstStepRender = useRef(true);
+  useEffect(() => {
+    if (isFirstStepRender.current) {
+      isFirstStepRender.current = false;
+      return;
+    }
+
+    const section = document.getElementById(steps[step].id);
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
+    section?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+  }, [step]);
+
+  // 이 단계에서 비운 칸만 짚어 준다. 아직 오지 않은 단계까지 미리 지적하면
+  // 무엇을 고쳐야 하는지 알기 어렵다.
+  const goNext = () => {
+    const nextErrors = collectErrors();
+    const blocking = steps[step].required.filter(key => nextErrors[key]);
+    if (blocking.length > 0) {
+      setErrors(nextErrors);
+      setNotice("이 단계에서 비어 있는 항목을 먼저 채워 주세요.");
+      return;
+    }
+    setErrors({});
+    goToStep(step + 1);
+  };
+
   const saveDraft = () => {
     localStorage.setItem(draftKey, JSON.stringify({ form, timeline }));
     setNotice(
@@ -280,7 +336,7 @@ export default function MemorialCreate() {
     setSubmitted(false);
   };
 
-  const validate = () => {
+  const collectErrors = () => {
     const nextErrors: Partial<Record<keyof MemorialForm, string>> = {};
 
     requiredFields.forEach(({ key, label }) => {
@@ -294,6 +350,11 @@ export default function MemorialCreate() {
         "비공개 추모관 입장 비밀번호를 입력해 주세요.";
     }
 
+    return nextErrors;
+  };
+
+  const validate = () => {
+    const nextErrors = collectErrors();
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -302,11 +363,17 @@ export default function MemorialCreate() {
     event.preventDefault();
 
     if (!validate()) {
-      setNotice("필수 항목을 먼저 채워 주세요.");
+      // 비운 칸이 다른 단계에 있으면 그 단계로 데려간다. 그러지 않으면
+      // "채워 주세요"라는 말만 보이고 어디를 채워야 할지 알 수 없다.
+      const nextErrors = collectErrors();
+      const firstStep = steps.findIndex(item =>
+        item.required.some(key => nextErrors[key])
+      );
+      if (firstStep >= 0 && firstStep !== step) {
+        goToStep(firstStep);
+      }
+      setNotice("비어 있는 항목을 먼저 채워 주세요.");
       setSubmitted(false);
-      document
-        .getElementById("basic")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
 
@@ -339,7 +406,7 @@ export default function MemorialCreate() {
       <div className="min-h-screen bg-white text-[#121212]">
         <Navbar />
         <main className="container pt-32">
-          <div className="border border-[#dbdad7] py-20 text-center">
+          <div className="border border-[#b5b0a7] py-20 text-center">
             <p className="text-sm text-[#616161]">
               로그인 상태를 확인하고 있습니다.
             </p>
@@ -354,7 +421,7 @@ export default function MemorialCreate() {
       <div className="min-h-screen bg-white text-[#121212]">
         <Navbar />
         <main className="container pt-32">
-          <div className="border border-[#dbdad7] py-20 text-center">
+          <div className="border border-[#b5b0a7] py-20 text-center">
             <p className="text-sm text-[#616161]">
               회원가입 또는 로그인 후 추모관을 생성할 수 있습니다.
             </p>
@@ -369,7 +436,7 @@ export default function MemorialCreate() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="border-b border-[#dbdad7]">
+        <section className="border-b border-[#b5b0a7]">
           <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)]">
             <div>
               <p className="mb-5 text-xs font-medium text-[#616161]">
@@ -393,7 +460,7 @@ export default function MemorialCreate() {
               </p>
             </div>
 
-            <aside className="border border-[#dbdad7] p-5 md:p-6">
+            <aside className="border border-[#b5b0a7] p-5 md:p-6">
               <div className="flex items-start justify-between gap-6">
                 <div>
                   <p className="text-sm font-medium text-[#121212]">
@@ -408,14 +475,14 @@ export default function MemorialCreate() {
                 </span>
               </div>
 
-              <div className="mt-6 h-px bg-[#dbdad7]">
+              <div className="mt-6 h-px bg-[#b5b0a7]">
                 <div
                   className="h-px bg-[#18181b] transition-all"
                   style={{ width: `${completion.percent}%` }}
                 />
               </div>
 
-              <div className="mt-6 grid gap-px bg-[#dbdad7] sm:grid-cols-3">
+              <div className="mt-6 grid gap-px bg-[#b5b0a7] sm:grid-cols-3">
                 {["정보 입력", "기록 정리", "등록 완료"].map((step, index) => (
                   <div key={step} className="bg-white p-4">
                     <p className="text-xs text-[#616161]">
@@ -433,7 +500,7 @@ export default function MemorialCreate() {
                     {missingLabels.map(label => (
                       <span
                         key={label}
-                        className="border border-[#dbdad7] px-2 py-1 text-xs text-[#616161]"
+                        className="border border-[#b5b0a7] px-2 py-1 text-xs text-[#616161]"
                       >
                         {label}
                       </span>
@@ -448,42 +515,30 @@ export default function MemorialCreate() {
         <form onSubmit={handleSubmit} className="py-8 md:py-12">
           <div className="container grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
             <aside className="hidden lg:block">
-              <div className="sticky top-24 border border-[#dbdad7] p-5">
+              <div className="sticky top-24 border border-[#b5b0a7] p-5">
                 <p className="text-sm font-medium text-[#121212]">입력 항목</p>
-                <nav className="mt-5 space-y-3 text-sm text-[#616161]">
-                  <a
-                    href="#basic"
-                    className="block transition-colors hover:text-[#121212]"
-                  >
-                    기본 정보
-                  </a>
-                  <a
-                    href="#story"
-                    className="block transition-colors hover:text-[#121212]"
-                  >
-                    신앙 이야기
-                  </a>
-                  <a
-                    href="#timeline"
-                    className="block transition-colors hover:text-[#121212]"
-                  >
-                    생애 기록
-                  </a>
-                  <a
-                    href="#photos"
-                    className="block transition-colors hover:text-[#121212]"
-                  >
-                    사진
-                  </a>
-                  <a
-                    href="#settings"
-                    className="block transition-colors hover:text-[#121212]"
-                  >
-                    공개 설정
-                  </a>
+                <nav className="mt-5 space-y-1 text-sm">
+                  {steps.map((item, index) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => goToStep(index)}
+                      aria-current={index === step ? "step" : undefined}
+                      className={`block w-full py-2 text-left transition-colors ${
+                        index === step
+                          ? "font-medium text-[#121212]"
+                          : "text-[#616161] hover:text-[#121212]"
+                      }`}
+                    >
+                      <span className="mr-2 text-xs text-[#9a9a9a]">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      {item.label}
+                    </button>
+                  ))}
                 </nav>
 
-                <div className="mt-8 border-t border-[#dbdad7] pt-5">
+                <div className="mt-8 border-t border-[#b5b0a7] pt-5">
                   <p className="text-xs text-[#616161]">예상 주소</p>
                   <p className="mt-2 break-all text-sm text-[#121212]">
                     /memorial/{slugPreview}
@@ -493,9 +548,31 @@ export default function MemorialCreate() {
             </aside>
 
             <div className="space-y-8">
+              <div className="lg:hidden">
+                <div className="flex items-baseline justify-between">
+                  <p className="text-sm font-medium text-[#121212]">
+                    {steps[step].label}
+                  </p>
+                  <p className="text-xs text-[#616161]">
+                    {step + 1} / {steps.length}
+                  </p>
+                </div>
+                <div className="mt-3 flex gap-1">
+                  {steps.map((item, index) => (
+                    <span
+                      key={item.id}
+                      className={`h-1 flex-1 ${
+                        index <= step ? "bg-[#18181b]" : "bg-[#dadada]"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
               <section
                 id="basic"
-                className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                className={`scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8 ${
+                  step === 0 ? "" : "hidden"
+                }`}
               >
                 <SectionHeader number="01" title="기본 정보" />
 
@@ -532,7 +609,7 @@ export default function MemorialCreate() {
 
                   <Field label="출생일" error={errors.birthDate} required>
                     <input
-                      type="date"
+                      placeholder="1933 또는 1933-01-01"
                       className={inputClass}
                       value={form.birthDate}
                       onChange={event =>
@@ -542,9 +619,9 @@ export default function MemorialCreate() {
                     />
                   </Field>
 
-                  <Field label="소천일" error={errors.deathDate} required>
+                  <Field label="소천일" error={errors.deathDate}>
                     <input
-                      type="date"
+                      placeholder="2026 또는 2026-01-01"
                       className={inputClass}
                       value={form.deathDate}
                       onChange={event =>
@@ -602,7 +679,9 @@ export default function MemorialCreate() {
 
               <section
                 id="story"
-                className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                className={`scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8 ${
+                  step === 1 ? "" : "hidden"
+                }`}
               >
                 <SectionHeader number="02" title="신앙 이야기" />
 
@@ -669,7 +748,7 @@ export default function MemorialCreate() {
 
                     <Field label="추도일">
                       <input
-                        type="date"
+                        placeholder="매년 3월 1일"
                         className={inputClass}
                         value={form.memorialDay}
                         onChange={event =>
@@ -683,7 +762,9 @@ export default function MemorialCreate() {
 
               <section
                 id="timeline"
-                className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                className={`scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8 ${
+                  step === 2 ? "" : "hidden"
+                }`}
               >
                 <SectionHeader number="03" title="생애 기록" />
 
@@ -691,7 +772,7 @@ export default function MemorialCreate() {
                   {timeline.map((item, index) => (
                     <div
                       key={item.id}
-                      className="grid gap-4 border-b border-[#dbdad7] pb-6 last:border-b-0 last:pb-0"
+                      className="grid gap-4 border-b border-[#b5b0a7] pb-6 last:border-b-0 last:pb-0"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <p className="text-sm text-[#616161]">
@@ -729,7 +810,7 @@ export default function MemorialCreate() {
                       </div>
 
                       <textarea
-                        className="min-h-24 w-full resize-y border border-[#dbdad7] bg-transparent p-4 text-sm leading-7 text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
+                        className="min-h-24 w-full resize-y border border-[#b5b0a7] bg-transparent p-4 text-sm leading-7 text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
                         value={item.description}
                         onChange={event =>
                           updateTimeline(
@@ -747,7 +828,7 @@ export default function MemorialCreate() {
                 <button
                   type="button"
                   onClick={addTimeline}
-                  className="mt-6 inline-flex h-11 items-center gap-2 border border-[#dbdad7] px-4 text-sm transition-colors hover:bg-[#f6f5f2]"
+                  className="mt-6 inline-flex h-11 items-center gap-2 border border-[#b5b0a7] px-4 text-sm transition-colors hover:bg-[#f5f5f5]"
                 >
                   <Plus className="h-4 w-4" strokeWidth={1.6} />
                   기록 추가
@@ -756,14 +837,16 @@ export default function MemorialCreate() {
 
               <section
                 id="photos"
-                className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                className={`scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8 ${
+                  step === 3 ? "" : "hidden"
+                }`}
               >
                 <SectionHeader number="04" title="사진" />
 
                 <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
                   <div>
                     <label className={labelClass}>대표 사진</label>
-                    <label className="flex aspect-[4/5] w-full flex-col items-center justify-center border border-dashed border-[#dbdad7] bg-[#fafafa] text-center text-sm text-[#616161] transition-colors hover:border-[#18181b] hover:text-[#121212]">
+                    <label className="flex aspect-[4/5] w-full flex-col items-center justify-center border border-dashed border-[#b5b0a7] bg-[#fafafa] text-center text-sm text-[#616161] transition-colors hover:border-[#18181b] hover:text-[#121212]">
                       {portraitPreview ? (
                         <img
                           src={portraitPreview}
@@ -792,7 +875,7 @@ export default function MemorialCreate() {
 
                   <div>
                     <label className={labelClass}>추억 사진</label>
-                    <label className="flex min-h-36 w-full flex-col items-center justify-center gap-3 border border-dashed border-[#dbdad7] text-center text-sm text-[#616161] transition-colors hover:border-[#18181b] hover:text-[#121212]">
+                    <label className="flex min-h-36 w-full flex-col items-center justify-center gap-3 border border-dashed border-[#b5b0a7] text-center text-sm text-[#616161] transition-colors hover:border-[#18181b] hover:text-[#121212]">
                       <ImagePlus className="h-6 w-6" strokeWidth={1.5} />
                       최대 6장 선택
                       <input
@@ -805,7 +888,7 @@ export default function MemorialCreate() {
                     </label>
 
                     {galleryPreviews.length > 0 && (
-                      <div className="mt-4 grid grid-cols-3 gap-px bg-[#dbdad7] sm:grid-cols-6">
+                      <div className="mt-4 grid grid-cols-3 gap-px bg-[#b5b0a7] sm:grid-cols-6">
                         {galleryPreviews.map((preview, index) => (
                           <img
                             key={preview}
@@ -822,12 +905,14 @@ export default function MemorialCreate() {
 
               <section
                 id="settings"
-                className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                className={`scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8 ${
+                  step === 4 ? "" : "hidden"
+                }`}
               >
                 <SectionHeader number="05" title="공개 설정" />
 
                 {!isAdmin && (
-                  <p className="mb-6 border-l-2 border-[#18181b] bg-[#f8f7f4] px-4 py-3 text-sm leading-6 text-[#414141]">
+                  <p className="mb-6 border-l-2 border-[#18181b] bg-[#f7f7f7] px-4 py-3 text-sm leading-6 text-[#414141]">
                     작성한 추모관은 관리자 확인을 거친 뒤 게시됩니다. 확인 전에는
                     검색 결과와 키오스크에 보이지 않습니다.
                   </p>
@@ -835,7 +920,7 @@ export default function MemorialCreate() {
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <Field label="공개 범위">
-                    <div className="grid gap-px border border-[#dbdad7] bg-[#dbdad7] sm:grid-cols-2">
+                    <div className="grid gap-px border border-[#b5b0a7] bg-[#b5b0a7] sm:grid-cols-2">
                       {visibilityOptions.map(option => {
                         const selected = form.visibility === option.value;
 
@@ -848,7 +933,7 @@ export default function MemorialCreate() {
                             className={`min-h-24 bg-white p-4 text-left transition-colors ${
                               selected
                                 ? "text-[#121212] ring-1 ring-inset ring-[#18181b]"
-                                : "text-[#616161] hover:bg-[#faf9f6]"
+                                : "text-[#616161] hover:bg-[#fafafa]"
                             }`}
                           >
                             <span className="block text-base font-medium">
@@ -889,7 +974,7 @@ export default function MemorialCreate() {
                 </div>
               </section>
 
-              <section className="border border-[#dbdad7] p-5 md:p-6">
+              <section className="border border-[#b5b0a7] p-5 md:p-6">
                 <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div>
                     <p className="text-sm font-medium text-[#121212]">
@@ -907,29 +992,51 @@ export default function MemorialCreate() {
                     <button
                       type="button"
                       onClick={saveDraft}
-                      className="inline-flex h-11 items-center justify-center gap-2 border border-[#dbdad7] px-5 text-sm transition-colors hover:bg-[#f6f5f2]"
+                      className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5]"
                     >
                       <Save className="h-4 w-4" strokeWidth={1.6} />
                       임시저장
                     </button>
-                    <Link href="/">
+                    {step > 0 ? (
                       <button
                         type="button"
-                        className="h-11 w-full border border-[#dbdad7] px-5 text-sm transition-colors hover:bg-[#f6f5f2] sm:w-auto"
+                        onClick={() => goToStep(step - 1)}
+                        className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5]"
                       >
-                        홈으로
+                        <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
+                        이전
                       </button>
-                    </Link>
-                    <button
-                      type="submit"
-                      disabled={createMemorialMutation.isPending}
-                      className="inline-flex h-11 items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-                    >
-                      {createMemorialMutation.isPending
-                        ? "저장 중"
-                        : "추모관 생성"}
-                      <ArrowRight className="h-4 w-4" strokeWidth={1.6} />
-                    </button>
+                    ) : (
+                      <Link href="/">
+                        <button
+                          type="button"
+                          className="h-11 w-full border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5] sm:w-auto"
+                        >
+                          홈으로
+                        </button>
+                      </Link>
+                    )}
+                    {isLastStep ? (
+                      <button
+                        type="submit"
+                        disabled={createMemorialMutation.isPending}
+                        className="inline-flex h-11 items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                      >
+                        {createMemorialMutation.isPending
+                          ? "저장 중"
+                          : "추모관 생성"}
+                        <ArrowRight className="h-4 w-4" strokeWidth={1.6} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={goNext}
+                        className="inline-flex h-11 items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                      >
+                        다음
+                        <ArrowRight className="h-4 w-4" strokeWidth={1.6} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </section>
@@ -973,14 +1080,14 @@ export default function MemorialCreate() {
                           </button>
                         </Link>
                         <Link href="/my/memorials">
-                          <button className="inline-flex h-10 items-center justify-center border border-[#dbdad7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                          <button className="inline-flex h-10 items-center justify-center border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                             내 추모관
                           </button>
                         </Link>
                         <Link
                           href={createdMemorial?.editHref || "/my/memorials"}
                         >
-                          <button className="inline-flex h-10 items-center justify-center border border-[#dbdad7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]">
+                          <button className="inline-flex h-10 items-center justify-center border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                             이어서 수정
                           </button>
                         </Link>
@@ -1001,9 +1108,10 @@ export default function MemorialCreate() {
 
 function SectionHeader({ number, title }: { number: string; title: string }) {
   return (
-    <div className="mb-8 flex items-baseline justify-between gap-4 border-b border-[#dbdad7] pb-5">
+    <div className="mb-8 flex items-baseline justify-between gap-4 border-b border-[#b5b0a7] pb-5">
       <h2
         className="text-2xl font-normal"
+        tabIndex={-1}
         style={{ fontFamily: "'Noto Serif KR', serif" }}
       >
         {title}
@@ -1038,7 +1146,7 @@ function Field({
 
 function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border-t border-[#dbdad7] pt-3">
+    <div className="border-t border-[#b5b0a7] pt-3">
       <dt className="text-xs text-[#616161]">{label}</dt>
       <dd className="mt-1 break-all text-[#121212]">{value || "-"}</dd>
     </div>

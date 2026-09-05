@@ -110,7 +110,7 @@ export default function AdminUsers() {
       <Navbar />
       <main className="pt-16 lg:pl-60">
         <AdminNavigation />
-        <section className="border-b border-[#dbdad7]">
+        <section className="border-b border-[#b5b0a7]">
           <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.85fr)] lg:items-end">
             <div>
               <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.28em] text-[#616161]">
@@ -128,7 +128,7 @@ export default function AdminUsers() {
               </p>
             </div>
 
-            <div className="grid gap-px border border-[#dbdad7] bg-[#dbdad7] sm:grid-cols-3">
+            <div className="grid gap-px border border-[#b5b0a7] bg-[#b5b0a7] sm:grid-cols-3">
               <Stat label="전체 회원" value={`${users.length}`} />
               <Stat label="관리자" value={`${adminCount}`} />
               <Stat label="일반 가입" value={`${localCount}`} />
@@ -139,7 +139,7 @@ export default function AdminUsers() {
         <section className="py-8 md:py-12">
           <div className="container">
             <div className="mb-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center">
-              <label className="flex min-w-0 items-center gap-3 border border-[#dbdad7] px-4 py-3">
+              <label className="flex min-w-0 items-center gap-3 border border-[#b5b0a7] px-4 py-3">
                 <Search className="h-4 w-4 shrink-0 text-[#616161]" />
                 <input
                   value={query}
@@ -152,7 +152,7 @@ export default function AdminUsers() {
               <button
                 type="button"
                 onClick={() => exportUsers(filteredUsers)}
-                className="inline-flex h-12 items-center justify-center gap-2 border border-[#dbdad7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f6f5f2]"
+                className="inline-flex h-12 items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-5 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]"
               >
                 <Download className="h-4 w-4" strokeWidth={1.7} />
                 CSV
@@ -165,7 +165,7 @@ export default function AdminUsers() {
               </Link>
             </div>
             {message && (
-              <p className="mb-5 border border-[#dbdad7] px-4 py-3 text-sm text-[#616161]">
+              <p className="mb-5 border border-[#b5b0a7] px-4 py-3 text-sm text-[#616161]">
                 {message}
               </p>
             )}
@@ -177,8 +177,8 @@ export default function AdminUsers() {
             ) : filteredUsers.length === 0 ? (
               <Panel text="조건에 맞는 회원이 없습니다." />
             ) : (
-              <div className="overflow-hidden border-y border-[#dbdad7]">
-                <div className="hidden grid-cols-[1fr_1.2fr_0.75fr_0.7fr_0.75fr_0.8fr_170px] border-b border-[#dbdad7] bg-[#f8f7f4] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
+              <div className="overflow-hidden border-y border-[#b5b0a7]">
+                <div className="hidden grid-cols-[1fr_1.2fr_0.75fr_0.7fr_0.75fr_0.8fr_170px] border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
                   <span>Name</span>
                   <span>Email</span>
                   <span>Phone</span>
@@ -188,11 +188,11 @@ export default function AdminUsers() {
                   <span className="text-right">Action</span>
                 </div>
 
-                <div className="divide-y divide-[#dbdad7]">
+                <div className="divide-y divide-[#b5b0a7]">
                   {filteredUsers.map(item => (
                     <article
                       key={item.id}
-                      className="grid gap-3 bg-white px-4 py-5 transition-colors hover:bg-[#faf9f6] lg:grid-cols-[1fr_1.2fr_0.75fr_0.7fr_0.75fr_0.8fr_170px] lg:items-center lg:px-5"
+                      className="grid gap-3 bg-white px-4 py-5 transition-colors hover:bg-[#fafafa] lg:grid-cols-[1fr_1.2fr_0.75fr_0.7fr_0.75fr_0.8fr_170px] lg:items-center lg:px-5"
                     >
                       <div className="flex items-center gap-2">
                         {item.role === "admin" ? (
@@ -241,7 +241,7 @@ export default function AdminUsers() {
                               return;
                             updateRole.mutate({ id: item.id, role: nextRole });
                           }}
-                          className="inline-flex h-9 items-center justify-center gap-1 border border-[#dbdad7] px-3 text-xs text-[#121212] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex h-9 items-center justify-center gap-1 border border-[#b5b0a7] px-3 text-xs text-[#121212] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <ShieldCheck className="h-3.5 w-3.5" />
                           {item.role === "admin" ? "권한 해제" : "관리자"}
@@ -271,7 +271,7 @@ export default function AdminUsers() {
                               approvalStatus: nextStatus,
                             });
                           }}
-                          className="inline-flex h-9 items-center justify-center gap-1 border border-[#dbdad7] px-3 text-xs text-[#121212] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                          className="inline-flex h-9 items-center justify-center gap-1 border border-[#b5b0a7] px-3 text-xs text-[#121212] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {item.approvalStatus === "approved" ? (
                             <XCircle className="h-3.5 w-3.5" />
@@ -293,7 +293,7 @@ export default function AdminUsers() {
 
         <section className="pb-12 md:pb-16">
           <div className="container">
-            <div className="mb-5 flex flex-col gap-2 border-t border-[#dbdad7] pt-8 md:flex-row md:items-end md:justify-between">
+            <div className="mb-5 flex flex-col gap-2 border-t border-[#b5b0a7] pt-8 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.24em] text-[#777]">
                   Audit
@@ -317,7 +317,7 @@ export default function AdminUsers() {
             ) : auditLogs.length === 0 ? (
               <Panel text="아직 운영 기록이 없습니다." />
             ) : (
-              <div className="divide-y divide-[#dbdad7] border-y border-[#dbdad7]">
+              <div className="divide-y divide-[#b5b0a7] border-y border-[#b5b0a7]">
                 {auditLogs.map(log => (
                   <article
                     key={log.id}
@@ -325,7 +325,7 @@ export default function AdminUsers() {
                   >
                     <div className="min-w-0">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex w-fit border border-[#dbdad7] px-2 py-1 text-xs text-[#616161]">
+                        <span className="inline-flex w-fit border border-[#b5b0a7] px-2 py-1 text-xs text-[#616161]">
                           {formatAuditAction(log.action)}
                         </span>
                         <span className="text-xs text-[#777]">
@@ -379,7 +379,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function RoleBadge({ role }: { role: string }) {
   return (
-    <span className="inline-flex w-fit border border-[#dbdad7] px-2 py-1 text-xs text-[#616161]">
+    <span className="inline-flex w-fit border border-[#b5b0a7] px-2 py-1 text-xs text-[#616161]">
       {role === "admin" ? "관리자" : "회원"}
     </span>
   );
@@ -387,7 +387,7 @@ function RoleBadge({ role }: { role: string }) {
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className="inline-flex w-fit border border-[#dbdad7] px-2 py-1 text-xs text-[#616161]">
+    <span className="inline-flex w-fit border border-[#b5b0a7] px-2 py-1 text-xs text-[#616161]">
       {status === "approved" ? "활성" : "비활성"}
     </span>
   );
@@ -395,7 +395,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function Panel({ text }: { text: string }) {
   return (
-    <div className="border border-[#dbdad7] py-20 text-center">
+    <div className="border border-[#b5b0a7] py-20 text-center">
       <p className="text-sm text-[#616161]">{text}</p>
     </div>
   );

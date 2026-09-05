@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { buildMemorialUpdateData } from "./routers";
+import { buildMemorialUpdateData, memorialUpdateInput } from "./routers";
+
+describe("memorialUpdateInput", () => {
+  it("allows clearing an optional death date", () => {
+    expect(
+      memorialUpdateInput.parse({ id: 1, deathDate: "" }).deathDate
+    ).toBe("");
+  });
+});
 
 describe("buildMemorialUpdateData", () => {
   it("keeps the published status when an approved memorial is saved as private", () => {

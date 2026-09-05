@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { errorClass, inputClass, labelClass, selectClass, textAreaClass } from "@/lib/formStyles";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
@@ -89,7 +90,6 @@ const requiredFields: Array<{ key: keyof FormState; label: string }> = [
   { key: "name", label: "성함" },
   { key: "role", label: "직분" },
   { key: "birthDate", label: "출생일" },
-  { key: "deathDate", label: "소천일" },
   { key: "summary", label: "한 줄 소개" },
   { key: "story", label: "삶의 기록" },
 ];
@@ -111,14 +111,6 @@ const visibilityOptions: Array<{
   },
 ];
 
-const inputClass =
-  "h-12 w-full border-0 border-b border-[#dbdad7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
-const selectClass =
-  "h-12 w-full border-0 border-b border-[#dbdad7] bg-transparent px-0 text-sm text-[#121212] outline-none transition-colors focus:border-[#18181b]";
-const textAreaClass =
-  "min-h-36 w-full resize-y border border-[#dbdad7] bg-transparent p-4 text-sm leading-7 text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]";
-const labelClass = "mb-2 block text-xs font-medium text-[#616161]";
-const errorClass = "mt-2 text-xs text-[#9f2a2a]";
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 
 const makeTimelineId = () =>
@@ -350,11 +342,11 @@ export default function MemorialEdit() {
       <Navbar />
 
       <main className="pt-16">
-        <section className="border-b border-[#dbdad7]">
+        <section className="border-b border-[#b5b0a7]">
           <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)]">
             <div>
               <Link href={isAdminPath ? "/admin" : "/my/memorials"}>
-                <button className="mb-8 inline-flex h-10 items-center gap-2 border border-[#dbdad7] bg-white px-4 text-sm text-[#616161] transition-colors hover:text-[#121212]">
+                <button className="mb-8 inline-flex h-10 items-center gap-2 border border-[#b5b0a7] bg-white px-4 text-sm text-[#616161] transition-colors hover:text-[#121212]">
                   <ArrowLeft className="h-4 w-4" strokeWidth={1.7} />
                   {isAdminPath ? "관리자 목록" : "내 추모관"}
                 </button>
@@ -374,7 +366,7 @@ export default function MemorialEdit() {
               </p>
             </div>
 
-            <aside className="border border-[#dbdad7] p-5 md:p-6">
+            <aside className="border border-[#b5b0a7] p-5 md:p-6">
               <div className="flex items-start justify-between gap-6">
                 <div>
                   <p className="text-sm font-medium text-[#121212]">
@@ -389,7 +381,7 @@ export default function MemorialEdit() {
                 </span>
               </div>
 
-              <div className="mt-6 h-px bg-[#dbdad7]">
+              <div className="mt-6 h-px bg-[#b5b0a7]">
                 <div
                   className="h-px bg-[#18181b] transition-all"
                   style={{ width: `${completion.percent}%` }}
@@ -403,7 +395,7 @@ export default function MemorialEdit() {
                     {missingLabels.map(label => (
                       <span
                         key={label}
-                        className="border border-[#dbdad7] px-2 py-1 text-xs text-[#616161]"
+                        className="border border-[#b5b0a7] px-2 py-1 text-xs text-[#616161]"
                       >
                         {label}
                       </span>
@@ -413,7 +405,7 @@ export default function MemorialEdit() {
               )}
 
               {memorial && (
-                <div className="mt-6 border-t border-[#dbdad7] pt-5">
+                <div className="mt-6 border-t border-[#b5b0a7] pt-5">
                   <p className="text-xs text-[#616161]">추모관 주소</p>
                   <p className="mt-2 break-all text-sm text-[#121212]">
                     /memorial/{memorial.slug}
@@ -432,7 +424,7 @@ export default function MemorialEdit() {
           <form onSubmit={handleSubmit} className="py-8 md:py-12">
             <div className="container grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
               <aside className="hidden lg:block">
-                <div className="sticky top-24 border border-[#dbdad7] p-5">
+                <div className="sticky top-24 border border-[#b5b0a7] p-5">
                   <p className="text-sm font-medium text-[#121212]">
                     수정 항목
                   </p>
@@ -468,7 +460,7 @@ export default function MemorialEdit() {
               <div className="space-y-8">
                 <section
                   id="basic"
-                  className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                  className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
                 >
                   <SectionHeader number="01" title="기본 정보" />
 
@@ -511,7 +503,7 @@ export default function MemorialEdit() {
                       />
                     </Field>
 
-                    <Field label="소천일" error={errors.deathDate} required>
+                    <Field label="소천일" error={errors.deathDate}>
                       <input
                         className={inputClass}
                         value={form.deathDate}
@@ -568,7 +560,7 @@ export default function MemorialEdit() {
 
                 <section
                   id="story"
-                  className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                  className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
                 >
                   <SectionHeader number="02" title="신앙 이야기" />
 
@@ -576,7 +568,7 @@ export default function MemorialEdit() {
                     <div className="grid gap-6 md:grid-cols-2">
                       <Field label="성경 구절">
                         <textarea
-                          className="min-h-28 w-full resize-y border border-[#dbdad7] bg-transparent p-4 text-sm leading-7 outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
+                          className="min-h-28 w-full resize-y border border-[#b5b0a7] bg-transparent p-4 text-sm leading-7 outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
                           value={form.verse}
                           onChange={event =>
                             updateField("verse", event.target.value)
@@ -643,7 +635,7 @@ export default function MemorialEdit() {
 
                 <section
                   id="timeline"
-                  className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                  className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
                 >
                   <SectionHeader number="03" title="생애 기록" />
 
@@ -651,7 +643,7 @@ export default function MemorialEdit() {
                     {timeline.map((item, index) => (
                       <div
                         key={item.id}
-                        className="border border-[#dbdad7] p-4 md:p-5"
+                        className="border border-[#b5b0a7] p-4 md:p-5"
                       >
                         <div className="mb-4 flex items-center justify-between gap-4">
                           <p className="text-sm font-medium text-[#121212]">
@@ -660,7 +652,7 @@ export default function MemorialEdit() {
                           <button
                             type="button"
                             onClick={() => removeTimeline(item.id)}
-                            className="inline-flex h-9 items-center gap-2 border border-[#dbdad7] px-3 text-xs text-[#616161] transition-colors hover:text-[#121212]"
+                            className="inline-flex h-9 items-center gap-2 border border-[#b5b0a7] px-3 text-xs text-[#616161] transition-colors hover:text-[#121212]"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                             삭제
@@ -698,7 +690,7 @@ export default function MemorialEdit() {
                         <div className="mt-5">
                           <Field label="내용">
                             <textarea
-                              className="min-h-24 w-full resize-y border border-[#dbdad7] bg-transparent p-4 text-sm leading-7 outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
+                              className="min-h-24 w-full resize-y border border-[#b5b0a7] bg-transparent p-4 text-sm leading-7 outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
                               value={item.description}
                               onChange={event =>
                                 updateTimeline(
@@ -716,7 +708,7 @@ export default function MemorialEdit() {
                     <button
                       type="button"
                       onClick={addTimeline}
-                      className="inline-flex h-11 items-center justify-center gap-2 border border-[#dbdad7] px-5 text-sm transition-colors hover:bg-[#f6f5f2]"
+                      className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5]"
                     >
                       <Plus className="h-4 w-4" strokeWidth={1.7} />
                       기록 추가
@@ -726,13 +718,13 @@ export default function MemorialEdit() {
 
                 <section
                   id="settings"
-                  className="scroll-mt-24 border border-[#dbdad7] p-5 md:p-8"
+                  className="scroll-mt-24 border border-[#b5b0a7] p-5 md:p-8"
                 >
                   <SectionHeader number="04" title="공개 설정" />
 
                   <div className="grid gap-6 md:grid-cols-2">
                     <Field label="공개 범위">
-                      <div className="grid gap-px border border-[#dbdad7] bg-[#dbdad7] sm:grid-cols-2">
+                      <div className="grid gap-px border border-[#b5b0a7] bg-[#b5b0a7] sm:grid-cols-2">
                         {visibilityOptions.map(option => {
                           const selected = form.visibility === option.value;
 
@@ -745,7 +737,7 @@ export default function MemorialEdit() {
                               className={`min-h-24 bg-white p-4 text-left transition-colors ${
                                 selected
                                   ? "text-[#121212] ring-1 ring-inset ring-[#18181b]"
-                                  : "text-[#616161] hover:bg-[#faf9f6]"
+                                  : "text-[#616161] hover:bg-[#fafafa]"
                               }`}
                             >
                               <span className="block text-base font-medium">
@@ -808,7 +800,7 @@ export default function MemorialEdit() {
                       <div className="md:col-span-2">
                         <Field label="관리 메모">
                           <textarea
-                            className="min-h-28 w-full resize-y border border-[#dbdad7] bg-transparent p-4 text-sm leading-7 outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
+                            className="min-h-28 w-full resize-y border border-[#b5b0a7] bg-transparent p-4 text-sm leading-7 outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
                             value={form.managerMemo}
                             onChange={event =>
                               updateField("managerMemo", event.target.value)
@@ -821,7 +813,7 @@ export default function MemorialEdit() {
                   </div>
                 </section>
 
-                <section className="border border-[#dbdad7] p-5 md:p-6">
+                <section className="border border-[#b5b0a7] p-5 md:p-6">
                   <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                     <div>
                       <p className="text-sm font-medium text-[#121212]">
@@ -837,7 +829,7 @@ export default function MemorialEdit() {
                       <Link href={memorial.href}>
                         <button
                           type="button"
-                          className="h-11 w-full border border-[#dbdad7] px-5 text-sm transition-colors hover:bg-[#f6f5f2] sm:w-auto"
+                          className="h-11 w-full border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5] sm:w-auto"
                         >
                           추모관 보기
                         </button>
@@ -888,7 +880,7 @@ export default function MemorialEdit() {
 
 function SectionHeader({ number, title }: { number: string; title: string }) {
   return (
-    <div className="mb-8 flex items-baseline justify-between gap-4 border-b border-[#dbdad7] pb-5">
+    <div className="mb-8 flex items-baseline justify-between gap-4 border-b border-[#b5b0a7] pb-5">
       <h2 className="text-2xl font-normal" style={serifStyle}>
         {title}
       </h2>
@@ -924,7 +916,7 @@ function StateBlock({ text }: { text: string }) {
   return (
     <section className="py-12">
       <div className="container">
-        <div className="border border-[#dbdad7] py-20 text-center">
+        <div className="border border-[#b5b0a7] py-20 text-center">
           <p className="text-sm text-[#616161]">{text}</p>
         </div>
       </div>
@@ -937,7 +929,7 @@ function StateScreen({ text }: { text: string }) {
     <div className="min-h-screen bg-white text-[#121212]">
       <Navbar />
       <main className="container pt-32">
-        <div className="border border-[#dbdad7] py-20 text-center">
+        <div className="border border-[#b5b0a7] py-20 text-center">
           <p className="text-sm text-[#616161]">{text}</p>
         </div>
       </main>

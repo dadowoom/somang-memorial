@@ -1,4 +1,9 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { ENV } from "./_core/env";
+import {
+  getEmailConfigStatus,
+  sendPasswordResetEmail,
+} from "./_core/email";
+import { COOKIE_NAME, SESSION_TTL_MS } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import type { User } from "../drizzle/schema";
@@ -30,7 +35,11 @@ import {
   listPublicMemorials,
   listRecentMemorialLetters,
   normalizeEmail,
+  deleteUserAccount,
+  createPasswordResetToken,
   isAdminLoginIdentifier,
+  PASSWORD_RESET_TTL_MINUTES,
+  resetPasswordWithToken,
   normalizeLocalLoginIdentifier,
   searchKioskMemorials,
   searchPublicMemorials,
@@ -95,6 +104,12 @@ const signupLimiter = createPasswordAttemptLimiter({
   blockMs: 15 * 60 * 1000,
 });
 const loginAttemptLimiter = createPasswordAttemptLimiter();
+// 재설정 메일은 남의 메일함으로 가는 것이라, 같은 곳에서 반복 요청하지 못하게 막는다.
+const passwordResetRequestLimiter = createPasswordAttemptLimiter({
+  failureLimit: 5,
+  failureWindowMs: 60 * 60 * 1000,
+  blockMs: 60 * 60 * 1000,
+});
 const letterSubmissionLimiter = createPasswordAttemptLimiter({
   failureLimit: 6,
   failureWindowMs: 10 * 60 * 1000,
@@ -172,7 +187,8 @@ const memorialCreateInput = z.object({
   name: z.string().trim().min(1).max(120),
   role: z.string().trim().min(1).max(80),
   birthDate: z.string().trim().min(1).max(20),
-  deathDate: z.string().trim().min(1).max(20),
+  // 소천 전에 미리 추모관을 준비하는 경우가 있어 비워둘 수 있게 한다.
+  deathDate: z.string().trim().max(20).default(""),
   church: z.string().trim().max(160).default("소망교회"),
   familyContact: z.string().trim().max(120).optional(),
   familyPhone: z.string().trim().max(80).optional(),
@@ -308,14 +324,23 @@ const authLoginInput = z.object({
   password: z.string().min(1, "비밀번호를 입력해주세요.").max(100),
 });
 
+const passwordResetRequestInput = z.object({
+  email: z.string().trim().email("이메일 형식으로 입력해주세요.").max(320),
+});
+
+const passwordResetConfirmInput = z.object({
+  token: z.string().trim().min(1).max(200),
+  password: z.string().min(8, "비밀번호는 8자 이상 입력해주세요.").max(100),
+});
+
 const textDisplaySizeSchema = z.enum(["auto", "small", "normal", "large"]);
 
-const memorialUpdateInput = z.object({
+export const memorialUpdateInput = z.object({
   id: z.number(),
   name: z.string().trim().min(1).max(120).optional(),
   role: z.string().trim().min(1).max(80).optional(),
   birthDate: z.string().trim().min(1).max(20).optional(),
-  deathDate: z.string().trim().min(1).max(20).optional(),
+  deathDate: z.string().trim().max(20).optional(),
   church: z.string().trim().min(1).max(160).optional(),
   familyContact: z.string().trim().max(120).nullable().optional(),
   familyPhone: z.string().trim().max(80).nullable().optional(),
@@ -454,12 +479,12 @@ export const appRouter = router({
         if (created.approvalStatus === "approved") {
           const sessionToken = await sdk.createSessionToken(created.openId, {
             name: created.name || normalizeEmail(input.email),
-            expiresInMs: ONE_YEAR_MS,
+            expiresInMs: SESSION_TTL_MS,
           });
           const cookieOptions = getSessionCookieOptions(ctx.req);
           ctx.res.cookie(COOKIE_NAME, sessionToken, {
             ...cookieOptions,
-            maxAge: ONE_YEAR_MS,
+            maxAge: SESSION_TTL_MS,
           });
         }
 
@@ -506,12 +531,12 @@ export const appRouter = router({
 
         const sessionToken = await sdk.createSessionToken(user.openId, {
           name: user.name || normalizeLocalLoginIdentifier(input.identifier),
-          expiresInMs: ONE_YEAR_MS,
+          expiresInMs: SESSION_TTL_MS,
         });
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie(COOKIE_NAME, sessionToken, {
           ...cookieOptions,
-          maxAge: ONE_YEAR_MS,
+          maxAge: SESSION_TTL_MS,
         });
 
         return {
@@ -521,6 +546,99 @@ export const appRouter = router({
           }),
         };
       }),
+    deleteAccount: protectedProcedure
+      .input(
+        z.object({
+          password: z.string().min(1, "비밀번호를 입력해주세요.").max(100),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        // 계정을 지우는 일은 되돌릴 수 없으므로 비밀번호를 한 번 더 확인합니다.
+        // 남이 잠깐 자리를 비운 사이 지워 버리는 일을 막습니다.
+        const attemptKey = passwordAttemptKey(ctx.req, "delete-account");
+        ensurePasswordAttemptAllowed(attemptKey, loginAttemptLimiter);
+
+        const removed = await deleteUserAccount({
+          userId: ctx.user.id,
+          password: input.password,
+        });
+
+        if (!removed) {
+          loginAttemptLimiter.recordFailure(attemptKey);
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "비밀번호가 맞지 않습니다.",
+          });
+        }
+
+        loginAttemptLimiter.recordSuccess(attemptKey);
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+
+        return { success: true } as const;
+      }),
+
+    requestPasswordReset: publicProcedure
+      .input(passwordResetRequestInput)
+      .mutation(async ({ ctx, input }) => {
+        const attemptKey = passwordAttemptKey(ctx.req, "password-reset");
+        ensurePasswordAttemptAllowed(attemptKey, passwordResetRequestLimiter);
+        passwordResetRequestLimiter.recordFailure(attemptKey);
+
+        // 메일을 보낼 수 없는 상태라면 보냈다고 하지 않는다. 이용자가 오지
+        // 않을 메일을 계속 기다리게 된다. 그 경우에는 교회로 연락하도록 알린다.
+        const mail = getEmailConfigStatus();
+        if (!mail.enabled) {
+          console.error(
+            "[PasswordReset] 메일 설정(SMTP)이 없어 재설정 메일을 보내지 못했습니다."
+          );
+          return {
+            success: false,
+            emailDelivery: false,
+            expiresInMinutes: PASSWORD_RESET_TTL_MINUTES,
+          } as const;
+        }
+
+        const created = await createPasswordResetToken(input.email);
+
+        // 가입된 이메일인지 아닌지를 응답으로 알 수 있으면, 누가 가입했는지
+        // 확인하는 데 쓰인다. 결과와 무관하게 같은 답을 돌려준다.
+        if (created) {
+          const base = ENV.publicSiteUrl || "";
+          const resetUrl = `${base}/reset-password?token=${encodeURIComponent(created.token)}`;
+          try {
+            await sendPasswordResetEmail({
+              to: created.email,
+              resetUrl,
+              expiresInMinutes: PASSWORD_RESET_TTL_MINUTES,
+            });
+          } catch (error) {
+            console.error("[PasswordReset] 메일 발송 실패", error);
+          }
+        }
+
+        return {
+          success: true,
+          emailDelivery: true,
+          expiresInMinutes: PASSWORD_RESET_TTL_MINUTES,
+        } as const;
+      }),
+
+    confirmPasswordReset: publicProcedure
+      .input(passwordResetConfirmInput)
+      .mutation(async ({ input }) => {
+        const changed = await resetPasswordWithToken(input);
+        if (!changed) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "링크가 만료되었거나 이미 사용되었습니다. 다시 요청해 주세요.",
+          });
+        }
+
+        return { success: true } as const;
+      }),
+
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -674,7 +792,10 @@ export const appRouter = router({
             story: copy.story,
             memorialDay: copy.memorialDay,
             visibility: "private",
-            status: "private",
+            // 관리자 확인을 기다리는 상태로 시작한다. 예전에는 "private" 이었는데,
+            // 그건 관리자가 내린 상태를 뜻한다. 그래서 관리자 할 일 목록에도
+            // 안 잡히고, 가족이 비밀번호를 알아도 들어오지 못했다.
+            status: "pending",
           });
 
           return {
@@ -1292,13 +1413,15 @@ export const appRouter = router({
             confirmationMessage: "확인 문자를 발송했습니다.",
           };
         } catch (error) {
+          // 실제 원인은 서버 로그에만 남긴다. "SOLAPI 발신번호가 설정되지
+          // 않았습니다" 같은 내부 사정이 유가족 화면에 그대로 보이면
+          // 무슨 말인지도 모르고 불안하기만 하다.
+          console.error("[Reminder] 확인 문자 발송 실패", error);
           return {
             ...subscribed,
             confirmationSent: false,
             confirmationMessage:
-              error instanceof Error
-                ? error.message
-                : "확인 문자 발송은 처리되지 않았습니다.",
+              "확인 문자는 보내드리지 못했지만, 추도일 알림 신청은 저장되었습니다.",
           };
         }
       }),

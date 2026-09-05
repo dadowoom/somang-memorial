@@ -13,6 +13,10 @@ const Home = lazy(() => import("./pages/Home"));
 const MemorialCreate = lazy(() => import("./pages/MemorialCreate"));
 const Letters = lazy(() => import("./pages/Letters"));
 const Login = lazy(() => import("./pages/Login"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const Terms = lazy(() => import("./pages/Terms"));
 const AdminMemorials = lazy(() => import("./pages/AdminMemorials"));
 const AdminOperations = lazy(() => import("./pages/AdminOperations"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
@@ -21,8 +25,10 @@ const MemorialPublicDetail = lazy(() => import("./pages/MemorialPublicDetail"));
 const SomangHill = lazy(() => import("./pages/SomangHill"));
 const MemorialArchivePage = lazy(() => import("./pages/MemorialArchivePage"));
 const MemorialFamilyPage = lazy(() => import("./pages/MemorialFamilyPage"));
+const MemorialObituary = lazy(() => import("./pages/MemorialObituary"));
 const MemorialEdit = lazy(() => import("./pages/MemorialEdit"));
 const MyMemorials = lazy(() => import("./pages/MyMemorials"));
+const AccountSettings = lazy(() => import("./pages/AccountSettings"));
 const ParentFinder = lazy(() => import("./pages/ParentFinder"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const KioskMemorial = lazy(() => import("./pages/KioskMemorial"));
@@ -56,6 +62,7 @@ function Router() {
         <Route path={"/admin/users"} component={AdminUsers} />
         <Route path={"/admin"} component={AdminMemorials} />
         <Route path={"/admin/memorials/:slug/edit"} component={MemorialEdit} />
+        <Route path={"/my/account"} component={AccountSettings} />
         <Route path={"/my/memorials"} component={MyMemorials} />
         <Route path={"/my/find-parent"} component={ParentFinder} />
         <Route path={"/my/memorials/:slug/edit"} component={MemorialEdit} />
@@ -65,7 +72,12 @@ function Router() {
         <Route path={"/somang-hill"} component={SomangHill} />
         <Route path={"/memorial/:slug/archive"} component={MemorialArchivePage} />
         <Route path={"/memorial/:slug/family"} component={MemorialFamilyPage} />
+        <Route path={"/memorial/:slug/obituary"} component={MemorialObituary} />
         <Route path={"/memorial/:slug"} component={MemorialPublicDetail} />
+        <Route path={"/privacy"} component={PrivacyPolicy} />
+        <Route path={"/terms"} component={Terms} />
+        <Route path={"/forgot-password"} component={ForgotPassword} />
+        <Route path={"/reset-password"} component={ResetPassword} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />
@@ -76,7 +88,7 @@ function Router() {
 
 function RouteLoading() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f8f7f4] text-sm text-[#616161]">
+    <main className="flex min-h-screen items-center justify-center bg-[#f7f7f7] text-sm text-[#616161]">
       화면을 불러오는 중입니다.
     </main>
   );
