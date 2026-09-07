@@ -1,7 +1,9 @@
 import InlineEditText from "@/components/InlineEditText";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { compressImageFile } from "@/lib/imageCompression";
 import { toImgUrl } from "@/lib/imageUrl";
 import { trpc } from "@/lib/trpc";
+import { TRPCClientError } from "@trpc/client";
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type GalleryPhoto = {
@@ -40,16 +42,48 @@ export default function MemorialGallerySection({
   accessToken,
 }: MemorialGallerySectionProps) {
   const utils = trpc.useUtils();
+  const sectionRef = useRef<HTMLElement>(null);
+  const jumpedToMemorial = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [uploadFailures, setUploadFailures] = useState<string[]>([]);
+  const uploadInProgress = useRef(false);
+  const { user } = useAuth();
+  const permissions = trpc.gallery.permissions.useQuery(
+    { memorialId },
+    { enabled: Boolean(user) && memorialId > 0, retry: false }
+  );
 
   const listInput = { memorialId, accessToken: accessToken || undefined };
   const photosQuery = trpc.gallery.listByMemorial.useQuery(listInput);
   const photos = (photosQuery.data ?? []) as GalleryPhoto[];
-  const canEdit = isAdmin && memorialId > 0;
+  const canEdit =
+    Boolean(user) && memorialId > 0 && permissions.data?.canManage === true;
+
+  useEffect(() => {
+    if (
+      window.location.hash !== "#gallery" ||
+      photosQuery.isLoading ||
+      (user && permissions.isLoading) ||
+      jumpedToMemorial.current === memorialId
+    )
+      return;
+    const section = sectionRef.current;
+    if (!section) return;
+    // This section arrives after the initial page load, so native fragment scrolling is too early.
+    jumpedToMemorial.current = memorialId;
+    section.scrollIntoView({ block: "start" });
+    section.focus({ preventScroll: true });
+  }, [
+    memorialId,
+    photosQuery.isLoading,
+    permissions.isLoading,
+    canEdit,
+    photos.length,
+  ]);
 
   const uploadPhoto = trpc.gallery.upload.useMutation();
   const updatePhoto = trpc.gallery.update.useMutation({
@@ -72,7 +106,7 @@ export default function MemorialGallerySection({
   });
 
   const processFiles = async (files: File[]) => {
-    if (!canEdit || files.length === 0) return;
+    if (!canEdit || files.length === 0 || uploadInProgress.current) return;
     const imageFiles = files.filter(file => file.type.startsWith("image/"));
     if (imageFiles.length === 0) {
       toast.error("이미지 파일만 업로드할 수 있습니다.");
@@ -80,9 +114,11 @@ export default function MemorialGallerySection({
     }
 
     setUploading(true);
+    uploadInProgress.current = true;
     setProgress(0);
+    setUploadFailures([]);
     let successCount = 0;
-    let failureCount = 0;
+    const failures: string[] = [];
 
     try {
       for (let index = 0; index < imageFiles.length; index += 1) {
@@ -95,8 +131,12 @@ export default function MemorialGallerySection({
             sortOrder: photos.length + index,
           });
           successCount += 1;
-        } catch {
-          failureCount += 1;
+        } catch (error) {
+          const reason =
+            error instanceof TRPCClientError && error.data?.code === "FORBIDDEN"
+              ? "변경 가능한 상태인지 확인해 주세요. 게시된 뒤에는 관리자에게 요청해야 합니다."
+              : "파일 형식·용량과 인터넷 연결을 확인해 주세요. 사진은 최대 30장까지 준비할 수 있습니다.";
+          failures.push(`${imageFiles[index].name}: ${reason}`);
         }
         setProgress(Math.round(((index + 1) / imageFiles.length) * 100));
       }
@@ -105,10 +145,14 @@ export default function MemorialGallerySection({
       if (successCount > 0) {
         toast.success(`${successCount}장의 사진이 업로드되었습니다.`);
       }
-      if (failureCount > 0) {
-        toast.error(`${failureCount}장의 사진 업로드에 실패했습니다.`);
+      if (failures.length > 0) {
+        setUploadFailures(failures);
+        toast.error(
+          `${failures.length}장의 사진을 확인해 주세요. 아래에 안내를 표시했습니다.`
+        );
       }
     } finally {
+      uploadInProgress.current = false;
       setUploading(false);
       setProgress(0);
     }
@@ -135,8 +179,11 @@ export default function MemorialGallerySection({
 
   return (
     <section
+      ref={sectionRef}
       id="gallery"
-      className="relative overflow-hidden py-20 md:py-32"
+      tabIndex={-1}
+      aria-label="추모 사진"
+      className="relative scroll-mt-20 overflow-hidden py-20 outline-none md:py-32"
       style={{
         background: "linear-gradient(180deg, #ffffff, #ffffff, #ffffff)",
       }}
@@ -170,6 +217,7 @@ export default function MemorialGallerySection({
           <div className="mb-8 text-center">
             <button
               type="button"
+              disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
               className="inline-flex h-11 items-center justify-center gap-2 border border-dashed border-[#c8b383] bg-white px-5 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#f9f9f9]"
             >
@@ -179,6 +227,32 @@ export default function MemorialGallerySection({
             <p className="mt-2 text-xs text-[#6f6a61]">
               여러 장을 한 번에 선택하거나 이 영역으로 끌어오세요.
             </p>
+            <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-[#6f6a61]">
+              {isAdmin
+                ? "사진을 확인한 뒤 별 모양 버튼으로 대표 사진을 지정할 수 있습니다."
+                : "관리자 확인 전에는 사진을 직접 준비할 수 있습니다. 첫 사진은 대표 사진이 되며, 별 모양 버튼으로 바꿀 수 있습니다. 최대 30장입니다."}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[#6f6a61]">
+              용량이 큰 사진은 자동으로 줄여 저장합니다. 열리지 않는 사진은
+              JPG·PNG 형식으로 바꿔 다시 선택해 주세요. 함께 찍힌 분의 공개
+              동의도 확인해 주세요.
+            </p>
+            {uploadFailures.length > 0 && (
+              <div
+                role="alert"
+                className="mx-auto mt-4 max-w-xl border border-amber-300 bg-amber-50 p-4 text-left text-sm leading-6"
+              >
+                <p>
+                  저장을 확인하지 못한 사진입니다. 아래 사진 목록을 확인하고,
+                  빠진 사진만 다시 선택해 주세요.
+                </p>
+                <ul className="mt-2 list-inside list-disc break-words">
+                  {uploadFailures.map((failure, index) => (
+                    <li key={index}>{failure}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <input
               ref={fileInputRef}
               type="file"
@@ -221,7 +295,9 @@ export default function MemorialGallerySection({
         {photosQuery.isLoading ? (
           <EmptyState text="사진을 불러오고 있습니다." />
         ) : photos.length > 0 ? (
-          <div className="grid auto-rows-[170px] grid-cols-2 gap-3 md:auto-rows-[220px] md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+          <div
+            className={`grid gap-3 md:auto-rows-[220px] md:grid-cols-3 md:gap-4 lg:grid-cols-4 ${canEdit ? "auto-rows-[240px] grid-cols-1 sm:grid-cols-2" : "auto-rows-[170px] grid-cols-2"}`}
+          >
             {photos.map((photo, index) => (
               <article
                 key={photo.id}
@@ -494,7 +570,7 @@ function IconButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={`flex h-8 w-8 items-center justify-center border shadow-sm transition-colors disabled:opacity-35 ${
+      className={`flex h-11 w-11 items-center justify-center border shadow-sm transition-colors disabled:opacity-35 ${
         danger
           ? "border-red-200 bg-red-500 text-white hover:bg-red-600"
           : "border-[#d5c9b4] bg-white/90 text-[#4f4638] hover:bg-white"

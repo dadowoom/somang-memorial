@@ -5,6 +5,7 @@ import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Kiosk from "./pages/Kiosk";
+import MemorialWritingSafety from "./components/memorial/MemorialWritingSafety";
 import { KioskKeyboardProvider } from "./components/kiosk/KioskKeyboard";
 
 // Kiosk routes stay in the first download. Less frequently used web and admin
@@ -130,6 +131,7 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
+          <MemorialWritingSafety />
           <ScrollToRouteTop />
           <Router />
         </TooltipProvider>

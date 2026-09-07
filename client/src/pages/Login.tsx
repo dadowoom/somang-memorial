@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import { inputClass, labelClass } from "@/lib/formStyles";
 import { trpc } from "@/lib/trpc";
+import { getLoginMode } from "@/lib/loginMode";
 import {
   ArrowRight,
   Check,
@@ -35,15 +36,7 @@ function getRedirectPath() {
 
 function getInitialMode(): Mode {
   if (typeof window === "undefined") return "login";
-  const params = new URLSearchParams(window.location.search);
-  const mode = params.get("mode");
-  const redirect = getRedirectPath();
-
-  if (mode === "signup" || redirect.startsWith("/memorial/create")) {
-    return "signup";
-  }
-
-  return "login";
+  return getLoginMode(window.location.search);
 }
 
 export default function Login() {
@@ -205,17 +198,19 @@ export default function Login() {
                   <button
                     key={value}
                     type="button"
+                    aria-pressed={mode === value}
                     onClick={() => {
                       setMode(value);
                       setMessage("");
                     }}
-                    className={`h-12 bg-white text-sm font-medium transition-colors ${
+                    className={`min-h-16 bg-white px-2 py-3 text-base font-medium transition-colors ${
                       mode === value
                         ? "text-[#121212] ring-1 ring-inset ring-[#18181b]"
                         : "text-[#777] hover:bg-[#fafafa]"
                     }`}
                   >
-                    {value === "login" ? "로그인" : "회원가입"}
+                    <span className="block">{value === "login" ? "이미 가입했습니다" : "처음 이용합니다"}</span>
+                    <span className="mt-1 block text-sm font-normal">{value === "login" ? "로그인" : "회원가입"}</span>
                   </button>
                 ))}
               </div>

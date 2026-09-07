@@ -4,7 +4,8 @@ import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import { ReviewGroup, ReviewValue, StepGuide, WritingExample } from "@/components/memorial/MemorialCreateGuidance";
-import { serializeMemorialDraft, withoutDraftCredentials } from "@/lib/memorialCreateDraft";
+import { draftKeyForUser, legacyDraftKey, readMemorialDraft, serializeOwnedDraft, writingFingerprint, type DraftWriting } from "@/lib/memorialCreateDraft";
+import { forgetWriting, getWritingSession, rememberWriting } from "@/lib/memorialWritingSession";
 import {
   ArrowLeft,
   ArrowRight,
@@ -60,8 +61,6 @@ type CreatedMemorial = {
   href: string;
   editHref: string;
 };
-
-const draftKey = "somang.memorialCreateDraft";
 
 const initialForm: MemorialForm = {
   name: "",
@@ -165,45 +164,77 @@ export default function MemorialCreate() {
   const createMemorialMutation = trpc.memorial.create.useMutation();
   const shouldFocusError = useRef(false);
   const submitting = useRef(false);
+  const [personalDevice, setPersonalDevice] = useState(false);
+  const [hydratedOwner, setHydratedOwner] = useState<number | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [savedFingerprint, setSavedFingerprint] = useState(() => writingFingerprint(initialForm, []));
+  const [availableDraft, setAvailableDraft] = useState<{ key: string; legacy: boolean; writing: DraftWriting } | null>(null);
+  const usedDraftKeys = useRef(new Set<string>());
+  const fingerprint = useMemo(() => writingFingerprint(form, timeline), [form, timeline]);
+  const dirty = hydratedOwner === user?.id && fingerprint !== savedFingerprint;
 
   useEffect(() => {
+    if (!user?.id) return;
+    const memory = getWritingSession();
+    setAvailableDraft(null);
+    setPersonalDevice(false);
+    setErrors({});
+    setSubmitted(false);
+    setCreatedMemorial(null);
+    if (memory?.userId === user.id) {
+      setForm({ ...initialForm, ...memory.form, accessPassword: "" } as MemorialForm);
+      setTimeline(memory.timeline);
+      setStep(memory.step);
+      setSavedFingerprint(memory.savedFingerprint);
+      setLastSavedAt(memory.savedAt);
+      usedDraftKeys.current = new Set(memory.persistedKeys);
+      setNotice("작성 중인 글을 이어서 표시합니다. 입장 비밀번호는 다시 입력해 주세요.");
+    } else {
+      setForm(initialForm);
+      setTimeline([makeTimelineItem()]);
+      setStep(0);
+      setSavedFingerprint(writingFingerprint(initialForm, []));
+      setLastSavedAt(null);
+      usedDraftKeys.current = new Set();
+      setNotice("");
+    }
     try {
-      const saved = localStorage.getItem(draftKey);
-      if (!saved) return;
-
-      const parsed = JSON.parse(saved) as {
-        form?: Partial<MemorialForm>;
-        timeline?: TimelineItem[];
-      };
-
-      if (parsed.form) {
-        const savedForm = withoutDraftCredentials(parsed.form);
-        setForm({ ...initialForm, ...savedForm, accessPassword: "" });
-        setNotice("이 브라우저에 임시저장한 글을 불러왔습니다. 비공개로 등록하려면 입장 비밀번호를 다시 입력해 주세요.");
-      }
-
-      if (Array.isArray(parsed.timeline) && parsed.timeline.length > 0) {
-        setTimeline(
-          parsed.timeline.map(item => ({
-            id: item.id || makeId(),
-            year: item.year || "",
-            title: item.title || "",
-            description: item.description || "",
-          }))
-        );
-      }
-      // 저장 공간이 가득 차도 이미 불러온 글과 생애 기록은 유지한다.
-      if (parsed.form) {
-        try {
-          localStorage.setItem(draftKey, serializeMemorialDraft(parsed.form, parsed.timeline ?? []));
-        } catch {
-          setNotice("임시저장한 글은 불러왔지만 저장 공간을 갱신하지 못했습니다. 공용 기기라면 작성 후 브라우저의 사이트 데이터를 정리해 주세요.");
-        }
+      const ownKey = draftKeyForUser(user.id);
+      const ownRaw = localStorage.getItem(ownKey);
+      const key = ownRaw ? ownKey : legacyDraftKey;
+      const raw = ownRaw || localStorage.getItem(legacyDraftKey);
+      if (raw) {
+        const writing = readMemorialDraft(raw, user.id, key === legacyDraftKey);
+        if (writing) setAvailableDraft({ key, writing, legacy: key === legacyDraftKey });
+        else setNotice("저장된 글의 형식을 확인하지 못했습니다. 기존 저장 내용은 지우지 않았습니다.");
       }
     } catch {
-      setNotice("임시저장한 글을 불러오지 못했습니다. 이 화면에서 새로 작성할 수 있습니다.");
+      setNotice("이 브라우저에서는 임시저장을 이용하기 어렵습니다. 작성은 가능하지만 중요한 글은 따로 보관해 주세요.");
     }
-  }, []);
+    setHydratedOwner(user.id);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user || hydratedOwner !== user.id || submitted) return;
+    rememberWriting({ userId: user.id, form, timeline, step, savedAt: lastSavedAt, savedFingerprint, dirty, persistedKeys: Array.from(usedDraftKeys.current) });
+  }, [user?.id, hydratedOwner, form, timeline, step, lastSavedAt, savedFingerprint, dirty, submitted]);
+
+  const restoreDraft = () => {
+    if (!personalDevice || !availableDraft || submitted || createMemorialMutation.isPending) return;
+    if ((dirty || availableDraft.legacy) && !window.confirm(availableDraft.legacy
+      ? "이전 방식의 임시저장은 작성자를 확인할 수 없습니다. 본인이 작성한 글이 맞고, 현재 입력한 내용 대신 불러오시겠습니까?"
+      : "현재 입력한 내용 대신 임시저장한 글을 불러오시겠습니까?")) return;
+    const restored = { ...initialForm, ...availableDraft.writing.form, accessPassword: "" } as MemorialForm;
+    setForm(restored);
+    setTimeline(availableDraft.writing.timeline);
+    setStep(availableDraft.writing.step);
+    setLastSavedAt(availableDraft.writing.savedAt);
+    setSavedFingerprint(writingFingerprint(restored, availableDraft.writing.timeline));
+    usedDraftKeys.current.add(availableDraft.key);
+    setAvailableDraft(null);
+    setErrors({});
+    setNotice("임시저장한 글을 불러왔습니다. 비공개로 등록할 때는 입장 비밀번호를 다시 입력해 주세요.");
+  };
 
   const activeRequiredFields = useMemo(() => form.visibility === "private"
     ? [...requiredFields, { key: "accessPassword" as const, label: "입장 비밀번호" }]
@@ -320,9 +351,22 @@ export default function MemorialCreate() {
   };
 
   const saveDraft = () => {
+    if (submitted || createMemorialMutation.isPending) return;
+    if (!personalDevice || !user) {
+      setNotice("개인 기기 확인에 체크한 뒤 임시저장을 이용해 주세요. 공용 기기에서는 저장하지 마세요.");
+      document.getElementById("personal-writing-device")?.focus();
+      return;
+    }
     try {
-      localStorage.setItem(draftKey, serializeMemorialDraft(form, timeline));
-      setNotice("이 기기의 현재 브라우저에 임시저장했습니다. 입장 비밀번호는 저장하지 않으므로 다시 입력해 주세요.");
+      const key = draftKeyForUser(user.id);
+      if (localStorage.getItem(key) && !usedDraftKeys.current.has(key) && !window.confirm("이전에 임시저장한 글을 지금 작성한 내용으로 바꾸시겠습니까?")) return;
+      const savedAt = Date.now();
+      localStorage.setItem(key, serializeOwnedDraft(user.id, form, timeline, step, savedAt));
+      usedDraftKeys.current.add(key);
+      setLastSavedAt(savedAt);
+      setSavedFingerprint(fingerprint);
+      setAvailableDraft(null);
+      setNotice("이 브라우저에 글을 임시저장했습니다. 같은 계정으로 로그인해 이어쓸 수 있습니다. 입장 비밀번호는 저장하지 않습니다.");
     } catch {
       setNotice("이 브라우저에 임시저장하지 못했습니다. 작성 중인 내용은 화면에 그대로 있습니다. 중요한 글은 따로 보관해 주세요.");
     }
@@ -389,7 +433,8 @@ export default function MemorialCreate() {
         })),
       });
 
-      try { localStorage.removeItem(draftKey); } catch { /* Registration already succeeded. */ }
+      try { usedDraftKeys.current.forEach(key => localStorage.removeItem(key)); } catch { /* Registration already succeeded. */ }
+      forgetWriting();
       setCreatedMemorial(created);
       setNotice(created.status === "pending"
         ? "등록 요청이 완료되었습니다. 관리자 확인 전에는 검색과 키오스크에 표시되지 않습니다."
@@ -405,7 +450,7 @@ export default function MemorialCreate() {
     }
   };
 
-  if (loading) {
+  if (loading || (user && hydratedOwner !== user.id)) {
     return (
       <div className="min-h-screen bg-white text-[#121212]">
         <Navbar />
@@ -467,7 +512,7 @@ export default function MemorialCreate() {
                   <p>기본 정보 → 신앙 이야기 → 생애 기록 → 사진 안내 → 공개 설정 순서로 진행합니다.</p>
                   <p><strong>필수</strong> 표시만 먼저 채워도 됩니다. 긴 글을 완성하려고 애쓰지 않으셔도 괜찮습니다.</p>
                   <p>마지막 단계에서 내용을 다시 확인합니다. 이전 단계로 돌아가도 입력한 글은 유지됩니다.</p>
-                  <p>임시저장은 이 기기의 현재 브라우저에서만 이어집니다. 공용 기기에서는 사용을 피해주세요. 입장 비밀번호는 임시저장하지 않습니다.</p>
+                  <p>개인 기기에서만 임시저장을 이용해 주세요. 같은 브라우저·같은 계정에서 이어쓸 수 있고, 입장 비밀번호는 저장하지 않습니다.</p>
                 </WritingExample>
               </div>
             </div>
@@ -494,7 +539,7 @@ export default function MemorialCreate() {
                 />
               </div>
 
-              <p className="mt-5 text-sm leading-6 text-[#616161]">현재 {step + 1} / 5단계 · {steps[step].label}<br />생애 기록은 선택 사항입니다. 사진은 등록 후 관리자에게 요청해 주세요.</p>
+              <p className="mt-5 text-sm leading-6 text-[#616161]">현재 {step + 1} / 5단계 · {steps[step].label}<br />생애 기록은 선택 사항입니다. 사진은 등록 요청 후 ‘사진 추가하기’에서 준비합니다.</p>
 
               {missingLabels.length > 0 && (
                 <div className="mt-5">
@@ -515,6 +560,26 @@ export default function MemorialCreate() {
           </div>
         </section>
 
+        {!submitted && <section className="container pt-8" aria-labelledby="writing-safety-title">
+          <div className="border border-[#d5cfc5] bg-[#fcfbf8] p-5 md:p-6">
+            <h2 id="writing-safety-title" className="text-lg font-medium">작성한 글, 안전하게 이어쓰기</h2>
+            <p className="mt-2 text-base leading-7 text-[#616161]">창을 닫기 전 임시저장을 눌러주세요. 다른 PC나 휴대폰으로는 이어지지 않습니다. 공용 기기에서는 저장하지 마세요.</p>
+            <label className="mt-4 flex min-h-12 cursor-pointer items-center gap-3 text-base">
+              <input id="personal-writing-device" type="checkbox" checked={personalDevice} disabled={createMemorialMutation.isPending} onChange={event => setPersonalDevice(event.target.checked)} className="h-5 w-5 shrink-0" />
+              개인 기기입니다. 이 브라우저에서 임시저장·불러오기를 이용합니다.
+            </label>
+            <p role="status" className="mt-3 text-sm leading-6 text-[#616161]">
+              {lastSavedAt ? `마지막 저장: ${new Date(lastSavedAt).toLocaleString("ko-KR")}${dirty ? " · 이후 변경한 내용은 아직 저장되지 않았습니다." : " · 글이 저장되어 있습니다."}` : "아직 이 작성 내용은 임시저장하지 않았습니다."}
+            </p>
+            <button type="button" onClick={saveDraft} disabled={createMemorialMutation.isPending} className="mt-3 min-h-12 border border-[#18181b] px-5 text-base disabled:opacity-50">지금 임시저장</button>
+            {availableDraft && (
+              <div className="mt-4 border-t border-[#d5cfc5] pt-4">
+                <p className="text-base leading-7">{availableDraft.legacy ? "이전 방식으로 저장된 글이 있습니다. 본인 글이 맞는 개인 기기에서만 불러오세요." : "이 계정으로 임시저장한 글이 있습니다."}</p>
+                <button type="button" onClick={restoreDraft} disabled={!personalDevice || createMemorialMutation.isPending} className="mt-3 min-h-12 border border-[#18181b] px-5 text-base disabled:cursor-not-allowed disabled:opacity-50">임시저장한 글 이어쓰기</button>
+              </div>
+            )}
+          </div>
+        </section>}
         <form
           onSubmit={handleSubmit}
           noValidate
@@ -890,7 +955,7 @@ export default function MemorialCreate() {
                 <SectionHeader number="04" title="사진" />
                 <StepGuide>
                   <p>사진 없이도 추모관을 등록할 수 있습니다. <strong>이 작성 화면에서는 사진을 저장하지 않습니다.</strong></p>
-                  <p>{isAdmin ? "추모관을 생성한 뒤 추모관 상세 화면에서 사진을 등록해 주세요." : "사진 등록은 추모관을 만든 뒤 교회 관리자에게 요청해 주세요."}</p>
+                  <p>{isAdmin ? "추모관을 생성한 뒤 ‘사진 추가하기’에서 등록해 주세요." : "먼저 글 등록을 요청한 뒤, 완료 화면의 ‘사진 추가하기’에서 사진을 올려주세요. 관리자 확인 전까지 본인 사진을 직접 준비할 수 있습니다."}</p>
                 </StepGuide>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="border border-[#d5cfc5] p-5">
@@ -1008,7 +1073,7 @@ export default function MemorialCreate() {
                   </ReviewGroup>
                   <div className="border-t border-[#d5cfc5] pt-5">
                     <dl className="grid gap-4 sm:grid-cols-2">
-                      <ReviewValue label="사진" value={isAdmin ? "생성 후 관리자가 등록" : "등록 후 관리자에게 요청"} />
+                      <ReviewValue label="사진" value={isAdmin ? "생성 후 사진 추가하기" : "등록 요청 후, 관리자 확인 전에 직접 추가"} />
                       <ReviewValue label="공개 범위" value={form.visibility === "private" ? "비공개 · 본문에 입장 비밀번호 필요" : "전체 공개"} />
                       {form.visibility === "private" && <ReviewValue label="입장 비밀번호" value={form.accessPassword.trim() ? "입력됨 (임시저장되지 않음)" : "입력이 필요합니다"} />}
                       <ReviewValue label="등록 후 상태" value={isAdmin ? "바로 게시" : "관리자 확인 대기"} />
@@ -1123,6 +1188,9 @@ export default function MemorialCreate() {
                         />
                       </dl>
                       <div className="mt-6 flex flex-wrap gap-3">
+                        <Link href={`/memorial/${createdMemorial?.slug}/archive#gallery`}>
+                          <button type="button" className="inline-flex min-h-12 items-center justify-center border border-[#18181b] bg-[#f8f6f2] px-4 text-base font-medium">사진 추가하기</button>
+                        </Link>
                         <Link href={createdMemorial?.href || "/"}>
                           <button type="button" className="inline-flex h-10 items-center justify-center gap-2 bg-[#18181b] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90">
                             추모관 보기
