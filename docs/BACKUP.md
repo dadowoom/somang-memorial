@@ -7,6 +7,30 @@
 
 > 이 문서에는 실제 키·비밀번호·서버 주소를 적지 않는다. 공개 저장소다.
 
+## 2026-09-08 암호화 전환 완료와 복구 기준
+
+01:28 KST에 기존 rclone crypt 연결인 `ncpcrypt-services:`의
+`somang-memorial` 하위 경로로 새 백업을 만들었습니다. 내려받을 때
+복호화된 DB 압축 파일의 13개 테이블과 사진 압축 파일(현재 업로드 0개),
+원본과 다운로드 파일의 내용 일치를 확인했습니다.
+
+기존 `/etc/cron.d/somang-memorial`의 소망용 `RCLONE_REMOTE`만 이 값으로
+바꿨으며 다른 예약 작업 내용은 그대로임을 확인했습니다. 04:37 예약 시각과
+root 실행 주체는 유지합니다. 이 기록은 수동 백업·복구 검사 결과이며,
+이후 04:37 예약 백업의 실제 성공 여부는 별도로 확인해야 합니다.
+
+- 이 crypt 연결은 `ncp:churchcraft-backup/services-encrypted` 아래에 암호화해
+  저장합니다. 소망은 `S3_PREFIX=somang-memorial` 경로만 사용합니다.
+- 이름이 비슷한 `ncpcrypt`는 다른 서비스의 정리 작업이 사용하므로 공유하지
+  않습니다. 다른 서비스의 경로나 버킷 루트로 소망 백업을 보내지 않습니다.
+- 이전 `ncp:somang-memorial-backup`의 평문 백업은 전환 과정에서 삭제하지
+  않습니다. 전환 후 보관 기간 정리는 새 암호화 목적지에만 적용됩니다.
+- 앱 계정 `somangapp`은 백업 비밀 설정을 읽지 않습니다. 백업은 기존 root
+  작업이 계속 실행하며 rclone 설정·암호화 키는 서버 밖에도 안전하게 보관합니다.
+- crypt 연결로 `rclone copyto`를 실행하면 업로드 시 암호화, 내려받을 때
+  복호화됩니다. 복구 명령에 암호를 직접 쓰거나 별도 복호화 명령을 붙이지
+  않습니다. **암호화 키를 잃으면 원격 파일이 있어도 복구할 수 없습니다.**
+
 ---
 
 ## 1. 무엇을 백업하나
@@ -46,13 +70,14 @@
 이미 등록되어 있다(`rclone listremotes` 로 확인). 새로 설치할 것 없이 그대로 쓴다.
 
 ```bash
-RCLONE_REMOTE=ncp:somang-memorial-backup ./scripts/backup.sh --check
-RCLONE_REMOTE=ncp:somang-memorial-backup ./scripts/backup.sh
+RCLONE_REMOTE=ncpcrypt-services: ./scripts/backup.sh --check
+RCLONE_REMOTE=ncpcrypt-services: ./scripts/backup.sh
 ```
 
 - `RCLONE_REMOTE` 가 설정되어 있으면 `aws` 대신 rclone 으로 올린다.
 - 실제 저장 위치는 `RCLONE_REMOTE` 아래 `S3_PREFIX`(기본 `somang-memorial`) 폴더다.
-  예: `ncp:somang-memorial-backup/somang-memorial/db/db-날짜-시각.sql.gz`
+  예: `ncpcrypt-services:/somang-memorial/db/db-날짜-시각.sql.gz`
+  crypt 연결에서 보이는 이름이며, 실제 외부 저장소에는 암호화된 파일이 저장된다.
 - 접속 키는 rclone 설정에 들어 있으므로 이 저장소나 `.env` 에 넣지 않는다.
 - 보관 기간 정리, 파일 이름 규칙은 다른 방식과 같다.
 
@@ -82,7 +107,7 @@ Cloudflare R2와 네이버 클라우드 오브젝트 스토리지는 **둘 다 S
 DATABASE_URL=mysql://사용자:비밀번호@주소:3306/DB이름
 
 # 이 서버에서 사용하는 rclone 방식
-RCLONE_REMOTE=ncp:somang-memorial-backup
+RCLONE_REMOTE=ncpcrypt-services:
 RCLONE_CONFIG=/root/.config/rclone/rclone.conf
 S3_PREFIX=somang-memorial
 
@@ -148,6 +173,8 @@ tail -50 /var/log/somang-memorial-backup.log
 ### 6-1. 백업 목록 보기
 
 환경파일을 먼저 읽고 현재 사용하는 방식의 명령 하나만 실행한다.
+암호화 전환 전 백업을 복구할 때만 보관해 둔 이전 평문 목적지를 별도로
+선택한다. 새 암호화 목적지와 이전 목적지의 파일을 혼동하지 않는다.
 
 ```bash
 set -a; . /etc/somang-memorial/backup.env; set +a
@@ -244,8 +271,9 @@ mv /var/tmp/restore/uploads /var/www/somang-memorial/uploads
 
 ## 8. 알아둘 점
 
-- 백업 파일은 **암호화하지 않고** 올린다. 버킷을 비공개로 두고 키를 잘 관리하는 것이 전제다.
-  더 강한 보호가 필요하면 암호화를 추가할 수 있으나, **암호를 잃어버리면 백업 전체를 못 쓴다.**
-  도입한다면 암호 보관 방법을 먼저 정한다.
+- `backup.sh` 자체는 압축만 한다. `ncpcrypt-services:`를 선택하면 rclone
+  crypt가 외부 전송 전에 암호화한다. 일반 rclone·S3 목적지나 서버 안
+  `--local-only` 백업은 이 암호화를 거치지 않는다. 암호화 여부와 관계없이
+  버킷은 비공개로 유지하고 로컬 백업·환경파일 접근 권한을 좁힌다.
 - 원본 소천자 엑셀에는 전화번호가 들어 있지만 **데이터베이스에는 저장되지 않는다.**
   엑셀 파일 자체를 따로 안전하게 보관한다.
