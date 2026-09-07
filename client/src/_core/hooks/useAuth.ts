@@ -1,5 +1,6 @@
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { confirmLeavingWriting, forgetWriting } from "@/lib/memorialWritingSession";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
 
@@ -25,6 +26,7 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logout = useCallback(async () => {
+    if (!confirmLeavingWriting()) return;
     try {
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {
@@ -36,16 +38,18 @@ export function useAuth(options?: UseAuthOptions) {
       }
       throw error;
     } finally {
+      forgetWriting();
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
-    localStorage.setItem(
-      "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
-    );
+    try {
+      localStorage.setItem("manus-runtime-user-info", JSON.stringify(meQuery.data));
+    } catch {
+      // Browser storage can be disabled or full; authentication still works.
+    }
     return {
       user: meQuery.data ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,

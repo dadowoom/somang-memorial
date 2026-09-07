@@ -3,12 +3,11 @@ import { formatLifespan } from "@/lib/lifespan";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
+import MemorialNextActions from "@/components/memorial/MemorialNextActions";
 import {
   ArrowRight,
   CalendarDays,
   Clock3,
-  Edit3,
-  Eye,
   HeartHandshake,
   Globe2,
   LockKeyhole,
@@ -183,21 +182,7 @@ export default function MyMemorials() {
                         />
                       </div>
 
-                      <div className="flex flex-wrap gap-2 lg:justify-end">
-                        <Link href={memorial.editHref}>
-                          <button className="inline-flex h-10 flex-1 items-center justify-center gap-2 border border-[#18181b] px-4 text-sm text-[#121212] transition-colors hover:bg-[#18181b] hover:text-white sm:flex-none">
-                            <Edit3 className="h-4 w-4" strokeWidth={1.7} />
-                            수정
-                          </button>
-                        </Link>
-                        <Link href={memorial.href}>
-                          <button className="inline-flex h-10 flex-1 items-center justify-center gap-2 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-white sm:flex-none">
-                            <Eye className="h-4 w-4" strokeWidth={1.7} />
-                            보기
-                            <ArrowRight className="h-4 w-4" strokeWidth={1.7} />
-                          </button>
-                        </Link>
-                      </div>
+                      <MemorialNextActions memorial={memorial} isAdmin={user.role === "admin"} />
                     </article>
                   ))}
                 </div>
