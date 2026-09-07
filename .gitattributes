@@ -3,3 +3,4 @@
 #   /usr/bin/env: 'bash\r': No such file or directory
 # 오류가 나며 실행 자체가 되지 않는다.
 *.sh text eol=lf
+scripts/ops-runtime-permissions.py text eol=lf
