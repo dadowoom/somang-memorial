@@ -3,19 +3,21 @@ import { errorClass, inputClass, labelClass, selectClass, textAreaClass } from "
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
+import { ReviewGroup, ReviewValue, StepGuide, WritingExample } from "@/components/memorial/MemorialCreateGuidance";
+import { serializeMemorialDraft, withoutDraftCredentials } from "@/lib/memorialCreateDraft";
 import {
   ArrowLeft,
   ArrowRight,
   Check,
-  ImagePlus,
   Plus,
   Save,
   Trash2,
-  Upload,
 } from "lucide-react";
 import {
-  ChangeEvent,
+  cloneElement,
   FormEvent,
+  isValidElement,
+  useId,
   useEffect,
   useMemo,
   useRef,
@@ -101,7 +103,7 @@ const steps: Array<{
   { id: "story", label: "신앙 이야기", required: ["summary", "story"] },
   { id: "timeline", label: "생애 기록", required: [] },
   { id: "photos", label: "사진", required: [] },
-  { id: "settings", label: "공개 설정", required: ["accessPassword"] },
+  { id: "settings", label: "공개 설정 · 최종 확인", required: ["accessPassword"] },
 ];
 
 const visibilityOptions: Array<{
@@ -117,18 +119,10 @@ const visibilityOptions: Array<{
   {
     value: "private",
     label: "비공개",
-    desc: "비밀번호를 아는 분만 들어갈 수 있습니다.",
+    desc: "추모관 본문을 보려면 입장 비밀번호가 필요합니다.",
   },
 ];
 
-
-const readFileAsDataUrl = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
 const makeId = () => {
   const nativeUuid = globalThis.crypto?.randomUUID;
@@ -158,11 +152,7 @@ export default function MemorialCreate() {
   const [form, setForm] = useState<MemorialForm>(initialForm);
   const [timeline, setTimeline] = useState<TimelineItem[]>([
     makeTimelineItem(),
-    makeTimelineItem(),
   ]);
-  const [portraitPreview, setPortraitPreview] = useState("");
-  const [portraitName, setPortraitName] = useState("");
-  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
   const [errors, setErrors] = useState<
     Partial<Record<keyof MemorialForm, string>>
   >({});
@@ -173,6 +163,8 @@ export default function MemorialCreate() {
   const [createdMemorial, setCreatedMemorial] =
     useState<CreatedMemorial | null>(null);
   const createMemorialMutation = trpc.memorial.create.useMutation();
+  const shouldFocusError = useRef(false);
+  const submitting = useRef(false);
 
   useEffect(() => {
     try {
@@ -185,11 +177,9 @@ export default function MemorialCreate() {
       };
 
       if (parsed.form) {
-        const { managerMemo: _managerMemo, ...savedForm } = parsed.form as
-          | (Partial<MemorialForm> & { managerMemo?: string })
-          | Record<string, never>;
-
-        setForm({ ...initialForm, ...savedForm });
+        const savedForm = withoutDraftCredentials(parsed.form);
+        setForm({ ...initialForm, ...savedForm, accessPassword: "" });
+        setNotice("이 브라우저에 임시저장한 글을 불러왔습니다. 비공개로 등록하려면 입장 비밀번호를 다시 입력해 주세요.");
       }
 
       if (Array.isArray(parsed.timeline) && parsed.timeline.length > 0) {
@@ -202,19 +192,30 @@ export default function MemorialCreate() {
           }))
         );
       }
+      // 저장 공간이 가득 차도 이미 불러온 글과 생애 기록은 유지한다.
+      if (parsed.form) {
+        try {
+          localStorage.setItem(draftKey, serializeMemorialDraft(parsed.form, parsed.timeline ?? []));
+        } catch {
+          setNotice("임시저장한 글은 불러왔지만 저장 공간을 갱신하지 못했습니다. 공용 기기라면 작성 후 브라우저의 사이트 데이터를 정리해 주세요.");
+        }
+      }
     } catch {
-      localStorage.removeItem(draftKey);
+      setNotice("임시저장한 글을 불러오지 못했습니다. 이 화면에서 새로 작성할 수 있습니다.");
     }
   }, []);
 
+  const activeRequiredFields = useMemo(() => form.visibility === "private"
+    ? [...requiredFields, { key: "accessPassword" as const, label: "입장 비밀번호" }]
+    : requiredFields, [form.visibility]);
   const completion = useMemo(() => {
-    const filled = requiredFields.filter(({ key }) => form[key].trim()).length;
+    const filled = activeRequiredFields.filter(({ key }) => form[key].trim()).length;
     return {
       filled,
-      total: requiredFields.length,
-      percent: Math.round((filled / requiredFields.length) * 100),
+      total: activeRequiredFields.length,
+      percent: Math.round((filled / activeRequiredFields.length) * 100),
     };
-  }, [form]);
+  }, [form, activeRequiredFields]);
 
   const slugPreview = useMemo(() => {
     if (form.slug.trim()) return form.slug.trim();
@@ -224,10 +225,10 @@ export default function MemorialCreate() {
 
   const missingLabels = useMemo(
     () =>
-      requiredFields
+      activeRequiredFields
         .filter(({ key }) => !form[key].trim())
         .map(({ label }) => label),
-    [form]
+    [form, activeRequiredFields]
   );
 
   const updateField = (key: keyof MemorialForm, value: string) => {
@@ -263,31 +264,11 @@ export default function MemorialCreate() {
   };
 
   const addTimeline = () => {
-    setTimeline(items => [...items, makeTimelineItem()]);
+    setTimeline(items => items.length < 30 ? [...items, makeTimelineItem()] : items);
   };
 
   const removeTimeline = (id: string) => {
     setTimeline(items => items.filter(item => item.id !== id));
-  };
-
-  const handlePortraitChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setPortraitName(file.name);
-    setPortraitPreview(await readFileAsDataUrl(file));
-    setSubmitted(false);
-    setCreatedMemorial(null);
-  };
-
-  const handleGalleryChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []).slice(0, 6);
-    if (files.length === 0) return;
-
-    const previews = await Promise.all(files.map(readFileAsDataUrl));
-    setGalleryPreviews(previews);
-    setSubmitted(false);
-    setCreatedMemorial(null);
   };
 
   const goToStep = (index: number) => {
@@ -314,12 +295,22 @@ export default function MemorialCreate() {
     section?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
   }, [step]);
 
+  useEffect(() => {
+    if (!shouldFocusError.current) return;
+    const input = document.getElementById(steps[step].id)
+      ?.querySelector<HTMLElement>('[aria-invalid="true"]');
+    input?.focus({ preventScroll: true });
+    input?.scrollIntoView({ behavior: "smooth", block: "center" });
+    shouldFocusError.current = false;
+  }, [errors, step]);
+
   // 이 단계에서 비운 칸만 짚어 준다. 아직 오지 않은 단계까지 미리 지적하면
   // 무엇을 고쳐야 하는지 알기 어렵다.
   const goNext = () => {
     const nextErrors = collectErrors();
     const blocking = steps[step].required.filter(key => nextErrors[key]);
     if (blocking.length > 0) {
+      shouldFocusError.current = true;
       setErrors(nextErrors);
       setNotice("이 단계에서 비어 있는 항목을 먼저 채워 주세요.");
       return;
@@ -329,10 +320,12 @@ export default function MemorialCreate() {
   };
 
   const saveDraft = () => {
-    localStorage.setItem(draftKey, JSON.stringify({ form, timeline }));
-    setNotice(
-      "임시저장되었습니다. 이 브라우저에서 다시 이어서 작성할 수 있습니다."
-    );
+    try {
+      localStorage.setItem(draftKey, serializeMemorialDraft(form, timeline));
+      setNotice("이 기기의 현재 브라우저에 임시저장했습니다. 입장 비밀번호는 저장하지 않으므로 다시 입력해 주세요.");
+    } catch {
+      setNotice("이 브라우저에 임시저장하지 못했습니다. 작성 중인 내용은 화면에 그대로 있습니다. 중요한 글은 따로 보관해 주세요.");
+    }
     setSubmitted(false);
   };
 
@@ -361,8 +354,14 @@ export default function MemorialCreate() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submitting.current || createMemorialMutation.isPending || submitted) return;
+    if (!isLastStep) {
+      goNext();
+      return;
+    }
 
     if (!validate()) {
+      shouldFocusError.current = true;
       // 비운 칸이 다른 단계에 있으면 그 단계로 데려간다. 그러지 않으면
       // "채워 주세요"라는 말만 보이고 어디를 채워야 할지 알 수 없다.
       const nextErrors = collectErrors();
@@ -378,6 +377,7 @@ export default function MemorialCreate() {
     }
 
     try {
+      submitting.current = true;
       setNotice("추모관을 생성하고 있습니다.");
       const created = await createMemorialMutation.mutateAsync({
         ...form,
@@ -389,15 +389,19 @@ export default function MemorialCreate() {
         })),
       });
 
-      localStorage.removeItem(draftKey);
+      try { localStorage.removeItem(draftKey); } catch { /* Registration already succeeded. */ }
       setCreatedMemorial(created);
-      setNotice("추모관이 생성되었습니다. 바로 확인할 수 있습니다.");
+      setNotice(created.status === "pending"
+        ? "등록 요청이 완료되었습니다. 관리자 확인 전에는 검색과 키오스크에 표시되지 않습니다."
+        : "추모관이 생성되었습니다. 등록된 내용을 확인해 주세요.");
       setSubmitted(true);
     } catch (error) {
       console.error("[Memorial Create] Failed to save", error);
       setNotice("저장 중 문제가 생겼습니다. 잠시 뒤 다시 시도해 주세요.");
       setSubmitted(false);
       setCreatedMemorial(null);
+    } finally {
+      submitting.current = false;
     }
   };
 
@@ -458,6 +462,14 @@ export default function MemorialCreate() {
                   가족과 교회가 오래 기억할 수 있는 소망을 남겨보세요.
                 </span>
               </p>
+              <div className="mt-6">
+                <WritingExample title="처음이신가요? 작성 순서 보기">
+                  <p>기본 정보 → 신앙 이야기 → 생애 기록 → 사진 안내 → 공개 설정 순서로 진행합니다.</p>
+                  <p><strong>필수</strong> 표시만 먼저 채워도 됩니다. 긴 글을 완성하려고 애쓰지 않으셔도 괜찮습니다.</p>
+                  <p>마지막 단계에서 내용을 다시 확인합니다. 이전 단계로 돌아가도 입력한 글은 유지됩니다.</p>
+                  <p>임시저장은 이 기기의 현재 브라우저에서만 이어집니다. 공용 기기에서는 사용을 피해주세요. 입장 비밀번호는 임시저장하지 않습니다.</p>
+                </WritingExample>
+              </div>
             </div>
 
             <aside className="border border-[#b5b0a7] p-5 md:p-6">
@@ -482,16 +494,7 @@ export default function MemorialCreate() {
                 />
               </div>
 
-              <div className="mt-6 grid gap-px bg-[#b5b0a7] sm:grid-cols-3">
-                {["정보 입력", "기록 정리", "등록 완료"].map((step, index) => (
-                  <div key={step} className="bg-white p-4">
-                    <p className="text-xs text-[#616161]">
-                      {String(index + 1).padStart(2, "0")}
-                    </p>
-                    <p className="mt-3 text-sm text-[#121212]">{step}</p>
-                  </div>
-                ))}
-              </div>
+              <p className="mt-5 text-sm leading-6 text-[#616161]">현재 {step + 1} / 5단계 · {steps[step].label}<br />생애 기록은 선택 사항입니다. 사진은 등록 후 관리자에게 요청해 주세요.</p>
 
               {missingLabels.length > 0 && (
                 <div className="mt-5">
@@ -512,7 +515,18 @@ export default function MemorialCreate() {
           </div>
         </section>
 
-        <form onSubmit={handleSubmit} className="py-8 md:py-12">
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+          onKeyDown={event => {
+            // 한글 조합과 여러 줄 글쓰기는 그대로 두고, 입력칸의 Enter로
+            // 최종 등록이 실행되지 않도록 한다. 버튼의 Enter 동작은 유지한다.
+            if (event.key !== "Enter" || event.nativeEvent.isComposing || !(event.target instanceof HTMLInputElement)) return;
+            event.preventDefault();
+            if (!isLastStep) goNext();
+          }}
+          className="py-8 md:py-12"
+        >
           <div className="container grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
             <aside className="hidden lg:block">
               <div className="sticky top-24 border border-[#b5b0a7] p-5">
@@ -548,6 +562,7 @@ export default function MemorialCreate() {
             </aside>
 
             <div className="space-y-8">
+              <fieldset disabled={createMemorialMutation.isPending || submitted} className="min-w-0 space-y-8">
               <div className="lg:hidden">
                 <div className="flex items-baseline justify-between">
                   <p className="text-sm font-medium text-[#121212]">
@@ -575,9 +590,13 @@ export default function MemorialCreate() {
                 }`}
               >
                 <SectionHeader number="01" title="기본 정보" />
+                <StepGuide>
+                  <p>고인의 성함과 기본 정보를 적어주세요. <strong>필수</strong> 표시가 있는 성함·직분·출생일만 먼저 입력해도 됩니다.</p>
+                  <p>정확한 날짜를 모르면 연도만 입력해도 됩니다.</p>
+                </StepGuide>
 
                 <div className="grid gap-6 md:grid-cols-2">
-                  <Field label="성함" error={errors.name} required>
+                  <Field label="성함" error={errors.name} required maxLength={120} hint="직분을 빼고 성함만 적어주세요. 예: 김소망">
                     <input
                       className={inputClass}
                       value={form.name}
@@ -589,7 +608,7 @@ export default function MemorialCreate() {
                     />
                   </Field>
 
-                  <Field label="직분" error={errors.role} required>
+                  <Field label="직분" error={errors.role} required hint="고인의 교회 직분을 선택해 주세요.">
                     <select
                       className={selectClass}
                       value={form.role}
@@ -607,7 +626,7 @@ export default function MemorialCreate() {
                     </select>
                   </Field>
 
-                  <Field label="출생일" error={errors.birthDate} required>
+                  <Field label="출생일" error={errors.birthDate} required maxLength={20} hint="예: 1933 또는 1933-01-01. 연도만 알고 계셔도 괜찮습니다.">
                     <input
                       placeholder="1933 또는 1933-01-01"
                       className={inputClass}
@@ -619,7 +638,7 @@ export default function MemorialCreate() {
                     />
                   </Field>
 
-                  <Field label="소천일" error={errors.deathDate}>
+                  <Field label="소천일" error={errors.deathDate} maxLength={20} hint="미리 추모관을 준비하는 경우에는 비워두세요. 예: 2026-01-01">
                     <input
                       placeholder="2026 또는 2026-01-01"
                       className={inputClass}
@@ -631,7 +650,7 @@ export default function MemorialCreate() {
                     />
                   </Field>
 
-                  <Field label="소속 교회">
+                  <Field label="소속 교회" maxLength={160}>
                     <input
                       className={inputClass}
                       value={form.church}
@@ -642,7 +661,7 @@ export default function MemorialCreate() {
                     />
                   </Field>
 
-                  <Field label="추모관 주소">
+                  <Field label="추모관 주소" maxLength={120} hint="비워두면 성함을 바탕으로 자동 생성됩니다. 같은 주소가 있으면 숫자가 붙습니다.">
                     <input
                       className={inputClass}
                       value={form.slug}
@@ -653,7 +672,7 @@ export default function MemorialCreate() {
                     />
                   </Field>
 
-                  <Field label="가족 대표 성함">
+                  <Field label="가족 대표 성함" maxLength={120} hint="교회 담당자가 연락할 가족 대표의 성함을 적어주세요.">
                     <input
                       className={inputClass}
                       value={form.familyContact}
@@ -664,8 +683,10 @@ export default function MemorialCreate() {
                     />
                   </Field>
 
-                  <Field label="연락처">
+                  <Field label="연락처" maxLength={80} hint="가족 대표의 연락 가능한 전화번호입니다. 예: 010-0000-0000">
                     <input
+                      type="tel"
+                      autoComplete="tel"
                       className={inputClass}
                       value={form.familyPhone}
                       onChange={event =>
@@ -684,10 +705,20 @@ export default function MemorialCreate() {
                 }`}
               >
                 <SectionHeader number="02" title="신앙 이야기" />
+                <StepGuide>
+                  <p>어떤 분이셨는지 한 문장으로 소개하고, 기억나는 이야기를 편하게 적어주세요.</p>
+                  <p>한 줄 소개와 삶의 기록은 필수입니다. 대표 말씀과 예배 정보는 비워두어도 됩니다.</p>
+                </StepGuide>
+                <WritingExample>
+                  <p className="font-medium">아래는 작성 방법을 보여주는 예시입니다. 고인에게 맞는 내용만 직접 적어주세요.</p>
+                  <p><strong>한 줄 소개</strong><br />작은 일에도 감사하며 이웃에게 따뜻한 마음을 나누셨던 분입니다.</p>
+                  <p><strong>삶의 기록</strong><br />가족의 이야기를 끝까지 들어주시고 조용히 응원해 주셨습니다. 함께 예배드리던 시간과 식탁에 둘러앉아 나누던 대화가 오래 기억에 남습니다.</p>
+                  <p>성품, 신앙생활, 교회 봉사, 가족과의 추억 중 기억나는 것부터 2~3문장으로 시작해 보세요. 예시는 자동으로 입력되지 않습니다.</p>
+                </WritingExample>
 
                 <div className="space-y-6">
                   <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_180px]">
-                    <Field label="대표 말씀">
+                    <Field label="대표 말씀" maxLength={1000} hint="고인이 좋아하셨거나 가족에게 위로가 되는 성경 말씀입니다.">
                       <input
                         className={inputClass}
                         value={form.verse}
@@ -698,7 +729,7 @@ export default function MemorialCreate() {
                       />
                     </Field>
 
-                    <Field label="말씀 출처">
+                    <Field label="말씀 출처" maxLength={120} hint="예: 디모데후서 4:7">
                       <input
                         className={inputClass}
                         value={form.verseRef}
@@ -710,7 +741,7 @@ export default function MemorialCreate() {
                     </Field>
                   </div>
 
-                  <Field label="한 줄 소개" error={errors.summary} required>
+                  <Field label="한 줄 소개" error={errors.summary} required maxLength={255} count={form.summary.length} hint="고인을 떠올리면 생각나는 모습을 한 문장으로 적어주세요.">
                     <input
                       className={inputClass}
                       value={form.summary}
@@ -722,7 +753,7 @@ export default function MemorialCreate() {
                     />
                   </Field>
 
-                  <Field label="삶의 기록" error={errors.story} required>
+                  <Field label="삶의 기록" error={errors.story} required maxLength={10000} count={form.story.length} hint="긴 글이 아니어도 괜찮습니다. 살아 있는 가족의 연락처나 민감한 사연은 적지 않도록 살펴주세요.">
                     <textarea
                       className={textAreaClass}
                       value={form.story}
@@ -735,7 +766,7 @@ export default function MemorialCreate() {
                   </Field>
 
                   <div className="grid gap-6 md:grid-cols-2">
-                    <Field label="예배 일시">
+                    <Field label="예배 일시" hint="정해진 예배가 있을 때만 날짜와 시간을 선택해 주세요.">
                       <input
                         type="datetime-local"
                         className={inputClass}
@@ -746,7 +777,7 @@ export default function MemorialCreate() {
                       />
                     </Field>
 
-                    <Field label="추도일">
+                    <Field label="추도일" maxLength={40} hint="가족이 함께 기억하는 날입니다. 예: 매년 3월 1일">
                       <input
                         placeholder="매년 3월 1일"
                         className={inputClass}
@@ -767,6 +798,13 @@ export default function MemorialCreate() {
                 }`}
               >
                 <SectionHeader number="03" title="생애 기록" />
+                <StepGuide>
+                  <p><strong>선택 항목</strong>입니다. 기억하고 싶은 일을 연도와 함께 남겨주세요. 준비된 기록이 없으면 다음 단계로 넘어가도 됩니다.</p>
+                </StepGuide>
+                <WritingExample title="생애 기록 예시 보기">
+                  <p><strong>연도</strong> 1980<br /><strong>제목</strong> 교회 등록<br /><strong>설명</strong> 가족과 함께 예배드리며 신앙생활을 시작하셨습니다.</p>
+                  <p>결혼, 교회 봉사, 가족과의 추억 등 기억나는 일을 오래된 순서대로 적어주세요. 빈 기록은 등록되지 않습니다.</p>
+                </WritingExample>
 
                 <div className="space-y-6">
                   {timeline.map((item, index) => (
@@ -791,6 +829,7 @@ export default function MemorialCreate() {
                       </div>
 
                       <div className="grid gap-6 md:grid-cols-[120px_minmax(0,1fr)]">
+                        <Field label={`기록 ${index + 1} 연도`} maxLength={20}>
                         <input
                           className={inputClass}
                           value={item.year}
@@ -799,6 +838,8 @@ export default function MemorialCreate() {
                           }
                           placeholder="연도"
                         />
+                        </Field>
+                        <Field label={`기록 ${index + 1} 제목`} maxLength={160}>
                         <input
                           className={inputClass}
                           value={item.title}
@@ -807,10 +848,12 @@ export default function MemorialCreate() {
                           }
                           placeholder="제목"
                         />
+                        </Field>
                       </div>
 
+                      <Field label={`기록 ${index + 1} 설명`} maxLength={1000}>
                       <textarea
-                        className="min-h-24 w-full resize-y border border-[#b5b0a7] bg-transparent p-4 text-sm leading-7 text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#18181b]"
+                        className={textAreaClass}
                         value={item.description}
                         onChange={event =>
                           updateTimeline(
@@ -821,6 +864,7 @@ export default function MemorialCreate() {
                         }
                         placeholder="간단한 설명"
                       />
+                      </Field>
                     </div>
                   ))}
                 </div>
@@ -828,11 +872,13 @@ export default function MemorialCreate() {
                 <button
                   type="button"
                   onClick={addTimeline}
-                  className="mt-6 inline-flex h-11 items-center gap-2 border border-[#b5b0a7] px-4 text-sm transition-colors hover:bg-[#f5f5f5]"
+                  disabled={timeline.length >= 30}
+                  className="mt-6 inline-flex h-11 items-center gap-2 border border-[#b5b0a7] px-4 text-sm transition-colors hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Plus className="h-4 w-4" strokeWidth={1.6} />
                   기록 추가
                 </button>
+                <p className="mt-3 text-sm text-[#616161]">기록은 최대 30개까지 추가할 수 있습니다. 현재 {timeline.length} / 30개</p>
               </section>
 
               <section
@@ -842,63 +888,18 @@ export default function MemorialCreate() {
                 }`}
               >
                 <SectionHeader number="04" title="사진" />
-
-                <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-                  <div>
-                    <label className={labelClass}>대표 사진</label>
-                    <label className="flex aspect-[4/5] w-full flex-col items-center justify-center border border-dashed border-[#b5b0a7] bg-[#fafafa] text-center text-sm text-[#616161] transition-colors hover:border-[#18181b] hover:text-[#121212]">
-                      {portraitPreview ? (
-                        <img
-                          src={portraitPreview}
-                          alt="대표 사진 미리보기"
-                          className="h-full w-full object-cover grayscale"
-                        />
-                      ) : (
-                        <>
-                          <Upload className="mb-3 h-6 w-6" strokeWidth={1.5} />
-                          사진 선택
-                        </>
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePortraitChange}
-                        className="sr-only"
-                      />
-                    </label>
-                    {portraitName && (
-                      <p className="mt-3 break-all text-xs text-[#616161]">
-                        {portraitName}
-                      </p>
-                    )}
+                <StepGuide>
+                  <p>사진 없이도 추모관을 등록할 수 있습니다. <strong>이 작성 화면에서는 사진을 저장하지 않습니다.</strong></p>
+                  <p>{isAdmin ? "추모관을 생성한 뒤 추모관 상세 화면에서 사진을 등록해 주세요." : "사진 등록은 추모관을 만든 뒤 교회 관리자에게 요청해 주세요."}</p>
+                </StepGuide>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="border border-[#d5cfc5] p-5">
+                    <h3 className="text-lg font-medium">대표 사진 준비하기</h3>
+                    <p className="mt-3 text-base leading-7 text-[#616161]">고인의 얼굴이 잘 보이는 세로 사진을 준비해 주세요. 화면에 맞게 가장자리가 잘릴 수 있으니 얼굴 주변에 여유가 있으면 좋습니다.</p>
                   </div>
-
-                  <div>
-                    <label className={labelClass}>추억 사진</label>
-                    <label className="flex min-h-36 w-full flex-col items-center justify-center gap-3 border border-dashed border-[#b5b0a7] text-center text-sm text-[#616161] transition-colors hover:border-[#18181b] hover:text-[#121212]">
-                      <ImagePlus className="h-6 w-6" strokeWidth={1.5} />
-                      최대 6장 선택
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleGalleryChange}
-                        className="sr-only"
-                      />
-                    </label>
-
-                    {galleryPreviews.length > 0 && (
-                      <div className="mt-4 grid grid-cols-3 gap-px bg-[#b5b0a7] sm:grid-cols-6">
-                        {galleryPreviews.map((preview, index) => (
-                          <img
-                            key={preview}
-                            src={preview}
-                            alt={`추억 사진 ${index + 1}`}
-                            className="aspect-square w-full bg-white object-cover grayscale"
-                          />
-                        ))}
-                      </div>
-                    )}
+                  <div className="border border-[#d5cfc5] p-5">
+                    <h3 className="text-lg font-medium">추억 사진 준비하기</h3>
+                    <p className="mt-3 text-base leading-7 text-[#616161]">가족, 교회, 일상에서 함께했던 사진을 준비해 주세요. 함께 찍힌 분들이 공개에 동의하는 사진을 골라주세요.</p>
                   </div>
                 </div>
               </section>
@@ -909,7 +910,11 @@ export default function MemorialCreate() {
                   step === 4 ? "" : "hidden"
                 }`}
               >
-                <SectionHeader number="05" title="공개 설정" />
+                <SectionHeader number="05" title="공개 설정 · 최종 확인" />
+                <StepGuide>
+                  <p>누가 추모관을 볼 수 있을지 선택하고, 아래에 모아둔 입력 내용을 확인해 주세요.</p>
+                  <p>{isAdmin ? "관리자가 생성한 추모관은 선택한 공개 범위로 바로 게시됩니다." : "등록 요청 후 관리자가 확인합니다. 게시 후 내용 수정은 관리자에게 요청해 주세요."}</p>
+                </StepGuide>
 
                 {!isAdmin && (
                   <p className="mb-6 border-l-2 border-[#18181b] bg-[#f7f7f7] px-4 py-3 text-sm leading-6 text-[#414141]">
@@ -919,8 +924,8 @@ export default function MemorialCreate() {
                 )}
 
                 <div className="grid gap-6 md:grid-cols-2">
-                  <Field label="공개 범위">
-                    <div className="grid gap-px border border-[#b5b0a7] bg-[#b5b0a7] sm:grid-cols-2">
+                  <Field label="공개 범위" required>
+                    <div role="group" aria-label="공개 범위" className="grid gap-px border border-[#b5b0a7] bg-[#b5b0a7] sm:grid-cols-2">
                       {visibilityOptions.map(option => {
                         const selected = form.visibility === option.value;
 
@@ -948,8 +953,8 @@ export default function MemorialCreate() {
                     </div>
                     <p className="mt-3 text-xs leading-6 text-[#616161]">
                       {isAdmin
-                        ? "기본 정보는 검색 결과에 표시됩니다. 비공개로 설정하면 비밀번호를 아는 분만 추모관에 들어갈 수 있습니다."
-                        : "선택한 공개 범위는 관리자 확인 후 적용됩니다. 비공개로 선택하면 입장 비밀번호가 필요합니다."}
+                        ? "전체 공개는 검색과 키오스크에도 표시됩니다. 비공개는 검색과 키오스크에서 제외됩니다."
+                        : "관리자 확인 전에는 검색과 키오스크에 표시되지 않습니다. 비공개를 선택한 경우 확인 후에도 검색과 키오스크에서 제외됩니다."}
                     </p>
                   </Field>
 
@@ -958,9 +963,12 @@ export default function MemorialCreate() {
                       label="추모관 입장 비밀번호"
                       error={errors.accessPassword}
                       required
+                      maxLength={80}
+                      hint="방문자와 공유할 입장 비밀번호입니다. 회원 로그인·가족관 비밀번호와는 다릅니다. 쉬운 숫자나 생년월일은 피해 주세요."
                     >
                       <input
                         type="password"
+                        autoComplete="new-password"
                         className={inputClass}
                         value={form.accessPassword}
                         onChange={event =>
@@ -972,6 +980,41 @@ export default function MemorialCreate() {
                     </Field>
                   )}
                 </div>
+                {form.visibility === "private" && (
+                  <p className="mt-5 border-l-2 border-[#968062] bg-[#f8f6f2] p-4 text-base leading-7 text-[#514a40]">현재 비공개 추모관도 주소를 알면 성함·직분·생몰연도·교회·한 줄 소개는 비밀번호 입력 전에 볼 수 있습니다. 본문을 열려면 입장 비밀번호가 필요합니다.</p>
+                )}
+                <div className="mt-8 border border-[#d5cfc5] bg-[#fcfbf8] p-4 md:p-6">
+                  <h3 className="text-xl font-medium">등록 전, 한 번 더 확인해 주세요</h3>
+                  <p className="my-4 text-base leading-7 text-[#616161]">고칠 내용은 각 항목의 ‘수정하기’를 누르세요. 입력한 글은 그대로 유지됩니다.</p>
+                  <ReviewGroup title="기본 정보" onEdit={() => goToStep(0)}>
+                    <ReviewValue label="성함 · 직분" value={[form.name, form.role].filter(Boolean).join(" · ") || "필수 항목을 입력해 주세요"} />
+                    <ReviewValue label="출생일" value={form.birthDate || "필수 항목을 입력해 주세요"} />
+                    <ReviewValue label="소천일" value={form.deathDate} />
+                    <ReviewValue label="소속 교회" value={form.church || "소망교회"} />
+                    <ReviewValue label="가족 대표" value={form.familyContact} />
+                    <ReviewValue label="연락처" value={form.familyPhone} />
+                    <ReviewValue label="예상 주소 (등록 시 확정)" value={`/memorial/${slugPreview}`} wide />
+                  </ReviewGroup>
+                  <ReviewGroup title="신앙 이야기" onEdit={() => goToStep(1)}>
+                    <ReviewValue label="한 줄 소개" value={form.summary || "필수 항목을 입력해 주세요"} wide />
+                    <ReviewValue label="삶의 기록" value={form.story || "필수 항목을 입력해 주세요"} wide />
+                    <ReviewValue label="대표 말씀" value={form.verse} wide />
+                    <ReviewValue label="말씀 출처" value={form.verseRef} />
+                    <ReviewValue label="예배 일시" value={form.serviceTime.replace("T", " ")} />
+                    <ReviewValue label="추도일" value={form.memorialDay} />
+                  </ReviewGroup>
+                  <ReviewGroup title="생애 기록" onEdit={() => goToStep(2)}>
+                    <ReviewValue label="기억하고 싶은 일" wide value={timeline.filter(item => item.year.trim() || item.title.trim() || item.description.trim()).map(item => [item.year, item.title, item.description].filter(Boolean).join(" · ")).join("\n\n")} />
+                  </ReviewGroup>
+                  <div className="border-t border-[#d5cfc5] pt-5">
+                    <dl className="grid gap-4 sm:grid-cols-2">
+                      <ReviewValue label="사진" value={isAdmin ? "생성 후 관리자가 등록" : "등록 후 관리자에게 요청"} />
+                      <ReviewValue label="공개 범위" value={form.visibility === "private" ? "비공개 · 본문에 입장 비밀번호 필요" : "전체 공개"} />
+                      {form.visibility === "private" && <ReviewValue label="입장 비밀번호" value={form.accessPassword.trim() ? "입력됨 (임시저장되지 않음)" : "입력이 필요합니다"} />}
+                      <ReviewValue label="등록 후 상태" value={isAdmin ? "바로 게시" : "관리자 확인 대기"} />
+                    </dl>
+                  </div>
+                </div>
               </section>
 
               <section className="border border-[#b5b0a7] p-5 md:p-6">
@@ -982,9 +1025,9 @@ export default function MemorialCreate() {
                         ? "추모관이 생성되었습니다."
                         : "입력 내용을 확인해 주세요."}
                     </p>
-                    <p className="mt-2 text-sm leading-6 text-[#616161]">
+                    <p role="status" aria-live="polite" className="mt-2 text-base leading-7 text-[#616161]">
                       {notice ||
-                        "작성한 내용은 추모관으로 저장됩니다. 이후 필요한 내용은 이어서 보완할 수 있습니다."}
+                        (isLastStep ? "위의 입력 내용과 공개 범위를 확인한 뒤 등록해 주세요." : "선택 항목은 비워두어도 됩니다. 입력한 글은 이전·다음 단계로 이동해도 유지됩니다.")}
                     </p>
                   </div>
 
@@ -992,6 +1035,7 @@ export default function MemorialCreate() {
                     <button
                       type="button"
                       onClick={saveDraft}
+                      disabled={createMemorialMutation.isPending || submitted}
                       className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5]"
                     >
                       <Save className="h-4 w-4" strokeWidth={1.6} />
@@ -1018,22 +1062,27 @@ export default function MemorialCreate() {
                     )}
                     {isLastStep ? (
                       <button
+                        key="submit-memorial"
                         type="submit"
-                        disabled={createMemorialMutation.isPending}
+                        disabled={createMemorialMutation.isPending || submitted}
                         className="inline-flex h-11 items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90"
                       >
                         {createMemorialMutation.isPending
                           ? "저장 중"
-                          : "추모관 생성"}
+                          : submitted ? "등록 완료" : isAdmin ? "추모관 생성" : "관리자 확인 요청"}
                         <ArrowRight className="h-4 w-4" strokeWidth={1.6} />
                       </button>
                     ) : (
                       <button
+                        key="next-step"
                         type="button"
-                        onClick={goNext}
+                        onClick={event => {
+                          event.preventDefault();
+                          goNext();
+                        }}
                         className="inline-flex h-11 items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90"
                       >
-                        다음
+                        {step === 2 ? "다음 · 사진 안내" : step === 3 ? "다음 · 공개 설정" : "다음"}
                         <ArrowRight className="h-4 w-4" strokeWidth={1.6} />
                       </button>
                     )}
@@ -1041,6 +1090,7 @@ export default function MemorialCreate() {
                 </div>
               </section>
 
+              </fieldset>
               {submitted && (
                 <section className="border border-[#18181b] p-5 md:p-6">
                   <div className="flex items-start gap-3">
@@ -1074,20 +1124,20 @@ export default function MemorialCreate() {
                       </dl>
                       <div className="mt-6 flex flex-wrap gap-3">
                         <Link href={createdMemorial?.href || "/"}>
-                          <button className="inline-flex h-10 items-center justify-center gap-2 bg-[#18181b] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90">
+                          <button type="button" className="inline-flex h-10 items-center justify-center gap-2 bg-[#18181b] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90">
                             추모관 보기
                             <ArrowRight className="h-4 w-4" strokeWidth={1.6} />
                           </button>
                         </Link>
                         <Link href="/my/memorials">
-                          <button className="inline-flex h-10 items-center justify-center border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]">
+                          <button type="button" className="inline-flex h-10 items-center justify-center border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                             내 추모관
                           </button>
                         </Link>
                         <Link
                           href={createdMemorial?.editHref || "/my/memorials"}
                         >
-                          <button className="inline-flex h-10 items-center justify-center border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]">
+                          <button type="button" className="inline-flex h-10 items-center justify-center border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                             이어서 수정
                           </button>
                         </Link>
@@ -1126,20 +1176,33 @@ function Field({
   children,
   error,
   required,
+  hint,
+  maxLength,
+  count,
 }: {
   label: string;
   children: React.ReactNode;
   error?: string;
   required?: boolean;
+  hint?: string;
+  maxLength?: number;
+  count?: number;
 }) {
+  const id = useId();
+  const isControl = isValidElement(children) && ["input", "textarea", "select"].includes(String(children.type));
+  const descriptionIds = [hint && `${id}-hint`, error && `${id}-error`, count !== undefined && `${id}-count`].filter(Boolean).join(" ") || undefined;
   return (
     <div>
-      <label className={labelClass}>
+      <label className={labelClass} htmlFor={isControl ? id : undefined}>
         {label}
-        {required && <span className="ml-1 text-[#121212]">*</span>}
+        <span className={`ml-2 text-sm ${required ? "text-[#775e3c]" : "font-normal text-[#616161]"}`}>{required ? "필수" : "선택"}</span>
       </label>
-      {children}
-      {error && <p className={errorClass}>{error}</p>}
+      {isControl ? cloneElement(children as React.ReactElement<React.InputHTMLAttributes<HTMLInputElement>>, {
+        id, maxLength, "aria-required": required, "aria-describedby": descriptionIds,
+      }) : children}
+      {hint && <p id={`${id}-hint`} className="mt-2 text-sm leading-6 text-[#616161]">{hint}</p>}
+      {count !== undefined && <p id={`${id}-count`} className="mt-2 text-sm text-[#616161]">{count.toLocaleString()} / {maxLength?.toLocaleString()}자</p>}
+      {error && <p id={`${id}-error`} role="alert" className={`${errorClass} text-sm`}>{error}</p>}
     </div>
   );
 }
