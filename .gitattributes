@@ -4,3 +4,4 @@
 # 오류가 나며 실행 자체가 되지 않는다.
 *.sh text eol=lf
 scripts/ops-runtime-permissions.py text eol=lf
+scripts/ops-release-archive.py text eol=lf

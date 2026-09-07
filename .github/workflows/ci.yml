@@ -40,6 +40,7 @@ jobs:
         run: |
           bash -n scripts/ops-pm2-restart.sh
           sudo -n python3 -I -B scripts/ops-runtime-permissions.test.py
+          sudo -n python3 -I -B scripts/ops-release-archive.test.py
 
       - name: Build production files
         run: pnpm run build
