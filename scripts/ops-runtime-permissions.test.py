@@ -24,6 +24,16 @@ spec.loader.exec_module(helper)
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_missing_upload_mount_blocks_before_any_permission_plan(self):
+        with (mock.patch.object(helper.sys, 'platform', 'linux'),
+              mock.patch.object(helper.subprocess, 'run', return_value=SimpleNamespace(returncode=1)),
+              mock.patch.object(helper, 'build_plan') as plan,
+              mock.patch.object(helper, 'apply_plan') as apply):
+            with self.assertRaises(helper.Blocked):
+                helper.main(['--release', '/var/www/somang-memorial/releases/20260907_160101', '--apply'])
+            plan.assert_not_called()
+            apply.assert_not_called()
+
     def identity(self, **changes):
         values = {'pw_name': 'somangapp', 'pw_uid': 1007, 'pw_gid': 1007,
                   'pw_dir': '/var/lib/somangapp', 'pw_shell': '/usr/sbin/nologin'}

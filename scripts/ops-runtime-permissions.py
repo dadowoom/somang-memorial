@@ -2,7 +2,8 @@
 """Prepare only a Somang release and its upload directories. Default: check only.
 
 Install a reviewed, root-owned copy outside the app. No environment files are
-loaded, no subprocesses are run, and no symlink target is chmod/chowned.
+loaded, and no symlink target is chmod/chowned. The installed upload mount
+guard must succeed before any permission plan is built or applied.
 """
 
 import argparse
@@ -13,6 +14,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import subprocess
 import sys
 import uuid
 
@@ -346,6 +348,13 @@ def main(argv=None):
     arguments = parser.parse_args(argv)
     if sys.platform != 'linux':
         raise Blocked('This helper requires Linux directory-descriptor filesystem operations.')
+    result = subprocess.run(
+        ['/usr/bin/python3', '-I', '/usr/local/lib/dadowoom-storage/upload-mount-guard.py', 'somang-memorial'],
+        env={'PATH': '/usr/bin:/bin'}, stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10, check=False,
+    )
+    if result.returncode != 0:
+        raise Blocked('Expected additional-disk upload mount is required before permission changes.')
     _, runtime_gid = resolve_identity()
     plan = build_plan(Path(arguments.release), runtime_gid)
     if arguments.apply:

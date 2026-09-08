@@ -105,6 +105,13 @@ BACKUP_TMP_DIR="${BACKUP_TMP_DIR:-/var/tmp}"
 BACKUP_LOCAL_DIR="${BACKUP_LOCAL_DIR:-/var/www/somang-memorial/backups/daily}"
 ALLOW_MISSING_UPLOAD_DIR="${ALLOW_MISSING_UPLOAD_DIR:-0}"
 
+# Production uploads must remain on the exact additional-disk bind mount.
+# An empty unmounted directory must never become a successful photo backup.
+if [ "$UPLOAD_DIR" = "/var/www/somang-memorial/uploads" ]; then
+  /usr/bin/python3 -I /usr/local/lib/dadowoom-storage/upload-mount-guard.py somang-memorial \
+    || fail "추가 디스크의 사진 저장공간 연결을 확인하세요. 백업을 중단합니다."
+fi
+
 case "$RETENTION_DAYS" in
   ''|*[!0-9]*) fail "RETENTION_DAYS 는 숫자여야 합니다: $RETENTION_DAYS" ;;
 esac
