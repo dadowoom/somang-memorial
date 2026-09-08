@@ -28,6 +28,7 @@ fi
 # Keep the shared PM2 manager in its existing home. The child receives only
 # these fixed overrides; PM2 retains its existing app configuration and dotenv
 # continues to read the release .env. Never run a global PM2 save here.
+/usr/bin/python3 -I /usr/local/lib/dadowoom-storage/upload-mount-guard.py somang-memorial
 cd /root
 exec /usr/bin/env -i HOME=/var/lib/somangapp PATH=/usr/bin:/bin \
   PM2_HOME=/root/.pm2 NODE_ENV=production PORT=3050 \

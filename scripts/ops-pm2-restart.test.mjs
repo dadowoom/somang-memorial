@@ -23,6 +23,10 @@ function shell(args, environment = {}) {
 // Intercept the fixed OS calls and final exec. These tests never contact PM2
 // or change a real user, service, directory or process.
 const harness = `
+function /usr/bin/python3 {
+  [ "$*" = '-I /usr/local/lib/dadowoom-storage/upload-mount-guard.py somang-memorial' ] || return 93
+  [ "\${TEST_MOUNT_MISSING:-0}" != 1 ] || return 1
+}
 function /usr/bin/id {
   case "$*" in
     '-u') printf '%s\\n' "\${TEST_MANAGER_UID:-0}" ;;
@@ -47,6 +51,11 @@ function simulate(environment = {}) {
 }
 
 describe("fixed Somang PM2 restart boundary", () => {
+  it("blocks PM2 restart when the additional-disk mount is absent", () => {
+    const result = simulate({ TEST_MOUNT_MISSING: '1' });
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe('');
+  });
   it.each([
     [], [""], ["all"], ["joych-homepage"], ["3050"],
     ["somang-memorial", "--uid", "root"], ["somang-memorial", ""],
