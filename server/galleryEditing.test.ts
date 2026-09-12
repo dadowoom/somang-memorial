@@ -79,11 +79,10 @@ beforeEach(() => {
 describe("gallery editing policy", () => {
   for (const status of ["pending", "published", "private"]) {
     for (const visibility of ["public", "private"]) {
-      it(`${status}/${visibility}: only its pending owner or an active admin may edit`, () => {
+      // 2026-09-12 결정: 게시된 뒤에도 만든 가족이 직접 사진을 고친다.
+      it(`${status}/${visibility}: its owner or an active admin may edit`, () => {
         const memorial = { ...pending, status, visibility };
-        expect(canManageMemorialGallery(memorial, owner)).toBe(
-          status === "pending"
-        );
+        expect(canManageMemorialGallery(memorial, owner)).toBe(true);
         expect(canManageMemorialGallery(memorial, other)).toBe(false);
         expect(canManageMemorialGallery(memorial, null)).toBe(false);
         expect(canManageMemorialGallery(memorial, admin)).toBe(true);
@@ -119,8 +118,9 @@ describe("gallery transaction boundary", () => {
     ).resolves.toBe("edited");
     expect(edit).toHaveBeenCalledWith(db.tx, 42, undefined);
   });
-  it("rechecks status in the transaction instead of trusting the earlier permission query", async () => {
-    database([{ ...pending, status: "published" }]);
+  // 잠금을 잡은 뒤 다시 읽은 추모관이 남의 것이면 앞선 권한 조회 결과를 믿지 않는다.
+  it("rechecks ownership in the transaction instead of trusting the earlier permission query", async () => {
+    database([{ ...pending, createdByUserId: 8 }]);
     const edit = vi.fn();
     await expect(
       withGalleryEditor(owner, { memorialId: 42 }, edit)
@@ -192,11 +192,13 @@ describe("gallery API", () => {
       expect(mocks.getDb).not.toHaveBeenCalled();
       expect(mocks.storagePut).not.toHaveBeenCalled();
     });
-    it(`${mutation.name}: blocks other owners and published or legacy-private records before writing`, async () => {
+    // 2026-09-12 결정: 게시 상태는 더 이상 막는 이유가 아니다. 남의 추모관과
+    // 만든 사람이 지워진 추모관만 막는다.
+    it(`${mutation.name}: blocks other owners and unowned records before writing`, async () => {
       for (const [user, memorial] of [
         [other, pending],
-        [owner, { ...pending, status: "published" }],
-        [owner, { ...pending, status: "private" }],
+        [other, { ...pending, status: "published" }],
+        [owner, { ...pending, createdByUserId: null }],
       ] as const) {
         const db = database(
           ...(mutation.readsPhoto ? [[photo], [memorial]] : [[memorial]])

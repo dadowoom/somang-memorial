@@ -339,9 +339,19 @@ export default function AdminUsers() {
                         {formatAuditValue(log.beforeValue)} →{" "}
                         {formatAuditValue(log.afterValue)}
                       </p>
+                      {log.note && (
+                        <p className="mt-1 text-sm text-[#616161]">
+                          {log.note}
+                        </p>
+                      )}
                     </div>
                     <p className="text-sm text-[#777] md:text-right">
-                      {log.adminName || log.adminEmail || "관리자"}
+                      {/* 유가족이 직접 고친 기록은 관리자가 없다. 사후 확인용이므로 누가 했는지 분명히 적는다. */}
+                      {log.adminName ||
+                        log.adminEmail ||
+                        (log.action === "memorial.member.update"
+                          ? "유가족 본인"
+                          : "관리자")}
                     </p>
                   </article>
                 ))}
@@ -447,6 +457,9 @@ function formatDateTime(value: Date | string | null) {
 function formatAuditAction(action: string) {
   if (action === "user.role.update") return "권한 변경";
   if (action === "user.status.update") return "상태 변경";
+  if (action === "memorial.update") return "추모관 수정(관리자)";
+  // 게시된 추모관을 유가족이 직접 고친 기록. 관리자가 나중에 내용을 확인한다.
+  if (action === "memorial.member.update") return "추모관 수정(유가족)";
   return action;
 }
 

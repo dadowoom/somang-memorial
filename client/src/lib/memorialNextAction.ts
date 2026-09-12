@@ -1,3 +1,5 @@
+// 2026-09-12 결정: 게시된 뒤에도 추모관을 만든 유가족이 글과 사진을 직접 고친다.
+// 관리자 사전 확인 대신 서버가 감사기록을 남겨 사후에 확인한다.
 export function memorialNextAction(
   status: string,
   visibility: string,
@@ -20,21 +22,21 @@ export function memorialNextAction(
     };
   if (status === "published")
     return {
-      canEdit: false,
-      canAddPhotos: false,
+      canEdit: true,
+      canAddPhotos: true,
       canShare: visibility === "public",
       message:
         visibility === "private"
-          ? "비공개로 게시되었습니다. 사진·글 변경은 관리자에게 요청해 주세요. 주소만으로 본문이 열리지는 않습니다."
-          : "게시되었습니다. 가족에게 주소를 공유할 수 있습니다. 사진·글 변경은 관리자에게 요청해 주세요.",
+          ? "비공개로 게시되었습니다. 글과 사진은 직접 고칠 수 있고 바로 반영됩니다. 주소만으로 본문이 열리지는 않습니다."
+          : "게시되었습니다. 가족에게 주소를 공유할 수 있습니다. 글과 사진은 직접 고칠 수 있고 바로 반영됩니다.",
     };
   if (status === "private")
     return {
       canEdit: true,
-      canAddPhotos: false,
+      canAddPhotos: true,
       canShare: false,
       message:
-        "비공개 상태입니다. 글은 수정할 수 있으며 사진 변경은 관리자에게 요청해 주세요.",
+        "관리자가 비공개로 돌려 둔 상태입니다. 글과 사진은 고칠 수 있으며, 다시 공개하려면 관리자에게 문의해 주세요.",
     };
   return {
     canEdit: false,
