@@ -1179,13 +1179,9 @@ export const appRouter = router({
           });
         }
 
-        if (ctx.user.role !== "admin" && existing.status === "published") {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message:
-              "게시 중인 추모관의 수정은 관리자 확인이 필요합니다. 관리자에게 수정 요청을 남겨 주세요.",
-          });
-        }
+        // 게시된 뒤에도 유가족이 직접 고친다 (2026-09-12 결정). 관리자 사전 확인 대신
+        // 아래에서 감사기록을 남겨 사후에 확인한다. 추모관이 늘면 수정 요청을 교회가
+        // 하나하나 받아 처리하는 것이 감당이 안 되기 때문이다.
 
         if (
           input.visibility === "private" &&
@@ -1211,6 +1207,23 @@ export const appRouter = router({
           input.id,
           buildMemorialUpdateData(editableInput, existing)
         );
+
+        // 게시 중인 추모관을 유가족이 직접 고쳤다는 기록. 관리자 화면의 감사기록에서
+        // "누가 언제 어느 추모관을" 확인할 수 있게 한다. 확인 대기(pending)는 원래
+        // 유가족이 고치는 단계라 기록하지 않는다.
+        if (ctx.user.role !== "admin" && existing.status === "published") {
+          await createAdminAuditLog({
+            adminUserId: null,
+            targetUserId: ctx.user.id,
+            action: "memorial.member.update",
+            beforeValue: `${existing.status}/${existing.visibility}`,
+            afterValue: `${existing.status}/${
+              editableInput.visibility ?? existing.visibility
+            }`,
+            note: `${existing.name} (${existing.slug})`,
+          });
+        }
+
         return { success: true };
       }),
   }),

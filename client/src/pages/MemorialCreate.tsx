@@ -955,7 +955,7 @@ export default function MemorialCreate() {
                 <SectionHeader number="04" title="사진" />
                 <StepGuide>
                   <p>사진 없이도 추모관을 등록할 수 있습니다. <strong>이 작성 화면에서는 사진을 저장하지 않습니다.</strong></p>
-                  <p>{isAdmin ? "추모관을 생성한 뒤 ‘사진 추가하기’에서 등록해 주세요." : "먼저 글 등록을 요청한 뒤, 완료 화면의 ‘사진 추가하기’에서 사진을 올려주세요. 관리자 확인 전까지 본인 사진을 직접 준비할 수 있습니다."}</p>
+                  <p>{isAdmin ? "추모관을 생성한 뒤 ‘사진 추가하기’에서 등록해 주세요." : "먼저 글 등록을 요청한 뒤, 완료 화면의 ‘사진 추가하기’에서 사진을 올려주세요. 게시된 뒤에도 직접 추가하고 고칠 수 있습니다."}</p>
                 </StepGuide>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="border border-[#d5cfc5] p-5">
@@ -978,7 +978,7 @@ export default function MemorialCreate() {
                 <SectionHeader number="05" title="공개 설정 · 최종 확인" />
                 <StepGuide>
                   <p>누가 추모관을 볼 수 있을지 선택하고, 아래에 모아둔 입력 내용을 확인해 주세요.</p>
-                  <p>{isAdmin ? "관리자가 생성한 추모관은 선택한 공개 범위로 바로 게시됩니다." : "등록 요청 후 관리자가 확인합니다. 게시 후 내용 수정은 관리자에게 요청해 주세요."}</p>
+                  <p>{isAdmin ? "관리자가 생성한 추모관은 선택한 공개 범위로 바로 게시됩니다." : "등록 요청 후 관리자가 확인합니다. 게시된 뒤에도 글과 사진을 직접 고칠 수 있습니다."}</p>
                 </StepGuide>
 
                 {!isAdmin && (
@@ -1073,7 +1073,7 @@ export default function MemorialCreate() {
                   </ReviewGroup>
                   <div className="border-t border-[#d5cfc5] pt-5">
                     <dl className="grid gap-4 sm:grid-cols-2">
-                      <ReviewValue label="사진" value={isAdmin ? "생성 후 사진 추가하기" : "등록 요청 후, 관리자 확인 전에 직접 추가"} />
+                      <ReviewValue label="사진" value={isAdmin ? "생성 후 사진 추가하기" : "등록 요청 후 직접 추가 · 게시된 뒤에도 가능"} />
                       <ReviewValue label="공개 범위" value={form.visibility === "private" ? "비공개 · 본문에 입장 비밀번호 필요" : "전체 공개"} />
                       {form.visibility === "private" && <ReviewValue label="입장 비밀번호" value={form.accessPassword.trim() ? "입력됨 (임시저장되지 않음)" : "입력이 필요합니다"} />}
                       <ReviewValue label="등록 후 상태" value={isAdmin ? "바로 게시" : "관리자 확인 대기"} />

@@ -55,7 +55,7 @@ export async function withGalleryEditor<T>(
       throw new TRPCError({
         code: "FORBIDDEN",
         message:
-          "사진 변경 권한이 없습니다. 게시된 추모관의 사진 변경은 관리자에게 요청해 주세요.",
+          "사진 변경 권한이 없습니다. 추모관을 만든 가족과 관리자만 사진을 바꿀 수 있습니다.",
       });
     }
     let photo: MemorialGalleryPhoto | undefined;

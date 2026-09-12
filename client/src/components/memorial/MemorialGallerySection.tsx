@@ -134,7 +134,7 @@ export default function MemorialGallerySection({
         } catch (error) {
           const reason =
             error instanceof TRPCClientError && error.data?.code === "FORBIDDEN"
-              ? "변경 가능한 상태인지 확인해 주세요. 게시된 뒤에는 관리자에게 요청해야 합니다."
+              ? "사진 변경 권한이 없습니다. 추모관을 만든 가족과 관리자만 사진을 바꿀 수 있습니다."
               : "파일 형식·용량과 인터넷 연결을 확인해 주세요. 사진은 최대 30장까지 준비할 수 있습니다.";
           failures.push(`${imageFiles[index].name}: ${reason}`);
         }
@@ -230,7 +230,7 @@ export default function MemorialGallerySection({
             <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-[#6f6a61]">
               {isAdmin
                 ? "사진을 확인한 뒤 별 모양 버튼으로 대표 사진을 지정할 수 있습니다."
-                : "관리자 확인 전에는 사진을 직접 준비할 수 있습니다. 첫 사진은 대표 사진이 되며, 별 모양 버튼으로 바꿀 수 있습니다. 최대 30장입니다."}
+                : "추모관을 만든 가족은 게시된 뒤에도 사진을 직접 추가하고 고칠 수 있습니다. 첫 사진은 대표 사진이 되며, 별 모양 버튼으로 바꿀 수 있습니다. 최대 30장입니다."}
             </p>
             <p className="mt-2 text-sm leading-6 text-[#6f6a61]">
               용량이 큰 사진은 자동으로 줄여 저장합니다. 열리지 않는 사진은
