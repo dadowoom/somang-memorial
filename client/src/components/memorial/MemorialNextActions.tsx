@@ -9,6 +9,8 @@ type MemorialActionItem = {
   editHref: string;
   status: string;
   visibility: string;
+  // owner: 추모관을 만든 사람 / member: 초대 링크로 함께 관리하게 된 가족
+  membership?: "owner" | "member";
 };
 const buttonClass =
   "inline-flex min-h-12 items-center justify-center border border-[#b5b0a7] px-3 py-2 text-sm text-[#121212] hover:bg-[#f5f5f5]";
@@ -61,6 +63,12 @@ export default function MemorialNextActions({
         <Link href={`/my/memorials/${memorial.slug}/family`}>
           <span className={buttonClass}>가족관 관리</span>
         </Link>
+        {/* 초대와 가족 제외는 주인과 관리자만. 초대받은 가족이 또 초대하면 주인이 누가 들어왔는지 알 수 없다. */}
+        {(isAdmin || memorial.membership !== "member") && (
+          <Link href={`/my/memorials/${memorial.slug}/family-members`}>
+            <span className={buttonClass}>가족 초대</span>
+          </Link>
+        )}
         {!action.canEdit && (
           <button
             type="button"

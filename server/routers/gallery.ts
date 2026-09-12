@@ -2,7 +2,11 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
-import { getAdminMemorialById, listMemorialGalleryPhotos } from "../db";
+import {
+  getAdminMemorialById,
+  isMemorialFamilyMember,
+  listMemorialGalleryPhotos,
+} from "../db";
 import { memorialGalleryPhotos } from "../../drizzle/schema";
 import { canManageMemorialGallery } from "../../shared/memorialGalleryPermissions";
 import { withGalleryEditor } from "../galleryEditing";
@@ -14,12 +18,18 @@ import { requireReadableMemorialById } from "./memorialAccess";
 export const galleryRouter = router({
   permissions: protectedProcedure
     .input(z.object({ memorialId: z.number().int().positive() }))
-    .query(async ({ ctx, input }) => ({
-      canManage: canManageMemorialGallery(
-        await getAdminMemorialById(input.memorialId),
-        ctx.user
-      ),
-    })),
+    .query(async ({ ctx, input }) => {
+      const memorial = await getAdminMemorialById(input.memorialId);
+      // 주인도 관리자도 아니면 가족 초대로 함께 관리하는 가족인지 본다 (2026-09-13).
+      const isFamilyMember =
+        memorial !== null &&
+        ctx.user.role !== "admin" &&
+        memorial.createdByUserId !== ctx.user.id &&
+        (await isMemorialFamilyMember(memorial.id, ctx.user.id));
+      return {
+        canManage: canManageMemorialGallery(memorial, ctx.user, isFamilyMember),
+      };
+    }),
   listByMemorial: publicProcedure
     .input(
       z.object({
