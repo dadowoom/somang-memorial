@@ -1272,6 +1272,117 @@ export async function verifyMemorialFamilyRoomPassword(
     ],
   };
 }
+/**
+ * 가족관을 관리할 화면에 필요한 정보를 모은다.
+ *
+ * 비밀번호는 어떤 형태로도 돌려주지 않는다. 되돌릴 수 없는 방식으로 저장하므로
+ * 원래 값은 서버도 알지 못하고, 알 수 있더라도 화면에 보내지 않는다.
+ * 추모관 주인(createdByUserId)을 같이 돌려주어 부르는 쪽에서 권한을 확인한다.
+ */
+export async function getMemorialFamilyRoomManageInfo(slug: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const result = await db
+    .select({
+      memorialId: memorials.id,
+      memorialSlug: memorials.slug,
+      memorialName: memorials.name,
+      memorialStatus: memorials.status,
+      createdByUserId: memorials.createdByUserId,
+      roomId: memorialFamilyRooms.id,
+      title: memorialFamilyRooms.title,
+      intro: memorialFamilyRooms.intro,
+      updatedAt: memorialFamilyRooms.updatedAt,
+    })
+    .from(memorials)
+    .leftJoin(
+      memorialFamilyRooms,
+      eq(memorialFamilyRooms.memorialId, memorials.id)
+    )
+    .where(eq(memorials.slug, slug))
+    .limit(1);
+
+  const row = result[0];
+  if (!row) return null;
+
+  return {
+    memorialId: row.memorialId,
+    memorialSlug: row.memorialSlug,
+    memorialName: row.memorialName,
+    memorialStatus: row.memorialStatus,
+    createdByUserId: row.createdByUserId,
+    exists: Boolean(row.roomId),
+    title: row.title ?? "",
+    intro: row.intro ?? "",
+    updatedAt: row.updatedAt ?? null,
+    href: `/memorial/${row.memorialSlug}/family`,
+  };
+}
+
+export async function createMemorialFamilyRoom(input: {
+  memorialId: number;
+  title: string;
+  intro: string;
+  password: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  // 추모관 하나에 가족관은 하나다. 두 번 눌렸을 때 두 개가 생기지 않도록 먼저 확인한다.
+  const existing = await db
+    .select({ id: memorialFamilyRooms.id })
+    .from(memorialFamilyRooms)
+    .where(eq(memorialFamilyRooms.memorialId, input.memorialId))
+    .limit(1);
+
+  if (existing[0]) return { created: false as const };
+
+  await db.insert(memorialFamilyRooms).values({
+    memorialId: input.memorialId,
+    title: input.title,
+    intro: input.intro,
+    passwordHash: hashFamilyRoomPassword(input.password),
+  });
+
+  return { created: true as const };
+}
+
+export async function updateMemorialFamilyRoomInfo(input: {
+  memorialId: number;
+  title: string;
+  intro: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db
+    .update(memorialFamilyRooms)
+    .set({ title: input.title, intro: input.intro })
+    .where(eq(memorialFamilyRooms.memorialId, input.memorialId));
+}
+
+export async function updateMemorialFamilyRoomPassword(input: {
+  memorialId: number;
+  password: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db
+    .update(memorialFamilyRooms)
+    .set({ passwordHash: hashFamilyRoomPassword(input.password) })
+    .where(eq(memorialFamilyRooms.memorialId, input.memorialId));
+}
+
 
 export async function createMemorialLetter(input: {
   memorialSlug?: string;

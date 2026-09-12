@@ -57,6 +57,10 @@ export default function MemorialNextActions({
             <span className={buttonClass}>사진 추가</span>
           </Link>
         )}
+        {/* 가족관은 공개 화면에 나오지 않으므로 게시 상태와 상관없이 유가족이 관리한다. */}
+        <Link href={`/my/memorials/${memorial.slug}/family`}>
+          <span className={buttonClass}>가족관 관리</span>
+        </Link>
         {!action.canEdit && (
           <button
             type="button"

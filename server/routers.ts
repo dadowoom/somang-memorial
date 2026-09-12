@@ -21,6 +21,10 @@ import {
   getEditableMemorialBySlug,
   getUserByLocalLogin,
   getMemorialFamilyRoomStatus,
+  getMemorialFamilyRoomManageInfo,
+  createMemorialFamilyRoom,
+  updateMemorialFamilyRoomInfo,
+  updateMemorialFamilyRoomPassword,
   getMemorialAccessStatus,
   getSomangIntermentRecordForClaim,
   getPublicMemorialBySlug,
@@ -59,6 +63,10 @@ import {
   createIntermentMemorialCopy,
   isSearchableIntermentBirthDate,
 } from "../shared/parentFinder";
+import {
+  canManageMemorialFamilyRoom,
+  type FamilyRoomUser,
+} from "../shared/memorialFamilyRoomPermissions";
 import { getSessionCookieOptions } from "./_core/cookies";
 import {
   createPasswordAttemptLimiter,
@@ -237,6 +245,82 @@ const familyRoomVerifyInput = z.object({
   memorialSlug: z.string().trim().min(1).max(120),
   password: z.string().trim().min(1).max(100),
 });
+
+// 가족관 비밀번호는 가족 여러 분이 나눠 쓰고 외워야 한다. 회원 비밀번호(8자)보다
+// 짧게 잡되, 들어가는 화면에는 시도 횟수 제한이 걸려 있어 무작정 찍어볼 수는 없다.
+const FAMILY_ROOM_PASSWORD_MIN = 6;
+
+const familyRoomPasswordField = z
+  .string()
+  .trim()
+  .min(
+    FAMILY_ROOM_PASSWORD_MIN,
+    `비밀번호는 ${FAMILY_ROOM_PASSWORD_MIN}자 이상 입력해주세요.`
+  )
+  .max(100);
+
+const familyRoomSlugField = z.string().trim().min(1).max(120);
+
+const familyRoomInfoFields = {
+  title: z.string().trim().min(1, "제목을 입력해주세요.").max(160),
+  intro: z.string().trim().min(1, "소개글을 입력해주세요.").max(2000),
+};
+
+const familyRoomCreateInput = z.object({
+  memorialSlug: familyRoomSlugField,
+  ...familyRoomInfoFields,
+  password: familyRoomPasswordField,
+});
+
+const familyRoomUpdateInfoInput = z.object({
+  memorialSlug: familyRoomSlugField,
+  ...familyRoomInfoFields,
+});
+
+const familyRoomUpdatePasswordInput = z.object({
+  memorialSlug: familyRoomSlugField,
+  password: familyRoomPasswordField,
+});
+
+/** 권한 판단은 shared/memorialFamilyRoomPermissions.ts 에 있다. 여기서는 찾아오고 막기만 한다. */
+async function requireFamilyRoomManagePermission(
+  user: FamilyRoomUser,
+  memorialSlug: string
+) {
+  const info = await getMemorialFamilyRoomManageInfo(memorialSlug);
+  if (!info) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "추모관을 찾을 수 없습니다.",
+    });
+  }
+
+  if (!canManageMemorialFamilyRoom(info, user)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "가족관을 관리할 권한이 없습니다.",
+    });
+  }
+
+  return info;
+}
+
+/** 권한 확인에 더해, 가족관이 실제로 있어야 하는 작업에 쓴다. */
+async function requireExistingFamilyRoom(
+  user: FamilyRoomUser,
+  memorialSlug: string
+) {
+  const info = await requireFamilyRoomManagePermission(user, memorialSlug);
+  if (!info.exists) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "아직 가족관이 없습니다. 먼저 가족관을 만들어 주세요.",
+    });
+  }
+
+  return info;
+}
+
 
 const parentFinderSearchInput = z.object({
   name: z.string().trim().min(2).max(120),
@@ -1260,6 +1344,94 @@ export const appRouter = router({
 
         passwordAttemptLimiter.recordSuccess(attemptKey);
         return room;
+      }),
+
+    // 아래 세 가지는 가족관을 만들고 고치는 통로다. 추모관을 만든 유가족과
+    // 교회 관리자만 쓸 수 있다.
+    manage: protectedProcedure
+      .input(z.object({ memorialSlug: familyRoomSlugField }))
+      .query(async ({ ctx, input }) => {
+        const info = await requireFamilyRoomManagePermission(
+          ctx.user,
+          input.memorialSlug
+        );
+
+        return {
+          memorialSlug: info.memorialSlug,
+          memorialName: info.memorialName,
+          exists: info.exists,
+          title: info.title,
+          intro: info.intro,
+          updatedAt: info.updatedAt,
+          href: info.href,
+          passwordMinLength: FAMILY_ROOM_PASSWORD_MIN,
+        };
+      }),
+
+    create: protectedProcedure
+      .input(familyRoomCreateInput)
+      .mutation(async ({ ctx, input }) => {
+        const info = await requireFamilyRoomManagePermission(
+          ctx.user,
+          input.memorialSlug
+        );
+
+        if (info.exists) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "이미 가족관이 있습니다.",
+          });
+        }
+
+        const result = await createMemorialFamilyRoom({
+          memorialId: info.memorialId,
+          title: input.title,
+          intro: input.intro,
+          password: input.password,
+        });
+
+        // 두 번 눌러 두 개가 생기는 일은 없다. 이미 있었다면 만들지 않고 알린다.
+        if (!result.created) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "이미 가족관이 있습니다.",
+          });
+        }
+
+        return { success: true };
+      }),
+
+    updateInfo: protectedProcedure
+      .input(familyRoomUpdateInfoInput)
+      .mutation(async ({ ctx, input }) => {
+        const info = await requireExistingFamilyRoom(
+          ctx.user,
+          input.memorialSlug
+        );
+
+        await updateMemorialFamilyRoomInfo({
+          memorialId: info.memorialId,
+          title: input.title,
+          intro: input.intro,
+        });
+
+        return { success: true };
+      }),
+
+    updatePassword: protectedProcedure
+      .input(familyRoomUpdatePasswordInput)
+      .mutation(async ({ ctx, input }) => {
+        const info = await requireExistingFamilyRoom(
+          ctx.user,
+          input.memorialSlug
+        );
+
+        await updateMemorialFamilyRoomPassword({
+          memorialId: info.memorialId,
+          password: input.password,
+        });
+
+        return { success: true };
       }),
   }),
 
