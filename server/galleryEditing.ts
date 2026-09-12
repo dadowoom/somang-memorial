@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import {
+  memorialFamilyMembers,
   memorialGalleryPhotos,
   memorials,
   type MemorialGalleryPhoto,
@@ -51,11 +52,32 @@ export async function withGalleryEditor<T>(
       .where(eq(memorials.id, memorialId))
       .limit(1)
       .for("update");
-    if (!canManageMemorialGallery(memorial ?? null, user)) {
+    // 주인도 관리자도 아니면, 같은 트랜잭션 안에서 함께 관리하는 가족인지 본다.
+    // (가족 초대, 2026-09-13) 바깥에서 먼저 조회한 결과를 믿지 않는 이유는 위와 같다.
+    let isFamilyMember = false;
+    if (
+      memorial &&
+      user &&
+      user.role !== "admin" &&
+      memorial.createdByUserId !== user.id
+    ) {
+      const [membership] = await tx
+        .select({ id: memorialFamilyMembers.id })
+        .from(memorialFamilyMembers)
+        .where(
+          and(
+            eq(memorialFamilyMembers.memorialId, memorial.id),
+            eq(memorialFamilyMembers.userId, user.id)
+          )
+        )
+        .limit(1);
+      isFamilyMember = Boolean(membership);
+    }
+    if (!canManageMemorialGallery(memorial ?? null, user, isFamilyMember)) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message:
-          "사진 변경 권한이 없습니다. 추모관을 만든 가족과 관리자만 사진을 바꿀 수 있습니다.",
+          "사진 변경 권한이 없습니다. 추모관을 만든 가족, 초대받은 가족, 관리자만 사진을 바꿀 수 있습니다.",
       });
     }
     let photo: MemorialGalleryPhoto | undefined;

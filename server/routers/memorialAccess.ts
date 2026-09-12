@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import type { TrpcContext } from "../_core/context";
-import { canUserReadMemorial, getAdminMemorialById } from "../db";
+import { canUserReadMemorialWithFamily, getAdminMemorialById } from "../db";
 
 export async function requireReadableMemorialById(input: {
   memorialId: number;
@@ -15,7 +15,14 @@ export async function requireReadableMemorialById(input: {
     });
   }
 
-  if (!canUserReadMemorial(memorial, input.accessToken, input.ctx.user)) {
+  // 가족 초대로 함께 관리하는 가족도 비공개·확인 대기 추모관을 볼 수 있다.
+  if (
+    !(await canUserReadMemorialWithFamily(
+      memorial,
+      input.accessToken,
+      input.ctx.user
+    ))
+  ) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "비공개 추모관입니다.",

@@ -14,6 +14,8 @@ import {
   adminAuditLogs,
   memorialBookPages,
   memorialBooks,
+  memorialFamilyInvitations,
+  memorialFamilyMembers,
   memorialFamilyRooms,
   memorialGalleryPhotos,
   memorialLetters,
@@ -790,11 +792,33 @@ export async function listUserMemorials(userId: number) {
       memorialDay: memorials.memorialDay,
       createdAt: memorials.createdAt,
       updatedAt: memorials.updatedAt,
+      createdByUserId: memorials.createdByUserId,
+      memberUserId: memorialFamilyMembers.userId,
     })
     .from(memorials)
-    .where(eq(memorials.createdByUserId, userId))
+    // 내가 만든 추모관과, 가족 초대로 함께 관리하게 된 추모관을 같이 보여준다.
+    .leftJoin(
+      memorialFamilyMembers,
+      and(
+        eq(memorialFamilyMembers.memorialId, memorials.id),
+        eq(memorialFamilyMembers.userId, userId)
+      )
+    )
+    .where(
+      or(
+        eq(memorials.createdByUserId, userId),
+        eq(memorialFamilyMembers.userId, userId)
+      )
+    )
     .orderBy(desc(memorials.updatedAt), desc(memorials.createdAt))
-    .limit(200);
+    .limit(200)
+    .then(rows =>
+      rows.map(({ createdByUserId, memberUserId, ...row }) => ({
+        ...row,
+        membership:
+          createdByUserId === userId ? ("owner" as const) : ("member" as const),
+      }))
+    );
 }
 
 export async function getAdminMemorialBySlug(slug: string) {
@@ -822,11 +846,20 @@ export async function getEditableMemorialBySlug(input: {
     throw new Error("Database is not available");
   }
 
+  // 가족 초대로 함께 관리하게 된 추모관도 고칠 수 있다 (2026-09-13).
+  const memberMemorialIds = db
+    .select({ id: memorialFamilyMembers.memorialId })
+    .from(memorialFamilyMembers)
+    .where(eq(memorialFamilyMembers.userId, input.userId));
+
   const whereClause = input.isAdmin
     ? eq(memorials.slug, input.slug)
     : and(
         eq(memorials.slug, input.slug),
-        eq(memorials.createdByUserId, input.userId)
+        or(
+          eq(memorials.createdByUserId, input.userId),
+          inArray(memorials.id, memberMemorialIds)
+        )
       );
 
   const result = await db.select().from(memorials).where(whereClause).limit(1);
@@ -1055,6 +1088,28 @@ export function canUserReadMemorial(
   if (user?.role === "admin") return true;
   if (user && memorial.createdByUserId === user.id) return true;
   return canReadMemorial(memorial, accessToken);
+}
+
+/**
+ * canUserReadMemorial 에 "함께 관리하는 가족"까지 더한 것. 초대받은 가족은 확인 대기
+ * 중이거나 비공개인 추모관도 볼 수 있어야 글과 사진을 고칠 수 있다.
+ * 순수 함수로 판단이 끝나면 DB 를 조회하지 않는다.
+ */
+export async function canUserReadMemorialWithFamily(
+  memorial: {
+    id: number;
+    slug: string;
+    visibility: string;
+    status: string;
+    accessPasswordHash: string | null;
+    createdByUserId?: number | null;
+  },
+  accessToken?: string | null,
+  user?: { id: number; role: string } | null
+) {
+  if (canUserReadMemorial(memorial, accessToken, user)) return true;
+  if (!user) return false;
+  return isMemorialFamilyMember(memorial.id, user.id);
 }
 
 export async function getMemorialAccessStatus(slug: string) {
@@ -1383,6 +1438,244 @@ export async function updateMemorialFamilyRoomPassword(input: {
     .where(eq(memorialFamilyRooms.memorialId, input.memorialId));
 }
 
+
+// ---------------------------------------------------------------------------
+// 가족 초대 (2026-09-13). 추모관 주인이 초대 링크를 만들어 가족에게 주면, 그 링크로
+// 들어온 가족이 함께 관리한다. 링크는 비밀번호 재설정 링크처럼 해시만 저장한다.
+// ---------------------------------------------------------------------------
+
+export const FAMILY_INVITATION_TTL_DAYS = 7;
+
+function hashFamilyInvitationToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export async function isMemorialFamilyMember(memorialId: number, userId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({ id: memorialFamilyMembers.id })
+    .from(memorialFamilyMembers)
+    .where(
+      and(
+        eq(memorialFamilyMembers.memorialId, memorialId),
+        eq(memorialFamilyMembers.userId, userId)
+      )
+    )
+    .limit(1);
+
+  return Boolean(rows[0]);
+}
+
+export async function listMemorialFamilyMembers(memorialId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  return db
+    .select({
+      userId: memorialFamilyMembers.userId,
+      name: users.name,
+      email: users.email,
+      phone: users.phone,
+      invitedByUserId: memorialFamilyMembers.invitedByUserId,
+      joinedAt: memorialFamilyMembers.createdAt,
+    })
+    .from(memorialFamilyMembers)
+    .innerJoin(users, eq(users.id, memorialFamilyMembers.userId))
+    .where(eq(memorialFamilyMembers.memorialId, memorialId))
+    .orderBy(asc(memorialFamilyMembers.createdAt));
+}
+
+/**
+ * 초대 링크로 들어온 사람을 함께 관리하는 가족으로 넣는다.
+ * 주인 본인이거나 이미 가족이면 넣지 않고 이유를 돌려준다.
+ */
+export async function addMemorialFamilyMember(input: {
+  memorialId: number;
+  userId: number;
+  invitedByUserId: number | null;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const memorial = await db
+    .select({ createdByUserId: memorials.createdByUserId })
+    .from(memorials)
+    .where(eq(memorials.id, input.memorialId))
+    .limit(1);
+  if (!memorial[0]) return { added: false as const, reason: "missing" as const };
+  if (memorial[0].createdByUserId === input.userId) {
+    return { added: false as const, reason: "owner" as const };
+  }
+
+  if (await isMemorialFamilyMember(input.memorialId, input.userId)) {
+    return { added: false as const, reason: "exists" as const };
+  }
+
+  await db.insert(memorialFamilyMembers).values({
+    memorialId: input.memorialId,
+    userId: input.userId,
+    invitedByUserId: input.invitedByUserId,
+  });
+
+  return { added: true as const };
+}
+
+export async function removeMemorialFamilyMember(input: {
+  memorialId: number;
+  userId: number;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db
+    .delete(memorialFamilyMembers)
+    .where(
+      and(
+        eq(memorialFamilyMembers.memorialId, input.memorialId),
+        eq(memorialFamilyMembers.userId, input.userId)
+      )
+    );
+}
+
+/** 지금 살아 있는 초대 링크가 있는지. 원문은 저장하지 않으므로 기한만 알려준다. */
+export async function getActiveMemorialFamilyInvitation(memorialId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({
+      expiresAt: memorialFamilyInvitations.expiresAt,
+      createdAt: memorialFamilyInvitations.createdAt,
+    })
+    .from(memorialFamilyInvitations)
+    .where(
+      and(
+        eq(memorialFamilyInvitations.memorialId, memorialId),
+        isNull(memorialFamilyInvitations.revokedAt),
+        sql`${memorialFamilyInvitations.expiresAt} > NOW()`
+      )
+    )
+    .orderBy(desc(memorialFamilyInvitations.createdAt))
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+/**
+ * 새 초대 링크를 만든다. 살아 있던 이전 링크는 닫는다 — 살아 있는 링크가 여러 개면
+ * 그만큼 새어 나갈 틈이 늘어난다. 원문 토큰은 이때 한 번만 돌려준다.
+ */
+export async function createMemorialFamilyInvitation(input: {
+  memorialId: number;
+  createdByUserId: number;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const now = new Date();
+  await db
+    .update(memorialFamilyInvitations)
+    .set({ revokedAt: now })
+    .where(
+      and(
+        eq(memorialFamilyInvitations.memorialId, input.memorialId),
+        isNull(memorialFamilyInvitations.revokedAt)
+      )
+    );
+
+  const token = randomBytes(32).toString("base64url");
+  const expiresAt = new Date(
+    now.getTime() + FAMILY_INVITATION_TTL_DAYS * 24 * 60 * 60 * 1000
+  );
+  await db.insert(memorialFamilyInvitations).values({
+    memorialId: input.memorialId,
+    tokenHash: hashFamilyInvitationToken(token),
+    createdByUserId: input.createdByUserId,
+    expiresAt,
+  });
+
+  return { token, expiresAt };
+}
+
+export async function revokeMemorialFamilyInvitations(memorialId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db
+    .update(memorialFamilyInvitations)
+    .set({ revokedAt: new Date() })
+    .where(
+      and(
+        eq(memorialFamilyInvitations.memorialId, memorialId),
+        isNull(memorialFamilyInvitations.revokedAt)
+      )
+    );
+}
+
+/** 초대 링크가 가리키는 추모관. 닫혔거나 기한이 지난 링크는 null. */
+export async function getMemorialFamilyInvitationByToken(token: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({
+      invitationId: memorialFamilyInvitations.id,
+      memorialId: memorials.id,
+      memorialSlug: memorials.slug,
+      memorialName: memorials.name,
+      memorialRole: memorials.role,
+      memorialOwnerId: memorials.createdByUserId,
+      invitedByUserId: memorialFamilyInvitations.createdByUserId,
+      expiresAt: memorialFamilyInvitations.expiresAt,
+      revokedAt: memorialFamilyInvitations.revokedAt,
+    })
+    .from(memorialFamilyInvitations)
+    .innerJoin(memorials, eq(memorials.id, memorialFamilyInvitations.memorialId))
+    .where(
+      eq(memorialFamilyInvitations.tokenHash, hashFamilyInvitationToken(token))
+    )
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || row.revokedAt || row.expiresAt.getTime() <= Date.now()) {
+    return null;
+  }
+
+  return row;
+}
+
+/** 이 회원이 가족 초대로 함께 관리하는 추모관 id 목록. 부모님 찾기 결과 표시에 쓴다. */
+export async function listFamilyMemberMemorialIds(userId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({ memorialId: memorialFamilyMembers.memorialId })
+    .from(memorialFamilyMembers)
+    .where(eq(memorialFamilyMembers.userId, userId));
+
+  return rows.map(row => row.memorialId);
+}
 
 export async function createMemorialLetter(input: {
   memorialSlug?: string;
