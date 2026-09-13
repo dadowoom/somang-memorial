@@ -32,6 +32,10 @@ import {
   isSameIntermentPersonName,
   normalizeIntermentName,
 } from "../shared/parentFinder";
+import {
+  publicMemorialName,
+  toMemorialAccessStatus,
+} from "../shared/memorialAccessStatus";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -1153,20 +1157,8 @@ export async function getMemorialAccessStatus(slug: string) {
   const memorial = result[0];
   if (!memorial) return null;
 
-  return {
-    slug: memorial.slug,
-    name: memorial.name,
-    role: memorial.role,
-    birthDate: memorial.birthDate,
-    deathDate: memorial.deathDate,
-    church: memorial.church,
-    summary: memorial.summary,
-    visibility: memorial.visibility,
-    isPrivate: memorial.visibility === "private",
-    requiresPassword:
-      memorial.visibility === "private" && Boolean(memorial.accessPasswordHash),
-    href: `/memorial/${memorial.slug}`,
-  };
+  // 비공개 추모관은 비밀번호 전에 인적 사항을 내주지 않는다 (2026-09-14).
+  return toMemorialAccessStatus(memorial);
 }
 
 export async function verifyMemorialAccessPassword(input: {
@@ -1248,6 +1240,7 @@ export async function getMemorialFamilyRoomStatus(slug: string) {
       memorialId: memorials.id,
       memorialSlug: memorials.slug,
       memorialName: memorials.name,
+      memorialVisibility: memorials.visibility,
       roomId: memorialFamilyRooms.id,
     })
     .from(memorials)
@@ -1266,7 +1259,8 @@ export async function getMemorialFamilyRoomStatus(slug: string) {
   return {
     memorialId: row.memorialId,
     memorialSlug: row.memorialSlug,
-    memorialName: row.memorialName,
+    // 비공개 추모관의 이름은 가족관 입장 화면에서도 감춘다 (2026-09-14).
+    memorialName: publicMemorialName(row.memorialVisibility, row.memorialName),
     enabled: Boolean(row.roomId),
     href: `/memorial/${row.memorialSlug}/family`,
   };

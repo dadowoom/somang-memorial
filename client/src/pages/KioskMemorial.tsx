@@ -123,14 +123,15 @@ type MemorialLetter = {
   createdAt: string | Date;
 };
 
+// 비공개 추모관이면 서버가 인적 사항을 null 로 보낸다 (2026-09-14).
 type AccessStatus = {
   slug: string;
-  name: string;
-  role: string;
-  birthDate: string;
-  deathDate: string;
-  church: string;
-  summary: string;
+  name: string | null;
+  role: string | null;
+  birthDate: string | null;
+  deathDate: string | null;
+  church: string | null;
+  summary: string | null;
   isPrivate: boolean;
 };
 
@@ -152,7 +153,7 @@ type FamilyRoom = {
 
 type FamilyRoomStatus = {
   enabled: boolean;
-  memorialName: string;
+  memorialName: string | null;
 };
 
 type KioskResourceStatus = {
@@ -1274,9 +1275,9 @@ function KioskMemorialGate({
         <h1 className="text-[44px] leading-tight" style={serifStyle}>
           {status?.name || "비공개 추모관"}
         </h1>
-        {status && (
+        {status?.name && (
           <p className="mt-4 text-base leading-7 text-[#64615d]">
-            {formatLifespan(status.birthDate, status.deathDate)} · {status.church} ·{" "}
+            {formatLifespan(status.birthDate ?? "", status.deathDate ?? "")} · {status.church} ·{" "}
             {status.role}
           </p>
         )}

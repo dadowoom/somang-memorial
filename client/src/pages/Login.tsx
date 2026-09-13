@@ -11,7 +11,7 @@ import {
   User,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useId, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 
 type Mode = "login" | "signup";
@@ -485,9 +485,14 @@ function ConsentCheckbox({
   description: string;
   documentHref: string;
 }) {
+  const inputId = useId();
+
+  // 동의 문구 옆에 전문 링크를 둔다. 링크를 label 안에 넣으면 눌렀을 때
+  // 체크박스까지 같이 바뀌므로 label 밖에 둔다 (2026-09-14).
   return (
-    <label className="flex gap-3 text-sm leading-6 text-[#616161]">
+    <div className="flex gap-3 text-sm leading-6 text-[#616161]">
       <input
+        id={inputId}
         type="checkbox"
         checked={checked}
         onChange={event => onChange(event.target.checked)}
@@ -495,12 +500,22 @@ function ConsentCheckbox({
         required
       />
       <span>
-        <span className="block font-medium text-[#121212]">[필수] {label}</span>
+        <label htmlFor={inputId} className="block font-medium text-[#121212]">
+          [필수] {label}
+        </label>
         <span className="mt-1 block text-xs leading-5 text-[#8a8a8a]">
           {description}
         </span>
+        <a
+          href={documentHref}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-1 inline-block text-xs leading-5 text-[#616161] underline underline-offset-4 hover:text-[#121212]"
+        >
+          전문 보기
+        </a>
       </span>
-    </label>
+    </div>
   );
 }
 

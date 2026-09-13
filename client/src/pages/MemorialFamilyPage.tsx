@@ -40,7 +40,8 @@ type FamilyRoom = {
 type FamilyRoomStatus = {
   memorialId: number;
   memorialSlug: string;
-  memorialName: string;
+  // 비공개 추모관이면 null (비밀번호 전에는 이름을 감춘다, 2026-09-14)
+  memorialName: string | null;
   enabled: boolean;
   href: string;
 };
@@ -177,7 +178,9 @@ export default function MemorialFamilyPage() {
               />
             ) : (
               <PasswordGate
-                memorialName={memorial?.name ?? status.memorialName}
+                memorialName={
+                  memorial?.name ?? status.memorialName ?? "비공개 추모관"
+                }
                 memorialRole={memorial?.role ?? ""}
                 password={password}
                 message={message}
