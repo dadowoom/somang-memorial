@@ -40,6 +40,17 @@ beforeEach(() => {
 afterAll(() => vi.unstubAllEnvs());
 
 describe("키오스크 안장 기록", () => {
+  it("장지가 없거나 다른 곳인 자료를 소망동산으로 안내하지 않는다", () => {
+    expect(toKioskInterment({ ...record, burialPlace: "" }).message).toBe(
+      "안장 장소 미등록"
+    );
+    expect(
+      toKioskInterment({ ...record, burialPlace: "금촌 기독묘원" }).message
+    ).toBe("등록된 안장 장소: 금촌 기독묘원");
+    expect(
+      toKioskInterment({ ...record, burialPlace: "소망동산" }).message
+    ).toBe("소망교회 소망동산에 안장되어 있습니다.");
+  });
   it("연결된 추모관과 사진이 없어도 기본 정보가 표시된다", async () => {
     const rows = await searchKioskSomangIntermentRecords("김테스트");
     expect(rows.map(toKioskInterment)).toEqual([
@@ -51,7 +62,7 @@ describe("키오스크 안장 기록", () => {
         deathDate: "2020-05-20",
         burialPlace: "가구역 12",
         burialDate: "2020-05-22",
-        message: "소망교회 소망동산에 안장되어 있습니다.",
+        message: "등록된 안장 장소: 가구역 12",
         href: null,
       },
     ]);

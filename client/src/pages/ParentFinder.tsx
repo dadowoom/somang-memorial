@@ -154,7 +154,7 @@ export default function ParentFinder() {
                 내 부모님 찾기
               </h1>
               <p className="mt-6 max-w-xl text-sm leading-7 text-[#616161]">
-                소망동산에 안장되신 부모님을 찾아, 필요한 정보가 채워진 비공개
+                교회에 등록된 부모님의 기록을 찾아, 필요한 정보가 채워진 비공개
                 추모관을 시작할 수 있습니다.
               </p>
             </div>
@@ -230,7 +230,7 @@ export default function ParentFinder() {
             {hasSearched && records.length === 0 && !notice && (
               <div className="mt-6 border border-[#b5b0a7] py-14 text-center">
                 <p className="text-sm text-[#616161]">
-                  일치하는 소망동산 안장 기록을 찾지 못했습니다.
+                  일치하는 등록 기록을 찾지 못했습니다.
                 </p>
                 <p className="mt-2 text-xs leading-5 text-[#777]">
                   성함을 다시 확인해 주세요.

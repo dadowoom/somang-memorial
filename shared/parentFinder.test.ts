@@ -90,6 +90,16 @@ describe("parent finder helpers", () => {
   });
 
   it("does not create a memorial day from an incomplete death date", () => {
+    for (const burialPlace of ["", "금촌 기독묘원"]) {
+      expect(
+        createIntermentMemorialCopy({
+          name: "가상인물",
+          role: null,
+          deathDate: "1999-01-01",
+          burialPlace,
+        }).summary
+      ).not.toContain("소망동산");
+    }
     expect(formatMemorialDay("2026")).toBeNull();
   });
 });
