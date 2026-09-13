@@ -72,8 +72,8 @@ export default function MemorialFamilyMembers() {
         </h1>
         <p className="mt-4 text-base leading-7 text-[#616161]">
           {info.memorialName} 님의 추모관을 함께 관리할 가족을 초대합니다.
-          초대받은 가족은 글과 사진, 가족관을 함께 고칠 수 있습니다. 다른 가족을
-          초대하거나 제외하는 것은 추모관을 만든 분만 할 수 있습니다.
+          초대받은 가족은 글과 사진, 가족관을 함께 수정할 수 있습니다. 다른 가족을
+          초대하거나 관리 권한을 해제하는 것은 추모관을 만든 분과 교회 관리자만 할 수 있습니다.
         </p>
 
         <InvitationSection
@@ -134,7 +134,7 @@ function InvitationSection({
   async function handleRevoke() {
     if (
       !window.confirm(
-        "지금 살아 있는 초대 링크를 닫을까요? 이미 들어온 가족은 그대로 남습니다."
+        "현재 초대 링크의 사용을 중지할까요? 이미 참여한 가족은 계속 함께 관리할 수 있습니다."
       )
     ) {
       return;
@@ -170,7 +170,7 @@ function InvitationSection({
       <p className="mt-4 text-base leading-7 text-[#616161]">
         링크를 만들어 가족에게 보내 주세요. 링크는 {invitationDays}일 동안 쓸 수
         있고, 여러 가족이 같은 링크로 들어올 수 있습니다. 새 링크를 만들면 이전
-        링크는 닫힙니다.
+        링크는 더 이상 사용할 수 없습니다.
       </p>
 
       {link ? (
@@ -205,8 +205,8 @@ function InvitationSection({
         <div className="mt-5">
           {invitation && (
             <p className="mb-3 text-sm leading-6 text-[#616161]">
-              {formatDate(invitation.createdAt)}에 만든 링크가{" "}
-              {formatDate(invitation.expiresAt)}까지 살아 있습니다. 링크 원문은
+              {formatDate(invitation.createdAt)}에 만든 링크는{" "}
+              {formatDate(invitation.expiresAt)}까지 사용할 수 있습니다. 링크 원문은
               다시 볼 수 없으니, 잃어버렸다면 새로 만들어 주세요.
             </p>
           )}
@@ -230,7 +230,7 @@ function InvitationSection({
                 className={subtleButtonClass}
                 disabled={revoke.isPending}
               >
-                링크 닫기
+                링크 사용 중지
               </button>
             )}
           </div>
@@ -269,7 +269,7 @@ function MembersSection({
   async function handleRemove(member: { userId: number; name: string }) {
     if (
       !window.confirm(
-        `${member.name || "이 가족"} 님을 함께 관리하는 가족에서 제외할까요? 다시 초대하면 돌아올 수 있습니다.`
+        `${member.name ? `${member.name} 님의` : "이분의"} 추모관 관리 권한을 해제할까요? 다시 초대하면 함께 관리할 수 있습니다.`
       )
     ) {
       return;
@@ -316,7 +316,7 @@ function MembersSection({
                 className={subtleButtonClass}
                 disabled={remove.isPending}
               >
-                제외
+                관리 권한 해제
               </button>
             </li>
           ))}

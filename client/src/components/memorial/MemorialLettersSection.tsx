@@ -33,7 +33,7 @@ export default function MemorialLettersSection({
     onSuccess: async () => {
       setAuthor("");
       setContent("");
-      setMessage("편지가 접수되었습니다. 관리자 확인 후 공개됩니다.");
+      setMessage("편지가 남겨졌습니다.");
       await Promise.all([
         utils.letter.byMemorial.invalidate(queryInput),
         utils.letter.recent.invalidate(),
@@ -47,7 +47,7 @@ export default function MemorialLettersSection({
     const trimmedContent = content.trim();
 
     if (!trimmedAuthor || !trimmedContent) {
-      setMessage("이름과 편지 내용을 모두 입력해주세요.");
+      setMessage("보내는 분의 이름과 편지 내용을 모두 입력해 주세요.");
       return;
     }
 
@@ -66,7 +66,7 @@ export default function MemorialLettersSection({
         <SectionHeader
           eyebrow="Letters"
           title="하늘로 보내는 편지"
-          description={`${memorialName}님께 전하고 싶은 마음을 남겨주세요.`}
+          description={`${memorialName}님께 전하고 싶은 마음을 남겨 주세요.`}
         />
 
         <div className="mx-auto max-w-5xl">
@@ -80,12 +80,12 @@ export default function MemorialLettersSection({
                   className="text-xs font-medium uppercase tracking-[0.16em]"
                   style={{ color: warmGold }}
                 >
-                  From
+                  보내는 분
                 </span>
                 <input
                   value={author}
                   onChange={event => setAuthor(event.target.value)}
-                  placeholder="작성자"
+                  placeholder="보내는 분의 이름"
                   maxLength={80}
                   className="mt-4 h-11 w-full bg-transparent text-sm text-[#121212] outline-none placeholder:text-[#9a9a9a]"
                 />
@@ -95,12 +95,12 @@ export default function MemorialLettersSection({
                   className="text-xs font-medium uppercase tracking-[0.16em]"
                   style={{ color: warmGold }}
                 >
-                  To {memorialName}
+                  편지 내용
                 </span>
                 <textarea
                   value={content}
                   onChange={event => setContent(event.target.value)}
-                  placeholder="전하고 싶은 마음을 남겨주세요."
+                  placeholder="전하고 싶은 마음을 남겨 주세요."
                   maxLength={2000}
                   rows={5}
                   className="mt-4 w-full resize-none bg-transparent text-sm leading-7 text-[#121212] outline-none placeholder:text-[#9a9a9a]"
@@ -108,7 +108,10 @@ export default function MemorialLettersSection({
               </label>
             </div>
             <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
-              <p className="text-xs leading-6" style={{ color: mutedText }}>
+              <p
+                className="break-keep text-xs leading-6 [overflow-wrap:anywhere]"
+                style={{ color: mutedText }}
+              >
                 {message ||
                   (isPrivate
                     ? "비공개 추모관에만 보관되며 전체 편지 목록에는 표시되지 않습니다."
@@ -144,7 +147,7 @@ export default function MemorialLettersSection({
                       className="text-sm font-medium"
                       style={{ color: warmText }}
                     >
-                      From {letter.author}
+                      보내는 분 · {letter.author}
                     </p>
                     <p className="text-xs" style={{ color: mutedText }}>
                       {formatDate(letter.createdAt)}
@@ -174,7 +177,7 @@ export default function MemorialLettersSection({
                 className="inline-flex h-11 items-center justify-center border border-[#d5c9b4] bg-white px-5 text-sm font-medium transition-colors hover:bg-[#f9f9f9]"
                 style={{ color: "#4f4638" }}
               >
-                모든 편지 보기
+                편지 모아 보기
               </span>
             </Link>
           </div>
@@ -202,13 +205,16 @@ function SectionHeader({
         {eyebrow}
       </p>
       <h2
-        className="text-3xl font-light md:text-4xl"
+        className="break-keep text-3xl font-light [overflow-wrap:anywhere] md:text-4xl"
         style={{ ...serifStyle, color: warmText }}
       >
         {title}
       </h2>
       {description && (
-        <p className="mt-4 text-sm leading-7" style={{ color: mutedText }}>
+        <p
+          className="mt-4 break-keep text-sm leading-7 [overflow-wrap:anywhere]"
+          style={{ color: mutedText }}
+        >
           {description}
         </p>
       )}

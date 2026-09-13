@@ -154,7 +154,7 @@ function ensurePasswordAttemptAllowed(
   if (!result.allowed) {
     throw new TRPCError({
       code: "TOO_MANY_REQUESTS",
-      message: "비밀번호를 여러 번 잘못 입력했습니다. 잠시 후 다시 시도해주세요.",
+      message: "비밀번호를 여러 번 잘못 입력했습니다. 잠시 후 다시 시도해 주세요.",
     });
   }
 }
@@ -254,7 +254,7 @@ const letterCreateInput = z
     ctx.addIssue({
       code: "custom",
       path: ["recipientName"],
-      message: "받는 분을 입력해주세요.",
+      message: "받는 분을 입력해 주세요.",
     });
   });
 
@@ -272,15 +272,15 @@ const familyRoomPasswordField = z
   .trim()
   .min(
     FAMILY_ROOM_PASSWORD_MIN,
-    `비밀번호는 ${FAMILY_ROOM_PASSWORD_MIN}자 이상 입력해주세요.`
+    `비밀번호는 ${FAMILY_ROOM_PASSWORD_MIN}자 이상 입력해 주세요.`
   )
   .max(100);
 
 const familyRoomSlugField = z.string().trim().min(1).max(120);
 
 const familyRoomInfoFields = {
-  title: z.string().trim().min(1, "제목을 입력해주세요.").max(160),
-  intro: z.string().trim().min(1, "소개글을 입력해주세요.").max(2000),
+  title: z.string().trim().min(1, "제목을 입력해 주세요.").max(160),
+  intro: z.string().trim().min(1, "소개글을 입력해 주세요.").max(2000),
 };
 
 const familyRoomCreateInput = z.object({
@@ -379,7 +379,7 @@ const parentFinderSearchInput = z.object({
     .trim()
     .refine(
       value => value === "" || isSearchableIntermentBirthDate(value),
-      "생년월일을 정확히 입력해주세요."
+      "생년월일을 정확히 입력해 주세요."
     )
     .optional(),
 });
@@ -396,7 +396,7 @@ const reminderSubscribeInput = z.object({
     .trim()
     .min(10)
     .max(20)
-    .regex(/^[0-9\-\s+()]+$/, "휴대폰 번호 형식으로 입력해주세요."),
+    .regex(/^[0-9\-\s+()]+$/, "휴대폰 번호 형식으로 입력해 주세요."),
   consent: z.literal(true),
 });
 
@@ -416,7 +416,7 @@ const adminSmsTestInput = z.object({
     .trim()
     .min(10)
     .max(20)
-    .regex(/^[0-9\-\s+()]+$/, "휴대폰 번호 형식으로 입력해주세요."),
+    .regex(/^[0-9\-\s+()]+$/, "휴대폰 번호 형식으로 입력해 주세요."),
 });
 
 const adminUserRoleInput = z.object({
@@ -430,39 +430,39 @@ const adminUserStatusInput = z.object({
 });
 
 const authSignupInput = z.object({
-  name: z.string().trim().min(2, "성함을 입력해주세요.").max(80),
-  email: z.string().trim().email("이메일 형식으로 입력해주세요.").max(320),
+  name: z.string().trim().min(2, "성함을 입력해 주세요.").max(80),
+  email: z.string().trim().email("이메일 형식으로 입력해 주세요.").max(320),
   phone: z
     .string()
     .trim()
     .max(30)
-    .regex(/^[0-9\-\s+()]*$/, "휴대폰 번호 형식으로 입력해주세요.")
+    .regex(/^[0-9\-\s+()]*$/, "휴대폰 번호 형식으로 입력해 주세요.")
     .optional(),
-  password: z.string().min(8, "비밀번호는 8자 이상 입력해주세요.").max(100),
+  password: z.string().min(8, "비밀번호는 8자 이상 입력해 주세요.").max(100),
 });
 
 const authLoginInput = z.object({
   identifier: z
     .string()
     .trim()
-    .min(1, "아이디 또는 이메일을 입력해주세요.")
+    .min(1, "아이디 또는 이메일을 입력해 주세요.")
     .max(320)
     .refine(
       value =>
         isAdminLoginIdentifier(value) ||
         z.string().email().safeParse(value).success,
-      "아이디 또는 이메일 형식으로 입력해주세요."
+      "아이디 또는 이메일 형식으로 입력해 주세요."
     ),
-  password: z.string().min(1, "비밀번호를 입력해주세요.").max(100),
+  password: z.string().min(1, "비밀번호를 입력해 주세요.").max(100),
 });
 
 const passwordResetRequestInput = z.object({
-  email: z.string().trim().email("이메일 형식으로 입력해주세요.").max(320),
+  email: z.string().trim().email("이메일 형식으로 입력해 주세요.").max(320),
 });
 
 const passwordResetConfirmInput = z.object({
   token: z.string().trim().min(1).max(200),
-  password: z.string().min(8, "비밀번호는 8자 이상 입력해주세요.").max(100),
+  password: z.string().min(8, "비밀번호는 8자 이상 입력해 주세요.").max(100),
 });
 
 const textDisplaySizeSchema = z.enum(["auto", "small", "normal", "large"]);
@@ -642,7 +642,7 @@ export const appRouter = router({
           loginAttemptLimiter.recordFailure(attemptKey);
           throw new TRPCError({
             code: "UNAUTHORIZED",
-            message: "이메일 또는 비밀번호가 맞지 않습니다.",
+            message: "아이디 또는 이메일과 비밀번호를 다시 확인해 주세요.",
           });
         }
 
@@ -681,7 +681,7 @@ export const appRouter = router({
     deleteAccount: protectedProcedure
       .input(
         z.object({
-          password: z.string().min(1, "비밀번호를 입력해주세요.").max(100),
+          password: z.string().min(1, "비밀번호를 입력해 주세요.").max(100),
         })
       )
       .mutation(async ({ ctx, input }) => {

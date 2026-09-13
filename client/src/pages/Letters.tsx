@@ -127,7 +127,7 @@ export default function Letters() {
     const trimmedContent = content.trim();
 
     if (!trimmedRecipient || !trimmedAuthor || !trimmedContent) {
-      setMessage("받는 분, 작성자, 내용을 모두 입력해주세요.");
+      setMessage("받는 분, 보내는 분, 편지 내용을 모두 입력해 주세요.");
       return;
     }
 
@@ -155,7 +155,7 @@ export default function Letters() {
                   Letters
                 </p>
                 <h1
-                  className="max-w-3xl text-4xl font-light leading-[1.15] md:text-7xl"
+                  className="max-w-3xl break-keep text-4xl font-light leading-[1.15] [overflow-wrap:anywhere] md:text-7xl"
                   style={{ ...serifStyle, color: warmText }}
                 >
                   하늘로 보내는 편지
@@ -163,8 +163,11 @@ export default function Letters() {
               </div>
 
               <div className="border-l border-[#d5c9b4] pl-0 lg:pl-8">
-                <p className="text-base leading-8" style={{ color: mutedText }}>
-                  고인에게 하고 싶은 이야기를 적어 하늘로 보내세요.
+                <p
+                  className="break-keep text-base leading-8 [overflow-wrap:anywhere]"
+                  style={{ color: mutedText }}
+                >
+                  사랑하는 분을 떠올리며, 전하고 싶은 마음을 편지로 남겨 주세요.
                   추모관에 남겨진 편지와 이곳에서 직접 남긴 편지가 함께
                   모입니다.
                 </p>
@@ -174,7 +177,7 @@ export default function Letters() {
                   className="mt-7 inline-flex h-11 items-center justify-center gap-2 bg-[#1f1d1a] px-5 text-sm font-medium text-white transition-colors hover:bg-[#33302b]"
                 >
                   <PenLine className="h-4 w-4" strokeWidth={1.7} />
-                  추모글 등록하기
+                  편지 쓰기
                 </button>
               </div>
             </div>
@@ -189,7 +192,7 @@ export default function Letters() {
                   <input
                     value={query}
                     onChange={event => updateQuery(event.target.value)}
-                    placeholder="고인, 작성자, 내용으로 찾기"
+                    placeholder="성함이나 편지 내용으로 찾기"
                     className="h-10 min-w-0 flex-1 bg-transparent text-base text-[#121212] outline-none placeholder:text-[#9a9a9a]"
                   />
                 </label>
@@ -197,15 +200,15 @@ export default function Letters() {
               <div className="grid grid-cols-4 border border-[#b5b0a7] sm:flex">
                 {[
                   ["all", "전체"],
-                  ["to", "고인"],
+                  ["to", "받는 분"],
                   ["content", "내용"],
-                  ["author", "작성자"],
+                  ["author", "보내는 분"],
                 ].map(([value, label]) => (
                   <button
                     key={value}
                     type="button"
                     onClick={() => updateField(value as SearchField)}
-                    className={`h-12 px-4 text-sm transition-colors ${
+                    className={`h-12 whitespace-nowrap px-1.5 text-sm transition-colors sm:px-4 ${
                       field === value
                         ? "bg-[#1f1d1a] text-white"
                         : "bg-white text-[#4f4638] hover:bg-[#f9f9f9]"
@@ -228,12 +231,12 @@ export default function Letters() {
                       className="text-xs font-medium uppercase tracking-[0.16em]"
                       style={{ color: warmGold }}
                     >
-                      To
+                      받는 분
                     </span>
                     <input
                       value={recipientName}
                       onChange={event => setRecipientName(event.target.value)}
-                      placeholder="받는 분"
+                      placeholder="받는 분의 성함"
                       maxLength={120}
                       className="mt-4 h-11 w-full bg-transparent text-sm text-[#121212] outline-none placeholder:text-[#9a9a9a]"
                     />
@@ -243,12 +246,12 @@ export default function Letters() {
                       className="text-xs font-medium uppercase tracking-[0.16em]"
                       style={{ color: warmGold }}
                     >
-                      From
+                      보내는 분
                     </span>
                     <input
                       value={author}
                       onChange={event => setAuthor(event.target.value)}
-                      placeholder="작성자"
+                      placeholder="보내는 분의 이름"
                       maxLength={80}
                       className="mt-4 h-11 w-full bg-transparent text-sm text-[#121212] outline-none placeholder:text-[#9a9a9a]"
                     />
@@ -259,19 +262,22 @@ export default function Letters() {
                     className="text-xs font-medium uppercase tracking-[0.16em]"
                     style={{ color: warmGold }}
                   >
-                    Letter
+                    편지 내용
                   </span>
                   <textarea
                     value={content}
                     onChange={event => setContent(event.target.value)}
-                    placeholder="전하고 싶은 마음을 남겨주세요."
+                    placeholder="전하고 싶은 마음을 남겨 주세요."
                     maxLength={2000}
                     rows={5}
                     className="mt-4 w-full resize-none bg-transparent text-sm leading-7 text-[#121212] outline-none placeholder:text-[#9a9a9a]"
                   />
                 </label>
                 <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
-                  <p className="text-xs leading-6" style={{ color: mutedText }}>
+                  <p
+                    className="break-keep text-xs leading-6 [overflow-wrap:anywhere]"
+                    style={{ color: mutedText }}
+                  >
                     {message ||
                       "이곳에서 남긴 편지도 추모관 편지와 함께 모입니다."}
                   </p>
@@ -295,11 +301,11 @@ export default function Letters() {
               <p className="text-sm text-[#616161]">
                 {lettersQuery.isLoading
                   ? "불러오는 중"
-                  : `최근 편지 ${results.length}건`}
+                  : `최근 편지 ${results.length}편`}
               </p>
               <Link href="/memorial/search">
                 <button className="h-10 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5]">
-                  추모관
+                  추모관 찾기
                 </button>
               </Link>
             </div>
@@ -307,7 +313,7 @@ export default function Letters() {
             {lettersQuery.isLoading ? (
               <StateBox text="편지를 불러오고 있습니다." />
             ) : lettersQuery.isError ? (
-              <StateBox text="편지를 불러오지 못했습니다." />
+              <StateBox text="편지를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요." />
             ) : visibleLetters.length === 0 ? (
               <StateBox text="아직 남겨진 편지가 없습니다." />
             ) : (
@@ -368,7 +374,9 @@ export default function Letters() {
 function StateBox({ text }: { text: string }) {
   return (
     <div className="border border-[#b5b0a7] py-20 text-center">
-      <p className="text-sm text-[#616161]">{text}</p>
+      <p className="break-keep px-5 text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+        {text}
+      </p>
     </div>
   );
 }

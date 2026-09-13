@@ -267,15 +267,15 @@ export default function Kiosk() {
             )}
             <h1
               className={cn(
-                "text-[42px] font-normal leading-[1.2]",
+                "break-keep text-[42px] font-normal leading-[1.2] [overflow-wrap:anywhere]",
                 !submittedKeyword && "mt-4"
               )}
               style={serifStyle}
             >
-              고인 성함 검색
+              그리운 분을 찾아보세요
             </h1>
-            <p className="mt-4 text-base leading-7 text-[#616161]">
-              성함을 입력한 뒤 검색 버튼을 눌러 주세요.
+            <p className="mt-4 break-keep text-base leading-7 text-[#616161] [overflow-wrap:anywhere]">
+              고인의 성함을 두 글자 이상 입력한 뒤, 검색을 눌러 주세요.
             </p>
 
             <form onSubmit={handleSearch} className="mt-10">
@@ -314,7 +314,9 @@ export default function Kiosk() {
               </label>
 
               {message && (
-                <p className="mt-4 text-base text-[#9f2a2a]">{message}</p>
+                <p className="mt-4 break-keep text-base text-[#9f2a2a] [overflow-wrap:anywhere]">
+                  {message}
+                </p>
               )}
 
               <button
@@ -329,14 +331,14 @@ export default function Kiosk() {
             {!submittedKeyword && (
               <div className="mt-10 border-y border-[#b5b0a7] py-6">
                 <p className="text-sm text-[#616161]">추모관 이용 안내</p>
-                <ol className="mt-4 grid grid-cols-3 gap-4 text-sm leading-6 text-[#454545]">
+                <ol className="mt-4 grid grid-cols-3 gap-4 break-keep text-sm leading-6 text-[#454545] [overflow-wrap:anywhere]">
                   <li>
                     <span className="block text-xs text-[#888]">01</span>
                     성함을 입력해 주세요.
                   </li>
                   <li>
                     <span className="block text-xs text-[#888]">02</span>
-                    추모관을 선택해 주세요.
+                    찾으시는 분을 선택해 주세요.
                   </li>
                   <li>
                     <span className="block text-xs text-[#888]">03</span>
@@ -371,7 +373,10 @@ export default function Kiosk() {
               }}
             />
           ) : totalResults === 0 ? (
-            <EmptyPanel title="일치하는 추모관 또는 안장 기록이 없습니다." />
+            <EmptyPanel
+              title="입력하신 성함으로는 기록을 찾지 못했습니다."
+              description="성함을 확인한 뒤 다시 검색해 주세요."
+            />
           ) : (
             <div className="h-full overflow-y-auto border-t border-[#b5b0a7]">
               <div className="flex items-center justify-between px-8 py-4">
@@ -497,9 +502,13 @@ function EmptyPanel({
 }) {
   return (
     <div className="flex min-h-[180px] flex-col items-center justify-center border-t border-[#b5b0a7] px-8 py-8 text-center">
-      <p className="text-lg font-medium text-[#343434]">{title}</p>
+      <p className="break-keep text-lg font-medium text-[#343434] [overflow-wrap:anywhere]">
+        {title}
+      </p>
       {description && (
-        <p className="mt-3 text-base leading-7 text-[#616161]">{description}</p>
+        <p className="mt-3 break-keep text-base leading-7 text-[#616161] [overflow-wrap:anywhere]">
+          {description}
+        </p>
       )}
       {actionLabel && onAction && (
         <button

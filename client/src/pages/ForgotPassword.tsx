@@ -41,7 +41,7 @@ export default function ForgotPassword() {
           SOMANG ACCOUNT
         </p>
         <h1 className="mt-5 text-[30px] font-light leading-tight text-[#121212]">
-          비밀번호를 잊으셨나요
+          비밀번호를 잊으셨나요?
         </h1>
 
         {sent ? (
@@ -59,12 +59,12 @@ export default function ForgotPassword() {
             ) : (
               <>
                 <p>
-                  가입하신 이메일이라면 비밀번호를 다시 정하는 주소를 보내
-                  드렸습니다. 메일함을 확인해 주세요.
+                  입력하신 이메일로 가입한 계정이 있다면, 비밀번호를 다시
+                  정할 수 있는 링크를 보내 드렸습니다. 메일함을 확인해 주세요.
                 </p>
                 <p className="text-[#8a8a8a]">
-                  메일이 보이지 않으면 스팸함도 살펴봐 주세요. 주소는 30분
-                  동안만 쓸 수 있습니다.
+                  메일이 보이지 않으면 스팸함도 살펴봐 주세요. 이 링크는 발송 후
+                  30분 동안 사용할 수 있습니다.
                 </p>
               </>
             )}
@@ -79,7 +79,7 @@ export default function ForgotPassword() {
           <>
             <p className="mt-6 text-sm leading-7 text-[#616161]">
               가입하실 때 쓰신 이메일 주소를 알려주시면, 비밀번호를 다시 정할 수
-              있는 주소를 보내 드립니다.
+              있는 링크를 보내 드립니다.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-10">
@@ -113,7 +113,7 @@ export default function ForgotPassword() {
                 disabled={requestReset.isPending}
                 className="mt-8 h-12 w-full bg-[#18181b] text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {requestReset.isPending ? "보내는 중..." : "재설정 주소 받기"}
+                {requestReset.isPending ? "보내는 중..." : "재설정 링크 받기"}
               </button>
             </form>
 

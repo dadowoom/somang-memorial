@@ -14,26 +14,26 @@ import { Link } from "wouter";
 const SERVICES = [
   {
     number: "01",
-    title: "소망 만들기",
-    desc: "고인의 생애와 신앙의 기록을 사진, 글, 연혁으로 정리합니다.",
+    title: "추모관 만들기",
+    desc: "사랑하는 분의 삶과 신앙을 사진과 글로 차근차근 남깁니다.",
     icon: BookOpenText,
   },
   {
     number: "02",
-    title: "소망 전하기",
-    desc: "등록된 내용을 바탕으로 품위 있는 부고장과 공유 링크를 준비합니다.",
+    title: "부고 전하기",
+    desc: "부고장을 만들어 가족과 이웃에게 소식을 전합니다.",
     icon: Send,
   },
   {
     number: "03",
-    title: "소망 남기기",
-    desc: "교회 공동체가 방문록과 헌화로 기억의 마음을 남길 수 있습니다.",
+    title: "편지 남기기",
+    desc: "다 전하지 못한 말과 함께한 기억을 편지에 담습니다.",
     icon: Flower2,
   },
 ];
 
 const STEPS = [
-  "처음이면 회원가입, 이미 가입했다면 로그인합니다.",
+  "처음 방문하셨다면 회원가입을, 이미 가입하셨다면 로그인을 해 주세요.",
   "고인의 기본 정보와 글을 작성하고, 등록 요청 후 사진을 준비합니다.",
   "관리자 확인 후 공개된 추모관의 링크를 가족과 공동체에 공유합니다.",
 ];
@@ -42,7 +42,7 @@ const VALUES = [
   {
     number: "01",
     title: "가족에게는 위로",
-    desc: "고인의 사진과 이야기, 추모의 글을 통해 사랑하는 이를 다시 만나고, 슬픔을 믿음 안에서 위로로 품습니다.",
+    desc: "사진과 글에 담긴 그리운 순간을 돌아보며, 가족이 함께 기억을 나눕니다.",
   },
   {
     number: "02",
@@ -63,13 +63,13 @@ export default function Home() {
     <div className="min-h-screen bg-white text-[#121212]">
       <Navbar />
 
-      <main className="pt-16">
+      <main className="break-keep pt-16 [overflow-wrap:anywhere]">
         <section className="relative min-h-[calc(100svh-4rem)] overflow-hidden border-b border-[#b5b0a7] bg-[#ffffff]">
           <HeroStillBackground />
           <div className="container relative z-10 flex min-h-[calc(100svh-4rem)] flex-col justify-center py-14 md:py-20">
             <div className="max-w-3xl">
               <p className="mb-6 text-[11px] font-medium tracking-[0.28em] text-[#3f3f3f] uppercase">
-                소망교회 온라인 추모 서비스
+                소망교회 온라인 추모관
               </p>
               <h1
                 className="max-w-3xl text-4xl font-normal leading-[1.12] sm:text-6xl md:text-8xl"
@@ -79,24 +79,23 @@ export default function Home() {
               </h1>
               <p className="mt-8 max-w-2xl text-base leading-8 text-[#333333] md:text-lg">
                 <span className="block">
-                  소망교회 디지털추모관 「소망이 있는 곳」은
+                  한 사람의 삶과 신앙을
                 </span>
                 <span className="block">
-                  믿음으로 살다 주님 품에 안긴 성도들의 삶과 신앙을 기억하는
-                  거룩한 공간입니다.
+                  가족과 교회가 함께 기억합니다.
                 </span>
               </p>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
                 <Link href="/memorial/search" className="w-full sm:w-auto">
                   <button className="inline-flex h-12 w-full items-center justify-center gap-2 bg-[#18181b] px-6 text-sm font-medium text-white transition-opacity hover:opacity-90">
                     <Search className="h-4 w-4" />
-                    추모관
+                    추모관 찾기
                   </button>
                 </Link>
                 <Link href="/memorial/create" className="w-full sm:w-auto">
                   <button className="inline-flex h-12 w-full items-center justify-center gap-2 border border-[#b5b0a7] bg-white px-6 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                     <Plus className="h-4 w-4" />
-                    소망 만들기
+                    추모관 만들기
                   </button>
                 </Link>
                 <Link
@@ -122,7 +121,7 @@ export default function Home() {
               <div className="grid gap-7 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
                 <div className="flex items-center gap-5 md:block">
                   <p className="text-[11px] font-medium tracking-[0.28em] text-[#616161] uppercase">
-                    Values
+                    함께 간직하는 기억
                   </p>
                   <div className="h-px flex-1 bg-[#616161] md:mt-8 md:w-16" />
                 </div>
@@ -131,13 +130,10 @@ export default function Home() {
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
                   <span className="block">
-                    「소망이 있는 곳」은 고인의 삶과 믿음과 사랑을
+                    삶과 신앙의 이야기를 함께 간직하고
                   </span>
                   <span className="block">
-                    가족과 교회의 기억 속에 아름답게 보존하며,
-                  </span>
-                  <span className="block">
-                    다음 세대가 신앙의 이야기를 이어받도록 돕습니다.
+                    다음 세대에 전합니다.
                   </span>
                 </h2>
               </div>
@@ -173,17 +169,17 @@ export default function Home() {
             <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
               <div>
                 <p className="mb-4 text-[11px] font-medium tracking-[0.28em] text-[#616161] uppercase">
-                  Services
+                  이용 안내
                 </p>
                 <h2
                   className="text-3xl font-normal tracking-[-0.02em] md:text-5xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
-                  세 가지 서비스
+                  함께 기억하는 세 가지 방법
                 </h2>
               </div>
               <p className="max-w-md text-sm leading-7 text-[#616161]">
-                등록부터 공유, 공동체의 추모까지 흐름을 단순하게 정리했습니다.
+                삶을 기록하고, 소식을 전하고, 그리운 마음을 함께 나눕니다.
               </p>
             </div>
 
@@ -224,15 +220,13 @@ export default function Home() {
           <div className="container grid gap-10 md:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="mb-4 text-[11px] font-medium tracking-[0.28em] text-[#616161] uppercase">
-                Process
+                준비 순서
               </p>
               <h2
                 className="text-3xl font-normal tracking-[-0.02em] md:text-5xl"
                 style={{ fontFamily: "'Noto Serif KR', serif" }}
               >
-                소망 남기기
-                <br />
-                절차
+                추모관을 준비하는 순서
               </h2>
             </div>
             <div className="border-t border-[#b5b0a7]">
@@ -262,16 +256,16 @@ export default function Home() {
                   className="text-3xl font-normal tracking-[-0.02em] md:text-5xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
-                  소망을 남길 준비가 되었나요
+                  소중한 기억을, 하나씩 남겨 주세요
                 </h2>
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-[#616161]">
-                  회원가입 후 고인을 등록하고, 온라인 추모관과 부고장을 만들 수
-                  있습니다. 방문록 작성은 누구나 참여할 수 있습니다.
+                  회원가입 후 추모관과 부고장을 만들 수 있습니다.
+                  추모의 마음은 편지로 함께 나눌 수 있습니다.
                 </p>
               </div>
               <Link href="/memorial/create">
                 <button className="inline-flex h-12 items-center justify-center gap-2 bg-[#18181b] px-6 text-sm font-medium text-white transition-opacity hover:opacity-90">
-                  시작하기
+                  추모관 만들기
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </Link>

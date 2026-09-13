@@ -63,8 +63,8 @@ export default function Login() {
   const redirectPath = useMemo(getRedirectPath, []);
   const isCreateRedirect = redirectPath.startsWith("/memorial/create");
   const introText = isCreateRedirect
-    ? "소망 만들기는 계정 확인 후 이용할 수 있습니다. 처음 방문하셨다면 필수 정보를 입력해 가입하고, 가입 직후 바로 소망 만들기로 이어집니다."
-    : "소망 만들기는 계정 확인 후 이용할 수 있습니다. 처음 방문하셨다면 필수 정보를 입력해 가입하고, 가입 직후 바로 서비스를 이용할 수 있습니다.";
+    ? "추모관 만들기는 로그인 후 이용할 수 있습니다. 처음 방문하셨다면 회원가입을 해 주세요. 가입을 마치면 바로 추모관을 작성할 수 있습니다."
+    : "로그인하시면 추모관을 만들거나 가족과 함께 관리하는 기록을 이어갈 수 있습니다. 처음 방문하셨다면 회원가입을 해 주세요.";
   const allConsentChecked = privacyConsent && serviceConsent;
   const passwordConfirmMessage =
     signupPasswordConfirm.length === 0
@@ -126,7 +126,7 @@ export default function Login() {
     }
 
     if (signupPassword !== signupPasswordConfirm) {
-      setMessage("비밀번호 확인이 일치하지 않습니다.");
+      setMessage("두 비밀번호가 서로 다릅니다.");
       return;
     }
 
@@ -167,14 +167,14 @@ export default function Login() {
                 SOMANG ACCOUNT
               </p>
               <h1
-                className="text-4xl font-normal leading-tight md:text-6xl"
+                className="break-keep text-4xl font-normal leading-tight md:text-6xl"
                 style={{ fontFamily: "'Noto Serif KR', serif" }}
               >
-                로그인 후 바로
+                소중한 기억을
                 <br />
-                소망을 남깁니다
+                이어갑니다
               </h1>
-              <p className="mt-6 max-w-lg text-sm leading-7 text-[#616161]">
+              <p className="mt-6 max-w-lg break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                 {introText}
               </p>
 
@@ -182,7 +182,7 @@ export default function Login() {
                 {[
                   ["01", "계정 확인"],
                   ["02", "필수 동의"],
-                  ["03", "소망 작성"],
+                  ["03", "추모관 이용"],
                 ].map(([number, text]) => (
                   <div key={number} className="bg-white p-5">
                     <p className="text-xs text-[#777]">{number}</p>
@@ -219,8 +219,7 @@ export default function Login() {
                 <form onSubmit={submitLogin} className="mt-8 space-y-6">
                   {isCreateRedirect && (
                     <div className="border border-[#b5b0a7] p-4 text-sm leading-6 text-[#616161]">
-                      소망 만들기는 로그인 후 이어집니다. 이미 계정이 있다면
-                      로그인하면 작성 화면으로 바로 이동합니다.
+                      로그인하시면 추모관 작성 화면으로 바로 이동합니다.
                     </div>
                   )}
                   <Field label="아이디 또는 이메일" required>
@@ -286,7 +285,7 @@ export default function Login() {
                   {isCreateRedirect && (
                     <div className="border border-[#b5b0a7] p-4 text-sm leading-6 text-[#616161]">
                       처음 이용하시는 경우 필수 정보를 확인한 뒤 가입합니다.
-                      가입이 완료되면 로그인 상태로 소망 만들기를 시작합니다.
+                      가입이 완료되면 로그인 상태로 추모관 만들기를 시작합니다.
                     </div>
                   )}
                   <Field label="성함" required>

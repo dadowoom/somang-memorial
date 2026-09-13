@@ -183,8 +183,7 @@ export default function AdminMemorials() {
                 추모관 관리
               </h1>
               <p className="mt-6 max-w-2xl text-sm leading-7 text-[#616161]">
-                등록된 추모관을 확인하고, 기본 정보와 공개 설정을 조용히
-                정리합니다.
+                등록된 추모관의 기본 정보와 공개 설정을 확인하고 관리합니다.
               </p>
             </div>
 

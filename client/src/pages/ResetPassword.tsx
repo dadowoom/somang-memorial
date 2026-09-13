@@ -27,7 +27,7 @@ export default function ResetPassword() {
     setMessage("");
 
     if (password.length < 8) {
-      setMessage("비밀번호는 8자 이상 입력해주세요.");
+      setMessage("비밀번호는 8자 이상 입력해 주세요.");
       return;
     }
     if (password !== confirm) {
@@ -65,7 +65,7 @@ export default function ResetPassword() {
               href="/forgot-password"
               className="inline-block pt-2 font-medium text-[#121212] underline underline-offset-4"
             >
-              재설정 주소 다시 받기
+              재설정 링크 다시 받기
             </Link>
           </div>
         ) : done ? (

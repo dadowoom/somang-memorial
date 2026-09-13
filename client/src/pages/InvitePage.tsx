@@ -125,7 +125,7 @@ export default function InvitePage() {
             <p className="mt-6 text-base leading-7 text-[#616161]">
               {user.name ? `${user.name} 님, ` : ""}
               가족이 이 추모관을 함께 관리하도록 초대했습니다. 함께 관리하면
-              글과 사진, 가족관을 직접 고칠 수 있습니다.
+              글과 사진, 가족관을 직접 수정할 수 있습니다.
             </p>
             <p className="mt-2 text-xs text-[#8a8a8a]">
               이 링크는 {formatDate(info.expiresAt)}까지 쓸 수 있습니다.

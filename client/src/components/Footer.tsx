@@ -2,14 +2,14 @@ import { ORG_INFO } from "@/lib/orgInfo";
 import { Link } from "wouter";
 
 const serviceLinks = [
-  { label: "추모관", href: "/memorial/search", type: "route" },
+  { label: "추모관 찾기", href: "/memorial/search", type: "route" },
   {
     label: "우리 부모님 찾기",
     href: "/login?redirect=/my/find-parent&mode=signup",
     type: "route",
   },
-  { label: "소망 만들기", href: "/memorial/create", type: "route" },
-  { label: "서비스", href: "/#services", type: "hash" },
+  { label: "추모관 만들기", href: "/memorial/create", type: "route" },
+  { label: "이용 안내", href: "/#services", type: "hash" },
 ];
 
 export default function Footer() {
@@ -38,14 +38,14 @@ export default function Footer() {
                 </span>
               </div>
             </div>
-            <p className="max-w-sm text-sm leading-7">
+            <p className="max-w-sm break-keep text-sm leading-7 [overflow-wrap:anywhere]">
               소중한 분의 삶과 신앙을 교회 공동체가 함께 기억합니다.
             </p>
           </div>
 
           <div>
             <h2 className="mb-4 text-xs font-medium tracking-[0.22em] text-[#121212] uppercase">
-              서비스
+              이용 안내
             </h2>
             <ul className="text-sm">
               {serviceLinks.map((link) => (
@@ -72,7 +72,7 @@ export default function Footer() {
             </h2>
             <ul className="text-sm">
               <li>{ORG_INFO.address}</li>
-              <li>온라인 추모 서비스</li>
+              <li>온라인 추모관</li>
             </ul>
           </div>
         </div>

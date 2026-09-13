@@ -28,13 +28,13 @@ export default function MemorialSearch() {
                 Memorials
               </p>
               <h1
-                className="text-4xl font-normal tracking-[-0.025em] md:text-6xl"
+                className="break-keep text-4xl font-normal tracking-[-0.025em] [overflow-wrap:anywhere] md:text-6xl"
                 style={{ fontFamily: "'Noto Serif KR', serif" }}
               >
-                추모관
+                추모관 찾기
               </h1>
-              <p className="mt-6 max-w-xl text-sm leading-7 text-[#616161]">
-                고인의 성함을 입력하면 해당 추모관을 찾을 수 있습니다.
+              <p className="mt-6 max-w-xl break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+                고인의 성함으로 추모관을 찾아보세요.
                 전체 명단은 공개하지 않습니다.
               </p>
             </div>
@@ -48,7 +48,7 @@ export default function MemorialSearch() {
                 <input
                   value={query}
                   onChange={event => setQuery(event.target.value)}
-                  placeholder="고인 성함을 두 글자 이상 입력하세요"
+                  placeholder="고인의 성함 (두 글자 이상)"
                   className="h-10 min-w-0 flex-1 bg-transparent text-base text-[#121212] outline-none placeholder:text-[#9a9a9a]"
                   autoFocus
                 />
@@ -63,7 +63,7 @@ export default function MemorialSearch() {
               <div>
                 <p className="text-sm text-[#616161]">
                   {!canSearch
-                    ? "성함을 입력하면 검색 결과가 표시됩니다."
+                    ? "성함을 두 글자 이상 입력하면 검색 결과가 표시됩니다."
                     : memorialsQuery.isLoading
                       ? "검색 중"
                       : `검색 결과 ${results.length}건`}
@@ -74,14 +74,14 @@ export default function MemorialSearch() {
             {!canSearch ? (
               <div className="border border-[#b5b0a7] bg-[#fafafa] px-5 py-14 text-center md:py-20">
                 <p
-                  className="text-2xl font-normal text-[#121212] md:text-3xl"
+                  className="break-keep text-2xl font-normal text-[#121212] [overflow-wrap:anywhere] md:text-3xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
-                  찾고 싶은 분의 성함을 입력해주세요.
+                  찾고 싶은 분의 성함을 입력해 주세요.
                 </p>
-                <p className="mx-auto mt-5 max-w-md text-sm leading-7 text-[#616161]">
+                <p className="mx-auto mt-5 max-w-md break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                   가족과 지인이 필요한 순간에 조용히 찾아볼 수 있도록,
-                  추모관은 검색을 통해서만 확인합니다.
+                  추모관은 성함으로 검색할 수 있습니다.
                 </p>
               </div>
             ) : memorialsQuery.isLoading ? (
@@ -92,24 +92,25 @@ export default function MemorialSearch() {
               </div>
             ) : memorialsQuery.isError ? (
               <div className="border border-[#b5b0a7] py-20 text-center">
-                <p className="text-sm text-[#616161]">
-                  추모관을 검색하지 못했습니다.
+                <p className="break-keep px-5 text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+                  추모관을 검색하지 못했습니다. 잠시 후 다시 확인해 주세요.
                 </p>
               </div>
             ) : results.length === 0 ? (
               <div className="border border-[#b5b0a7] py-20 text-center">
-                <p className="text-sm text-[#616161]">
-                  일치하는 추모관이 없습니다.
+                <p className="break-keep px-5 text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+                  입력하신 성함으로는 추모관을 찾지 못했습니다. 성함을 다시 확인해
+                  주세요.
                 </p>
               </div>
             ) : (
               <div className="overflow-hidden border-y border-[#b5b0a7]">
                 <div className="hidden grid-cols-[150px_1.1fr_1fr_0.8fr_128px] border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] md:grid">
-                  <span>Year</span>
-                  <span>Name</span>
-                  <span>Church</span>
-                  <span>Role</span>
-                  <span className="text-right">Link</span>
+                  <span>생애</span>
+                  <span>성함</span>
+                  <span>교회</span>
+                  <span>직분</span>
+                  <span className="text-right">추모관</span>
                 </div>
 
                 <div className="divide-y divide-[#b5b0a7]">

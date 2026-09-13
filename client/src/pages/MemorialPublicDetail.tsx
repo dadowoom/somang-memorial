@@ -200,7 +200,7 @@ function PrivateMemorialGate({
             {/* 비공개 추모관은 웹 검색에도 키오스크에도 나오지 않는다.
                 "검색에서 확인할 수 있다"고 안내하면 가족이 검색만 하다
                 헛걸음한다. 실제 동작대로 적는다. */}
-            <p className="mt-8 max-w-xl text-sm leading-7 text-[#616161]">
+            <p className="mt-8 max-w-xl break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
               가족만 볼 수 있도록 설정된 추모관입니다. 검색에는 나오지 않으며,
               비밀번호를 아는 분만 들어오실 수 있습니다.
             </p>
@@ -231,7 +231,7 @@ function PrivateMemorialGate({
             </button>
             <Link href="/memorial/search">
               <span className="mt-3 block cursor-pointer text-center text-xs text-[#616161] underline-offset-4 hover:underline">
-                추모관 검색으로 돌아가기
+                추모관 찾기로 돌아가기
               </span>
             </Link>
           </form>
@@ -271,7 +271,7 @@ function MemorialContent({
           <Link href="/memorial/search">
             <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
               <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
-              추모관 목록
+              추모관 찾기로 돌아가기
             </button>
           </Link>
 
@@ -331,7 +331,7 @@ function MemorialContent({
                 <Link href={`/memorial/${memorial.slug}/archive`}>
                   <span className="inline-flex h-11 items-center justify-center gap-2 bg-[#2e2218] px-5 text-sm font-medium text-white transition-colors hover:bg-[#4a3420]">
                     <Images className="h-4 w-4" strokeWidth={1.7} />
-                    기념관 자세히 보기
+                    사진과 기록 더 보기
                   </span>
                 </Link>
                 <a
@@ -492,7 +492,7 @@ function MemorialContent({
             <SectionHeader
               eyebrow="Life Journey"
               title="생애의 여정"
-              description="하나님과 함께 걸어온 발자취를 시간의 흐름으로 정리했습니다."
+              description="하나님과 함께 걸어온 삶의 발자취를 돌아봅니다."
             />
 
             <div className="mx-auto max-w-4xl border-t border-[#d5c9b4]">
@@ -601,12 +601,12 @@ function MemorialReminderForm({
     const trimmedPhone = phone.trim();
 
     if (!trimmedPhone) {
-      setMessage("휴대폰 번호를 입력해주세요.");
+      setMessage("휴대폰 번호를 입력해 주세요.");
       return;
     }
 
     if (!consent) {
-      setMessage("추도일 알림을 위한 번호 저장에 동의해주세요.");
+      setMessage("추도일 알림을 위한 번호 저장에 동의해 주세요.");
       return;
     }
 
@@ -789,13 +789,16 @@ function SectionHeader({
         {eyebrow}
       </p>
       <h2
-        className="text-3xl font-light md:text-4xl"
+        className="break-keep text-3xl font-light [overflow-wrap:anywhere] md:text-4xl"
         style={{ ...serifStyle, color: warmText }}
       >
         {title}
       </h2>
       {description && (
-        <p className="mt-4 text-sm leading-7" style={{ color: mutedText }}>
+        <p
+          className="mt-4 break-keep text-sm leading-7 [overflow-wrap:anywhere]"
+          style={{ color: mutedText }}
+        >
           {description}
         </p>
       )}
@@ -888,7 +891,7 @@ function MemorialLetters({
     const trimmedContent = content.trim();
 
     if (!trimmedAuthor || !trimmedContent) {
-      setMessage("이름과 편지 내용을 모두 입력해주세요.");
+      setMessage("보내는 분의 이름과 편지 내용을 모두 입력해 주세요.");
       return;
     }
 
@@ -907,7 +910,7 @@ function MemorialLetters({
         <SectionHeader
           eyebrow="Letters"
           title="하늘로 보내는 편지"
-          description={`${memorialName}님께 전하고 싶은 마음을 남겨주세요.`}
+          description={`${memorialName}님께 전하고 싶은 마음을 남겨 주세요.`}
         />
 
         <div className="mx-auto max-w-5xl">
@@ -921,12 +924,12 @@ function MemorialLetters({
                   className="text-xs font-medium uppercase tracking-[0.16em]"
                   style={{ color: warmGold }}
                 >
-                  From
+                  보내는 분
                 </span>
                 <input
                   value={author}
                   onChange={event => setAuthor(event.target.value)}
-                  placeholder="작성자"
+                  placeholder="보내는 분의 이름"
                   maxLength={80}
                   className="mt-4 h-11 w-full bg-transparent text-sm text-[#121212] outline-none placeholder:text-[#9a9a9a]"
                 />
@@ -936,12 +939,12 @@ function MemorialLetters({
                   className="text-xs font-medium uppercase tracking-[0.16em]"
                   style={{ color: warmGold }}
                 >
-                  To {memorialName}
+                  편지 내용
                 </span>
                 <textarea
                   value={content}
                   onChange={event => setContent(event.target.value)}
-                  placeholder="전하고 싶은 마음을 남겨주세요."
+                  placeholder="전하고 싶은 마음을 남겨 주세요."
                   maxLength={2000}
                   rows={5}
                   className="mt-4 w-full resize-none bg-transparent text-sm leading-7 text-[#121212] outline-none placeholder:text-[#9a9a9a]"
@@ -949,7 +952,10 @@ function MemorialLetters({
               </label>
             </div>
             <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
-              <p className="text-xs leading-6" style={{ color: mutedText }}>
+              <p
+                className="break-keep text-xs leading-6 [overflow-wrap:anywhere]"
+                style={{ color: mutedText }}
+              >
                 {message ||
                   (isPrivate
                     ? "비공개 추모관에만 보관되며 전체 편지 목록에는 표시되지 않습니다."
@@ -985,7 +991,7 @@ function MemorialLetters({
                       className="text-sm font-medium"
                       style={{ color: warmText }}
                     >
-                      From {letter.author}
+                      보내는 분 · {letter.author}
                     </p>
                     <p className="text-xs" style={{ color: mutedText }}>
                       {formatDate(letter.createdAt)}
@@ -1015,7 +1021,7 @@ function MemorialLetters({
                 className="inline-flex h-11 items-center justify-center border border-[#d5c9b4] bg-white px-5 text-sm font-medium transition-colors hover:bg-[#f9f9f9]"
                 style={{ color: "#4f4638" }}
               >
-                모든 편지 보기
+                편지 모아 보기
               </span>
             </Link>
           </div>
