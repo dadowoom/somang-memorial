@@ -31,6 +31,7 @@ type AdminUser = {
 
 type AdminAuditLog = {
   id: number;
+  adminUserId: number | null;
   action: string;
   beforeValue: string | null;
   afterValue: string | null;
@@ -347,11 +348,7 @@ export default function AdminUsers() {
                     </div>
                     <p className="text-sm text-[#777] md:text-right">
                       {/* 유가족이 직접 고친 기록은 관리자가 없다. 사후 확인용이므로 누가 했는지 분명히 적는다. */}
-                      {log.adminName ||
-                        log.adminEmail ||
-                        (log.action === "memorial.member.update"
-                          ? "유가족 본인"
-                          : "관리자")}
+                      {formatAuditActor(log)}
                     </p>
                   </article>
                 ))}
@@ -464,7 +461,24 @@ function formatAuditAction(action: string) {
   if (action === "memorial.family.join") return "가족 참여(초대 수락)";
   if (action === "memorial.family.remove") return "가족 관리 권한 해제";
   if (action === "memorial.family.leave") return "가족 나감(본인)";
+  // 2026-09-14 추가: 가족관·초대·편지·문자·탈퇴도 "누가 언제"가 남는다.
+  if (action === "memorial.family.invite") return "가족 초대 링크 발급";
+  if (action === "memorial.family.invite.revoke") return "가족 초대 링크 닫음";
+  if (action === "family_room.create") return "가족관 만듦";
+  if (action === "family_room.info.update") return "가족관 제목·소개 수정";
+  if (action === "family_room.password.update") return "가족관 비밀번호 변경";
+  if (action === "letter.status.update") return "편지 숨김/게시";
+  if (action === "reminder.status.update") return "문자 알림 취소/복구";
+  if (action === "user.delete") return "회원 탈퇴";
   return action;
+}
+
+/** 관리자가 없는 기록은 유가족(또는 탈퇴한 회원) 본인이 한 일이다. */
+function formatAuditActor(log: AdminAuditLog) {
+  if (log.adminName || log.adminEmail) return log.adminName || log.adminEmail;
+  if (log.adminUserId) return "관리자";
+  if (log.action === "user.delete") return "탈퇴한 회원 본인";
+  return "유가족 본인";
 }
 
 function formatAuditValue(value: string | null) {
@@ -472,5 +486,9 @@ function formatAuditValue(value: string | null) {
   if (value === "user") return "회원";
   if (value === "approved") return "활성";
   if (value === "rejected") return "비활성";
+  if (value === "published") return "게시";
+  if (value === "hidden") return "숨김";
+  if (value === "active") return "문자 받음";
+  if (value === "cancelled") return "취소";
   return value || "-";
 }

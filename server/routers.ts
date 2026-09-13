@@ -22,6 +22,8 @@ import {
   getEditableMemorialBySlug,
   getUserByLocalLogin,
   getMemorialFamilyRoomStatus,
+  getAdminMemorialLetterById,
+  getReminderSubscriptionById,
   getMemorialFamilyRoomManageInfo,
   createMemorialFamilyRoom,
   updateMemorialFamilyRoomInfo,
@@ -106,6 +108,7 @@ import { bookRouter } from "./routers/book";
 import { galleryRouter } from "./routers/gallery";
 import { uploadRouter } from "./routers/upload";
 import { videoRouter } from "./routers/video";
+import { maskEmailForAudit, maskPhoneForAudit } from "../shared/auditNotes";
 
 const passwordAttemptLimiter = createPasswordAttemptLimiter();
 const parentFinderSearchLimiter = createPasswordAttemptLimiter({
@@ -298,6 +301,17 @@ const familyRoomUpdatePasswordInput = z.object({
   memorialSlug: familyRoomSlugField,
   password: familyRoomPasswordField,
 });
+
+/**
+ * 유가족이 직접 하는 일(가족관·초대)의 감사기록에 "누가"를 남기는 방법.
+ * 관리자가 했으면 adminUserId, 유가족이 했으면 targetUserId 에 본인을 적는다.
+ * 관리자 화면은 adminUserId 가 없으면 "유가족 본인"으로 표시한다 (2026-09-14).
+ */
+function familyAuditActor(user: { id: number; role: string }) {
+  return user.role === "admin"
+    ? { adminUserId: user.id, targetUserId: null }
+    : { adminUserId: null, targetUserId: user.id };
+}
 
 /** 권한 판단은 shared/memorialFamilyRoomPermissions.ts 에 있다. 여기서는 찾아오고 막기만 한다. */
 async function requireFamilyRoomManagePermission(
@@ -704,6 +718,14 @@ export const appRouter = router({
         }
 
         loginAttemptLimiter.recordSuccess(attemptKey);
+        // 탈퇴는 되돌릴 수 없으므로 "누가 언제"만이라도 남긴다. 회원 행은 이미 지워져
+        // targetUserId 를 걸 수 없으니 번호와 가린 이메일을 메모에 적는다 (2026-09-14).
+        await createAdminAuditLog({
+          adminUserId: null,
+          targetUserId: null,
+          action: "user.delete",
+          note: `회원 탈퇴 (회원번호 ${ctx.user.id}, ${maskEmailForAudit(ctx.user.email)})`,
+        });
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
 
@@ -1298,8 +1320,25 @@ export const appRouter = router({
 
     updateStatus: adminProcedure
       .input(adminLetterStatusInput)
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        const letter = await getAdminMemorialLetterById(input.id);
+        if (!letter) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "편지를 찾을 수 없습니다.",
+          });
+        }
         await updateMemorialLetterStatus(input.id, input.status);
+        // 편지를 숨기거나 되살린 관리자를 남긴다 (2026-09-14).
+        await createAdminAuditLog({
+          adminUserId: ctx.user.id,
+          action: "letter.status.update",
+          beforeValue: letter.status,
+          afterValue: input.status,
+          note: `편지 ${letter.id} · ${letter.author} → ${letter.memorialName}${
+            letter.memorialSlug ? ` (${letter.memorialSlug})` : ""
+          }`,
+        });
         return { success: true };
       }),
 
@@ -1486,6 +1525,12 @@ export const appRouter = router({
           });
         }
 
+        await createAdminAuditLog({
+          ...familyAuditActor(ctx.user),
+          action: "family_room.create",
+          note: `${info.memorialName} (${info.memorialSlug})`,
+        });
+
         return { success: true };
       }),
 
@@ -1502,6 +1547,11 @@ export const appRouter = router({
           title: input.title,
           intro: input.intro,
         });
+        await createAdminAuditLog({
+          ...familyAuditActor(ctx.user),
+          action: "family_room.info.update",
+          note: `${info.memorialName} (${info.memorialSlug})`,
+        });
 
         return { success: true };
       }),
@@ -1517,6 +1567,12 @@ export const appRouter = router({
         await updateMemorialFamilyRoomPassword({
           memorialId: info.memorialId,
           password: input.password,
+        });
+        // 비밀번호 자체는 절대 적지 않는다. "누가 언제 바꿨다"만 남긴다.
+        await createAdminAuditLog({
+          ...familyAuditActor(ctx.user),
+          action: "family_room.password.update",
+          note: `${info.memorialName} (${info.memorialSlug})`,
         });
 
         return { success: true };
@@ -1565,6 +1621,13 @@ export const appRouter = router({
           memorialId: memorial.id,
           createdByUserId: ctx.user.id,
         });
+        // 링크 원문은 기록하지 않는다. 발급 사실과 만료일만 남긴다 (2026-09-14).
+        await createAdminAuditLog({
+          ...familyAuditActor(ctx.user),
+          action: "memorial.family.invite",
+          afterValue: created.expiresAt.toISOString().slice(0, 10),
+          note: `${memorial.name} (${memorial.slug})`,
+        });
 
         // 원문 링크는 이때 한 번만 보여준다. 저장은 해시로만 하므로 다시 못 꺼낸다.
         return {
@@ -1581,6 +1644,11 @@ export const appRouter = router({
           input.memorialSlug
         );
         await revokeMemorialFamilyInvitations(memorial.id);
+        await createAdminAuditLog({
+          ...familyAuditActor(ctx.user),
+          action: "memorial.family.invite.revoke",
+          note: `${memorial.name} (${memorial.slug})`,
+        });
         return { success: true };
       }),
 
@@ -1790,8 +1858,25 @@ export const appRouter = router({
 
     updateStatus: adminProcedure
       .input(adminReminderStatusInput)
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        const subscription = await getReminderSubscriptionById(input.id);
+        if (!subscription) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "문자 알림 신청을 찾을 수 없습니다.",
+          });
+        }
         await updateReminderSubscriptionStatus(input.id, input.status);
+        // 문자 알림을 취소·복구한 관리자를 남긴다. 번호는 가린다 (2026-09-14).
+        await createAdminAuditLog({
+          adminUserId: ctx.user.id,
+          action: "reminder.status.update",
+          beforeValue: subscription.status,
+          afterValue: input.status,
+          note: `문자 알림 ${subscription.id} · ${maskPhoneForAudit(
+            subscription.phone
+          )} · ${subscription.memorialName} (${subscription.memorialSlug})`,
+        });
         return { success: true };
       }),
 

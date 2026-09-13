@@ -151,6 +151,31 @@ describe("familyMembers.list / createInvitation", () => {
       memorialId: 42,
       createdByUserId: 7,
     });
+    // 발급 사실은 남기되 링크 원문은 기록에 넣지 않는다 (2026-09-14).
+    const [entry] = mocks.createAdminAuditLog.mock.calls[0];
+    expect(entry).toEqual(
+      expect.objectContaining({
+        adminUserId: null,
+        targetUserId: 7,
+        action: "memorial.family.invite",
+        note: "김소망 (kim-somang-kwonsa)",
+      })
+    );
+    expect(JSON.stringify(entry)).not.toContain(token);
+  });
+
+  it("초대 링크를 닫으면 기록이 남는다", async () => {
+    await expect(
+      caller(owner).familyMembers.revokeInvitation(slug)
+    ).resolves.toEqual({ success: true });
+    expect(mocks.revokeMemorialFamilyInvitations).toHaveBeenCalledWith(42);
+    expect(mocks.createAdminAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adminUserId: null,
+        targetUserId: 7,
+        action: "memorial.family.invite.revoke",
+      })
+    );
   });
 
   it("초대받은 가족은 또 초대할 수 없다", async () => {
