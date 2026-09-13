@@ -22,7 +22,7 @@ export default function Home() {
             <div className="home-hero-copy">
               <p className="home-eyebrow">소망교회 온라인 추모관</p>
               <h1 id="home-title" className="home-hero-title">
-                <span>소망이</span> <span>있는 곳</span>
+                소망이 있는 곳
               </h1>
               <p className="home-hero-description">
                 <span>한 사람의 삶과 신앙을</span>

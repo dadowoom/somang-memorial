@@ -260,12 +260,12 @@ export default function MemorialBookSection({
             The Book Of Faith
           </p>
           <h2
-            className="text-3xl font-light md:text-4xl"
+            className="text-balance break-keep text-3xl font-light [overflow-wrap:anywhere] md:text-4xl"
             style={{ fontFamily: "'Noto Serif KR', serif" }}
           >
             책장과 연표
           </h2>
-          <p className="mt-4 text-sm leading-7 text-[#6f6a61]">
+          <p className="mt-4 text-pretty break-keep text-sm leading-7 text-[#6f6a61] [overflow-wrap:anywhere]">
             페이지마다 날짜와 사진, 이야기를 담아 더 깊은 기록을 남깁니다.
           </p>
         </div>

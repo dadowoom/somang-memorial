@@ -200,7 +200,7 @@ function PrivateMemorialGate({
             {/* 비공개 추모관은 웹 검색에도 키오스크에도 나오지 않는다.
                 "검색에서 확인할 수 있다"고 안내하면 가족이 검색만 하다
                 헛걸음한다. 실제 동작대로 적는다. */}
-            <p className="mt-8 max-w-xl break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+            <p className="mt-8 max-w-xl text-pretty break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
               가족만 볼 수 있도록 설정된 추모관입니다. 검색에는 나오지 않으며,
               비밀번호를 아는 분만 들어오실 수 있습니다.
             </p>
@@ -421,7 +421,7 @@ function MemorialContent({
                     strokeWidth={1.6}
                   />
                   <h2
-                    className="text-2xl font-light"
+                    className="text-balance break-keep text-2xl font-light [overflow-wrap:anywhere]"
                     style={{ ...serifStyle, color: warmText }}
                   >
                     예배 안내
@@ -462,7 +462,7 @@ function MemorialContent({
                 Story
               </p>
               <h2
-                className="text-3xl font-light"
+                className="text-balance break-keep text-3xl font-light [overflow-wrap:anywhere]"
                 style={{ ...serifStyle, color: warmText }}
               >
                 기억으로 남은 삶
@@ -789,14 +789,14 @@ function SectionHeader({
         {eyebrow}
       </p>
       <h2
-        className="break-keep text-3xl font-light [overflow-wrap:anywhere] md:text-4xl"
+        className="text-balance break-keep text-3xl font-light [overflow-wrap:anywhere] md:text-4xl"
         style={{ ...serifStyle, color: warmText }}
       >
         {title}
       </h2>
       {description && (
         <p
-          className="mt-4 break-keep text-sm leading-7 [overflow-wrap:anywhere]"
+          className="mt-4 text-pretty break-keep text-sm leading-7 [overflow-wrap:anywhere]"
           style={{ color: mutedText }}
         >
           {description}
@@ -953,7 +953,7 @@ function MemorialLetters({
             </div>
             <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
               <p
-                className="break-keep text-xs leading-6 [overflow-wrap:anywhere]"
+                className="text-pretty break-keep text-xs leading-6 [overflow-wrap:anywhere]"
                 style={{ color: mutedText }}
               >
                 {message ||

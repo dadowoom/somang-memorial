@@ -150,6 +150,11 @@ describe("home page SSR regression", () => {
     ).toBe(true);
   });
 
+  it("keeps the brand as continuous text without forced line-break wrappers", () => {
+    const heading = content.find(element => element.tag === "h1")!;
+    expect(heading.children).toEqual(["소망이 있는 곳"]);
+  });
+
   it.each([
     ["/memorial/search", "추모관 찾기"],
     ["/memorial/create", "추모관 만들기"],

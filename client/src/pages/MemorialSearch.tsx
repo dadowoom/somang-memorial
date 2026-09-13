@@ -28,12 +28,12 @@ export default function MemorialSearch() {
                 Memorials
               </p>
               <h1
-                className="break-keep text-4xl font-normal tracking-[-0.025em] [overflow-wrap:anywhere] md:text-6xl"
+                className="text-balance break-keep text-4xl font-normal tracking-[-0.025em] [overflow-wrap:anywhere] md:text-6xl"
                 style={{ fontFamily: "'Noto Serif KR', serif" }}
               >
                 추모관 찾기
               </h1>
-              <p className="mt-6 max-w-xl break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+              <p className="mt-6 max-w-xl text-pretty break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                 고인의 성함으로 추모관을 찾아보세요.
                 전체 명단은 공개하지 않습니다.
               </p>
@@ -61,7 +61,7 @@ export default function MemorialSearch() {
           <div className="container">
             <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-center">
               <div>
-                <p className="text-sm text-[#616161]">
+                <p className="text-pretty break-keep text-sm text-[#616161] [overflow-wrap:anywhere]">
                   {!canSearch
                     ? "성함을 두 글자 이상 입력하면 검색 결과가 표시됩니다."
                     : memorialsQuery.isLoading
@@ -74,12 +74,12 @@ export default function MemorialSearch() {
             {!canSearch ? (
               <div className="border border-[#b5b0a7] bg-[#fafafa] px-5 py-14 text-center md:py-20">
                 <p
-                  className="break-keep text-2xl font-normal text-[#121212] [overflow-wrap:anywhere] md:text-3xl"
+                  className="text-balance break-keep text-2xl font-normal text-[#121212] [overflow-wrap:anywhere] md:text-3xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
                   찾고 싶은 분의 성함을 입력해 주세요.
                 </p>
-                <p className="mx-auto mt-5 max-w-md break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+                <p className="mx-auto mt-5 max-w-md text-pretty break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                   가족과 지인이 필요한 순간에 조용히 찾아볼 수 있도록,
                   추모관은 성함으로 검색할 수 있습니다.
                 </p>
@@ -92,13 +92,13 @@ export default function MemorialSearch() {
               </div>
             ) : memorialsQuery.isError ? (
               <div className="border border-[#b5b0a7] py-20 text-center">
-                <p className="break-keep px-5 text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+                <p className="text-pretty break-keep px-5 text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                   추모관을 검색하지 못했습니다. 잠시 후 다시 확인해 주세요.
                 </p>
               </div>
             ) : results.length === 0 ? (
               <div className="border border-[#b5b0a7] py-20 text-center">
-                <p className="break-keep px-5 text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+                <p className="text-pretty break-keep px-5 text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                   입력하신 성함으로는 추모관을 찾지 못했습니다. 성함을 다시 확인해
                   주세요.
                 </p>
