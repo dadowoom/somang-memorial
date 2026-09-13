@@ -23,7 +23,7 @@ export default function Navbar() {
       <div className="container">
         <div className="flex h-16 items-center justify-between">
           <Link href="/">
-            <div className="flex cursor-pointer items-center gap-3">
+            <div className="flex shrink-0 cursor-pointer items-center gap-3 whitespace-nowrap">
               <img
                 src={ORG_INFO.logoSrc}
                 alt="소망교회 로고"
@@ -45,7 +45,7 @@ export default function Navbar() {
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-5 md:flex lg:gap-8">
+          <nav className="hidden shrink-0 items-center gap-5 whitespace-nowrap md:flex lg:gap-8">
             {navItems.map(item => (
               <a
                 key={item.href}
@@ -57,7 +57,7 @@ export default function Navbar() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-3 xl:flex">
+          <div className="hidden shrink-0 items-center gap-3 whitespace-nowrap xl:flex">
             <Link href="/memorial/search">
               <button className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#b5b0a7] bg-white px-4 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                 <Search className="h-3.5 w-3.5" />
@@ -84,7 +84,10 @@ export default function Navbar() {
                   </Link>
                 )}
                 <Link href="/my/account">
-                  <span className="text-[15px] font-medium text-[#3f3f3f] transition-colors hover:text-[#121212]">
+                  <span
+                    title={user?.name || "계정"}
+                    className="block max-w-24 truncate text-[15px] font-medium text-[#3f3f3f] transition-colors hover:text-[#121212]"
+                  >
                     {user?.name || "계정"}
                   </span>
                 </Link>
