@@ -78,7 +78,7 @@ export default function MyMemorials() {
               >
                 내 추모관
               </h1>
-              <p className="mt-6 max-w-xl text-sm leading-7 text-[#616161]">
+              <p className="mt-6 max-w-xl break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                 직접 만들었거나 가족과 함께 관리하는 추모관입니다.
                 기록을 살펴보고 필요한 내용을 이어서 정리해 주세요.
               </p>

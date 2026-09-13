@@ -148,12 +148,12 @@ export default function ParentFinder() {
                 Somang Garden
               </p>
               <h1
-                className="text-4xl font-normal leading-tight md:text-6xl"
+                className="break-keep text-4xl font-normal leading-tight [overflow-wrap:anywhere] md:text-6xl"
                 style={serifStyle}
               >
                 우리 부모님 찾기
               </h1>
-              <p className="mt-6 max-w-xl text-sm leading-7 text-[#616161]">
+              <p className="mt-6 max-w-xl break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                 교회에 등록된 부모님의 기록을 찾아, 필요한 정보가 채워진 비공개
                 추모관을 시작할 수 있습니다.
               </p>
@@ -167,7 +167,7 @@ export default function ParentFinder() {
               <p className="mt-4 text-sm font-medium text-[#121212]">
                 가족 확인 후 시작합니다
               </p>
-              <p className="mt-2 text-xs leading-5 text-[#616161]">
+              <p className="mt-2 break-keep text-xs leading-5 text-[#616161] [overflow-wrap:anywhere]">
                 성함만으로 찾을 수 있으며, 생년월일도 입력하시면 찾으시는 분을
                 더 정확히 확인할 수 있습니다. 전화번호와 연락처는 사용하지 않습니다.
               </p>

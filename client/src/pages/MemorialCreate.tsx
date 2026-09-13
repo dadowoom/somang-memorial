@@ -492,7 +492,7 @@ export default function MemorialCreate() {
                 <br />
                 함께 기억합니다
               </h1>
-              <p className="mt-6 max-w-md text-sm leading-7 text-[#616161]">
+              <p className="mt-6 max-w-md break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                 <span className="block">
                   사랑하는 분의 삶과 믿음을 기록해 주세요.
                 </span>

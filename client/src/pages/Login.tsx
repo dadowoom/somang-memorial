@@ -174,7 +174,7 @@ export default function Login() {
                 <br />
                 이어갑니다
               </h1>
-              <p className="mt-6 max-w-lg text-sm leading-7 text-[#616161]">
+              <p className="mt-6 max-w-lg break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                 {introText}
               </p>
 
