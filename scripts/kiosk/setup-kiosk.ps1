@@ -9,7 +9,7 @@
     5. 화면이 꺼지거나 절전에 들어가지 않는다.
     6. Windows 업데이트가 낮 시간(08~22시)에 재부팅하지 않는다.
 
-  나중에 주소가 바뀌면(예: HTTPS 도메인) 같은 파일을 -KioskUrl 로 다시 실행하거나
+  주소가 바뀌면 같은 파일을 -KioskUrl 로 다시 실행하거나
   C:\Kiosk\config.json 의 url 만 고치면 된다.
 
   사용법 (관리자 PowerShell):
@@ -21,7 +21,7 @@
 #>
 [CmdletBinding()]
 param(
-  [string]$KioskUrl = "http://115.68.224.123:3050/kiosk",
+  [string]$KioskUrl = "https://somangmemorial.co.kr/kiosk",
   [string]$KioskUser = "kiosk",
   # 자동 로그인을 걸지 않으려면 지정한다 (예: 이미 다른 방법으로 자동 로그인 중일 때).
   [switch]$SkipAutoLogon
