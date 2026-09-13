@@ -25,6 +25,17 @@ import {
   createMemorialFamilyRoom,
   updateMemorialFamilyRoomInfo,
   updateMemorialFamilyRoomPassword,
+  canUserReadMemorialWithFamily,
+  isMemorialFamilyMember,
+  listFamilyMemberMemorialIds,
+  listMemorialFamilyMembers,
+  addMemorialFamilyMember,
+  removeMemorialFamilyMember,
+  getActiveMemorialFamilyInvitation,
+  createMemorialFamilyInvitation,
+  revokeMemorialFamilyInvitations,
+  getMemorialFamilyInvitationByToken,
+  FAMILY_INVITATION_TTL_DAYS,
   getMemorialAccessStatus,
   getSomangIntermentRecordForClaim,
   getPublicMemorialBySlug,
@@ -67,6 +78,11 @@ import {
   canManageMemorialFamilyRoom,
   type FamilyRoomUser,
 } from "../shared/memorialFamilyRoomPermissions";
+import {
+  canInviteMemorialFamily,
+  canManageMemorialAsFamily,
+  memorialFamilyRole,
+} from "../shared/memorialFamilyPermissions";
 import { getSessionCookieOptions } from "./_core/cookies";
 import {
   createPasswordAttemptLimiter,
@@ -295,7 +311,14 @@ async function requireFamilyRoomManagePermission(
     });
   }
 
-  if (!canManageMemorialFamilyRoom(info, user)) {
+  // 가족 초대로 함께 관리하는 가족도 가족관을 관리한다 (2026-09-13).
+  // 주인·관리자는 조회 없이 통과하므로 그 외에만 DB 를 본다.
+  const isFamilyMember =
+    user !== null &&
+    user.role !== "admin" &&
+    info.createdByUserId !== user.id &&
+    (await isMemorialFamilyMember(info.memorialId, user.id));
+  if (!canManageMemorialFamilyRoom(info, user, isFamilyMember)) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "가족관을 관리할 권한이 없습니다.",
@@ -319,6 +342,30 @@ async function requireExistingFamilyRoom(
   }
 
   return info;
+}
+
+/** 가족을 초대하거나 제외할 수 있는지. 주인과 관리자만 (shared/memorialFamilyPermissions). */
+async function requireFamilyInvitePermission(
+  user: FamilyRoomUser,
+  memorialSlug: string
+) {
+  const memorial = await getAdminMemorialBySlug(memorialSlug);
+  if (!memorial) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "추모관을 찾을 수 없습니다.",
+    });
+  }
+
+  if (!canInviteMemorialFamily(memorial, user)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message:
+        "가족을 초대할 수 있는 분은 추모관을 만든 분과 교회 관리자뿐입니다.",
+    });
+  }
+
+  return memorial;
 }
 
 
@@ -773,9 +820,16 @@ export const appRouter = router({
         );
 
         const records = await searchSomangIntermentRecords(input);
+        // 가족 초대로 함께 관리하는 추모관도 "내 것"으로 본다 (2026-09-13).
+        const familyMemorialIds = new Set(
+          await listFamilyMemberMemorialIds(ctx.user.id)
+        );
         return records.map(record => {
           const isOwner =
-            record.memorialOwnerId === ctx.user.id || ctx.user.role === "admin";
+            record.memorialOwnerId === ctx.user.id ||
+            ctx.user.role === "admin" ||
+            (record.memorialId !== null &&
+              familyMemorialIds.has(record.memorialId));
           const isPublicMemorial =
             record.memorialVisibility === "public" &&
             record.memorialStatus === "published";
@@ -823,10 +877,13 @@ export const appRouter = router({
           });
         }
 
-        const existingAccess = (existing: typeof record) => {
+        const existingAccess = async (existing: typeof record) => {
           const isOwner =
             existing.memorialOwnerId === ctx.user.id ||
-            ctx.user.role === "admin";
+            ctx.user.role === "admin" ||
+            // 가족 초대로 함께 관리하는 가족이면 바로 수정 화면으로 보낸다.
+            (existing.memorialId !== null &&
+              (await isMemorialFamilyMember(existing.memorialId, ctx.user.id)));
           const isPublicMemorial =
             existing.memorialVisibility === "public" &&
             existing.memorialStatus === "published";
@@ -1055,7 +1112,13 @@ export const appRouter = router({
           });
         }
 
-        if (!canUserReadMemorial(memorial, input.accessToken, ctx.user)) {
+        if (
+          !(await canUserReadMemorialWithFamily(
+            memorial,
+            input.accessToken,
+            ctx.user
+          ))
+        ) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "비공개 추모관입니다.",
@@ -1169,10 +1232,12 @@ export const appRouter = router({
           });
         }
 
-        if (
+        // 주인·관리자가 아니면 가족 초대로 함께 관리하는 가족인지 확인한다.
+        const isFamilyMember =
           ctx.user.role !== "admin" &&
-          existing.createdByUserId !== ctx.user.id
-        ) {
+          existing.createdByUserId !== ctx.user.id &&
+          (await isMemorialFamilyMember(existing.id, ctx.user.id));
+        if (!canManageMemorialAsFamily(existing, ctx.user, isFamilyMember)) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "수정 권한이 없습니다.",
@@ -1262,7 +1327,13 @@ export const appRouter = router({
             message: "추모관을 찾을 수 없습니다.",
           });
         }
-        if (!canUserReadMemorial(memorial, input.accessToken, ctx.user)) {
+        if (
+          !(await canUserReadMemorialWithFamily(
+            memorial,
+            input.accessToken,
+            ctx.user
+          ))
+        ) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "비공개 추모관입니다.",
@@ -1289,7 +1360,13 @@ export const appRouter = router({
               message: "추모관을 찾을 수 없습니다.",
             });
           }
-          if (!canUserReadMemorial(memorial, input.accessToken, ctx.user)) {
+          if (
+          !(await canUserReadMemorialWithFamily(
+            memorial,
+            input.accessToken,
+            ctx.user
+          ))
+        ) {
             throw new TRPCError({
               code: "FORBIDDEN",
               message: "비공개 추모관입니다.",
@@ -1445,6 +1522,163 @@ export const appRouter = router({
         });
 
         return { success: true };
+      }),
+  }),
+
+  // 가족 초대 (2026-09-13). 주인이 초대 링크를 만들어 가족에게 주면, 그 링크로 들어온
+  // 가족이 함께 관리한다. 초대·제외는 주인과 관리자만, 본인이 나가는 것은 누구나.
+  familyMembers: router({
+    list: protectedProcedure
+      .input(z.object({ memorialSlug: familyRoomSlugField }))
+      .query(async ({ ctx, input }) => {
+        const memorial = await requireFamilyInvitePermission(
+          ctx.user,
+          input.memorialSlug
+        );
+        const [members, invitation] = await Promise.all([
+          listMemorialFamilyMembers(memorial.id),
+          getActiveMemorialFamilyInvitation(memorial.id),
+        ]);
+
+        return {
+          memorialSlug: memorial.slug,
+          memorialName: memorial.name,
+          members: members.map(member => ({
+            userId: member.userId,
+            name: member.name ?? "",
+            email: member.email ?? "",
+            joinedAt: member.joinedAt,
+          })),
+          invitation: invitation
+            ? { expiresAt: invitation.expiresAt, createdAt: invitation.createdAt }
+            : null,
+          invitationDays: FAMILY_INVITATION_TTL_DAYS,
+        };
+      }),
+
+    createInvitation: protectedProcedure
+      .input(z.object({ memorialSlug: familyRoomSlugField }))
+      .mutation(async ({ ctx, input }) => {
+        const memorial = await requireFamilyInvitePermission(
+          ctx.user,
+          input.memorialSlug
+        );
+        const created = await createMemorialFamilyInvitation({
+          memorialId: memorial.id,
+          createdByUserId: ctx.user.id,
+        });
+
+        // 원문 링크는 이때 한 번만 보여준다. 저장은 해시로만 하므로 다시 못 꺼낸다.
+        return {
+          href: `/invite/${created.token}`,
+          expiresAt: created.expiresAt,
+        };
+      }),
+
+    revokeInvitation: protectedProcedure
+      .input(z.object({ memorialSlug: familyRoomSlugField }))
+      .mutation(async ({ ctx, input }) => {
+        const memorial = await requireFamilyInvitePermission(
+          ctx.user,
+          input.memorialSlug
+        );
+        await revokeMemorialFamilyInvitations(memorial.id);
+        return { success: true };
+      }),
+
+    removeMember: protectedProcedure
+      .input(
+        z.object({
+          memorialSlug: familyRoomSlugField,
+          userId: z.number().int().positive(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const memorial = await getAdminMemorialBySlug(input.memorialSlug);
+        if (!memorial) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "추모관을 찾을 수 없습니다.",
+          });
+        }
+
+        // 본인이 나가는 것은 누구나, 남을 빼는 것은 주인과 관리자만.
+        const leavingSelf = input.userId === ctx.user.id;
+        if (!leavingSelf && !canInviteMemorialFamily(memorial, ctx.user)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "가족을 제외할 수 있는 분은 추모관을 만든 분과 교회 관리자뿐입니다.",
+          });
+        }
+
+        await removeMemorialFamilyMember({
+          memorialId: memorial.id,
+          userId: input.userId,
+        });
+        await createAdminAuditLog({
+          adminUserId: ctx.user.role === "admin" ? ctx.user.id : null,
+          targetUserId: input.userId,
+          action: leavingSelf ? "memorial.family.leave" : "memorial.family.remove",
+          note: `${memorial.name} (${memorial.slug})`,
+        });
+        return { success: true };
+      }),
+
+    invitationInfo: protectedProcedure
+      .input(z.object({ token: z.string().trim().min(10).max(200) }))
+      .query(async ({ ctx, input }) => {
+        const invitation = await getMemorialFamilyInvitationByToken(input.token);
+        if (!invitation) return { valid: false as const };
+
+        const role = memorialFamilyRole(
+          { createdByUserId: invitation.memorialOwnerId },
+          ctx.user,
+          await isMemorialFamilyMember(invitation.memorialId, ctx.user.id)
+        );
+
+        return {
+          valid: true as const,
+          memorialSlug: invitation.memorialSlug,
+          memorialName: invitation.memorialName,
+          memorialRole: invitation.memorialRole,
+          alreadyMember: role !== null,
+          expiresAt: invitation.expiresAt,
+        };
+      }),
+
+    acceptInvitation: protectedProcedure
+      .input(z.object({ token: z.string().trim().min(10).max(200) }))
+      .mutation(async ({ ctx, input }) => {
+        const invitation = await getMemorialFamilyInvitationByToken(input.token);
+        if (!invitation) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message:
+              "초대 링크가 만료되었거나 더 이상 쓸 수 없습니다. 초대한 가족에게 새 링크를 받아 주세요.",
+          });
+        }
+
+        const result = await addMemorialFamilyMember({
+          memorialId: invitation.memorialId,
+          userId: ctx.user.id,
+          invitedByUserId: invitation.invitedByUserId,
+        });
+        if (result.added) {
+          await createAdminAuditLog({
+            adminUserId: null,
+            targetUserId: ctx.user.id,
+            action: "memorial.family.join",
+            note: `${invitation.memorialName} (${invitation.memorialSlug})`,
+          });
+        }
+
+        return {
+          memorialSlug: invitation.memorialSlug,
+          memorialName: invitation.memorialName,
+          href: "/my/memorials",
+          added: result.added,
+          reason: result.added ? null : result.reason,
+        };
       }),
   }),
 

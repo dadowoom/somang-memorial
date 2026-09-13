@@ -31,6 +31,8 @@ type MyMemorial = {
   updatedAt: Date | string;
   href: string;
   editHref: string;
+  // owner: 내가 만든 추모관 / member: 가족 초대로 함께 관리하는 추모관
+  membership: "owner" | "member";
 };
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
@@ -161,6 +163,12 @@ export default function MyMemorials() {
                       <div className="flex flex-wrap gap-2">
                         <VisibilityBadge visibility={memorial.visibility} />
                         <StatusBadge status={memorial.status} />
+                        {memorial.membership === "member" && (
+                          <span className="inline-flex w-fit items-center gap-1 border border-[#b5b0a7] bg-white px-2 py-1 text-xs text-[#616161]">
+                            <HeartHandshake className="h-3 w-3" />
+                            함께 관리
+                          </span>
+                        )}
                       </div>
 
                       <MetaText

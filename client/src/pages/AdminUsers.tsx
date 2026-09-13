@@ -460,6 +460,10 @@ function formatAuditAction(action: string) {
   if (action === "memorial.update") return "추모관 수정(관리자)";
   // 게시된 추모관을 유가족이 직접 고친 기록. 관리자가 나중에 내용을 확인한다.
   if (action === "memorial.member.update") return "추모관 수정(유가족)";
+  // 가족 초대 (2026-09-13)
+  if (action === "memorial.family.join") return "가족 참여(초대 수락)";
+  if (action === "memorial.family.remove") return "가족 제외";
+  if (action === "memorial.family.leave") return "가족 나감(본인)";
   return action;
 }
 

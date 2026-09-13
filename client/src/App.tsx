@@ -29,6 +29,10 @@ const MemorialFamilyPage = lazy(() => import("./pages/MemorialFamilyPage"));
 const MemorialObituary = lazy(() => import("./pages/MemorialObituary"));
 const MemorialEdit = lazy(() => import("./pages/MemorialEdit"));
 const MemorialFamilyManage = lazy(() => import("./pages/MemorialFamilyManage"));
+const MemorialFamilyMembers = lazy(
+  () => import("./pages/MemorialFamilyMembers")
+);
+const InvitePage = lazy(() => import("./pages/InvitePage"));
 const MyMemorials = lazy(() => import("./pages/MyMemorials"));
 const AccountSettings = lazy(() => import("./pages/AccountSettings"));
 const ParentFinder = lazy(() => import("./pages/ParentFinder"));
@@ -72,6 +76,11 @@ function Router() {
           path={"/my/memorials/:slug/family"}
           component={MemorialFamilyManage}
         />
+        <Route
+          path={"/my/memorials/:slug/family-members"}
+          component={MemorialFamilyMembers}
+        />
+        <Route path={"/invite/:token"} component={InvitePage} />
         <Route path={"/memorial/create"} component={MemorialCreate} />
         <Route path={"/letters"} component={Letters} />
         <Route path={"/memorial/search"} component={MemorialSearch} />

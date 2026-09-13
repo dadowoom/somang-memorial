@@ -378,3 +378,65 @@ export const passwordResetTokens = mysqlTable(
     index("password_reset_tokens_expiresAt_idx").on(table.expiresAt),
   ]
 );
+
+/**
+ * 함께 관리하는 가족 (2026-09-13 가족 초대).
+ * 추모관 주인(memorials.createdByUserId)이 보낸 초대 링크로 들어온 사람.
+ * 주인과 같이 글·사진·가족관을 고칠 수 있지만, 초대와 가족 제외는 주인만 한다.
+ */
+export const memorialFamilyMembers = mysqlTable(
+  "memorial_family_members",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    memorialId: int("memorialId")
+      .notNull()
+      .references(() => memorials.id, { onDelete: "cascade" }),
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    invitedByUserId: int("invitedByUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("memorial_family_members_memorialId_idx").on(table.memorialId),
+    index("memorial_family_members_userId_idx").on(table.userId),
+    uniqueIndex("memorial_family_members_memorial_user_unique").on(
+      table.memorialId,
+      table.userId
+    ),
+  ]
+);
+
+export type MemorialFamilyMember = typeof memorialFamilyMembers.$inferSelect;
+export type InsertMemorialFamilyMember =
+  typeof memorialFamilyMembers.$inferInsert;
+
+/**
+ * 가족 초대 링크. 비밀번호 재설정 링크처럼 원문 대신 해시만 저장한다.
+ * 한 링크를 가족 여러 명이 쓸 수 있고, 기한이 지나거나 주인이 무효화하면 닫힌다.
+ */
+export const memorialFamilyInvitations = mysqlTable(
+  "memorial_family_invitations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    memorialId: int("memorialId")
+      .notNull()
+      .references(() => memorials.id, { onDelete: "cascade" }),
+    tokenHash: varchar("tokenHash", { length: 128 }).notNull().unique(),
+    createdByUserId: int("createdByUserId").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    expiresAt: timestamp("expiresAt").notNull(),
+    revokedAt: timestamp("revokedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("memorial_family_invitations_memorialId_idx").on(table.memorialId),
+    index("memorial_family_invitations_expiresAt_idx").on(table.expiresAt),
+  ]
+);
+
+export type MemorialFamilyInvitation =
+  typeof memorialFamilyInvitations.$inferSelect;

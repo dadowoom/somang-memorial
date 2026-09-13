@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   storagePut: vi.fn(),
   decodeImageDataUrl: vi.fn(),
   requireReadableMemorialById: vi.fn(),
+  // 가족 초대(2026-09-13): 주인·관리자가 아닐 때만 조회된다. 기본은 "가족 아님".
+  isMemorialFamilyMember: vi.fn(),
 }));
 vi.mock("./db", () => mocks);
 vi.mock("./storage", () => ({ storagePut: mocks.storagePut }));
@@ -69,6 +71,7 @@ function database(...results: unknown[][]) {
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.storagePut.mockResolvedValue({ url: "/uploads/test-photo.jpg" });
+  mocks.isMemorialFamilyMember.mockResolvedValue(false);
   mocks.decodeImageDataUrl.mockReturnValue({
     buffer: Buffer.from("fixture"),
     mimeType: "image/jpeg",
@@ -120,7 +123,8 @@ describe("gallery transaction boundary", () => {
   });
   // 잠금을 잡은 뒤 다시 읽은 추모관이 남의 것이면 앞선 권한 조회 결과를 믿지 않는다.
   it("rechecks ownership in the transaction instead of trusting the earlier permission query", async () => {
-    database([{ ...pending, createdByUserId: 8 }]);
+    // 남의 추모관이면 트랜잭션 안에서 "함께 관리하는 가족인지"도 한 번 더 본다 → 없음([]).
+    database([{ ...pending, createdByUserId: 8 }], []);
     const edit = vi.fn();
     await expect(
       withGalleryEditor(owner, { memorialId: 42 }, edit)
@@ -200,8 +204,11 @@ describe("gallery API", () => {
         [other, { ...pending, status: "published" }],
         [owner, { ...pending, createdByUserId: null }],
       ] as const) {
+        // 주인이 아니면 트랜잭션 안에서 "함께 관리하는 가족인지"를 한 번 더 본다 → 없음([]).
         const db = database(
-          ...(mutation.readsPhoto ? [[photo], [memorial]] : [[memorial]])
+          ...(mutation.readsPhoto
+            ? [[photo], [memorial], []]
+            : [[memorial], []])
         );
         await expect(
           mutation.run(galleryRouter.createCaller(context(user)))

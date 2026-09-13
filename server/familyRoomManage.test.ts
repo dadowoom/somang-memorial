@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   createMemorialFamilyRoom: vi.fn(),
   updateMemorialFamilyRoomInfo: vi.fn(),
   updateMemorialFamilyRoomPassword: vi.fn(),
+  // 가족 초대(2026-09-13): 주인·관리자가 아닐 때만 조회된다. 기본은 "가족 아님".
+  isMemorialFamilyMember: vi.fn(),
 }));
 vi.mock("./db", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("./db");
@@ -59,6 +61,7 @@ const newRoom = {
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.createMemorialFamilyRoom.mockResolvedValue({ created: true });
+  mocks.isMemorialFamilyMember.mockResolvedValue(false);
 });
 
 describe("가족관 관리 권한", () => {
