@@ -33,13 +33,23 @@
 
 ## GitHub 반영
 
-이 기록 작성 시점에 GitHub 반영은 미완료다. 연결된 GitHub 앱은 브랜치/트리 작성 요청을
-`403 Resource not accessible by integration`으로 거부했고, 로컬 Git에도 HTTPS 인증이 없다.
-쓰기 가능한 연결 또는 Git 로그인을 사용자가 복구한 뒤 아래 순서로 마무리한다.
+**GitHub 브랜치 업로드 완료:** 브라우저 인증을 통한 Git push로 `codex/chrome-kiosk`를 공유했다.
+초기에는 연결된 GitHub 앱의 쓰기 권한 오류(403)와 로컬 Git 인증 부재로 막혔으나,
+Git Credential Manager 브라우저 인증으로 해결했다. Git 인증정보를 로컬 저장소에 보관하지 않는
+`GCM_CREDENTIAL_STORE=none` 설정으로 업로드했다. main 직접 push나 운영 배포는 하지 않았다.
 
-1. `git fetch origin`으로 최신 main과 원격 브랜치를 확인한다.
-2. 로컬 `codex/chrome-kiosk`를 push하고 PR을 생성한다.
-3. CI 및 현장 검증 결과를 PR에 기록한다. main에 직접 push하거나 강제로 초기화하지 않는다.
+MacBook에서는 기존 작업 폴더의 변경사항부터 확인한 뒤 다음처럼 이어받는다.
+
+```bash
+git status --short --branch
+git fetch origin
+git switch --track origin/codex/chrome-kiosk
+```
+
+이미 같은 로컬 브랜치가 있으면 새로 만들지 말고 `git switch codex/chrome-kiosk` 후
+`git pull --ff-only origin codex/chrome-kiosk`를 사용한다. 미커밋 변경이 있으면 보존하고
+충돌 시 강제로 전환하지 않는다. 아직 main에 병합되지 않은 변경이므로 PR 상태를 확인한다.
+후속 앱 개발은 이 인수인계와 최신 main/PR 상태를 확인한 뒤 별도 `codex/` 브랜치에서 진행한다.
 
 Windows 계정이나 레지스트리 자체를 GitHub에 올리는 것이 아니다. 복구 가능한 설정 코드,
 실행 파일과 인수인계 문서만 보관한다. 비밀번호·토큰·환경변수·브라우저 프로필·운영 자료는 제외한다.
