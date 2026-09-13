@@ -1,4 +1,5 @@
 import { ENV } from "./_core/env";
+import { toKioskInterment } from "../shared/kioskInterment";
 import {
   getEmailConfigStatus,
   sendPasswordResetEmail,
@@ -803,11 +804,7 @@ export const appRouter = router({
         );
 
         const records = await searchKioskSomangIntermentRecords(input.keyword);
-        return records.map(record => ({
-          id: record.id,
-          name: record.name,
-          message: "소망교회 소망동산에 안장되어 있습니다.",
-        }));
+        return records.map(toKioskInterment);
       }),
   }),
 

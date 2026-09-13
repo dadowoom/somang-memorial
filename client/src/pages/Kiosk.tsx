@@ -1,4 +1,6 @@
 import { trpc } from "@/lib/trpc";
+import type { KioskInterment } from "@shared/kioskInterment";
+import { KioskIntermentDetails } from "@/components/kiosk/KioskIntermentDetails";
 import { formatLifespan } from "@/lib/lifespan";
 import { ORG_INFO } from "@/lib/orgInfo";
 import {
@@ -42,12 +44,6 @@ type KioskMemorial = {
   href: string;
 };
 
-type KioskInterment = {
-  id: number;
-  name: string;
-  message: string;
-};
-
 type PrivateSelection = {
   slug: string;
   name: string;
@@ -64,6 +60,8 @@ export default function Kiosk() {
   const [query, setQuery] = useState("");
   const [submittedKeyword, setSubmittedKeyword] = useState("");
   const [message, setMessage] = useState("");
+  const [selectedInterment, setSelectedInterment] =
+    useState<KioskInterment | null>(null);
   const [selectedPrivate, setSelectedPrivate] =
     useState<PrivateSelection | null>(null);
   const [password, setPassword] = useState("");
@@ -89,7 +87,10 @@ export default function Kiosk() {
     }
   );
   const results = (memorialsQuery.data ?? []) as KioskMemorial[];
-  const intermentResults = (intermentQuery.data ?? []) as KioskInterment[];
+  const intermentResults = (intermentQuery.data ?? []).filter(
+    record =>
+      !record.href || !results.some(memorial => memorial.href === record.href)
+  );
   const totalResults = results.length + intermentResults.length;
   const { closeKeyboard } = useKioskKeyboard();
   const searchKeyboard = useKioskKeyboardField<HTMLInputElement>({
@@ -123,6 +124,7 @@ export default function Kiosk() {
     setSubmittedKeyword("");
     setMessage("");
     setSelectedPrivate(null);
+    setSelectedInterment(null);
     setPassword("");
     setPasswordMessage("");
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
@@ -401,8 +403,8 @@ export default function Kiosk() {
                         )}
                       </span>
                       <span className="mt-2 block text-[15px] leading-6 text-[#616161]">
-                        {formatLifespan(memorial.birthDate, memorial.deathDate)} ·{" "}
-                        {memorial.church} · {memorial.role}
+                        {formatLifespan(memorial.birthDate, memorial.deathDate)}{" "}
+                        · {memorial.church} · {memorial.role}
                       </span>
                     </span>
 
@@ -410,9 +412,15 @@ export default function Kiosk() {
                   </button>
                 ))}
                 {intermentResults.map(record => (
-                  <div
+                  <button
                     key={`interment-${record.id}`}
-                    className="flex w-full items-center justify-between gap-5 border-b border-[#b5b0a7] bg-[#fafafa] px-8 py-5 text-left"
+                    type="button"
+                    onClick={() => {
+                      closeKeyboard();
+                      if (record.href) setLocation(record.href);
+                      else setSelectedInterment(record);
+                    }}
+                    className="flex w-full items-center justify-between gap-5 border-b border-[#b5b0a7] bg-[#fafafa] px-8 py-5 text-left active:bg-[#f5f5f5]"
                   >
                     <span className="min-w-0">
                       <span
@@ -428,14 +436,33 @@ export default function Kiosk() {
                         />
                         {record.message}
                       </span>
+                      <span className="mt-2 block text-[15px] leading-6 text-[#616161]">
+                        {[
+                          record.role,
+                          formatLifespan(record.birthDate, record.deathDate),
+                          record.burialPlace,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
                     </span>
-                  </div>
+                    <ArrowRight
+                      aria-hidden="true"
+                      className="h-5 w-5 shrink-0"
+                    />
+                  </button>
                 ))}
               </div>
             </div>
           )}
         </section>
       </div>
+
+      <KioskIntermentDetails
+        record={selectedInterment}
+        onClose={() => setSelectedInterment(null)}
+        onHome={resetKiosk}
+      />
 
       {selectedPrivate && (
         <PrivateAccessPanel
