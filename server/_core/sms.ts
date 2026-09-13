@@ -1,5 +1,6 @@
 import { SolapiMessageService } from "solapi";
 import { ENV } from "./env";
+import { buildMemorialUrl } from "./siteUrl";
 
 type SendSmsInput = {
   to: string;
@@ -65,11 +66,6 @@ export async function sendSms(input: SendSmsInput) {
     from,
     text: input.text,
   });
-}
-
-function buildMemorialUrl(slug: string) {
-  const baseUrl = ENV.publicSiteUrl || "http://115.68.224.123:3050";
-  return `${baseUrl.replace(/\/$/, "")}/memorial/${slug}`;
 }
 
 export async function sendReminderConfirmationSms(

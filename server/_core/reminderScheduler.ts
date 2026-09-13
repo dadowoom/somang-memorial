@@ -4,6 +4,7 @@ import {
   markReminderNotificationSent,
 } from "../db";
 import { ENV } from "./env";
+import { buildMemorialUrl } from "./siteUrl";
 import { getSmsConfigStatus, sendSms } from "./sms";
 
 type ReminderTarget = Awaited<
@@ -22,11 +23,6 @@ function getSeoulDateParts(date = new Date()) {
   });
   const [year, month, day] = formatter.format(date).split("-").map(Number);
   return { year, month, day };
-}
-
-function buildMemorialUrl(slug: string) {
-  const baseUrl = ENV.publicSiteUrl || "http://115.68.224.123:3050";
-  return `${baseUrl.replace(/\/$/, "")}/memorial/${slug}`;
 }
 
 function buildReminderText(target: ReminderTarget) {
