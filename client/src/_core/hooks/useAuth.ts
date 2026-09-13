@@ -44,12 +44,18 @@ export function useAuth(options?: UseAuthOptions) {
     }
   }, [logoutMutation, utils]);
 
-  const state = useMemo(() => {
+  // 예전 개발 도구용으로 회원 이름·메일·전화를 브라우저 저장소에 적던 코드를
+  // 없앴다. 운영 빌드에서는 읽는 곳이 없는데 키오스크 같은 공용 PC 에 개인정보만
+  // 남았다 (2026-09-14). 이미 남아 있는 값은 한 번 지운다.
+  useEffect(() => {
     try {
-      localStorage.setItem("manus-runtime-user-info", JSON.stringify(meQuery.data));
+      localStorage.removeItem("manus-runtime-user-info");
     } catch {
-      // Browser storage can be disabled or full; authentication still works.
+      // Browser storage can be disabled; authentication still works.
     }
+  }, []);
+
+  const state = useMemo(() => {
     return {
       user: meQuery.data ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,

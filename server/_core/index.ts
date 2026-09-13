@@ -99,4 +99,20 @@ async function startServer() {
   startReminderNotificationScheduler();
 }
 
-startServer().catch(console.error);
+// 기동에 실패하면 0 이 아닌 코드로 끝나야 pm2 가 "죽었다"고 보고 다시 띄운다.
+// 전에는 console.error 만 하고 조용히 끝나서 정상 종료처럼 보였다 (2026-09-14).
+// 처리되지 않은 오류도 같은 이유로 기록을 남기고 바로 끝낸다. Node 는 원래
+// 이런 오류에 프로세스를 끝내지만, 어디서 났는지 로그에 남기려고 명시한다.
+process.on("unhandledRejection", reason => {
+  console.error("[fatal] 처리되지 않은 비동기 오류", reason);
+  process.exit(1);
+});
+process.on("uncaughtException", error => {
+  console.error("[fatal] 처리되지 않은 오류", error);
+  process.exit(1);
+});
+
+startServer().catch(error => {
+  console.error("[fatal] 서버 기동 실패", error);
+  process.exit(1);
+});
