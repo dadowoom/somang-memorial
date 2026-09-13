@@ -607,8 +607,22 @@ export async function searchKioskSomangIntermentRecords(keyword: string) {
     .select({
       id: somangIntermentRecords.id,
       name: somangIntermentRecords.name,
+      role: somangIntermentRecords.role,
+      birthDate: somangIntermentRecords.birthDate,
+      deathDate: somangIntermentRecords.deathDate,
+      burialPlace: somangIntermentRecords.burialPlace,
+      burialDate: somangIntermentRecords.burialDate,
+      memorialSlug: memorials.slug,
     })
     .from(somangIntermentRecords)
+    .leftJoin(
+      memorials,
+      and(
+        eq(memorials.intermentRecordId, somangIntermentRecords.id),
+        eq(memorials.visibility, "public"),
+        eq(memorials.status, "published")
+      )
+    )
     .where(like(somangIntermentRecords.nameNormalized, `%${escapedKeyword}%`))
     .orderBy(asc(somangIntermentRecords.name), asc(somangIntermentRecords.id))
     .limit(20);
