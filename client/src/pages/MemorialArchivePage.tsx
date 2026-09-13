@@ -235,7 +235,7 @@ export default function MemorialArchivePage() {
                       />
                     </div>
 
-                    <div className="mt-8 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="mt-8 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
                       <a
                         href="#gallery"
                         className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap bg-[#1f1d1a] px-4 text-sm font-medium text-white transition-colors hover:bg-[#33302b]"
@@ -367,7 +367,7 @@ export default function MemorialArchivePage() {
                       style={{ background: warmGold }}
                     />
                     <h2
-                      className="break-keep text-2xl font-light [overflow-wrap:anywhere]"
+                      className="text-balance break-keep text-2xl font-light [overflow-wrap:anywhere]"
                       style={{ ...serifStyle, color: warmText }}
                     >
                       기억으로 남은 삶
@@ -484,14 +484,14 @@ function SectionHeader({
         {eyebrow}
       </p>
       <h2
-        className="break-keep text-3xl font-light [overflow-wrap:anywhere] md:text-4xl"
+        className="text-balance break-keep text-3xl font-light [overflow-wrap:anywhere] md:text-4xl"
         style={{ ...serifStyle, color: warmText }}
       >
         {title}
       </h2>
       {description && (
         <p
-          className="mt-4 break-keep text-sm leading-7 [overflow-wrap:anywhere]"
+          className="mt-4 text-pretty break-keep text-sm leading-7 [overflow-wrap:anywhere]"
           style={{ color: mutedText }}
         >
           {description}

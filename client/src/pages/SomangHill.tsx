@@ -64,12 +64,12 @@ export default function SomangHill() {
                   Somang Hill
                 </p>
                 <h1
-                  className="break-keep text-4xl font-normal leading-[1.15] tracking-[-0.025em] [overflow-wrap:anywhere] md:text-7xl"
+                  className="text-balance break-keep text-4xl font-normal leading-[1.15] tracking-[-0.025em] [overflow-wrap:anywhere] md:text-7xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
                   소망동산
                 </h1>
-                <p className="mt-8 max-w-xl break-keep text-base leading-8 text-[#616161] [overflow-wrap:anywhere]">
+                <p className="mt-8 max-w-xl text-pretty break-keep text-base leading-8 text-[#616161] [overflow-wrap:anywhere]">
                   소망동산은 소망수양관 안에 자리한 추모 공간입니다. 가족과 교회
                   공동체가 함께 머물며 고인의 삶과 신앙을 조용히 돌아봅니다.
                 </p>
@@ -109,19 +109,19 @@ export default function SomangHill() {
 
         <section className="border-b border-[#b5b0a7] bg-[#f5f5f5] py-16 md:py-24">
           <div className="container">
-            <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <div className="mb-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
               <div>
                 <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.28em] text-[#616161]">
                   Place
                 </p>
                 <h2
-                  className="break-keep text-3xl font-normal tracking-[-0.02em] [overflow-wrap:anywhere] md:text-5xl"
+                  className="text-balance break-keep text-3xl font-normal tracking-[-0.02em] [overflow-wrap:anywhere] md:text-4xl xl:text-5xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
                   조용히 머무는 자리
                 </h2>
               </div>
-              <p className="max-w-md break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+              <p className="max-w-md text-pretty break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                 소망동산은 장례 이후의 기억이 흩어지지 않도록, 가족과 교회가
                 함께 고인을 품위 있게 기억하는 장소입니다.
               </p>
@@ -140,12 +140,12 @@ export default function SomangHill() {
                     />
                   </div>
                   <h3
-                    className="break-keep text-xl font-normal [overflow-wrap:anywhere]"
+                    className="text-balance break-keep text-xl font-normal [overflow-wrap:anywhere]"
                     style={{ fontFamily: "'Noto Serif KR', serif" }}
                   >
                     {note.title}
                   </h3>
-                  <p className="mt-4 break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+                  <p className="mt-4 text-pretty break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                     {note.desc}
                   </p>
                 </article>
@@ -162,12 +162,12 @@ export default function SomangHill() {
                   Information
                 </p>
                 <h2
-                  className="break-keep text-3xl font-normal tracking-[-0.02em] [overflow-wrap:anywhere] md:text-5xl"
+                  className="text-balance break-keep text-3xl font-normal tracking-[-0.02em] [overflow-wrap:anywhere] md:text-5xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
                   방문 안내
                 </h2>
-                <p className="mt-5 max-w-xl break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+                <p className="mt-5 max-w-xl text-pretty break-keep text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
                   방문에 필요한 운영 안내와 이용 절차는 소망수양관에서 확인해
                   주세요.
                 </p>

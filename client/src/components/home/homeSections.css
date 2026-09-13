@@ -59,10 +59,12 @@
   font-weight: 400;
   line-height: 1.55;
   letter-spacing: -0.04em;
+  text-wrap: balance;
 }
 
 .somang-home .home-sections__heading > span {
-  display: block;
+  display: inline-block;
+  max-width: 100%;
 }
 
 .somang-home .home-sections__body {
@@ -72,6 +74,7 @@
   font-weight: 400;
   line-height: 1.95;
   letter-spacing: -0.015em;
+  text-wrap: pretty;
 }
 
 .somang-home .home-sections__memories-grid {
@@ -150,6 +153,7 @@
   font-weight: 400;
   line-height: 1.6;
   letter-spacing: -0.035em;
+  text-wrap: balance;
 }
 
 .somang-home .home-sections__services {
@@ -221,6 +225,7 @@
   font-weight: 400;
   line-height: 1.6;
   letter-spacing: -0.035em;
+  text-wrap: balance;
 }
 
 .somang-home .home-sections__steps {
@@ -259,6 +264,7 @@
   font-size: 16px;
   line-height: 1.9;
   letter-spacing: -0.02em;
+  text-wrap: pretty;
 }
 
 .somang-home .home-sections__membership {
@@ -294,6 +300,7 @@
   font-size: 15px;
   line-height: 1.95;
   letter-spacing: -0.015em;
+  text-wrap: pretty;
 }
 
 .somang-home .home-sections__cta-button {

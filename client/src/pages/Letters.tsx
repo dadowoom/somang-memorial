@@ -155,7 +155,7 @@ export default function Letters() {
                   Letters
                 </p>
                 <h1
-                  className="max-w-3xl break-keep text-4xl font-light leading-[1.15] [overflow-wrap:anywhere] md:text-7xl"
+                  className="max-w-3xl text-balance break-keep text-[clamp(30px,4.8vw,64px)] font-light leading-[1.3] [overflow-wrap:anywhere]"
                   style={{ ...serifStyle, color: warmText }}
                 >
                   하늘로 보내는 편지
@@ -164,7 +164,7 @@ export default function Letters() {
 
               <div className="border-l border-[#d5c9b4] pl-0 lg:pl-8">
                 <p
-                  className="break-keep text-base leading-8 [overflow-wrap:anywhere]"
+                  className="text-pretty break-keep text-base leading-8 [overflow-wrap:anywhere]"
                   style={{ color: mutedText }}
                 >
                   사랑하는 분을 떠올리며, 전하고 싶은 마음을 편지로 남겨 주세요.
@@ -275,7 +275,7 @@ export default function Letters() {
                 </label>
                 <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
                   <p
-                    className="break-keep text-xs leading-6 [overflow-wrap:anywhere]"
+                    className="text-pretty break-keep text-xs leading-6 [overflow-wrap:anywhere]"
                     style={{ color: mutedText }}
                   >
                     {message ||
@@ -374,7 +374,7 @@ export default function Letters() {
 function StateBox({ text }: { text: string }) {
   return (
     <div className="border border-[#b5b0a7] py-20 text-center">
-      <p className="break-keep px-5 text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
+      <p className="text-pretty break-keep px-5 text-sm leading-7 text-[#616161] [overflow-wrap:anywhere]">
         {text}
       </p>
     </div>

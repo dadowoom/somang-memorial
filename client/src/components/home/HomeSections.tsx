@@ -59,7 +59,7 @@ export default function HomeSections() {
           <div className="home-sections__heading-group">
             <p className="home-sections__eyebrow">함께 간직하는 기억</p>
             <h2 id="home-memories-heading" className="home-sections__heading">
-              <span>삶과 신앙의 이야기를 함께 간직하고</span>{" "}
+              <span>삶과 신앙의 이야기를</span> <span>함께 간직하고</span>{" "}
               <span>다음 세대에 전합니다.</span>
             </h2>
           </div>
@@ -114,7 +114,7 @@ export default function HomeSections() {
             <div className="home-sections__heading-group">
               <p className="home-sections__eyebrow">이용 안내</p>
               <h2 id="home-services-heading" className="home-sections__heading">
-                함께 기억하는 세 가지 방법
+                <span>함께 기억하는</span> <span>세 가지 방법</span>
               </h2>
             </div>
             <p className="home-sections__intro home-sections__body">
@@ -164,7 +164,7 @@ export default function HomeSections() {
           <div className="home-sections__heading-group">
             <p className="home-sections__eyebrow">준비 순서</p>
             <h2 id="home-process-heading" className="home-sections__heading">
-              추모관을 준비하는 순서
+              <span>추모관을</span> <span>준비하는 순서</span>
             </h2>
           </div>
 
@@ -190,7 +190,7 @@ export default function HomeSections() {
           <div className="home-sections__membership-copy">
             <p className="home-sections__eyebrow">소망교회 성도 전용</p>
             <h2 id="home-membership-heading" className="home-sections__heading">
-              소중한 기억을, 하나씩 남겨 주세요
+              <span>소중한 기억을,</span> <span>하나씩 남겨 주세요</span>
             </h2>
             <p className="home-sections__membership-description">
               회원가입 후 추모관과 부고장을 만들 수 있습니다. 추모의 마음은
