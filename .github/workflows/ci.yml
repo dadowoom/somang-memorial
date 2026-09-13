@@ -10,6 +10,16 @@ permissions:
   contents: read
 
 jobs:
+  kiosk:
+    name: Chrome kiosk launcher (Windows PowerShell)
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify setup and launcher without changing Windows settings
+        shell: powershell
+        run: ./scripts/kiosk/setup-kiosk.test.ps1
+
   verify:
     name: Type, test, build and audit
     runs-on: ubuntu-latest

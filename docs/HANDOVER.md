@@ -8,6 +8,11 @@
 
 ## 1. 시작하기
 
+키오스크 전용 PC 설정은 [KIOSK_PC.md](KIOSK_PC.md)와 [KIOSK_SETUP.md](KIOSK_SETUP.md)를 먼저 본다.
+브라우저는 **Google Chrome**이며, 공식 HTTPS 주소를 연다. 화면 실행에는 Node나 로컬 개발 서버가
+필요 없다. 아래 개발 환경 및 배포 절차를 키오스크 설치 절차로 실행하지 않는다.
+운영 `.env`, 서버 SSH 키, DB 접속정보를 키오스크 PC에 복사하거나 이 PC에서 운영 배포하지 않는다.
+
 ```bash
 git clone https://github.com/dadowoom/somang-memorial.git
 cd somang-memorial
