@@ -34,7 +34,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # 저장소의 .nvmrc(24) 를 따른다. 문서·로컬과 CI 의 Node 버전을 하나로 둔다.
+          node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install locked dependencies

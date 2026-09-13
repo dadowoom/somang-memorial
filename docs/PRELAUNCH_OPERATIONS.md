@@ -28,7 +28,9 @@
 6. 서버 응답, 디스크 사용량, 백업 실패를 알려 주는 외부 감시를 둔다.
 7. 키오스크 PC는 일반 Windows 화면이 아닌 전용 전체 화면 모드로
    실행한다. → `docs/KIOSK_SETUP.md` 와 `scripts/kiosk/setup-kiosk.ps1`
-   (2026-09-13). 켜면 자동 로그인 → Edge 키오스크 모드 → 닫혀도 재실행.
+   (2026-09-13). 켜면 자동 로그인 → **Google Chrome** 키오스크 모드 → 닫혀도
+   재실행. 2026-09-14 에 Edge 에서 Chrome 으로 바꿨고 실제 PC 재부팅 시험을
+   마쳤다 (#88, `docs/CHROME_KIOSK_HANDOVER.md`).
 
 ## 이용자가 늘어날 때의 확장 순서
 

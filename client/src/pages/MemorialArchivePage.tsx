@@ -88,10 +88,13 @@ export default function MemorialArchivePage() {
     { enabled: Boolean(memorial?.id) }
   );
   const photos = (photosQuery.data ?? []) as ArchivePhoto[];
+  // 사진이 없으면 성함 첫 글자를 보여 준다. 전에는 외부 사이트의 낯선 사람
+  // 얼굴 사진을 대신 넣었는데, 고인이 아닌 사람 사진이 영정 자리에 나오면
+  // 안 된다 (2026-09-14 제거).
   const heroPhoto =
     photos.find(photo => photo.isRepresentative === 1)?.photoUrl ??
     photos[0]?.photoUrl ??
-    getFallbackPortrait(memorial);
+    null;
 
   const updateMemorial = trpc.memorial.update.useMutation({
     onSuccess: () => utils.memorial.bySlug.invalidate({ slug }),
@@ -545,17 +548,6 @@ function GoldDust() {
       ))}
     </div>
   );
-}
-
-function getFallbackPortrait(memorial?: ArchiveMemorial) {
-  if (!memorial) return null;
-  if (memorial.slug === "kim-yohan-elder") {
-    return "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=800&h=1000&fit=crop&auto=format&q=80";
-  }
-  if (memorial.role.includes("권사") || memorial.name.includes("순자")) {
-    return "https://d2xsxph8kpxj0f.cloudfront.net/310519663470178900/Mgh5Mk5AAaqsycpXA9tc7E/memorial_elder_woman-VLyrQ8BXGGoAo339g3C8yL.webp";
-  }
-  return "https://d2xsxph8kpxj0f.cloudfront.net/310519663470178900/Mgh5Mk5AAaqsycpXA9tc7E/memorial_elder_man-EoYUBTXnk59Sfrj2gmtSED.webp";
 }
 
 function StateBlock({ text }: { text: string }) {
