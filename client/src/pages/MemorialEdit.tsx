@@ -9,6 +9,10 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useRoute } from "wouter";
 
 type Visibility = "public" | "private";
+// "링크 공개"는 예전 자료에만 남아 있는 값이다. 화면에서 새로 고를 수는 없지만,
+// 가족이 다른 항목만 고치고 저장했을 때 전체 공개로 바뀌어 버리면 안 되므로
+// 있는 값은 그대로 지킨다 (2026-09-14).
+type StoredVisibility = Visibility | "link";
 type MemorialStatus = "pending" | "published" | "private";
 
 type TimelineItem = {
@@ -61,7 +65,7 @@ type FormState = {
   story: string;
   serviceTime: string;
   memorialDay: string;
-  visibility: Visibility;
+  visibility: StoredVisibility;
   status: MemorialStatus;
   accessPassword: string;
   managerMemo: string;
@@ -160,7 +164,12 @@ export default function MemorialEdit() {
       story: memorial.story,
       serviceTime: memorial.serviceTime ?? "",
       memorialDay: memorial.memorialDay ?? "",
-      visibility: memorial.visibility === "private" ? "private" : "public",
+      visibility:
+        memorial.visibility === "private"
+          ? "private"
+          : memorial.visibility === "link"
+            ? "link"
+            : "public",
       status:
         memorial.status === "published" || memorial.status === "private"
           ? memorial.status
@@ -287,7 +296,8 @@ export default function MemorialEdit() {
         story: form.story,
         serviceTime: form.serviceTime || null,
         memorialDay: form.memorialDay || null,
-        visibility: form.visibility,
+        // 링크 공개는 보내지 않는다. 서버는 값이 없으면 기존 공개 범위를 유지한다.
+        visibility: form.visibility === "link" ? undefined : form.visibility,
         status: isAdmin ? form.status : undefined,
         accessPassword: form.accessPassword.trim() || undefined,
         timeline: timeline.map(({ year, title, description }) => ({
@@ -743,6 +753,13 @@ export default function MemorialEdit() {
                           );
                         })}
                       </div>
+                      {form.visibility === "link" && (
+                        <p className="mt-3 text-xs leading-5 text-[#616161]">
+                          지금은 <span className="font-medium text-[#121212]">링크 공개</span>
+                          {" "}상태입니다. 주소를 아는 분만 볼 수 있습니다. 위에서 고르지
+                          않으면 그대로 유지됩니다.
+                        </p>
+                      )}
                     </Field>
 
                     {form.visibility === "private" && (

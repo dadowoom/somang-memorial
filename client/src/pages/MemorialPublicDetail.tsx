@@ -54,14 +54,15 @@ type MemorialPhoto = {
   isRepresentative: number;
 };
 
+// 비공개 추모관이면 서버가 인적 사항을 null 로 보낸다 (2026-09-14).
 type AccessStatus = {
   slug: string;
-  name: string;
-  role: string;
-  birthDate: string;
-  deathDate: string;
-  church: string;
-  summary: string;
+  name: string | null;
+  role: string | null;
+  birthDate: string | null;
+  deathDate: string | null;
+  church: string | null;
+  summary: string | null;
   isPrivate: boolean;
 };
 
@@ -186,10 +187,10 @@ function PrivateMemorialGate({
             >
               {status?.name || "비공개 추모관"}
             </h1>
-            {status && (
+            {status?.name && (
               <>
                 <p className="mt-4 text-sm leading-7 text-[#616161]">
-                  {formatLifespan(status.birthDate, status.deathDate)} · {status.church} ·{" "}
+                  {formatLifespan(status.birthDate ?? "", status.deathDate ?? "")} · {status.church} ·{" "}
                   {status.role}
                 </p>
                 <p className="mt-8 max-w-xl text-base leading-8 text-[#333333]">
