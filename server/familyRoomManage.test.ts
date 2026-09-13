@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   updateMemorialFamilyRoomPassword: vi.fn(),
   // 가족 초대(2026-09-13): 주인·관리자가 아닐 때만 조회된다. 기본은 "가족 아님".
   isMemorialFamilyMember: vi.fn(),
+  // 가족관 만들기·수정·비밀번호 변경은 감사기록을 남긴다 (2026-09-14).
+  createAdminAuditLog: vi.fn(),
 }));
 vi.mock("./db", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("./db");
@@ -156,6 +158,13 @@ describe("familyRoom.create", () => {
       intro: "가족끼리 기억을 나눕니다.",
       password: "somang2026",
     });
+    // 유가족이 한 일은 adminUserId 없이 본인을 targetUserId 로 남긴다.
+    expect(mocks.createAdminAuditLog).toHaveBeenCalledWith({
+      adminUserId: null,
+      targetUserId: 7,
+      action: "family_room.create",
+      note: "김소망 (kim-somang-kwonsa)",
+    });
   });
 
   it("이미 있으면 덮어쓰지 않고 알린다", async () => {
@@ -210,6 +219,15 @@ describe("familyRoom.updatePassword", () => {
       memorialId: 42,
       password: "새로운비밀번호",
     });
+    // 기록에는 비밀번호가 어떤 형태로도 들어가지 않는다.
+    const [entry] = mocks.createAdminAuditLog.mock.calls[0];
+    expect(entry).toEqual({
+      adminUserId: null,
+      targetUserId: 7,
+      action: "family_room.password.update",
+      note: "김소망 (kim-somang-kwonsa)",
+    });
+    expect(JSON.stringify(entry)).not.toContain("새로운비밀번호");
   });
 
   it("가족관이 아직 없으면 먼저 만들라고 알린다", async () => {
@@ -261,6 +279,13 @@ describe("familyRoom.updateInfo", () => {
       memorialId: 42,
       title: "새 제목",
       intro: "새 소개글",
+    });
+    // 관리자가 한 일은 adminUserId 에 관리자를 적는다.
+    expect(mocks.createAdminAuditLog).toHaveBeenCalledWith({
+      adminUserId: 9,
+      targetUserId: null,
+      action: "family_room.info.update",
+      note: "김소망 (kim-somang-kwonsa)",
     });
   });
 

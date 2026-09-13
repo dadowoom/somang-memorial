@@ -1948,6 +1948,38 @@ export async function listAdminMemorialLetters(limit = 300) {
   }));
 }
 
+/** 편지 한 건. 관리자가 숨김/게시를 바꿀 때 감사기록에 "어느 편지"를 남기려고 쓴다. */
+export async function getAdminMemorialLetterById(id: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({
+      id: memorialLetters.id,
+      author: memorialLetters.author,
+      status: memorialLetters.status,
+      recipientName: memorialLetters.recipientName,
+      memorialSlug: memorials.slug,
+      memorialName: memorials.name,
+    })
+    .from(memorialLetters)
+    .leftJoin(memorials, eq(memorialLetters.memorialId, memorials.id))
+    .where(eq(memorialLetters.id, id))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    id: row.id,
+    author: row.author,
+    status: row.status,
+    memorialSlug: row.memorialSlug,
+    memorialName: row.memorialName ?? row.recipientName ?? "하늘",
+  };
+}
+
 export async function updateMemorialLetterStatus(
   id: number,
   status: "published" | "hidden"
@@ -1997,6 +2029,32 @@ export async function listAdminReminderSubscriptions(limit = 300) {
       desc(memorialReminderSubscriptions.id)
     )
     .limit(limit);
+}
+
+/** 문자 알림 신청 한 건. 관리자가 취소/복구할 때 감사기록에 남기려고 쓴다. */
+export async function getReminderSubscriptionById(id: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({
+      id: memorialReminderSubscriptions.id,
+      phone: memorialReminderSubscriptions.phone,
+      status: memorialReminderSubscriptions.status,
+      memorialSlug: memorials.slug,
+      memorialName: memorials.name,
+    })
+    .from(memorialReminderSubscriptions)
+    .innerJoin(
+      memorials,
+      eq(memorialReminderSubscriptions.memorialId, memorials.id)
+    )
+    .where(eq(memorialReminderSubscriptions.id, id))
+    .limit(1);
+
+  return rows[0] ?? null;
 }
 
 export async function updateReminderSubscriptionStatus(
