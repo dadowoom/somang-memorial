@@ -251,7 +251,7 @@ export default function MemorialArchivePage() {
                         영상 기록
                       </a>
                       <Link href={`/memorial/${memorial.slug}/family`}>
-                        <span className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap border border-[#1f1d1a] bg-white px-4 text-sm font-medium text-[#1f1d1a] transition-colors hover:bg-[#f9f9f9]">
+                        <span className="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap border border-[#1f1d1a] bg-white px-4 text-sm font-medium text-[#1f1d1a] transition-colors hover:bg-[#f9f9f9]">
                           <LockKeyhole className="h-4 w-4" strokeWidth={1.7} />
                           가족관
                         </span>
