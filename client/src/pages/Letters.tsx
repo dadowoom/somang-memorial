@@ -10,11 +10,15 @@ const warmGold = "oklch(0.50 0.07 72)";
 const warmText = "oklch(0.25 0.04 50)";
 const mutedText = "oklch(0.42 0.02 55)";
 const pageSize = 10;
+// 편지 카드 배경. 외부(Unsplash) 사진을 쓰다가 2026-09-14 에 소망동산 사진으로
+// 바꿨다. 외부 서비스가 막히면 카드가 깨지고, 방문자 주소가 외부로 나가며,
+// 남의 풍경 사진은 추모관 성격과도 맞지 않았다. 아래 파일은 이미 홈·소망동산
+// 화면에서 쓰는 것이라 새로 내려받을 것이 거의 없다.
 const letterImages = [
-  "https://images.unsplash.com/photo-1522383225653-ed111181a951?w=320&h=620&fit=crop&auto=format&q=70",
-  "https://images.unsplash.com/photo-1500534623283-312aade485b7?w=320&h=620&fit=crop&auto=format&q=70",
-  "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=320&h=620&fit=crop&auto=format&q=70",
-  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=320&h=620&fit=crop&auto=format&q=70",
+  "/somang-hill-1.jpg",
+  "/somang-hill-2.jpg",
+  "/somang-hill-3.jpg",
+  "/somang-hill-4.jpg",
 ];
 
 type SearchField = "all" | "to" | "content" | "author";
