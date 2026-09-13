@@ -9,23 +9,17 @@ import {
   TreePine,
 } from "lucide-react";
 
+// 사진은 우리 서버에서 내보낸다.
+//
+// 원래는 교회 옛 서버(rc.somang.net)에서 http 로 불러왔는데, 그 서버는
+// https 를 지원하지 않는다. 우리 사이트가 https 로 바뀌면 브라우저가
+// http 사진을 막아 빈 칸만 남는다. 그래서 client/public 으로 옮겼다.
+// 다시 rc.somang.net 주소로 되돌리지 말 것.
 const HILL_PHOTOS = [
-  {
-    src: "http://rc.somang.net/img/installation_pic_hill1.jpg",
-    alt: "소망동산 전경",
-  },
-  {
-    src: "http://rc.somang.net/img/installation_pic_hill2.jpg",
-    alt: "소망동산 산책 공간",
-  },
-  {
-    src: "http://rc.somang.net/img/installation_pic_hill3.jpg",
-    alt: "소망동산 기념 공간",
-  },
-  {
-    src: "http://rc.somang.net/img/installation_pic_hill4.jpg",
-    alt: "소망동산 안내 사진",
-  },
+  { src: "/somang-hill-1.jpg", alt: "소망동산 전경" },
+  { src: "/somang-hill-2.jpg", alt: "소망동산 산책 공간" },
+  { src: "/somang-hill-3.jpg", alt: "소망동산 기념 공간" },
+  { src: "/somang-hill-4.jpg", alt: "소망동산 안내 사진" },
 ];
 
 const HILL_NOTES = [
