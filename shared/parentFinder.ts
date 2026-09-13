@@ -119,13 +119,17 @@ export function createIntermentMemorialCopy(input: {
   name: string;
   role: string | null;
   deathDate: string;
+  burialPlace?: string;
 }) {
   const name = input.name.trim();
   const role = input.role?.trim() || "고인";
 
   return {
     role,
-    summary: `소망동산에 안장되신 ${name}님의 삶을 기억합니다.`,
+    summary:
+      input.burialPlace === undefined || input.burialPlace.includes("소망동산")
+        ? `소망동산에 안장되신 ${name}님의 삶을 기억합니다.`
+        : `${name}님의 삶을 기억합니다.`,
     story: `${name}님을 가족과 소망교회 공동체가 함께 기억합니다. 추모관을 완성하며 남기고 싶은 삶과 신앙의 이야기를 기록해 주세요.`,
     memorialDay: formatMemorialDay(input.deathDate),
   };

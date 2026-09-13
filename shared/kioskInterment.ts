@@ -24,7 +24,11 @@ export function toKioskInterment(record: {
     deathDate: date(record.deathDate),
     burialPlace: record.burialPlace.trim() || null,
     burialDate: date(record.burialDate),
-    message: "소망교회 소망동산에 안장되어 있습니다.",
+    message: record.burialPlace.trim()
+      ? record.burialPlace.includes("소망동산")
+        ? "소망교회 소망동산에 안장되어 있습니다."
+        : `등록된 안장 장소: ${record.burialPlace.trim()}`
+      : "안장 장소 미등록",
     href: record.memorialSlug ? `/kiosk/memorial/${record.memorialSlug}` : null,
   };
 }

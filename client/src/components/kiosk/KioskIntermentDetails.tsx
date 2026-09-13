@@ -68,8 +68,7 @@ export function KioskIntermentDetails({
             {[
               ["출생일", record.birthDate],
               ["소천일", record.deathDate],
-              ["안장 장소", "소망동산"],
-              ["안장 위치", record.burialPlace],
+              ["안장 장소", record.burialPlace || "안장 장소 미등록"],
               ["안장일", record.burialDate],
             ].map(
               ([label, value]) =>
@@ -86,7 +85,7 @@ export function KioskIntermentDetails({
           </dl>
           <p className="flex items-start gap-2 text-base leading-7 text-[#616161]">
             <Landmark aria-hidden="true" className="mt-1 h-5 w-5 shrink-0" />
-            등록된 안장 기록으로 마련된 공간입니다. 사진과 삶의 이야기는 아직
+            교회에 등록된 기록으로 마련된 공간입니다. 사진과 삶의 이야기는 아직
             등록되지 않았습니다.
           </p>
         </DialogContent>

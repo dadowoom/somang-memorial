@@ -910,6 +910,7 @@ export const appRouter = router({
           name: record.name,
           role: record.role,
           deathDate: record.deathDate,
+          burialPlace: record.burialPlace,
         });
 
         try {
