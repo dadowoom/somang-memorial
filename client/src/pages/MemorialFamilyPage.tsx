@@ -97,7 +97,7 @@ export default function MemorialFamilyPage() {
     event.preventDefault();
     const trimmed = password.trim();
     if (!trimmed) {
-      setMessage("비밀번호를 입력해주세요.");
+      setMessage("비밀번호를 입력해 주세요.");
       return;
     }
     setMessage("");
@@ -115,7 +115,7 @@ export default function MemorialFamilyPage() {
               <Link href={`/memorial/${slug}/archive`}>
                 <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
                   <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
-                  기념관으로 돌아가기
+                  추모관으로 돌아가기
                 </button>
               </Link>
 
@@ -220,7 +220,7 @@ function PasswordGate({
       <Link href={backHref}>
         <button className="mb-6 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
           <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
-          기념관으로 돌아가기
+          추모관으로 돌아가기
         </button>
       </Link>
 
@@ -257,7 +257,7 @@ function PasswordGate({
           value={password}
           onChange={event => onPasswordChange(event.target.value)}
           type="password"
-          placeholder="비밀번호를 입력해주세요"
+          placeholder="비밀번호를 입력해 주세요"
           autoFocus
           className="h-12 w-full border border-[#d5c9b4] bg-white px-4 text-base outline-none transition-colors focus:border-[#1f1d1a]"
         />

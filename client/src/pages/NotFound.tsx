@@ -17,12 +17,12 @@ export default function NotFound() {
           NOT FOUND
         </p>
         <h1 className="mt-5 text-[30px] font-light leading-tight text-[#121212]">
-          찾으시는 페이지가 없습니다
+          페이지를 찾지 못했습니다
         </h1>
         <p className="mt-6 text-sm leading-7 text-[#616161]">
           주소가 잘못되었거나, 추모관이 옮겨졌을 수 있습니다.
           <br />
-          아래에서 원하시는 곳으로 이동해 주세요.
+          추모관을 다시 찾아보시거나 처음 화면으로 돌아가실 수 있습니다.
         </p>
 
         <div className="mt-12 flex flex-col gap-3">

@@ -50,7 +50,7 @@ export function KioskIntermentDetails({
               className="h-14 w-14"
               strokeWidth={1}
             />
-            <span className="text-sm">사진 미등록</span>
+            <span className="text-sm">기본 정보</span>
           </div>
           <DialogTitle
             className="text-center text-4xl leading-snug"
@@ -83,10 +83,10 @@ export function KioskIntermentDetails({
                 )
             )}
           </dl>
-          <p className="flex items-start gap-2 text-base leading-7 text-[#616161]">
+          <p className="flex items-start gap-2 break-keep text-base leading-7 text-[#616161] [overflow-wrap:anywhere]">
             <Landmark aria-hidden="true" className="mt-1 h-5 w-5 shrink-0" />
-            교회에 등록된 기록으로 마련된 공간입니다. 사진과 삶의 이야기는 아직
-            등록되지 않았습니다.
+            교회에 등록된 고인의 기본 정보입니다. 이 화면에서는 사진과 삶의
+            이야기가 제공되지 않습니다.
           </p>
         </DialogContent>
       )}

@@ -113,11 +113,11 @@ export default function MemorialVideoSection({
     if (saving) return;
     const youtubeVideoId = extractYoutubeId(newUrl);
     if (!newTitle.trim()) {
-      toast.error("영상 제목을 입력해주세요.");
+      toast.error("영상 제목을 입력해 주세요.");
       return;
     }
     if (!/^[a-zA-Z0-9_-]{11}$/.test(youtubeVideoId)) {
-      toast.error("유효한 유튜브 주소 또는 영상 ID를 입력해주세요.");
+      toast.error("유효한 유튜브 주소 또는 영상 ID를 입력해 주세요.");
       return;
     }
 
@@ -162,7 +162,7 @@ export default function MemorialVideoSection({
             Video Archive
           </p>
           <h2
-            className="text-3xl font-light md:text-4xl"
+            className="break-keep text-3xl font-light [overflow-wrap:anywhere] md:text-4xl"
             style={{ fontFamily: "'Noto Serif KR', serif" }}
           >
             영상 기록
@@ -203,7 +203,7 @@ export default function MemorialVideoSection({
                   Video Memory
                 </p>
                 <p
-                  className="mt-3 text-2xl font-light text-white md:text-3xl"
+                  className="mt-3 break-keep text-2xl font-light text-white [overflow-wrap:anywhere] md:text-3xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
                   영상으로 남은 기억
@@ -212,9 +212,8 @@ export default function MemorialVideoSection({
             </div>
 
             <div className="flex flex-col justify-center p-6 md:p-9">
-              <p className="text-sm leading-7 text-[#6f6a61]">
-                사진과 글로 다 담기 어려운 고인의 표정과 목소리를 함께 기억할 수
-                있도록 영상 기록을 준비하는 공간입니다.
+              <p className="break-keep text-sm leading-7 text-[#6f6a61] [overflow-wrap:anywhere]">
+                고인의 표정과 목소리를 영상으로 함께 기억합니다.
               </p>
               <div className="mt-8 border-t border-[#d5c9b4] pt-6">
                 <p className="text-xs font-medium uppercase tracking-[0.24em] text-[#7f673d]">

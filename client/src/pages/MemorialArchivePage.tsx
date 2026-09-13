@@ -326,7 +326,7 @@ export default function MemorialArchivePage() {
                 <SectionHeader
                   eyebrow="Faith Story"
                   title="신앙의 이야기"
-                  description="가족이 남긴 기억과 신앙의 고백을 조용히 담았습니다."
+                  description="가족이 남긴 기억과 신앙의 고백을 함께 돌아봅니다."
                 />
 
                 <div className="mx-auto grid max-w-5xl gap-10 md:grid-cols-[0.85fr_1.15fr] md:items-center">
@@ -367,7 +367,7 @@ export default function MemorialArchivePage() {
                       style={{ background: warmGold }}
                     />
                     <h2
-                      className="text-2xl font-light"
+                      className="break-keep text-2xl font-light [overflow-wrap:anywhere]"
                       style={{ ...serifStyle, color: warmText }}
                     >
                       기억으로 남은 삶
@@ -484,13 +484,16 @@ function SectionHeader({
         {eyebrow}
       </p>
       <h2
-        className="text-3xl font-light md:text-4xl"
+        className="break-keep text-3xl font-light [overflow-wrap:anywhere] md:text-4xl"
         style={{ ...serifStyle, color: warmText }}
       >
         {title}
       </h2>
       {description && (
-        <p className="mt-4 text-sm leading-7" style={{ color: mutedText }}>
+        <p
+          className="mt-4 break-keep text-sm leading-7 [overflow-wrap:anywhere]"
+          style={{ color: mutedText }}
+        >
           {description}
         </p>
       )}

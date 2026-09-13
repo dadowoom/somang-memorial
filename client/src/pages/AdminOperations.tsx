@@ -137,8 +137,8 @@ export default function AdminOperations() {
                 운영 관리
               </h1>
               <p className="mt-6 max-w-2xl text-sm leading-7 text-[#616161]">
-                하늘로 보내는 편지와 추도일 알림 신청을 한 곳에서 확인하고
-                필요한 항목만 조용히 정리합니다.
+                하늘로 보내는 편지와 추도일 알림 신청을 한곳에서 확인하고
+                필요한 내용을 관리합니다.
               </p>
             </div>
 
@@ -259,10 +259,10 @@ export default function AdminOperations() {
                             disabled={updateLetter.isPending}
                             onClick={() => {
                               const nextStatus = hidden ? "published" : "hidden";
-                              const action = hidden ? "공개" : "숨김";
+                              const action = hidden ? "다시 공개하시겠습니까?" : "숨기시겠습니까?";
                               if (
                                 !window.confirm(
-                                  `${letter.memorialName} 추모관의 편지를 ${action}하시겠습니까?`
+                                  `${letter.memorialName} 추모관의 편지를 ${action}`
                                 )
                               )
                                 return;
@@ -278,7 +278,7 @@ export default function AdminOperations() {
                             ) : (
                               <EyeOff className="h-4 w-4" />
                             )}
-                            {hidden ? "복원" : "숨김"}
+                            {hidden ? "다시 공개" : "숨기기"}
                           </button>
                         </article>
                       );

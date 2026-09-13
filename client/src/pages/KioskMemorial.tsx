@@ -738,7 +738,7 @@ function KioskVideoDialog({
           className="flex min-h-16 items-center justify-between gap-4 border-t border-white/20 px-5 py-3"
           aria-live="polite"
         >
-          <div className="flex min-w-0 items-center gap-3 text-sm text-white/70">
+          <div className="flex min-w-0 items-center gap-3 break-keep text-sm text-white/70 [overflow-wrap:anywhere]">
             {frameState.phase === "loading" && embedUrl ? (
               <>
                 <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
@@ -1071,9 +1071,9 @@ function KioskMemorialContent({
                   />
                 ) : null}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
-                  <span className="flex items-center gap-3 text-base">
+                  <span className="flex items-center gap-3 break-keep px-5 text-base [overflow-wrap:anywhere]">
                     <Video className="h-5 w-5" />
-                    등록된 영상이 없습니다.
+                    현재 볼 수 있는 영상이 없습니다.
                   </span>
                 </div>
               </div>
@@ -1098,8 +1098,8 @@ function KioskMemorialContent({
                   ))}
                 </div>
               ) : (
-                <p className="text-base leading-8 text-[#64615d]">
-                  등록된 영상이 없습니다.
+                <p className="break-keep text-base leading-8 text-[#64615d] [overflow-wrap:anywhere]">
+                  현재 볼 수 있는 영상이 없습니다.
                 </p>
               )}
             </div>
@@ -1411,7 +1411,9 @@ function KioskFamilySection({
       ) : room ? (
         <div className="space-y-4">
           <article className="border border-[#dadada] p-6">
-            <p className="text-sm text-[#7a643e]">가족관 입장 완료</p>
+            <p className="break-keep text-sm text-[#7a643e] [overflow-wrap:anywhere]">
+              가족관에 입장했습니다
+            </p>
             <h3 className="mt-3 text-[28px]" style={serifStyle}>
               {room.title}
             </h3>
@@ -1474,7 +1476,7 @@ function KioskFamilySection({
         </div>
       ) : (
         <form onSubmit={submit} className="border border-[#dadada] p-6">
-          <p className="text-base leading-8 text-[#64615d]">
+          <p className="break-keep text-base leading-8 text-[#64615d] [overflow-wrap:anywhere]">
             가족에게만 열린 공간입니다. 전달받은 비밀번호를 입력해 주세요.
           </p>
           <input
@@ -1535,7 +1537,7 @@ function KioskLettersSection({
       closeKeyboard();
       setAuthor("");
       setContent("");
-      setMessage("편지가 접수되었습니다. 관리자 확인 후 공개됩니다.");
+      setMessage("편지가 남겨졌습니다.");
       await Promise.all([
         utils.letter.byMemorial.invalidate(queryInput),
         utils.letter.recent.invalidate(),
@@ -1562,7 +1564,7 @@ function KioskLettersSection({
   });
   const authorKeyboard = useKioskKeyboardField<HTMLInputElement>({
     id: `kiosk-letter-author-${memorialSlug}`,
-    label: "편지 작성자",
+    label: "보내는 분",
     value: author,
     onChange: value => {
       setAuthor(value);
@@ -1580,7 +1582,7 @@ function KioskLettersSection({
     if (createLetter.isPending) return false;
 
     if (!author.trim() || !content.trim()) {
-      setMessage("작성자와 내용을 입력해 주세요.");
+      setMessage("보내는 분과 편지 내용을 입력해 주세요.");
       return false;
     }
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
@@ -1620,7 +1622,7 @@ function KioskLettersSection({
     <KioskSection id="letters" eyebrow="Letters" title="하늘로 보내는 편지">
       <form onSubmit={submit} className="border border-[#dadada]">
         <div className="border-b border-[#dadada] p-5">
-          <p className="text-sm text-[#7a643e]">To {memorialName}</p>
+          <p className="text-sm text-[#7a643e]">받는 분: {memorialName}</p>
           <input
             ref={authorKeyboard.ref}
             value={author}
@@ -1628,7 +1630,7 @@ function KioskLettersSection({
               setAuthor(event.target.value);
               setMessage("");
             }}
-            placeholder="작성자"
+            placeholder="보내는 분"
             className="mt-4 h-12 w-full border-b border-[#dadada] bg-transparent text-xl outline-none placeholder:text-[#aaa]"
             autoComplete="off"
             maxLength={80}
@@ -1643,7 +1645,7 @@ function KioskLettersSection({
               setContent(event.target.value);
               setMessage("");
             }}
-            placeholder="전하고 싶은 마음을 남겨주세요."
+            placeholder="전하고 싶은 마음을 남겨 주세요."
             rows={4}
             className="mt-5 w-full resize-none bg-transparent text-lg leading-8 outline-none placeholder:text-[#aaa]"
             maxLength={2000}
@@ -1653,7 +1655,7 @@ function KioskLettersSection({
           />
         </div>
         <div className="p-5">
-          <p className="mb-4 text-sm leading-6 text-[#64615d]">
+          <p className="mb-4 break-keep text-sm leading-6 text-[#64615d] [overflow-wrap:anywhere]">
             {message ||
               (isPrivate
                 ? "비공개 추모관 안에서만 보관됩니다."
@@ -1685,7 +1687,9 @@ function KioskLettersSection({
           letters.slice(0, 4).map(letter => (
             <article key={letter.id} className="border-b border-[#dadada] py-5">
               <div className="flex items-center justify-between gap-4">
-                <p className="text-base font-medium">From {letter.author}</p>
+                <p className="text-base font-medium">
+                  보내는 분: {letter.author}
+                </p>
                 <p className="text-sm text-[#777]">
                   {formatDate(letter.createdAt)}
                 </p>
@@ -1725,7 +1729,7 @@ function KioskSection({
         {eyebrow}
       </p>
       <h2
-        className="mb-7 text-[36px] font-normal leading-tight"
+        className="mb-7 break-keep text-[36px] font-normal leading-tight [overflow-wrap:anywhere]"
         style={serifStyle}
       >
         {title}
@@ -1748,7 +1752,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 function EmptyBox({ icon, text }: { icon: ReactNode; text: string }) {
   return (
-    <div className="flex min-h-[150px] items-center justify-center gap-3 border border-[#dadada] text-base text-[#64615d]">
+    <div className="flex min-h-[150px] items-center justify-center gap-3 break-keep border border-[#dadada] px-5 text-base text-[#64615d] [overflow-wrap:anywhere]">
       {icon}
       {text}
     </div>
@@ -1766,7 +1770,9 @@ function RetryBox({
 }) {
   return (
     <div className="flex min-h-[170px] flex-col items-center justify-center border border-[#dadada] px-6 text-center">
-      <p className="text-base text-[#64615d]">{text}</p>
+      <p className="break-keep text-base text-[#64615d] [overflow-wrap:anywhere]">
+        {text}
+      </p>
       <button
         type="button"
         onClick={onRetry}
@@ -1798,9 +1804,11 @@ function KioskState({
   return (
     <section className="px-8 py-16">
       <div className="flex min-h-[240px] flex-col items-center justify-center border border-[#dadada] px-6 py-12 text-center">
-        <p className="text-lg font-medium text-[#34312d]">{children}</p>
+        <p className="break-keep text-lg font-medium text-[#34312d] [overflow-wrap:anywhere]">
+          {children}
+        </p>
         {description && (
-          <p className="mt-3 max-w-md text-base leading-7 text-[#64615d]">
+          <p className="mt-3 max-w-md break-keep text-base leading-7 text-[#64615d] [overflow-wrap:anywhere]">
             {description}
           </p>
         )}
@@ -1840,7 +1848,7 @@ function splitParagraphs(value: string) {
 }
 
 function formatMemorialDay(value: string | null) {
-  if (!value) return "추후 안내";
+  if (!value) return "추도일이 등록되지 않았습니다.";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString("ko-KR", {

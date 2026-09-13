@@ -112,7 +112,7 @@ export default function ParentFinder() {
       }
 
       setNotice(
-        "이미 가족이 이 분의 추모관을 시작했습니다. 먼저 시작한 가족에게 '가족 초대' 링크를 받으시면 함께 관리할 수 있습니다. 연락이 닿지 않으면 교회 관리자에게 문의해 주세요."
+        "가족이 이미 이분의 추모관을 준비하고 있습니다. 먼저 시작한 가족에게 '가족 초대' 링크를 받으시면 함께 관리할 수 있습니다. 연락이 닿지 않으면 교회 관리자에게 문의해 주세요."
       );
     } catch (error) {
       setNotice(
@@ -151,7 +151,7 @@ export default function ParentFinder() {
                 className="text-4xl font-normal leading-tight md:text-6xl"
                 style={serifStyle}
               >
-                내 부모님 찾기
+                우리 부모님 찾기
               </h1>
               <p className="mt-6 max-w-xl text-sm leading-7 text-[#616161]">
                 교회에 등록된 부모님의 기록을 찾아, 필요한 정보가 채워진 비공개
@@ -168,8 +168,8 @@ export default function ParentFinder() {
                 가족 확인 후 시작합니다
               </p>
               <p className="mt-2 text-xs leading-5 text-[#616161]">
-                성함만으로 찾을 수 있으며, 생년월일을 넣으면 더 정확히 좁혀
-                집니다. 전화번호와 연락처는 사용하지 않습니다.
+                성함만으로 찾을 수 있으며, 생년월일도 입력하시면 찾으시는 분을
+                더 정확히 확인할 수 있습니다. 전화번호와 연락처는 사용하지 않습니다.
               </p>
             </aside>
           </div>
@@ -212,7 +212,7 @@ export default function ParentFinder() {
                   className="inline-flex h-12 items-center justify-center gap-2 bg-[#18181b] px-6 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Search className="h-4 w-4" strokeWidth={1.7} />
-                  {searchMutation.isPending ? "찾는 중" : "부모님 찾기"}
+                  {searchMutation.isPending ? "찾는 중" : "우리 부모님 찾기"}
                 </button>
               </div>
               <p className="mt-4 text-xs leading-5 text-[#777]">
@@ -330,7 +330,7 @@ export default function ParentFinder() {
                           >
                             {createMutation.isPending
                               ? "추모관 준비 중"
-                              : "이 분으로 추모관 시작하기"}
+                              : "이분의 추모관 시작하기"}
                             <ArrowRight className="h-4 w-4" strokeWidth={1.7} />
                           </button>
                         )}

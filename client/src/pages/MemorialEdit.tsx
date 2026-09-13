@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { memorialRequiredFields as requiredFields } from "@/lib/memorialFormCopy";
 import { errorClass, inputClass, labelClass, selectClass, textAreaClass } from "@/lib/formStyles";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
@@ -85,14 +86,6 @@ const initialForm: FormState = {
   accessPassword: "",
   managerMemo: "",
 };
-
-const requiredFields: Array<{ key: keyof FormState; label: string }> = [
-  { key: "name", label: "성함" },
-  { key: "role", label: "직분" },
-  { key: "birthDate", label: "출생일" },
-  { key: "summary", label: "한 줄 소개" },
-  { key: "story", label: "삶의 기록" },
-];
 
 const visibilityOptions: Array<{
   value: Visibility;
@@ -246,9 +239,9 @@ export default function MemorialEdit() {
   const validate = () => {
     const nextErrors: Partial<Record<keyof FormState, string>> = {};
 
-    requiredFields.forEach(({ key, label }) => {
+    requiredFields.forEach(({ key, message }) => {
       if (!form[key].trim()) {
-        nextErrors[key] = `${label}을 입력해 주세요.`;
+        nextErrors[key] = message;
       }
     });
 

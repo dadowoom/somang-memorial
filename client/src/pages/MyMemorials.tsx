@@ -79,8 +79,8 @@ export default function MyMemorials() {
                 내 추모관
               </h1>
               <p className="mt-6 max-w-xl text-sm leading-7 text-[#616161]">
-                내 계정으로 만든 추모관을 확인하고, 필요한 기본 정보와 공개
-                설정을 이어서 정리합니다.
+                직접 만들었거나 가족과 함께 관리하는 추모관입니다.
+                기록을 살펴보고 필요한 내용을 이어서 정리해 주세요.
               </p>
             </div>
 
@@ -108,13 +108,13 @@ export default function MyMemorials() {
                 <Link href="/my/find-parent">
                   <button className="inline-flex h-12 w-full items-center justify-center gap-2 border border-[#18181b] bg-white px-5 text-sm font-medium text-[#121212] transition-colors hover:bg-[#18181b] hover:text-white md:w-auto">
                     <HeartHandshake className="h-4 w-4" strokeWidth={1.7} />
-                    내 부모님 찾기
+                    우리 부모님 찾기
                   </button>
                 </Link>
                 <Link href="/memorial/create">
                   <button className="inline-flex h-12 w-full items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90 md:w-auto">
                     <Plus className="h-4 w-4" strokeWidth={1.7} />
-                    소망 만들기
+                    추모관 만들기
                   </button>
                 </Link>
               </div>
@@ -238,7 +238,7 @@ function VisibilityBadge({ visibility }: { visibility: string }) {
 function StatusBadge({ status }: { status: string }) {
   const label =
     status === "published"
-      ? "게시중"
+      ? "게시 중"
       : status === "pending"
         ? "관리자 확인 중"
       : status === "private"
@@ -278,10 +278,10 @@ function EmptyPanel() {
   return (
     <div className="border border-[#b5b0a7] px-5 py-16 text-center">
       <p className="text-sm font-medium text-[#121212]">
-        아직 만든 추모관이 없습니다.
+        아직 관리하는 추모관이 없습니다.
       </p>
       <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[#616161]">
-        소망 만들기에서 고인의 기본 정보와 삶의 기록을 입력하면 이곳에서 다시
+        추모관 만들기에서 고인의 기본 정보와 삶의 기록을 입력하면 이곳에서 다시
         확인하고 수정할 수 있습니다.
       </p>
       <div className="mx-auto mt-6 grid max-w-xl gap-px border border-[#b5b0a7] bg-[#b5b0a7] text-left sm:grid-cols-3">
@@ -294,7 +294,7 @@ function EmptyPanel() {
       <Link href="/memorial/create">
         <button className="mt-6 inline-flex h-11 items-center justify-center gap-2 bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90">
           <Plus className="h-4 w-4" strokeWidth={1.7} />
-          소망 만들기
+          추모관 만들기
         </button>
       </Link>
     </div>

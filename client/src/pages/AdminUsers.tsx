@@ -258,7 +258,7 @@ export default function AdminUsers() {
                                 : "approved";
                             const action =
                               nextStatus === "rejected"
-                                ? "계정을 비활성"
+                                ? "계정을 비활성화"
                                 : "계정을 다시 활성화";
                             if (
                               !window.confirm(
@@ -279,8 +279,8 @@ export default function AdminUsers() {
                             <RefreshCw className="h-3.5 w-3.5" />
                           )}
                           {item.approvalStatus === "approved"
-                            ? "비활성"
-                            : "복구"}
+                            ? "비활성화"
+                            : "다시 활성화"}
                         </button>
                       </div>
                     </article>
@@ -462,7 +462,7 @@ function formatAuditAction(action: string) {
   if (action === "memorial.member.update") return "추모관 수정(유가족)";
   // 가족 초대 (2026-09-13)
   if (action === "memorial.family.join") return "가족 참여(초대 수락)";
-  if (action === "memorial.family.remove") return "가족 제외";
+  if (action === "memorial.family.remove") return "가족 관리 권한 해제";
   if (action === "memorial.family.leave") return "가족 나감(본인)";
   return action;
 }

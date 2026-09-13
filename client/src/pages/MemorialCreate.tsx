@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { ReviewGroup, ReviewValue, StepGuide, WritingExample } from "@/components/memorial/MemorialCreateGuidance";
 import { draftKeyForUser, legacyDraftKey, readMemorialDraft, serializeOwnedDraft, writingFingerprint, type DraftWriting } from "@/lib/memorialCreateDraft";
 import { forgetWriting, getWritingSession, rememberWriting } from "@/lib/memorialWritingSession";
+import { memorialRequiredFields as requiredFields } from "@/lib/memorialFormCopy";
 import {
   ArrowLeft,
   ArrowRight,
@@ -80,14 +81,6 @@ const initialForm: MemorialForm = {
   visibility: "public",
   accessPassword: "",
 };
-
-const requiredFields: Array<{ key: keyof MemorialForm; label: string }> = [
-  { key: "name", label: "성함" },
-  { key: "role", label: "직분" },
-  { key: "birthDate", label: "출생일" },
-  { key: "summary", label: "한 줄 소개" },
-  { key: "story", label: "삶의 기록" },
-];
 
 /**
  * 등록 화면을 한 번에 다 보여주면 채울 칸이 스무 개가 넘는다. 한 단계씩 나눠
@@ -376,9 +369,9 @@ export default function MemorialCreate() {
   const collectErrors = () => {
     const nextErrors: Partial<Record<keyof MemorialForm, string>> = {};
 
-    requiredFields.forEach(({ key, label }) => {
+    requiredFields.forEach(({ key, message }) => {
       if (!form[key].trim()) {
-        nextErrors[key] = `${label}을 입력해 주세요.`;
+        nextErrors[key] = message;
       }
     });
 
@@ -492,19 +485,19 @@ export default function MemorialCreate() {
                 추모관 생성
               </p>
               <h1
-                className="text-4xl font-normal leading-tight md:text-6xl"
+                className="break-keep text-4xl font-normal leading-tight md:text-6xl"
                 style={{ fontFamily: "'Noto Serif KR', serif" }}
               >
-                아름다운 소망을
+                사랑하는 분의 삶을
                 <br />
-                만드세요
+                함께 기억합니다
               </h1>
               <p className="mt-6 max-w-md text-sm leading-7 text-[#616161]">
                 <span className="block">
-                  사랑하는 분의 삶과 믿음을 조용히 담아
+                  사랑하는 분의 삶과 믿음을 기록해 주세요.
                 </span>
                 <span className="block">
-                  가족과 교회가 오래 기억할 수 있는 소망을 남겨보세요.
+                  가족과 교회가 함께 기억할 수 있도록 돕겠습니다.
                 </span>
               </p>
               <div className="mt-6">
@@ -656,12 +649,12 @@ export default function MemorialCreate() {
               >
                 <SectionHeader number="01" title="기본 정보" />
                 <StepGuide>
-                  <p>고인의 성함과 기본 정보를 적어주세요. <strong>필수</strong> 표시가 있는 성함·직분·출생일만 먼저 입력해도 됩니다.</p>
+                  <p>고인의 성함과 기본 정보를 적어 주세요. <strong>필수</strong> 표시가 있는 성함·직분·출생일만 먼저 입력해도 됩니다.</p>
                   <p>정확한 날짜를 모르면 연도만 입력해도 됩니다.</p>
                 </StepGuide>
 
                 <div className="grid gap-6 md:grid-cols-2">
-                  <Field label="성함" error={errors.name} required maxLength={120} hint="직분을 빼고 성함만 적어주세요. 예: 김소망">
+                  <Field label="성함" error={errors.name} required maxLength={120} hint="직분을 빼고 성함만 적어 주세요. 예: 김소망">
                     <input
                       className={inputClass}
                       value={form.name}
@@ -737,7 +730,7 @@ export default function MemorialCreate() {
                     />
                   </Field>
 
-                  <Field label="가족 대표 성함" maxLength={120} hint="교회 담당자가 연락할 가족 대표의 성함을 적어주세요.">
+                  <Field label="가족 대표 성함" maxLength={120} hint="교회 담당자가 연락할 가족 대표의 성함을 적어 주세요.">
                     <input
                       className={inputClass}
                       value={form.familyContact}
@@ -771,11 +764,11 @@ export default function MemorialCreate() {
               >
                 <SectionHeader number="02" title="신앙 이야기" />
                 <StepGuide>
-                  <p>어떤 분이셨는지 한 문장으로 소개하고, 기억나는 이야기를 편하게 적어주세요.</p>
+                  <p>어떤 분이셨는지 한 문장으로 소개하고, 기억나는 이야기를 편하게 적어 주세요.</p>
                   <p>한 줄 소개와 삶의 기록은 필수입니다. 대표 말씀과 예배 정보는 비워두어도 됩니다.</p>
                 </StepGuide>
                 <WritingExample>
-                  <p className="font-medium">아래는 작성 방법을 보여주는 예시입니다. 고인에게 맞는 내용만 직접 적어주세요.</p>
+                  <p className="font-medium">아래는 작성 방법을 보여주는 예시입니다. 고인에게 맞는 내용만 직접 적어 주세요.</p>
                   <p><strong>한 줄 소개</strong><br />작은 일에도 감사하며 이웃에게 따뜻한 마음을 나누셨던 분입니다.</p>
                   <p><strong>삶의 기록</strong><br />가족의 이야기를 끝까지 들어주시고 조용히 응원해 주셨습니다. 함께 예배드리던 시간과 식탁에 둘러앉아 나누던 대화가 오래 기억에 남습니다.</p>
                   <p>성품, 신앙생활, 교회 봉사, 가족과의 추억 중 기억나는 것부터 2~3문장으로 시작해 보세요. 예시는 자동으로 입력되지 않습니다.</p>
@@ -806,7 +799,7 @@ export default function MemorialCreate() {
                     </Field>
                   </div>
 
-                  <Field label="한 줄 소개" error={errors.summary} required maxLength={255} count={form.summary.length} hint="고인을 떠올리면 생각나는 모습을 한 문장으로 적어주세요.">
+                  <Field label="한 줄 소개" error={errors.summary} required maxLength={255} count={form.summary.length} hint="고인을 떠올리면 생각나는 모습을 한 문장으로 적어 주세요.">
                     <input
                       className={inputClass}
                       value={form.summary}
@@ -864,11 +857,11 @@ export default function MemorialCreate() {
               >
                 <SectionHeader number="03" title="생애 기록" />
                 <StepGuide>
-                  <p><strong>선택 항목</strong>입니다. 기억하고 싶은 일을 연도와 함께 남겨주세요. 준비된 기록이 없으면 다음 단계로 넘어가도 됩니다.</p>
+                  <p><strong>선택 항목</strong>입니다. 기억하고 싶은 일을 연도와 함께 남겨 주세요. 준비된 기록이 없으면 다음 단계로 넘어가도 됩니다.</p>
                 </StepGuide>
                 <WritingExample title="생애 기록 예시 보기">
                   <p><strong>연도</strong> 1980<br /><strong>제목</strong> 교회 등록<br /><strong>설명</strong> 가족과 함께 예배드리며 신앙생활을 시작하셨습니다.</p>
-                  <p>결혼, 교회 봉사, 가족과의 추억 등 기억나는 일을 오래된 순서대로 적어주세요. 빈 기록은 등록되지 않습니다.</p>
+                  <p>결혼, 교회 봉사, 가족과의 추억 등 기억나는 일을 오래된 순서대로 적어 주세요. 빈 기록은 등록되지 않습니다.</p>
                 </WritingExample>
 
                 <div className="space-y-6">
@@ -955,7 +948,7 @@ export default function MemorialCreate() {
                 <SectionHeader number="04" title="사진" />
                 <StepGuide>
                   <p>사진 없이도 추모관을 등록할 수 있습니다. <strong>이 작성 화면에서는 사진을 저장하지 않습니다.</strong></p>
-                  <p>{isAdmin ? "추모관을 생성한 뒤 ‘사진 추가하기’에서 등록해 주세요." : "먼저 글 등록을 요청한 뒤, 완료 화면의 ‘사진 추가하기’에서 사진을 올려주세요. 게시된 뒤에도 직접 추가하고 고칠 수 있습니다."}</p>
+                  <p>{isAdmin ? "추모관을 생성한 뒤 ‘사진 추가하기’에서 등록해 주세요." : "먼저 글 등록을 요청한 뒤, 완료 화면의 ‘사진 추가하기’에서 사진을 올려 주세요. 게시된 뒤에도 직접 추가하고 고칠 수 있습니다."}</p>
                 </StepGuide>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="border border-[#d5cfc5] p-5">

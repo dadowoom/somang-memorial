@@ -9,7 +9,7 @@ const navItems = [
   { label: "소망동산", href: "/somang-hill" },
   { label: "추모관", href: "/memorial/search" },
   { label: "하늘로 보내는 편지", href: "/letters" },
-  { label: "서비스", href: "/#services" },
+  { label: "이용 안내", href: "/#services" },
 ];
 
 export default function Navbar() {
@@ -61,7 +61,7 @@ export default function Navbar() {
             <Link href="/memorial/search">
               <button className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#b5b0a7] bg-white px-4 text-sm font-medium text-[#121212] transition-colors hover:bg-[#f5f5f5]">
                 <Search className="h-3.5 w-3.5" />
-                추모관
+                추모관 찾기
               </button>
             </Link>
             {isAuthenticated ? (
@@ -73,7 +73,7 @@ export default function Navbar() {
                 </Link>
                 <Link href="/my/find-parent">
                   <span className="text-[15px] font-medium text-[#3f3f3f] transition-colors hover:text-[#121212]">
-                    내 부모 찾기
+                    우리 부모님 찾기
                   </span>
                 </Link>
                 {user?.role === "admin" && (
@@ -144,7 +144,7 @@ export default function Navbar() {
                 onClick={closeMobile}
                 className="block py-3 text-[15px] font-medium text-[#121212]"
               >
-                소망 만들기
+                추모관 만들기
               </span>
             </Link>
             {isAuthenticated && (
@@ -163,7 +163,7 @@ export default function Navbar() {
                   onClick={closeMobile}
                   className="block py-3 text-[15px] font-medium text-[#121212]"
                 >
-                  내 부모 찾기
+                  우리 부모님 찾기
                 </span>
               </Link>
             )}
