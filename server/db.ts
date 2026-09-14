@@ -36,6 +36,10 @@ import {
   publicMemorialName,
   toMemorialAccessStatus,
 } from "../shared/memorialAccessStatus";
+import {
+  planMemorialHandover,
+  type MemorialHandover,
+} from "../shared/accountDeletion";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -2422,10 +2426,25 @@ export async function deleteMemorialBookPage(id: number) {
  * 추모관까지 지우려면 탈퇴 전에 따로 지워야 합니다 — 이용약관에 그렇게
  * 적어 두었습니다.
  */
+export type DeleteUserAccountResult =
+  | { ok: false; reason: "password" }
+  | {
+      ok: false;
+      reason: "memorials";
+      blocked: Array<{ id: number; name: string; slug: string }>;
+    }
+  | { ok: true; handedOver: MemorialHandover[] };
+
+/**
+ * 회원 탈퇴. 만든 추모관이 있으면 함께 관리하는 가족에게 주인을 넘기고, 넘길
+ * 가족이 없는 추모관이 하나라도 있으면 아무것도 바꾸지 않고 막는다
+ * (shared/accountDeletion.ts, 2026-09-14). 그 전에는 회원 행만 지워서
+ * 관리자 말고는 아무도 못 고치는 주인 없는 추모관이 생겼다.
+ */
 export async function deleteUserAccount(input: {
   userId: number;
   password: string;
-}) {
+}): Promise<DeleteUserAccountResult> {
   const db = await getDb();
   if (!db) {
     throw new Error("Database is not available");
@@ -2438,15 +2457,58 @@ export async function deleteUserAccount(input: {
     .limit(1);
 
   const user = rows[0];
-  if (!user) return false;
+  if (!user) return { ok: false, reason: "password" };
 
   // 비밀번호로 가입한 계정만 스스로 지울 수 있습니다. 외부 로그인 계정은
   // 확인할 비밀번호가 없으므로 관리자를 통해 처리해야 합니다.
-  if (!user.passwordHash) return false;
-  if (!verifyUserPassword(input.password, user.passwordHash)) return false;
+  if (!user.passwordHash) return { ok: false, reason: "password" };
+  if (!verifyUserPassword(input.password, user.passwordHash)) {
+    return { ok: false, reason: "password" };
+  }
 
-  await db.delete(users).where(eq(users.id, user.id));
-  return true;
+  const owned = await db
+    .select({ id: memorials.id, name: memorials.name, slug: memorials.slug })
+    .from(memorials)
+    .where(eq(memorials.createdByUserId, user.id))
+    .orderBy(asc(memorials.id));
+
+  const ownedWithMembers = [];
+  for (const memorial of owned) {
+    const members = await db
+      .select({ userId: memorialFamilyMembers.userId, name: users.name })
+      .from(memorialFamilyMembers)
+      .innerJoin(users, eq(users.id, memorialFamilyMembers.userId))
+      .where(eq(memorialFamilyMembers.memorialId, memorial.id))
+      .orderBy(asc(memorialFamilyMembers.createdAt), asc(memorialFamilyMembers.id));
+    ownedWithMembers.push({ ...memorial, members });
+  }
+
+  const plan = planMemorialHandover(ownedWithMembers);
+  if (plan.blocked.length > 0) {
+    return { ok: false, reason: "memorials", blocked: plan.blocked };
+  }
+
+  // 주인 넘기기와 회원 삭제는 한 묶음이다. 중간에 실패하면 전부 되돌린다.
+  await db.transaction(async tx => {
+    for (const transfer of plan.transfers) {
+      await tx
+        .update(memorials)
+        .set({ createdByUserId: transfer.toUserId })
+        .where(eq(memorials.id, transfer.memorialId));
+      // 새 주인은 더 이상 "함께 관리하는 가족" 목록에 있을 필요가 없다.
+      await tx
+        .delete(memorialFamilyMembers)
+        .where(
+          and(
+            eq(memorialFamilyMembers.memorialId, transfer.memorialId),
+            eq(memorialFamilyMembers.userId, transfer.toUserId)
+          )
+        );
+    }
+    await tx.delete(users).where(eq(users.id, user.id));
+  });
+
+  return { ok: true, handedOver: plan.transfers };
 }
 
 /* ------------------------------------------------------------------ *

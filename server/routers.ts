@@ -111,6 +111,7 @@ import { uploadRouter } from "./routers/upload";
 import { videoRouter } from "./routers/video";
 import { maskEmailForAudit, maskPhoneForAudit } from "../shared/auditNotes";
 import { credentialFingerprint } from "./_core/sessionCredential";
+import { describeBlockedMemorials } from "../shared/accountDeletion";
 
 const passwordAttemptLimiter = createPasswordAttemptLimiter();
 const parentFinderSearchLimiter = createPasswordAttemptLimiter({
@@ -737,7 +738,7 @@ export const appRouter = router({
           password: input.password,
         });
 
-        if (!removed) {
+        if (!removed.ok && removed.reason === "password") {
           loginAttemptLimiter.recordFailure(attemptKey);
           throw new TRPCError({
             code: "UNAUTHORIZED",
@@ -745,7 +746,26 @@ export const appRouter = router({
           });
         }
 
+        // 이어서 관리할 가족이 없는 추모관이 있으면 탈퇴하지 않는다. 주인 없는
+        // 추모관을 만들지 않으려는 것이다 (2026-09-14).
+        if (!removed.ok) {
+          loginAttemptLimiter.recordSuccess(attemptKey);
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: describeBlockedMemorials(removed.blocked),
+          });
+        }
+
         loginAttemptLimiter.recordSuccess(attemptKey);
+        // 가족에게 넘어간 추모관은 새 주인을 대상으로 기록한다.
+        for (const transfer of removed.handedOver) {
+          await createAdminAuditLog({
+            adminUserId: null,
+            targetUserId: transfer.toUserId,
+            action: "memorial.owner.transfer",
+            note: `${transfer.name} (${transfer.slug}) · 탈퇴한 회원번호 ${ctx.user.id} → 가족 ${transfer.toName ?? transfer.toUserId}`,
+          });
+        }
         // 탈퇴는 되돌릴 수 없으므로 "누가 언제"만이라도 남긴다. 회원 행은 이미 지워져
         // targetUserId 를 걸 수 없으니 번호와 가린 이메일을 메모에 적는다 (2026-09-14).
         await createAdminAuditLog({
