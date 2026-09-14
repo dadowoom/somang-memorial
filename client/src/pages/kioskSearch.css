@@ -5,7 +5,7 @@
   }
 
   .kiosk-search-header {
-    padding-block: clamp(24px, 2.5dvh, 48px);
+    padding-block: 16px;
   }
 
   .kiosk-search-logo {
@@ -21,7 +21,9 @@
   }
 
   .kiosk-search-intro {
-    padding-block: clamp(24px, 2.5dvh, 48px);
+    flex: none;
+    justify-content: flex-start;
+    padding-block: 24px;
   }
 
   .kiosk-search-title {

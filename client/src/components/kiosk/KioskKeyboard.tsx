@@ -4,6 +4,7 @@ import {
 } from "@/lib/kioskKeyboardInput";
 import { cn } from "@/lib/utils";
 import { getKioskKeyboardScrollOffset } from "@/lib/kioskKeyboardLayout";
+import { commitKioskKeyboardEdit } from "@/lib/kioskKeyboardCommit";
 import "./kioskKeyboard.css";
 import { ArrowUp, CornerDownLeft, Delete as DeleteIcon, X } from "lucide-react";
 import {
@@ -189,7 +190,11 @@ export function useKioskKeyboardField<
       submitDisabled,
       elementRef: elementRef as MutableRefObject<KioskKeyboardElement | null>,
       getValue: () => valueRef.current,
-      setValue: nextValue => onChangeRef.current(nextValue),
+      setValue: nextValue => {
+        // A second touch can arrive before React renders the first edit.
+        valueRef.current = nextValue;
+        onChangeRef.current(nextValue);
+      },
       onSubmit: () => onSubmitRef.current?.(),
     });
   }, [
@@ -284,18 +289,6 @@ function KioskKeyboard({
     };
   }, [field.id, field.elementRef, onHeightChange]);
 
-  const restoreSelection = useCallback(
-    (cursor: number) => {
-      window.requestAnimationFrame(() => {
-        const element = field.elementRef.current;
-        if (!element) return;
-        element.focus({ preventScroll: true });
-        element.setSelectionRange(cursor, cursor);
-      });
-    },
-    [field]
-  );
-
   const insertToken = useCallback(
     (token: string) => {
       const element = field.elementRef.current;
@@ -310,11 +303,10 @@ function KioskKeyboard({
         field.maxLength
       );
 
-      field.setValue(result.value);
-      restoreSelection(result.cursor);
+      commitKioskKeyboardEdit(element, result, field.setValue);
       setShifted(false);
     },
-    [field, restoreSelection]
+    [field]
   );
 
   const backspace = useCallback(() => {
@@ -324,9 +316,8 @@ function KioskKeyboard({
     const end = element?.selectionEnd ?? start;
     const result = backspaceKioskKeyboardValue(value, start, end);
 
-    field.setValue(result.value);
-    restoreSelection(result.cursor);
-  }, [field, restoreSelection]);
+    commitKioskKeyboardEdit(element, result, field.setValue);
+  }, [field]);
 
   const submit = useCallback(() => {
     if (field.submitDisabled) return;

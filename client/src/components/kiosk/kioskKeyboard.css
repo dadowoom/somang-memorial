@@ -79,3 +79,16 @@
     height: clamp(30px, 4vw, 48px);
   }
 }
+
+/* On full-height standing kiosks, preserve the large key area but lift every
+   row, including the bottom actions, away from the floor-level screen edge.
+   Keeping the rest area inside the panel also reserves it for input scrolling. */
+@media (min-width: 640px) and (min-height: 1600px) and (orientation: portrait) {
+  .kiosk-keyboard {
+    height: 72dvh;
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-inner {
+    padding-bottom: calc(12dvh + max(12px, 1dvh, env(safe-area-inset-bottom)));
+  }
+}
