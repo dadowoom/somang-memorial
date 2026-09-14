@@ -51,4 +51,33 @@
     font-size: clamp(16px, 1.85vw, 20px);
     line-height: 1.6;
   }
+
+  /* Keep the search controls visible above the larger keyboard. The guide
+     returns when input is finished; compact phone/PC layouts are unchanged. */
+  .kiosk-search-screen[data-search-keyboard-open="true"] {
+    .kiosk-search-header {
+      padding-block: 16px;
+    }
+
+    .kiosk-search-intro {
+      padding-block: 24px;
+    }
+
+    .kiosk-search-eyebrow,
+    .kiosk-search-guide {
+      display: none;
+    }
+
+    .kiosk-search-title {
+      margin-top: 0;
+    }
+
+    .kiosk-search-description {
+      margin-top: 12px;
+    }
+
+    .kiosk-search-intro form {
+      margin-top: 24px;
+    }
+  }
 }

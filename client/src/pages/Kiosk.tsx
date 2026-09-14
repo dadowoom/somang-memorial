@@ -232,6 +232,7 @@ export default function Kiosk() {
   return (
     <main
       className="kiosk-search-screen bg-white text-[#121212]"
+      data-search-keyboard-open={searchKeyboard.keyboardOpen}
       style={{ minHeight: viewportMinHeight }}
     >
       <div
@@ -274,7 +275,7 @@ export default function Kiosk() {
         >
           <div className="w-full">
             {!submittedKeyword && (
-              <p className="text-xs font-medium tracking-[0.2em] text-[#777]">
+              <p className="kiosk-search-eyebrow text-xs font-medium tracking-[0.2em] text-[#777]">
                 SOMANG MEMORIAL
               </p>
             )}

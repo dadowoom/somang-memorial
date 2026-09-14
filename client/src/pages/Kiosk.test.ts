@@ -127,8 +127,24 @@ describe("kiosk search viewport SSR regression", () => {
 
   afterAll(() => vi.unstubAllGlobals());
 
-  it.each([960, 683])(
-    "shares the available viewport height with main and shell for a %ipx keyboard",
+  it.each([true, false])(
+    "marks only the active search keyboard for the compact introduction: %s",
+    keyboardOpen => {
+      mocks.keyboard.isOpen = true;
+      mocks.keyboard.keyboardOpen = keyboardOpen;
+      const markup = renderKiosk();
+      const main = openingTags(markup).find(element => element.tag === "main")!;
+      expect(attribute(main.attributes, "data-search-keyboard-open")).toBe(
+        String(keyboardOpen)
+      );
+      // Keep the guide in the DOM so CSS restores it on close and never hides
+      // it on compact phone/landscape layouts.
+      expect(textContent(markup)).toContain("추모관 이용 안내");
+    }
+  );
+
+  it.each([1152, 819.6, 960, 683])(
+    "shares the available viewport height with main and shell for a %spx keyboard",
     keyboardHeight => {
       Object.assign(mocks.keyboard, {
         isOpen: true,
