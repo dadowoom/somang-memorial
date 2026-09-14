@@ -25,6 +25,8 @@ import {
 import {
   clearBrowserKioskAccessStorage,
   kioskAccessStorageKey,
+  KIOSK_IDLE_WARNING_MS,
+  KIOSK_MEMORIAL_IDLE_RESET_MS,
   useKioskIdleReset,
 } from "@/hooks/useKioskIdleReset";
 import {
@@ -186,6 +188,7 @@ export default function KioskMemorial() {
   const [selectedVideo, setSelectedVideo] = useState<KioskPlayableVideo | null>(
     null
   );
+  const [idleWarning, setIdleWarning] = useState(false);
   const closePhoto = useCallback(() => setSelectedPhoto(null), []);
   const closeVideo = useCallback(() => setSelectedVideo(null), []);
   const returnToKiosk = useCallback(() => {
@@ -195,9 +198,20 @@ export default function KioskMemorial() {
     setLocation("/kiosk", { replace: true });
   }, [closeKeyboard, setLocation]);
 
+  // 글을 읽는 화면이라 3분을 두고, 끝나기 30초 전에 "곧 돌아갑니다"를 띄운다.
+  // 영상을 보는 중에는 15분이다 (2026-09-14).
+  const idleOptions = useMemo(
+    () => ({
+      warnBeforeMs: KIOSK_IDLE_WARNING_MS,
+      onWarn: () => setIdleWarning(true),
+      onActive: () => setIdleWarning(false),
+    }),
+    []
+  );
   useKioskIdleReset(
     returnToKiosk,
-    selectedVideo ? KIOSK_VIDEO_IDLE_RESET_MS : undefined
+    selectedVideo ? KIOSK_VIDEO_IDLE_RESET_MS : KIOSK_MEMORIAL_IDLE_RESET_MS,
+    idleOptions
   );
 
   useEffect(() => {
@@ -206,6 +220,7 @@ export default function KioskMemorial() {
     setAccessToken(readAccessToken(slug));
     setSelectedPhoto(null);
     setSelectedVideo(null);
+    setIdleWarning(false);
     window.scrollTo({ top: 0, left: 0 });
 
     return () => {
@@ -268,6 +283,7 @@ export default function KioskMemorial() {
 
   return (
     <main className="min-h-[100dvh] bg-white text-[#121212]">
+      {idleWarning && <KioskIdleWarning onStay={() => setIdleWarning(false)} />}
       <div className="mx-auto min-h-[100dvh] w-full max-w-[720px] bg-white pb-24">
         <KioskMemorialHeader onBack={returnToKiosk} />
 
@@ -370,6 +386,33 @@ export default function KioskMemorial() {
         />
       )}
     </main>
+  );
+}
+
+/**
+ * 초기화 30초 전에 화면 아래에 뜨는 안내. 아무 곳이나 만져도 시간이 늘어나지만,
+ * 어르신이 무엇을 눌러야 할지 바로 알 수 있게 큰 버튼을 함께 둔다.
+ */
+function KioskIdleWarning({ onStay }: { onStay: () => void }) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-6 border-t border-[#e0c98a] bg-[#fff8e6] px-8 py-6 text-[#4a3b12]"
+    >
+      <p className="text-xl leading-8">
+        잠시 뒤 처음 화면으로 돌아갑니다.
+        <br />
+        계속 보시려면 화면을 눌러 주세요.
+      </p>
+      <button
+        type="button"
+        onClick={onStay}
+        className="inline-flex h-16 shrink-0 items-center border border-[#18181b] bg-[#18181b] px-8 text-xl font-medium text-white"
+      >
+        계속 보기
+      </button>
+    </div>
   );
 }
 

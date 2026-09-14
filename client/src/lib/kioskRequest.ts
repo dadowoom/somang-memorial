@@ -23,6 +23,15 @@ export function isKioskPathname(pathname: string) {
   return pathname === "/kiosk" || pathname.startsWith("/kiosk/");
 }
 
+/**
+ * 로그인이 필요하다는 오류가 났을 때 로그인 화면으로 보내도 되는지 (2026-09-14).
+ * 키오스크는 로그인하는 곳이 아니다. 거기서 로그인 화면으로 가면 화면 자판도
+ * 처음으로 가는 버튼도 없는 곳에 관람객이 갇힌다.
+ */
+export function shouldRedirectToLoginOnUnauthorized(pathname: string) {
+  return !isKioskPathname(pathname);
+}
+
 export function getKioskRequestTimeoutMs(method?: string) {
   return method?.toUpperCase() === "POST"
     ? KIOSK_MUTATION_REQUEST_TIMEOUT_MS

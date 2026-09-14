@@ -1,6 +1,19 @@
 import { useEffect, useRef } from "react";
 
 export const KIOSK_IDLE_RESET_MS = 90_000;
+// 추모관 화면은 글을 읽는 곳이라 검색 화면(90초)보다 길게 둔다 (2026-09-14).
+// 조문객이 천천히 읽다가 끊기지 않도록 3분으로 하고, 끝나기 30초 전에 알린다.
+export const KIOSK_MEMORIAL_IDLE_RESET_MS = 3 * 60_000;
+export const KIOSK_IDLE_WARNING_MS = 30_000;
+
+export type KioskIdleResetOptions = {
+  /** 초기화 몇 ms 전에 onWarn 을 부를지. 0 이거나 없으면 안 부른다. */
+  warnBeforeMs?: number;
+  /** 곧 초기화된다는 알림. 화면에 "잠시 뒤 처음으로 돌아갑니다"를 띄울 때 쓴다. */
+  onWarn?: () => void;
+  /** 알림이 뜬 뒤 사람이 화면을 만졌을 때. 알림을 지울 때 쓴다. */
+  onActive?: () => void;
+};
 export const KIOSK_ACCESS_STORAGE_PREFIX = "somang.memorialAccess.";
 export const KIOSK_LAST_ACTIVITY_STORAGE_KEY = "somang.kiosk.lastActivityAt";
 
@@ -37,13 +50,20 @@ function writeKioskLastActivityAt(storage: Storage, value: number) {
 
 export function useKioskIdleReset(
   onIdle: () => void,
-  timeoutMs = KIOSK_IDLE_RESET_MS
+  timeoutMs = KIOSK_IDLE_RESET_MS,
+  options: KioskIdleResetOptions = {}
 ) {
   const onIdleRef = useRef(onIdle);
+  const optionsRef = useRef(options);
+  const warnBeforeMs = options.warnBeforeMs ?? 0;
 
   useEffect(() => {
     onIdleRef.current = onIdle;
   }, [onIdle]);
+
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
   useEffect(() => {
     const readInitialActivityAt = () => {
@@ -65,12 +85,36 @@ export function useKioskIdleReset(
 
     let lastActivityAt = readInitialActivityAt();
     let timer = 0;
+    let warnTimer = 0;
+    let warned = false;
+
+    // 초기화 warnBeforeMs 전에 한 번만 알린다. 사람이 만지면 알림을 거둔다.
+    const scheduleWarn = () => {
+      window.clearTimeout(warnTimer);
+      if (warnBeforeMs <= 0 || warnBeforeMs >= timeoutMs) return;
+      const delayMs = timeoutMs - warnBeforeMs - (Date.now() - lastActivityAt);
+      warnTimer = window.setTimeout(
+        () => {
+          warned = true;
+          optionsRef.current.onWarn?.();
+        },
+        Math.max(0, delayMs)
+      );
+    };
+
+    const clearWarning = () => {
+      if (!warned) return;
+      warned = false;
+      optionsRef.current.onActive?.();
+    };
 
     const runIdleReset = () => {
       lastActivityAt = Date.now();
       rememberActivityAt(lastActivityAt);
+      warned = false;
       onIdleRef.current();
       scheduleReset(timeoutMs);
+      scheduleWarn();
     };
 
     const scheduleReset = (delayMs: number) => {
@@ -88,7 +132,9 @@ export function useKioskIdleReset(
     const restartTimer = () => {
       lastActivityAt = Date.now();
       rememberActivityAt(lastActivityAt);
+      clearWarning();
       scheduleReset(timeoutMs);
+      scheduleWarn();
     };
 
     const checkAfterVisibilityChange = () => {
@@ -104,6 +150,7 @@ export function useKioskIdleReset(
 
     rememberActivityAt(lastActivityAt);
     scheduleReset(Math.max(0, timeoutMs - (Date.now() - lastActivityAt)));
+    scheduleWarn();
     window.addEventListener("pointerdown", restartTimer);
     window.addEventListener("keydown", restartTimer);
     window.addEventListener("input", restartTimer);
@@ -113,6 +160,7 @@ export function useKioskIdleReset(
 
     return () => {
       window.clearTimeout(timer);
+      window.clearTimeout(warnTimer);
       window.removeEventListener("pointerdown", restartTimer);
       window.removeEventListener("keydown", restartTimer);
       window.removeEventListener("input", restartTimer);
@@ -123,5 +171,5 @@ export function useKioskIdleReset(
         checkAfterVisibilityChange
       );
     };
-  }, [timeoutMs]);
+  }, [timeoutMs, warnBeforeMs]);
 }

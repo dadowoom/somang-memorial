@@ -3,6 +3,7 @@ import {
   fetchWithKioskTimeout,
   getKioskRequestTimeoutMs,
   isKioskPathname,
+  shouldRedirectToLoginOnUnauthorized,
   KIOSK_MUTATION_REQUEST_TIMEOUT_MS,
   KIOSK_QUERY_REQUEST_TIMEOUT_MS,
   KIOSK_REQUEST_TIMEOUT_ERROR,
@@ -10,6 +11,17 @@ import {
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe("shouldRedirectToLoginOnUnauthorized", () => {
+  it("일반 웹에서는 로그인 화면으로 보내고 키오스크에서는 보내지 않는다", () => {
+    expect(shouldRedirectToLoginOnUnauthorized("/my/memorials")).toBe(true);
+    expect(shouldRedirectToLoginOnUnauthorized("/")).toBe(true);
+    expect(shouldRedirectToLoginOnUnauthorized("/kiosk")).toBe(false);
+    expect(shouldRedirectToLoginOnUnauthorized("/kiosk/memorial/abc")).toBe(
+      false
+    );
+  });
 });
 
 describe("isKioskPathname", () => {

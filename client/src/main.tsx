@@ -6,7 +6,11 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
-import { fetchWithKioskTimeout, isKioskPathname } from "./lib/kioskRequest";
+import {
+  fetchWithKioskTimeout,
+  isKioskPathname,
+  shouldRedirectToLoginOnUnauthorized,
+} from "./lib/kioskRequest";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -18,6 +22,8 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
 
   if (!isUnauthorized) return;
+  // 키오스크에서는 로그인 화면으로 끌고 가지 않는다 (관람객이 갇힌다).
+  if (!shouldRedirectToLoginOnUnauthorized(window.location.pathname)) return;
 
   window.location.href = getLoginUrl();
 };
