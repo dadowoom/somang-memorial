@@ -143,7 +143,7 @@ describe("kiosk search viewport SSR regression", () => {
     }
   );
 
-  it.each([1382.4, 1152, 819.6, 960, 683])(
+  it.each([1440, 1382.4, 1152, 819.6, 960, 683])(
     "shares the available viewport height with main and shell for a %spx keyboard",
     keyboardHeight => {
       Object.assign(mocks.keyboard, {

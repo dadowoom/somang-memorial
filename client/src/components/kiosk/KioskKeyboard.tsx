@@ -30,6 +30,7 @@ type ActiveField = {
   label: string;
   defaultMode: KioskKeyboardMode;
   multiline: boolean;
+  alignToTop: boolean;
   maxLength?: number;
   submitLabel?: string;
   submitDisabled: boolean;
@@ -142,6 +143,7 @@ type KioskKeyboardFieldOptions = {
   onChange: (value: string) => void;
   maxLength?: number;
   multiline?: boolean;
+  alignToTop?: boolean;
   defaultMode?: KioskKeyboardMode;
   submitLabel?: string;
   submitDisabled?: boolean;
@@ -157,6 +159,7 @@ export function useKioskKeyboardField<
   onChange,
   maxLength,
   multiline = false,
+  alignToTop = false,
   defaultMode = "ko",
   submitLabel,
   submitDisabled = false,
@@ -185,6 +188,7 @@ export function useKioskKeyboardField<
       label,
       defaultMode,
       multiline,
+      alignToTop,
       maxLength,
       submitLabel,
       submitDisabled,
@@ -199,6 +203,7 @@ export function useKioskKeyboardField<
     });
   }, [
     defaultMode,
+    alignToTop,
     id,
     label,
     maxLength,
@@ -272,12 +277,14 @@ function KioskKeyboard({
           // The site's smooth scrolling must not animate the input underneath
           // the keyboard while its size is changing.
           element.scrollIntoView({ behavior: "instant", block: "nearest" });
-          moveElementAboveKeyboard(element, panel);
+          moveElementAboveKeyboard(element, panel, field.alignToTop);
         });
       });
     };
     const observer = new ResizeObserver(updateLayout);
     observer.observe(panel);
+    const form = field.elementRef.current?.closest("form");
+    if (form) observer.observe(form);
     window.addEventListener("resize", updateLayout);
     updateLayout();
 
@@ -287,7 +294,7 @@ function KioskKeyboard({
       window.cancelAnimationFrame(firstFrame);
       window.cancelAnimationFrame(secondFrame);
     };
-  }, [field.id, field.elementRef, onHeightChange]);
+  }, [field.id, field.elementRef, field.alignToTop, onHeightChange]);
 
   const insertToken = useCallback(
     (token: string) => {
@@ -654,20 +661,31 @@ function modeLabel(mode: KioskKeyboardMode) {
 
 function moveElementAboveKeyboard(
   element: KioskKeyboardElement,
-  panel: HTMLDivElement | null
+  panel: HTMLDivElement | null,
+  alignToTop: boolean
 ) {
   const panelTop = panel?.getBoundingClientRect().top ?? window.innerHeight;
   const elementRect = element.getBoundingClientRect();
-  const formBottom = element.closest("form")?.getBoundingClientRect().bottom;
+  const formRect = element.closest("form")?.getBoundingClientRect();
+  const heading = element.closest("section")?.querySelector("h2");
+  const scrollParent = findScrollableParent(element);
+  const scrollRect = scrollParent?.getBoundingClientRect();
   const distance = getKioskKeyboardScrollOffset({
     inputTop: elementRect.top,
     inputBottom: elementRect.bottom,
-    keyboardTop: panelTop,
-    formBottom,
+    keyboardTop: Math.min(panelTop, scrollRect?.bottom ?? panelTop),
+    formTop: formRect?.top,
+    formBottom: formRect?.bottom,
+    contextTop: heading?.getBoundingClientRect().top,
+    visibleTop: Math.max(0, scrollRect?.top ?? 0),
+    preferTop:
+      alignToTop &&
+      window.matchMedia(
+        "(min-width: 640px) and (min-height: 900px) and (orientation: portrait)"
+      ).matches,
   });
-  if (distance <= 0) return;
+  if (Math.abs(distance) < 0.5) return;
 
-  const scrollParent = findScrollableParent(element);
   if (scrollParent) {
     scrollParent.scrollBy({ top: distance, behavior: "instant" });
     return;

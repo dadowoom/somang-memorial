@@ -847,7 +847,8 @@ function KioskMemorialContent({
             {memorial.role}
           </p>
           <p className="mt-3 text-base leading-7 text-[#64615d]">
-            {formatLifespan(memorial.birthDate, memorial.deathDate)} · {memorial.church}
+            {formatLifespan(memorial.birthDate, memorial.deathDate)} ·{" "}
+            {memorial.church}
           </p>
           <p className="mt-7 text-[19px] leading-9 text-[#34312d]">
             {memorial.summary}
@@ -1277,8 +1278,8 @@ function KioskMemorialGate({
         </h1>
         {status?.name && (
           <p className="mt-4 text-base leading-7 text-[#64615d]">
-            {formatLifespan(status.birthDate ?? "", status.deathDate ?? "")} · {status.church} ·{" "}
-            {status.role}
+            {formatLifespan(status.birthDate ?? "", status.deathDate ?? "")} ·{" "}
+            {status.church} · {status.role}
           </p>
         )}
         <input
@@ -1341,6 +1342,7 @@ function KioskFamilySection({
   const passwordKeyboard = useKioskKeyboardField<HTMLInputElement>({
     id: `kiosk-family-password-${slug}`,
     label: "가족관 비밀번호",
+    alignToTop: true,
     value: password,
     onChange: value => {
       setPassword(value);
@@ -1552,6 +1554,7 @@ function KioskLettersSection({
   const contentKeyboard = useKioskKeyboardField<HTMLTextAreaElement>({
     id: `kiosk-letter-content-${memorialSlug}`,
     label: "편지 내용",
+    alignToTop: true,
     value: content,
     onChange: value => {
       setContent(value);
@@ -1566,6 +1569,7 @@ function KioskLettersSection({
   const authorKeyboard = useKioskKeyboardField<HTMLInputElement>({
     id: `kiosk-letter-author-${memorialSlug}`,
     label: "보내는 분",
+    alignToTop: true,
     value: author,
     onChange: value => {
       setAuthor(value);
@@ -1620,7 +1624,12 @@ function KioskLettersSection({
   const letters = (lettersQuery.data ?? []) as MemorialLetter[];
 
   return (
-    <KioskSection id="letters" eyebrow="Letters" title="하늘로 보내는 편지">
+    <KioskSection
+      id="letters"
+      eyebrow="Letters"
+      title="하늘로 보내는 편지"
+      keyboardOpen={authorKeyboard.keyboardOpen || contentKeyboard.keyboardOpen}
+    >
       <form onSubmit={submit} className="border border-[#dadada]">
         <div className="border-b border-[#dadada] p-5">
           <p className="text-sm text-[#7a643e]">받는 분: {memorialName}</p>
@@ -1715,15 +1724,18 @@ function KioskSection({
   eyebrow,
   title,
   children,
+  keyboardOpen = false,
 }: {
   id: string;
   eyebrow: string;
   title: string;
   children: ReactNode;
+  keyboardOpen?: boolean;
 }) {
   return (
     <section
       id={id}
+      data-keyboard-open={keyboardOpen}
       className="scroll-mt-28 border-t border-[#dadada] px-8 py-10"
     >
       <p className="mb-3 text-[12px] font-medium tracking-[0.26em] text-[#777]">

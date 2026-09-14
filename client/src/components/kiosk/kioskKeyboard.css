@@ -1,6 +1,16 @@
 /* Only large portrait kiosks use the lower 60% of the display. Keep the
    compact layout on phones and landscape PCs, where vertical space is scarce. */
 @media (min-width: 640px) and (min-height: 900px) and (orientation: portrait) {
+  /* While writing, retain the title and all controls by trimming spacing,
+     without shrinking text or the textarea. Restored when the keyboard closes. */
+  #letters[data-keyboard-open="true"] > h2 {
+    margin-bottom: 12px;
+  }
+
+  #letters[data-keyboard-open="true"] > form > div {
+    padding: 16px;
+  }
+
   .kiosk-keyboard {
     height: 60dvh;
   }
@@ -90,5 +100,17 @@
 
   .kiosk-keyboard .kiosk-keyboard-inner {
     padding-bottom: calc(12dvh + max(12px, 1dvh, env(safe-area-inset-bottom)));
+  }
+}
+
+/* Extra-tall displays lift the same key area another 3%, while retaining
+   enough room for the search and writing controls above the keyboard. */
+@media (min-width: 640px) and (min-height: 1800px) and (orientation: portrait) {
+  .kiosk-keyboard {
+    height: 75dvh;
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-inner {
+    padding-bottom: calc(15dvh + max(12px, 1dvh, env(safe-area-inset-bottom)));
   }
 }

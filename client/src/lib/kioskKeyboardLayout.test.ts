@@ -2,6 +2,111 @@ import { describe, expect, it } from "vitest";
 import { getKioskKeyboardScrollOffset } from "./kioskKeyboardLayout";
 
 describe("getKioskKeyboardScrollOffset", () => {
+  it("tightens the margin to keep a complete form on a shorter kiosk", () => {
+    expect(
+      getKioskKeyboardScrollOffset({
+        inputTop: 77,
+        inputBottom: 125,
+        formTop: 20,
+        formBottom: 436,
+        keyboardTop: 448,
+        preferTop: true,
+      })
+    ).toBe(4);
+  });
+  it("raises a complete heading and form together when they fit", () => {
+    expect(
+      getKioskKeyboardScrollOffset({
+        inputTop: 600,
+        inputBottom: 728,
+        contextTop: 460,
+        formTop: 520,
+        formBottom: 880,
+        keyboardTop: 480,
+        preferTop: true,
+      })
+    ).toBe(440);
+  });
+
+  it("uses the form when the heading and form together would be clipped", () => {
+    expect(
+      getKioskKeyboardScrollOffset({
+        inputTop: 650,
+        inputBottom: 778,
+        contextTop: 400,
+        formTop: 520,
+        formBottom: 920,
+        keyboardTop: 480,
+        preferTop: true,
+      })
+    ).toBe(500);
+  });
+
+  it("prioritizes the active input when the whole form cannot fit", () => {
+    expect(
+      getKioskKeyboardScrollOffset({
+        inputTop: 650,
+        inputBottom: 778,
+        contextTop: 400,
+        formTop: 520,
+        formBottom: 1100,
+        keyboardTop: 480,
+        preferTop: true,
+      })
+    ).toBe(630);
+  });
+
+  it("recovers a clipped form above the viewport on field switching", () => {
+    expect(
+      getKioskKeyboardScrollOffset({
+        inputTop: 40,
+        inputBottom: 168,
+        formTop: -30,
+        formBottom: 370,
+        keyboardTop: 480,
+        preferTop: true,
+      })
+    ).toBe(-50);
+  });
+
+  it("honors the top edge of a nested scrolling container", () => {
+    expect(
+      getKioskKeyboardScrollOffset({
+        inputTop: 400,
+        inputBottom: 464,
+        formTop: 350,
+        formBottom: 600,
+        visibleTop: 80,
+        keyboardTop: 480,
+        preferTop: true,
+      })
+    ).toBe(250);
+  });
+
+  it("falls back to bottom visibility if the input is taller than available space", () => {
+    expect(
+      getKioskKeyboardScrollOffset({
+        inputTop: 20,
+        inputBottom: 520,
+        keyboardTop: 400,
+        preferTop: true,
+      })
+    ).toBe(140);
+  });
+
+  it("does not keep scrolling a top-aligned form on repeated measurements", () => {
+    expect(
+      getKioskKeyboardScrollOffset({
+        inputTop: 100,
+        inputBottom: 228,
+        formTop: 20,
+        formBottom: 420,
+        keyboardTop: 480,
+        preferTop: true,
+      })
+    ).toBe(0);
+  });
+
   it("does not scroll when the input and form are already above the keyboard", () => {
     expect(
       getKioskKeyboardScrollOffset({
