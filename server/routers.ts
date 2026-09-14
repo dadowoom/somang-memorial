@@ -90,6 +90,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import {
   createPasswordAttemptLimiter,
   passwordAttemptKey,
+  subjectAttemptKey,
 } from "./_core/passwordAttemptLimiter";
 import { sdk } from "./_core/sdk";
 import {
@@ -109,6 +110,7 @@ import { galleryRouter } from "./routers/gallery";
 import { uploadRouter } from "./routers/upload";
 import { videoRouter } from "./routers/video";
 import { maskEmailForAudit, maskPhoneForAudit } from "../shared/auditNotes";
+import { credentialFingerprint } from "./_core/sessionCredential";
 
 const passwordAttemptLimiter = createPasswordAttemptLimiter();
 const parentFinderSearchLimiter = createPasswordAttemptLimiter({
@@ -132,6 +134,18 @@ const signupLimiter = createPasswordAttemptLimiter({
   blockMs: 15 * 60 * 1000,
 });
 const loginAttemptLimiter = createPasswordAttemptLimiter();
+// 계정 하나를 여러 곳에서 두드리는 것: 접속지와 무관하게 계정 기준 15회/30분.
+const loginAccountLimiter = createPasswordAttemptLimiter({
+  failureLimit: 15,
+  failureWindowMs: 30 * 60 * 1000,
+  blockMs: 30 * 60 * 1000,
+});
+// 한 곳에서 계정을 바꿔 가며 두드리는 것: 계정과 무관하게 접속지 기준 30회/15분.
+const loginAddressLimiter = createPasswordAttemptLimiter({
+  failureLimit: 30,
+  failureWindowMs: 15 * 60 * 1000,
+  blockMs: 15 * 60 * 1000,
+});
 // 재설정 메일은 남의 메일함으로 가는 것이라, 같은 곳에서 반복 요청하지 못하게 막는다.
 const passwordResetRequestLimiter = createPasswordAttemptLimiter({
   failureLimit: 5,
@@ -626,6 +640,7 @@ export const appRouter = router({
           const sessionToken = await sdk.createSessionToken(created.openId, {
             name: created.name || normalizeEmail(input.email),
             expiresInMs: SESSION_TTL_MS,
+            credential: credentialFingerprint(created.passwordHash),
           });
           const cookieOptions = getSessionCookieOptions(ctx.req);
           ctx.res.cookie(COOKIE_NAME, sessionToken, {
@@ -642,18 +657,28 @@ export const appRouter = router({
     login: publicProcedure
       .input(authLoginInput)
       .mutation(async ({ ctx, input }) => {
-        const attemptKey = passwordAttemptKey(
-          ctx.req,
-          `login:${normalizeLocalLoginIdentifier(input.identifier)}`
-        );
+        const identifier = normalizeLocalLoginIdentifier(input.identifier);
+        // 세 겹으로 막는다 (2026-09-14). 같은 곳에서 같은 계정(5회/10분)만 보면
+        // (1) 여러 곳에서 한 계정을 두드리는 것과 (2) 한 곳에서 계정을 바꿔 가며
+        // 두드리는 것을 못 막는다. 계정 단위와 접속지 단위를 따로 센다.
+        const attemptKey = passwordAttemptKey(ctx.req, `login:${identifier}`);
+        const accountKey = subjectAttemptKey(`login-account:${identifier}`);
+        const addressKey = passwordAttemptKey(ctx.req, "login-address");
         ensurePasswordAttemptAllowed(attemptKey, loginAttemptLimiter);
+        ensurePasswordAttemptAllowed(accountKey, loginAccountLimiter);
+        ensurePasswordAttemptAllowed(addressKey, loginAddressLimiter);
+        const recordLoginFailure = () => {
+          loginAttemptLimiter.recordFailure(attemptKey);
+          loginAccountLimiter.recordFailure(accountKey);
+          loginAddressLimiter.recordFailure(addressKey);
+        };
 
         const user = await getUserByLocalLogin(input.identifier);
         if (
           !user?.passwordHash ||
           !verifyUserPassword(input.password, user.passwordHash)
         ) {
-          loginAttemptLimiter.recordFailure(attemptKey);
+          recordLoginFailure();
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "아이디 또는 이메일과 비밀번호를 다시 확인해 주세요.",
@@ -661,7 +686,7 @@ export const appRouter = router({
         }
 
         if (user.approvalStatus === "rejected") {
-          loginAttemptLimiter.recordFailure(attemptKey);
+          recordLoginFailure();
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "비활성화된 계정입니다.",
@@ -670,14 +695,17 @@ export const appRouter = router({
 
         const signedInAt = new Date();
         loginAttemptLimiter.recordSuccess(attemptKey);
+        loginAccountLimiter.recordSuccess(accountKey);
+        loginAddressLimiter.recordSuccess(addressKey);
         await upsertUser({
           openId: user.openId,
           lastSignedIn: signedInAt,
         });
 
         const sessionToken = await sdk.createSessionToken(user.openId, {
-          name: user.name || normalizeLocalLoginIdentifier(input.identifier),
+          name: user.name || identifier,
           expiresInMs: SESSION_TTL_MS,
+          credential: credentialFingerprint(user.passwordHash),
         });
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie(COOKIE_NAME, sessionToken, {

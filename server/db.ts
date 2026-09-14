@@ -2523,16 +2523,20 @@ export async function resetPasswordWithToken(input: {
   }
 
   const now = new Date();
-  await db
-    .update(users)
-    .set({ passwordHash: hashUserPassword(input.password) })
-    .where(eq(users.id, row.userId));
+  // 비밀번호 변경과 링크 닫기는 한 묶음이다. 둘 중 하나만 되면(예: 비밀번호는
+  // 바뀌었는데 링크가 살아 있음) 링크로 또 바꿀 수 있으므로 트랜잭션으로 묶는다.
+  await db.transaction(async tx => {
+    await tx
+      .update(users)
+      .set({ passwordHash: hashUserPassword(input.password) })
+      .where(eq(users.id, row.userId));
 
-  // 한 번 쓴 링크는 즉시 닫습니다.
-  await db
-    .update(passwordResetTokens)
-    .set({ usedAt: now })
-    .where(eq(passwordResetTokens.id, row.id));
+    // 한 번 쓴 링크는 즉시 닫습니다.
+    await tx
+      .update(passwordResetTokens)
+      .set({ usedAt: now })
+      .where(eq(passwordResetTokens.id, row.id));
+  });
 
   return true;
 }

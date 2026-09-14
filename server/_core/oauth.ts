@@ -3,6 +3,7 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { credentialFingerprint } from "./sessionCredential";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -39,6 +40,8 @@ export function registerOAuthRoutes(app: Express) {
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",
         expiresInMs: SESSION_TTL_MS,
+        // 외부 로그인 계정은 비밀번호가 없다. 빈 값의 지문을 쓴다.
+        credential: credentialFingerprint(null),
       });
 
       const cookieOptions = getSessionCookieOptions(req);

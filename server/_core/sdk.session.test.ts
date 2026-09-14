@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import { getSessionAppId, sdk } from "./sdk";
+import { credentialFingerprint } from "./sessionCredential";
 
 vi.mock("../db", () => ({
   getUserByOpenId: vi.fn(),
@@ -46,6 +47,8 @@ describe("authenticated user status", () => {
       openId: disabledUser.openId,
       appId: "somang-memorial",
       name: disabledUser.name || "",
+      // 세션의 비밀번호 지문이 지금 계정과 맞아야 통과한다 (2026-09-14).
+      cred: credentialFingerprint(disabledUser.passwordHash),
     });
     vi.mocked(db.getUserByOpenId).mockResolvedValue(disabledUser);
     vi.mocked(db.upsertUser).mockResolvedValue();
