@@ -11,6 +11,7 @@ import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import { ENV } from "./env";
+import { credentialFingerprint } from "./sessionCredential";
 import type {
   ExchangeTokenRequest,
   ExchangeTokenResponse,
@@ -32,6 +33,8 @@ export type SessionPayload = {
   openId: string;
   appId: string;
   name: string;
+  // 발급 당시 비밀번호의 지문. 비밀번호를 바꾸면 옛 세션이 끊긴다 (2026-09-14).
+  cred?: string;
 };
 
 const EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
@@ -176,7 +179,7 @@ class SDKServer {
    */
   async createSessionToken(
     openId: string,
-    options: { expiresInMs?: number; name?: string } = {}
+    options: { expiresInMs?: number; name?: string; credential?: string } = {}
   ): Promise<string> {
     return this.signSession(
       {
@@ -186,6 +189,7 @@ class SDKServer {
         // valid with a stable internal application identifier.
         appId: getSessionAppId(),
         name: options.name || "",
+        cred: options.credential,
       },
       options
     );
@@ -204,6 +208,7 @@ class SDKServer {
       openId: payload.openId,
       appId: payload.appId,
       name: payload.name,
+      ...(payload.cred ? { cred: payload.cred } : {}),
     })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setExpirationTime(expirationSeconds)
@@ -212,7 +217,12 @@ class SDKServer {
 
   async verifySession(
     cookieValue: string | undefined | null
-  ): Promise<{ openId: string; appId: string; name: string } | null> {
+  ): Promise<{
+    openId: string;
+    appId: string;
+    name: string;
+    cred: string | null;
+  } | null> {
     if (!cookieValue) {
       console.warn("[Auth] Missing session cookie");
       return null;
@@ -223,7 +233,7 @@ class SDKServer {
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"],
       });
-      const { openId, appId, name } = payload as Record<string, unknown>;
+      const { openId, appId, name, cred } = payload as Record<string, unknown>;
 
       if (
         !isNonEmptyString(openId) ||
@@ -238,6 +248,7 @@ class SDKServer {
         openId,
         appId,
         name,
+        cred: typeof cred === "string" ? cred : null,
       };
     } catch (error) {
       console.warn("[Auth] Session verification failed", String(error));
@@ -284,11 +295,16 @@ class SDKServer {
         algorithms: ["HS256"],
       });
 
-      const { openId, name, exp } = payload as Record<string, unknown>;
+      const { openId, name, exp, cred } = payload as Record<string, unknown>;
       if (typeof openId !== "string" || typeof name !== "string") return null;
       if (typeof exp !== "number") return null;
 
-      return { openId, name, expiresAtMs: exp * 1000 };
+      return {
+        openId,
+        name,
+        expiresAtMs: exp * 1000,
+        cred: typeof cred === "string" ? cred : undefined,
+      };
     } catch {
       return null;
     }
@@ -328,6 +344,12 @@ class SDKServer {
 
     if (!user) {
       throw ForbiddenError("User not found");
+    }
+
+    // 세션에 담긴 비밀번호 지문이 지금 비밀번호와 다르면(재설정했거나, 지문이
+    // 없는 옛 세션이면) 로그인으로 보지 않는다. 다시 로그인하면 된다 (2026-09-14).
+    if (session.cred !== credentialFingerprint(user.passwordHash)) {
+      throw ForbiddenError("Session credential mismatch");
     }
 
     // Approval is controlled by administrators. A routine authenticated request

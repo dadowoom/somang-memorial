@@ -127,6 +127,13 @@ function clientAddress(req: Request) {
   return req.socket.remoteAddress ?? "unknown";
 }
 
+/** Creates a key for a protected item alone (e.g. one account), regardless of client. */
+export function subjectAttemptKey(subject: string) {
+  return createHash("sha256")
+    .update(`subject\u0000${subject}`)
+    .digest("base64url");
+}
+
 /** Creates a non-reversible, in-memory key for one client and protected item. */
 export function passwordAttemptKey(req: Request, subject: string) {
   return createHash("sha256")

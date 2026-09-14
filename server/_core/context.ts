@@ -34,6 +34,8 @@ async function renewSessionIfNeeded(opts: CreateExpressContextOptions) {
     const renewed = await sdk.createSessionToken(session.openId, {
       name: session.name,
       expiresInMs: SESSION_TTL_MS,
+      // 연장해도 비밀번호 지문은 그대로 가져간다.
+      credential: session.cred,
     });
     opts.res.cookie(COOKIE_NAME, renewed, {
       ...getSessionCookieOptions(opts.req),
