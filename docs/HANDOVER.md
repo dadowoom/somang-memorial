@@ -8,6 +8,9 @@
 
 ## 1. 시작하기
 
+**사이트가 이상하거나 죽었으면** 이 문서가 아니라 [INCIDENT_RUNBOOK.md](INCIDENT_RUNBOOK.md) 를 먼저 본다.
+저장소 전체 지도는 루트의 [README.md](../README.md) 에 있다.
+
 키오스크 전용 PC 설정은 [KIOSK_PC.md](KIOSK_PC.md)와 [KIOSK_SETUP.md](KIOSK_SETUP.md)를 먼저 본다.
 브라우저는 **Google Chrome**이며, 공식 HTTPS 주소를 연다. 화면 실행에는 Node나 로컬 개발 서버가
 필요 없다. 아래 개발 환경 및 배포 절차를 키오스크 설치 절차로 실행하지 않는다.
