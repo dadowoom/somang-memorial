@@ -3,6 +3,9 @@ import {
   insertKioskKeyboardToken,
 } from "@/lib/kioskKeyboardInput";
 import { cn } from "@/lib/utils";
+import { getKioskKeyboardScrollOffset } from "@/lib/kioskKeyboardLayout";
+import { commitKioskKeyboardEdit } from "@/lib/kioskKeyboardCommit";
+import "./kioskKeyboard.css";
 import { ArrowUp, CornerDownLeft, Delete as DeleteIcon, X } from "lucide-react";
 import {
   createContext,
@@ -20,13 +23,16 @@ import {
 } from "react";
 
 type KioskKeyboardMode = "ko" | "en" | "number" | "symbol";
+type KioskKeyboardVariant = "full" | "korean-name";
 type KioskKeyboardElement = HTMLInputElement | HTMLTextAreaElement;
 
 type ActiveField = {
   id: string;
   label: string;
   defaultMode: KioskKeyboardMode;
+  variant: KioskKeyboardVariant;
   multiline: boolean;
+  alignToTop: boolean;
   maxLength?: number;
   submitLabel?: string;
   submitDisabled: boolean;
@@ -39,6 +45,7 @@ type ActiveField = {
 type KioskKeyboardContextValue = {
   activeFieldId: string | null;
   isOpen: boolean;
+  keyboardHeight: number;
   closeKeyboard: () => void;
   closeKeyboardField: (id: string) => void;
   openKeyboard: (field: ActiveField) => void;
@@ -73,6 +80,7 @@ const SHIFTED_KOREAN: Record<string, string> = {
 
 export function KioskKeyboardProvider({ children }: { children: ReactNode }) {
   const [activeField, setActiveField] = useState<ActiveField | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const closeKeyboard = useCallback(() => setActiveField(null), []);
   const closeKeyboardField = useCallback((id: string) => {
@@ -96,6 +104,7 @@ export function KioskKeyboardProvider({ children }: { children: ReactNode }) {
   const contextValue: KioskKeyboardContextValue = {
     activeFieldId: activeField?.id ?? null,
     isOpen: Boolean(activeField),
+    keyboardHeight: activeField ? keyboardHeight : 0,
     closeKeyboard,
     closeKeyboardField,
     openKeyboard,
@@ -107,8 +116,12 @@ export function KioskKeyboardProvider({ children }: { children: ReactNode }) {
       {children}
       {activeField && (
         <>
-          <div aria-hidden="true" className="h-[min(360px,55dvh)]" />
-          <KioskKeyboard field={activeField} onClose={closeKeyboard} />
+          <div aria-hidden="true" style={{ height: keyboardHeight }} />
+          <KioskKeyboard
+            field={activeField}
+            onClose={closeKeyboard}
+            onHeightChange={setKeyboardHeight}
+          />
         </>
       )}
     </KioskKeyboardContext.Provider>
@@ -132,7 +145,9 @@ type KioskKeyboardFieldOptions = {
   onChange: (value: string) => void;
   maxLength?: number;
   multiline?: boolean;
+  alignToTop?: boolean;
   defaultMode?: KioskKeyboardMode;
+  variant?: KioskKeyboardVariant;
   submitLabel?: string;
   submitDisabled?: boolean;
   onSubmit?: () => boolean | void;
@@ -147,7 +162,9 @@ export function useKioskKeyboardField<
   onChange,
   maxLength,
   multiline = false,
+  alignToTop = false,
   defaultMode = "ko",
+  variant = "full",
   submitLabel,
   submitDisabled = false,
   onSubmit,
@@ -174,17 +191,25 @@ export function useKioskKeyboardField<
       id,
       label,
       defaultMode,
+      variant,
       multiline,
+      alignToTop,
       maxLength,
       submitLabel,
       submitDisabled,
       elementRef: elementRef as MutableRefObject<KioskKeyboardElement | null>,
       getValue: () => valueRef.current,
-      setValue: nextValue => onChangeRef.current(nextValue),
+      setValue: nextValue => {
+        // A second touch can arrive before React renders the first edit.
+        valueRef.current = nextValue;
+        onChangeRef.current(nextValue);
+      },
       onSubmit: () => onSubmitRef.current?.(),
     });
   }, [
     defaultMode,
+    variant,
+    alignToTop,
     id,
     label,
     maxLength,
@@ -223,49 +248,62 @@ export function useKioskKeyboardField<
   };
 }
 
-function KioskKeyboard({
+export function KioskKeyboard({
   field,
   onClose,
+  onHeightChange,
 }: {
   field: ActiveField;
   onClose: () => void;
+  onHeightChange: (height: number) => void;
 }) {
   const [mode, setMode] = useState<KioskKeyboardMode>(field.defaultMode);
+  const nameOnly = field.variant === "korean-name";
+  // Do not expose the previous field's mode while the field-change effect runs.
+  const displayedMode = nameOnly ? "ko" : mode;
   const [shifted, setShifted] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMode(field.defaultMode);
     setShifted(false);
+  }, [field.id, field.defaultMode]);
 
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    let firstFrame = 0;
     let secondFrame = 0;
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => {
-        const element = field.elementRef.current;
-        if (!element) return;
-
-        element.scrollIntoView({ behavior: "auto", block: "nearest" });
-        moveElementAboveKeyboard(element, panelRef.current);
+    const updateLayout = () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+      onHeightChange(panel.getBoundingClientRect().height);
+      // Let the measured spacer and fixed password dialog update before scrolling.
+      firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => {
+          const element = field.elementRef.current;
+          if (!element) return;
+          // The site's smooth scrolling must not animate the input underneath
+          // the keyboard while its size is changing.
+          element.scrollIntoView({ behavior: "instant", block: "nearest" });
+          moveElementAboveKeyboard(element, panel, field.alignToTop);
+        });
       });
-    });
+    };
+    const observer = new ResizeObserver(updateLayout);
+    observer.observe(panel);
+    const form = field.elementRef.current?.closest("form");
+    if (form) observer.observe(form);
+    window.addEventListener("resize", updateLayout);
+    updateLayout();
 
     return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateLayout);
       window.cancelAnimationFrame(firstFrame);
       window.cancelAnimationFrame(secondFrame);
     };
-  }, [field.id]);
-
-  const restoreSelection = useCallback(
-    (cursor: number) => {
-      window.requestAnimationFrame(() => {
-        const element = field.elementRef.current;
-        if (!element) return;
-        element.focus({ preventScroll: true });
-        element.setSelectionRange(cursor, cursor);
-      });
-    },
-    [field]
-  );
+  }, [field.id, field.elementRef, field.alignToTop, onHeightChange]);
 
   const insertToken = useCallback(
     (token: string) => {
@@ -281,11 +319,10 @@ function KioskKeyboard({
         field.maxLength
       );
 
-      field.setValue(result.value);
-      restoreSelection(result.cursor);
+      commitKioskKeyboardEdit(element, result, field.setValue);
       setShifted(false);
     },
-    [field, restoreSelection]
+    [field]
   );
 
   const backspace = useCallback(() => {
@@ -295,9 +332,8 @@ function KioskKeyboard({
     const end = element?.selectionEnd ?? start;
     const result = backspaceKioskKeyboardValue(value, start, end);
 
-    field.setValue(result.value);
-    restoreSelection(result.cursor);
-  }, [field, restoreSelection]);
+    commitKioskKeyboardEdit(element, result, field.setValue);
+  }, [field]);
 
   const submit = useCallback(() => {
     if (field.submitDisabled) return;
@@ -317,18 +353,19 @@ function KioskKeyboard({
       ref={panelRef}
       role="region"
       aria-label="화면 키보드"
-      className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#c8c5c0] bg-[#ececec] shadow-[0_-12px_32px_rgba(0,0,0,0.16)]"
+      data-keyboard-variant={field.variant}
+      className="kiosk-keyboard fixed inset-x-0 bottom-0 z-[70] border-t border-[#c8c5c0] bg-[#ececec] shadow-[0_-12px_32px_rgba(0,0,0,0.16)]"
       onPointerDown={keepInputFocused}
     >
-      <div className="mx-auto w-full max-w-[760px] px-2 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 sm:px-3 sm:pt-3">
-        <div className="mb-2 flex h-9 items-center justify-between gap-3 px-1">
-          <p className="min-w-0 truncate text-sm font-medium text-[#57534e]">
-            {field.label} · {modeLabel(mode)}
+      <div className="kiosk-keyboard-inner mx-auto w-full max-w-[760px] px-2 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 sm:px-3 sm:pt-3">
+        <div className="kiosk-keyboard-header mb-2 flex h-9 items-center justify-between gap-3 px-1">
+          <p className="kiosk-keyboard-label min-w-0 truncate text-sm font-medium text-[#57534e]">
+            {field.label} · {modeLabel(displayedMode)}
           </p>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 items-center gap-1.5 rounded-md border border-[#bdb8b0] bg-white px-3 text-sm font-medium active:bg-[#d9d9d9]"
+            className="kiosk-keyboard-close flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-[#bdb8b0] bg-white px-3 text-sm font-medium active:bg-[#d9d9d9]"
             aria-label="화면 키보드 닫기"
           >
             <X className="h-4 w-4" />
@@ -336,13 +373,14 @@ function KioskKeyboard({
           </button>
         </div>
 
-        {mode === "number" ? (
+        {displayedMode === "number" ? (
           <NumberLayout onToken={insertToken} onBackspace={backspace} />
-        ) : mode === "symbol" ? (
+        ) : displayedMode === "symbol" ? (
           <SymbolLayout onToken={insertToken} onBackspace={backspace} />
         ) : (
           <TextLayout
-            mode={mode}
+            mode={displayedMode}
+            lettersOnly={nameOnly}
             shifted={shifted}
             onShift={() => setShifted(current => !current)}
             onToken={insertToken}
@@ -350,43 +388,47 @@ function KioskKeyboard({
           />
         )}
 
-        <div className="mt-1.5 flex gap-1.5">
-          <ModeKey
-            active={mode === "ko"}
-            label="한글"
-            onClick={() => {
-              setMode("ko");
-              setShifted(false);
-            }}
-          />
-          <ModeKey
-            active={mode === "en"}
-            label="영문"
-            onClick={() => {
-              setMode("en");
-              setShifted(false);
-            }}
-          />
-          <ModeKey
-            active={mode === "number"}
-            label="숫자"
-            onClick={() => {
-              setMode("number");
-              setShifted(false);
-            }}
-          />
-          <ModeKey
-            active={mode === "symbol"}
-            label="기호"
-            onClick={() => {
-              setMode("symbol");
-              setShifted(false);
-            }}
-          />
+        <div className="kiosk-keyboard-actions mt-1.5 flex gap-1.5">
+          {!nameOnly && (
+            <>
+              <ModeKey
+                active={mode === "ko"}
+                label="한글"
+                onClick={() => {
+                  setMode("ko");
+                  setShifted(false);
+                }}
+              />
+              <ModeKey
+                active={mode === "en"}
+                label="영문"
+                onClick={() => {
+                  setMode("en");
+                  setShifted(false);
+                }}
+              />
+              <ModeKey
+                active={mode === "number"}
+                label="숫자"
+                onClick={() => {
+                  setMode("number");
+                  setShifted(false);
+                }}
+              />
+              <ModeKey
+                active={mode === "symbol"}
+                label="기호"
+                onClick={() => {
+                  setMode("symbol");
+                  setShifted(false);
+                }}
+              />
+            </>
+          )}
           <KeyboardKey
             label="띄어쓰기"
             onClick={() => insertToken(" ")}
-            className="min-w-0 flex-[2.7] text-base"
+            className="kiosk-keyboard-space min-w-0 flex-[2.7] text-base"
           />
           {field.multiline && (
             <KeyboardKey
@@ -401,7 +443,7 @@ function KioskKeyboard({
             label={field.submitLabel ?? "완료"}
             onClick={submit}
             disabled={field.submitDisabled}
-            className="min-w-[68px] flex-[1.15] border-[#18181b] bg-[#18181b] text-base font-semibold text-white active:bg-black"
+            className="kiosk-keyboard-submit min-w-[68px] flex-[1.15] border-[#18181b] bg-[#18181b] text-base font-semibold text-white active:bg-black"
           />
         </div>
       </div>
@@ -411,12 +453,14 @@ function KioskKeyboard({
 
 function TextLayout({
   mode,
+  lettersOnly = false,
   shifted,
   onShift,
   onToken,
   onBackspace,
 }: {
   mode: "ko" | "en";
+  lettersOnly?: boolean;
   shifted: boolean;
   onShift: () => void;
   onToken: (token: string) => void;
@@ -431,22 +475,24 @@ function TextLayout({
   };
 
   return (
-    <>
-      <div className="mb-1.5 flex gap-1">
-        {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map(key => (
-          <KeyboardKey
-            key={key}
-            label={key}
-            onClick={() => onToken(key)}
-            compact
-          />
-        ))}
-      </div>
+    <div className="kiosk-keyboard-layout">
+      {!lettersOnly && (
+        <div className="kiosk-keyboard-row mb-1.5 flex gap-1">
+          {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map(key => (
+            <KeyboardKey
+              key={key}
+              label={key}
+              onClick={() => onToken(key)}
+              compact
+            />
+          ))}
+        </div>
+      )}
       {rows.map((row, rowIndex) => (
         <div
           key={rowIndex}
           className={cn(
-            "mb-1.5 flex gap-1",
+            "kiosk-keyboard-row mb-1.5 flex gap-1",
             rowIndex === 1 && "px-[4.5%]",
             rowIndex === 2 && "px-[1.5%]"
           )}
@@ -454,7 +500,7 @@ function TextLayout({
           {rowIndex === 2 && (
             <KeyboardKey
               label="대문자·쌍자음"
-              ariaLabel="대문자와 쌍자음 전환"
+              ariaLabel={lettersOnly ? "쌍자음 전환" : "대문자와 쌍자음 전환"}
               onClick={onShift}
               active={shifted}
               className="flex-[1.25]"
@@ -482,17 +528,19 @@ function TextLayout({
           )}
         </div>
       ))}
-      <div className="flex gap-1">
-        {["-", "'", ",", ".", "?", "!"].map(key => (
-          <KeyboardKey
-            key={key}
-            label={key}
-            onClick={() => onToken(key)}
-            compact
-          />
-        ))}
-      </div>
-    </>
+      {!lettersOnly && (
+        <div className="kiosk-keyboard-row flex gap-1">
+          {["-", "'", ",", ".", "?", "!"].map(key => (
+            <KeyboardKey
+              key={key}
+              label={key}
+              onClick={() => onToken(key)}
+              compact
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -510,15 +558,15 @@ function NumberLayout({
   ];
 
   return (
-    <div className="mx-auto max-w-[460px]">
+    <div className="kiosk-keyboard-layout kiosk-keyboard-numbers mx-auto max-w-[460px]">
       {rows.map(row => (
-        <div key={row[0]} className="mb-1.5 flex gap-1.5">
+        <div key={row[0]} className="kiosk-keyboard-row mb-1.5 flex gap-1.5">
           {row.map(key => (
             <KeyboardKey key={key} label={key} onClick={() => onToken(key)} />
           ))}
         </div>
       ))}
-      <div className="flex gap-1.5">
+      <div className="kiosk-keyboard-row flex gap-1.5">
         <KeyboardKey label="-" onClick={() => onToken("-")} />
         <KeyboardKey label="0" onClick={() => onToken("0")} />
         <KeyboardKey
@@ -547,15 +595,15 @@ function SymbolLayout({
   ];
 
   return (
-    <>
+    <div className="kiosk-keyboard-layout">
       {rows.map(row => (
-        <div key={row[0]} className="mb-1.5 flex gap-1">
+        <div key={row[0]} className="kiosk-keyboard-row mb-1.5 flex gap-1">
           {row.map(key => (
             <KeyboardKey key={key} label={key} onClick={() => onToken(key)} />
           ))}
         </div>
       ))}
-      <div className="flex gap-1">
+      <div className="kiosk-keyboard-row flex gap-1">
         <KeyboardKey
           label="지우기"
           ariaLabel="한 글자 지우기"
@@ -563,7 +611,7 @@ function SymbolLayout({
           icon={<DeleteIcon className="h-5 w-5" />}
         />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -613,7 +661,7 @@ function KeyboardKey({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex min-w-0 flex-1 touch-manipulation select-none items-center justify-center rounded-md border border-[#cbc6be] bg-white text-xl font-medium text-[#18181b] shadow-sm active:bg-[#d4d4d4] sm:text-2xl",
+        "kiosk-keyboard-key flex min-w-0 flex-1 touch-manipulation select-none items-center justify-center rounded-md border border-[#cbc6be] bg-white text-xl font-medium text-[#18181b] shadow-sm active:bg-[#d4d4d4] sm:text-2xl",
         compact ? "h-[clamp(30px,4.3dvh,36px)]" : "h-[clamp(36px,5.6dvh,48px)]",
         active && "border-[#18181b] bg-[#d2d2d2]",
         disabled && "cursor-not-allowed opacity-45 active:bg-white",
@@ -634,20 +682,37 @@ function modeLabel(mode: KioskKeyboardMode) {
 
 function moveElementAboveKeyboard(
   element: KioskKeyboardElement,
-  panel: HTMLDivElement | null
+  panel: HTMLDivElement | null,
+  alignToTop: boolean
 ) {
   const panelTop = panel?.getBoundingClientRect().top ?? window.innerHeight;
-  const elementBottom = element.getBoundingClientRect().bottom;
-  const distance = elementBottom - (panelTop - 20);
-  if (distance <= 0) return;
-
+  const elementRect = element.getBoundingClientRect();
+  const formRect = element.closest("form")?.getBoundingClientRect();
+  const heading = element.closest("section")?.querySelector("h2");
   const scrollParent = findScrollableParent(element);
+  const scrollRect = scrollParent?.getBoundingClientRect();
+  const distance = getKioskKeyboardScrollOffset({
+    inputTop: elementRect.top,
+    inputBottom: elementRect.bottom,
+    keyboardTop: Math.min(panelTop, scrollRect?.bottom ?? panelTop),
+    formTop: formRect?.top,
+    formBottom: formRect?.bottom,
+    contextTop: heading?.getBoundingClientRect().top,
+    visibleTop: Math.max(0, scrollRect?.top ?? 0),
+    preferTop:
+      alignToTop &&
+      window.matchMedia(
+        "(min-width: 640px) and (min-height: 900px) and (orientation: portrait)"
+      ).matches,
+  });
+  if (Math.abs(distance) < 0.5) return;
+
   if (scrollParent) {
-    scrollParent.scrollTop += distance;
+    scrollParent.scrollBy({ top: distance, behavior: "instant" });
     return;
   }
 
-  window.scrollBy({ top: distance, behavior: "auto" });
+  window.scrollBy({ top: distance, behavior: "instant" });
 }
 
 function findScrollableParent(element: HTMLElement) {

@@ -1,0 +1,85 @@
+/* Scale only the tall kiosk search screen, leaving web and compact layouts alone. */
+@media (min-width: 640px) and (min-height: 900px) and (orientation: portrait) {
+  .kiosk-search-shell {
+    max-width: 960px;
+  }
+
+  .kiosk-search-header {
+    padding-block: 16px;
+  }
+
+  .kiosk-search-logo {
+    height: clamp(56px, 6vw, 72px);
+  }
+
+  .kiosk-search-brand {
+    font-size: clamp(28px, 3.3vw, 38px);
+  }
+
+  .kiosk-search-brand-caption {
+    font-size: clamp(16px, 1.85vw, 20px);
+  }
+
+  .kiosk-search-intro {
+    flex: none;
+    justify-content: flex-start;
+    padding-block: 24px;
+  }
+
+  .kiosk-search-title {
+    font-size: clamp(42px, 5.2vw, 58px);
+  }
+
+  .kiosk-search-description {
+    font-size: clamp(18px, 2vw, 22px);
+    line-height: 1.6;
+  }
+
+  .kiosk-search-input-row {
+    height: clamp(84px, 9vw, 104px);
+  }
+
+  .kiosk-search-input-row input {
+    font-size: clamp(36px, 4vw, 44px);
+  }
+
+  .kiosk-search-submit {
+    height: clamp(72px, 7.4vw, 88px);
+    font-size: clamp(22px, 2.4vw, 28px);
+  }
+
+  .kiosk-search-guide > p,
+  .kiosk-search-guide ol {
+    font-size: clamp(16px, 1.85vw, 20px);
+    line-height: 1.6;
+  }
+
+  /* Keep the search controls visible above the larger keyboard. The guide
+     returns when input is finished; compact phone/PC layouts are unchanged. */
+  .kiosk-search-screen[data-search-keyboard-open="true"] {
+    .kiosk-search-header {
+      padding-block: 16px;
+    }
+
+    .kiosk-search-intro {
+      padding-block: 24px;
+    }
+
+    .kiosk-search-eyebrow,
+    .kiosk-search-guide {
+      display: none;
+    }
+
+    .kiosk-search-title {
+      margin-top: 0;
+    }
+
+    .kiosk-search-description {
+      margin-top: 12px;
+    }
+
+    .kiosk-search-intro form {
+      margin-top: 24px;
+    }
+  }
+}
