@@ -2,6 +2,7 @@ import Footer from "@/components/Footer";
 import { inputClass } from "@/lib/formStyles";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { FormEvent, useState } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -10,6 +11,8 @@ export default function AccountSettings() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const me = trpc.auth.me.useQuery();
+  // 로그인하지 않은 채로 열면 빈 계정 화면과 탈퇴 폼이 보였다. 로그인으로 보낸다 (2026-09-14).
+  useAuth({ redirectOnUnauthenticated: true });
   const [confirming, setConfirming] = useState(false);
   const [password, setPassword] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
@@ -85,9 +88,13 @@ export default function AccountSettings() {
               <strong className="text-[#121212]">
                 이미 만드신 추모관은 지워지지 않습니다.
               </strong>{" "}
-              고인을 기억하는 공동의 기록이기 때문입니다. 추모관까지 지우고
-              싶으시면 <strong className="text-[#121212]">탈퇴하기 전에</strong>{" "}
-              먼저 지워 주세요. 탈퇴 후에는 직접 지우실 수 없습니다.
+              고인을 기억하는 공동의 기록이기 때문입니다. 함께 관리하는 가족이
+              있으면 그분에게 주인이 넘어갑니다.{" "}
+              <strong className="text-[#121212]">
+                이어서 관리할 가족이 없는 추모관이 있으면 탈퇴할 수 없습니다.
+              </strong>{" "}
+              먼저 '가족 초대'로 가족을 초대해 주시거나, 추모관 정리를 원하시면
+              교회로 연락해 주세요.
             </p>
             <p className="text-[#a3322b]">탈퇴는 되돌릴 수 없습니다.</p>
           </div>

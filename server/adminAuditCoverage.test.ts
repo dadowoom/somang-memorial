@@ -53,7 +53,7 @@ beforeEach(() => {
     memorialSlug: "kim-somang-kwonsa",
     memorialName: "김소망",
   });
-  mocks.deleteUserAccount.mockResolvedValue(true);
+  mocks.deleteUserAccount.mockResolvedValue({ ok: true, handedOver: [] });
 });
 
 describe("letter.updateStatus 감사기록", () => {
@@ -138,8 +138,54 @@ describe("auth.deleteAccount 감사기록", () => {
     expect(JSON.stringify(entry)).not.toContain("somang2026");
   });
 
+  it("가족에게 넘긴 추모관은 새 주인을 대상으로 기록한다", async () => {
+    mocks.deleteUserAccount.mockResolvedValue({
+      ok: true,
+      handedOver: [
+        {
+          memorialId: 1,
+          name: "김소망",
+          slug: "kim-somang-kwonsa",
+          toUserId: 8,
+          toName: "둘째",
+        },
+      ],
+    });
+    await expect(
+      caller(member).auth.deleteAccount({ password: "somang2026" })
+    ).resolves.toEqual({ success: true });
+    expect(mocks.createAdminAuditLog).toHaveBeenCalledWith({
+      adminUserId: null,
+      targetUserId: 8,
+      action: "memorial.owner.transfer",
+      note: "김소망 (kim-somang-kwonsa) · 탈퇴한 회원번호 7 → 가족 둘째",
+    });
+    expect(mocks.createAdminAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "user.delete" })
+    );
+  });
+
+  it("이어서 관리할 가족이 없는 추모관이 있으면 탈퇴를 막고 기록도 남기지 않는다", async () => {
+    mocks.deleteUserAccount.mockResolvedValue({
+      ok: false,
+      reason: "memorials",
+      blocked: [{ id: 2, name: "이믿음", slug: "lee-mideum" }],
+    });
+    await expect(
+      caller(member).auth.deleteAccount({ password: "somang2026" })
+    ).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: expect.stringContaining("이믿음"),
+    });
+    expect(mocks.createAdminAuditLog).not.toHaveBeenCalled();
+    expect(fakeRes.clearCookie).not.toHaveBeenCalled();
+  });
+
   it("비밀번호가 틀리면 지우지도 기록하지도 않는다", async () => {
-    mocks.deleteUserAccount.mockResolvedValue(false);
+    mocks.deleteUserAccount.mockResolvedValue({
+      ok: false,
+      reason: "password",
+    });
     await expect(
       caller(member).auth.deleteAccount({ password: "wrong" })
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
