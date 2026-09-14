@@ -5,8 +5,13 @@ import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Kiosk from "./pages/Kiosk";
+// 추모관 화면도 첫 다운로드에 넣는다. 나중에 따로 받다가 회선이 끊기면 흰 화면이
+// 됐다 (2026-09-14). 34KB 라 첫 화면에 부담이 없다.
+import KioskMemorial from "./pages/KioskMemorial";
+import KioskNotFound from "./pages/KioskNotFound";
 import MemorialWritingSafety from "./components/memorial/MemorialWritingSafety";
 import { KioskKeyboardProvider } from "./components/kiosk/KioskKeyboard";
+import KioskConnectionBanner from "./components/kiosk/KioskConnectionBanner";
 
 // Kiosk routes stay in the first download. Less frequently used web and admin
 // pages load only when opened, keeping the kiosk's first screen responsive.
@@ -37,11 +42,11 @@ const MyMemorials = lazy(() => import("./pages/MyMemorials"));
 const AccountSettings = lazy(() => import("./pages/AccountSettings"));
 const ParentFinder = lazy(() => import("./pages/ParentFinder"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const KioskMemorial = lazy(() => import("./pages/KioskMemorial"));
 
 function KioskIndexRoute() {
   return (
     <KioskKeyboardProvider>
+      <KioskConnectionBanner />
       <Kiosk />
     </KioskKeyboardProvider>
   );
@@ -50,6 +55,7 @@ function KioskIndexRoute() {
 function KioskMemorialRoute() {
   return (
     <KioskKeyboardProvider>
+      <KioskConnectionBanner />
       <KioskMemorial />
     </KioskKeyboardProvider>
   );
@@ -64,6 +70,8 @@ function Router() {
         <Route path={"/login"} component={Login} />
         <Route path={"/kiosk/memorial/:slug"} component={KioskMemorialRoute} />
         <Route path={"/kiosk"} component={KioskIndexRoute} />
+        {/* 잘못된 키오스크 주소는 일반 홈페이지의 404 로 새지 않게 키오스크 안에서 받는다. */}
+        <Route path={"/kiosk/*"} component={KioskNotFound} />
         <Route path={"/admin/operations"} component={AdminOperations} />
         <Route path={"/admin/users"} component={AdminUsers} />
         <Route path={"/admin"} component={AdminMemorials} />
