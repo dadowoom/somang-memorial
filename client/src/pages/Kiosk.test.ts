@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
     refetch: vi.fn(),
   },
   mutateAsync: vi.fn(),
+  fieldOptions: vi.fn(),
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -51,14 +52,17 @@ vi.mock("@/components/kiosk/KioskKeyboard", () => ({
     keyboardHeight: mocks.keyboard.keyboardHeight,
     closeKeyboard: mocks.closeKeyboard,
   }),
-  useKioskKeyboardField: () => ({
-    ref: { current: null },
-    inputMode: "none",
-    onFocus: mocks.onFocus,
-    onClick: mocks.onClick,
-    keyboardOpen: mocks.keyboard.keyboardOpen,
-    closeKeyboard: mocks.closeKeyboard,
-  }),
+  useKioskKeyboardField: (options: unknown) => {
+    mocks.fieldOptions(options);
+    return {
+      ref: { current: null },
+      inputMode: "none",
+      onFocus: mocks.onFocus,
+      onClick: mocks.onClick,
+      keyboardOpen: mocks.keyboard.keyboardOpen,
+      closeKeyboard: mocks.closeKeyboard,
+    };
+  },
 }));
 
 vi.mock("@/hooks/useKioskIdleReset", () => ({
@@ -113,6 +117,12 @@ function textContent(markup: string) {
 }
 
 describe("kiosk search viewport SSR regression", () => {
+  it("selects the Korean-only keyboard for the name search field", () => {
+    renderKiosk();
+    expect(mocks.fieldOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "kiosk-search", variant: "korean-name" })
+    );
+  });
   beforeAll(() => {
     // Match Home.test.ts: the Node Vitest configuration has no React JSX plugin.
     vi.stubGlobal("React", React);

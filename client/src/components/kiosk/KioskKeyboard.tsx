@@ -23,12 +23,14 @@ import {
 } from "react";
 
 type KioskKeyboardMode = "ko" | "en" | "number" | "symbol";
+type KioskKeyboardVariant = "full" | "korean-name";
 type KioskKeyboardElement = HTMLInputElement | HTMLTextAreaElement;
 
 type ActiveField = {
   id: string;
   label: string;
   defaultMode: KioskKeyboardMode;
+  variant: KioskKeyboardVariant;
   multiline: boolean;
   alignToTop: boolean;
   maxLength?: number;
@@ -145,6 +147,7 @@ type KioskKeyboardFieldOptions = {
   multiline?: boolean;
   alignToTop?: boolean;
   defaultMode?: KioskKeyboardMode;
+  variant?: KioskKeyboardVariant;
   submitLabel?: string;
   submitDisabled?: boolean;
   onSubmit?: () => boolean | void;
@@ -161,6 +164,7 @@ export function useKioskKeyboardField<
   multiline = false,
   alignToTop = false,
   defaultMode = "ko",
+  variant = "full",
   submitLabel,
   submitDisabled = false,
   onSubmit,
@@ -187,6 +191,7 @@ export function useKioskKeyboardField<
       id,
       label,
       defaultMode,
+      variant,
       multiline,
       alignToTop,
       maxLength,
@@ -203,6 +208,7 @@ export function useKioskKeyboardField<
     });
   }, [
     defaultMode,
+    variant,
     alignToTop,
     id,
     label,
@@ -242,7 +248,7 @@ export function useKioskKeyboardField<
   };
 }
 
-function KioskKeyboard({
+export function KioskKeyboard({
   field,
   onClose,
   onHeightChange,
@@ -252,6 +258,9 @@ function KioskKeyboard({
   onHeightChange: (height: number) => void;
 }) {
   const [mode, setMode] = useState<KioskKeyboardMode>(field.defaultMode);
+  const nameOnly = field.variant === "korean-name";
+  // Do not expose the previous field's mode while the field-change effect runs.
+  const displayedMode = nameOnly ? "ko" : mode;
   const [shifted, setShifted] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -344,13 +353,14 @@ function KioskKeyboard({
       ref={panelRef}
       role="region"
       aria-label="화면 키보드"
+      data-keyboard-variant={field.variant}
       className="kiosk-keyboard fixed inset-x-0 bottom-0 z-[70] border-t border-[#c8c5c0] bg-[#ececec] shadow-[0_-12px_32px_rgba(0,0,0,0.16)]"
       onPointerDown={keepInputFocused}
     >
       <div className="kiosk-keyboard-inner mx-auto w-full max-w-[760px] px-2 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 sm:px-3 sm:pt-3">
         <div className="kiosk-keyboard-header mb-2 flex h-9 items-center justify-between gap-3 px-1">
           <p className="kiosk-keyboard-label min-w-0 truncate text-sm font-medium text-[#57534e]">
-            {field.label} · {modeLabel(mode)}
+            {field.label} · {modeLabel(displayedMode)}
           </p>
           <button
             type="button"
@@ -363,13 +373,14 @@ function KioskKeyboard({
           </button>
         </div>
 
-        {mode === "number" ? (
+        {displayedMode === "number" ? (
           <NumberLayout onToken={insertToken} onBackspace={backspace} />
-        ) : mode === "symbol" ? (
+        ) : displayedMode === "symbol" ? (
           <SymbolLayout onToken={insertToken} onBackspace={backspace} />
         ) : (
           <TextLayout
-            mode={mode}
+            mode={displayedMode}
+            lettersOnly={nameOnly}
             shifted={shifted}
             onShift={() => setShifted(current => !current)}
             onToken={insertToken}
@@ -378,38 +389,42 @@ function KioskKeyboard({
         )}
 
         <div className="kiosk-keyboard-actions mt-1.5 flex gap-1.5">
-          <ModeKey
-            active={mode === "ko"}
-            label="한글"
-            onClick={() => {
-              setMode("ko");
-              setShifted(false);
-            }}
-          />
-          <ModeKey
-            active={mode === "en"}
-            label="영문"
-            onClick={() => {
-              setMode("en");
-              setShifted(false);
-            }}
-          />
-          <ModeKey
-            active={mode === "number"}
-            label="숫자"
-            onClick={() => {
-              setMode("number");
-              setShifted(false);
-            }}
-          />
-          <ModeKey
-            active={mode === "symbol"}
-            label="기호"
-            onClick={() => {
-              setMode("symbol");
-              setShifted(false);
-            }}
-          />
+          {!nameOnly && (
+            <>
+              <ModeKey
+                active={mode === "ko"}
+                label="한글"
+                onClick={() => {
+                  setMode("ko");
+                  setShifted(false);
+                }}
+              />
+              <ModeKey
+                active={mode === "en"}
+                label="영문"
+                onClick={() => {
+                  setMode("en");
+                  setShifted(false);
+                }}
+              />
+              <ModeKey
+                active={mode === "number"}
+                label="숫자"
+                onClick={() => {
+                  setMode("number");
+                  setShifted(false);
+                }}
+              />
+              <ModeKey
+                active={mode === "symbol"}
+                label="기호"
+                onClick={() => {
+                  setMode("symbol");
+                  setShifted(false);
+                }}
+              />
+            </>
+          )}
           <KeyboardKey
             label="띄어쓰기"
             onClick={() => insertToken(" ")}
@@ -438,12 +453,14 @@ function KioskKeyboard({
 
 function TextLayout({
   mode,
+  lettersOnly = false,
   shifted,
   onShift,
   onToken,
   onBackspace,
 }: {
   mode: "ko" | "en";
+  lettersOnly?: boolean;
   shifted: boolean;
   onShift: () => void;
   onToken: (token: string) => void;
@@ -459,16 +476,18 @@ function TextLayout({
 
   return (
     <div className="kiosk-keyboard-layout">
-      <div className="kiosk-keyboard-row mb-1.5 flex gap-1">
-        {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map(key => (
-          <KeyboardKey
-            key={key}
-            label={key}
-            onClick={() => onToken(key)}
-            compact
-          />
-        ))}
-      </div>
+      {!lettersOnly && (
+        <div className="kiosk-keyboard-row mb-1.5 flex gap-1">
+          {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map(key => (
+            <KeyboardKey
+              key={key}
+              label={key}
+              onClick={() => onToken(key)}
+              compact
+            />
+          ))}
+        </div>
+      )}
       {rows.map((row, rowIndex) => (
         <div
           key={rowIndex}
@@ -481,7 +500,7 @@ function TextLayout({
           {rowIndex === 2 && (
             <KeyboardKey
               label="대문자·쌍자음"
-              ariaLabel="대문자와 쌍자음 전환"
+              ariaLabel={lettersOnly ? "쌍자음 전환" : "대문자와 쌍자음 전환"}
               onClick={onShift}
               active={shifted}
               className="flex-[1.25]"
@@ -509,16 +528,18 @@ function TextLayout({
           )}
         </div>
       ))}
-      <div className="kiosk-keyboard-row flex gap-1">
-        {["-", "'", ",", ".", "?", "!"].map(key => (
-          <KeyboardKey
-            key={key}
-            label={key}
-            onClick={() => onToken(key)}
-            compact
-          />
-        ))}
-      </div>
+      {!lettersOnly && (
+        <div className="kiosk-keyboard-row flex gap-1">
+          {["-", "'", ",", ".", "?", "!"].map(key => (
+            <KeyboardKey
+              key={key}
+              label={key}
+              onClick={() => onToken(key)}
+              compact
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

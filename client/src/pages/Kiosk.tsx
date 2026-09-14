@@ -97,6 +97,7 @@ export default function Kiosk() {
   const searchKeyboard = useKioskKeyboardField<HTMLInputElement>({
     id: "kiosk-search",
     label: "고인 성함",
+    variant: "korean-name",
     value: query,
     onChange: value => {
       setQuery(value);

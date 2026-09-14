@@ -88,6 +88,18 @@
     width: clamp(30px, 4vw, 48px);
     height: clamp(30px, 4vw, 48px);
   }
+
+  .kiosk-keyboard[data-keyboard-variant="korean-name"]
+    .kiosk-keyboard-layout
+    .kiosk-keyboard-key {
+    font-size: clamp(42px, 6.7vw, 80px);
+  }
+
+  .kiosk-keyboard[data-keyboard-variant="korean-name"]
+    .kiosk-keyboard-actions
+    .kiosk-keyboard-key {
+    font-size: clamp(28px, 3.7vw, 44px);
+  }
 }
 
 /* On full-height standing kiosks, preserve the large key area but lift every
