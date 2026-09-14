@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
+import "./kioskSearch.css";
 
 type KioskMemorial = {
   slug: string;
@@ -92,7 +93,7 @@ export default function Kiosk() {
       !record.href || !results.some(memorial => memorial.href === record.href)
   );
   const totalResults = results.length + intermentResults.length;
-  const { closeKeyboard } = useKioskKeyboard();
+  const { closeKeyboard, keyboardHeight } = useKioskKeyboard();
   const searchKeyboard = useKioskKeyboardField<HTMLInputElement>({
     id: "kiosk-search",
     label: "고인 성함",
@@ -105,6 +106,12 @@ export default function Kiosk() {
     submitLabel: "검색",
     onSubmit: runSearch,
   });
+
+  // The provider reserves the keyboard's height below this page. Center the
+  // search in the remaining space rather than another full viewport above it.
+  const viewportMinHeight = searchKeyboard.keyboardOpen
+    ? `max(0px, calc(100dvh - ${keyboardHeight}px))`
+    : "100dvh";
 
   useKioskIdleReset(resetKiosk);
 
@@ -223,9 +230,15 @@ export default function Kiosk() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-white text-[#121212]">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[680px] flex-col bg-white">
-        <header className="px-8 py-8">
+    <main
+      className="kiosk-search-screen bg-white text-[#121212]"
+      style={{ minHeight: viewportMinHeight }}
+    >
+      <div
+        className="kiosk-search-shell mx-auto flex w-full max-w-[680px] flex-col bg-white"
+        style={{ minHeight: viewportMinHeight }}
+      >
+        <header className="kiosk-search-header px-8 py-8">
           <button
             type="button"
             onClick={resetKiosk}
@@ -236,16 +249,16 @@ export default function Kiosk() {
               alt="소망교회 로고"
               width={512}
               height={372}
-              className="h-12 w-auto"
+              className="kiosk-search-logo h-12 w-auto"
             />
             <span className="block">
               <span
-                className="block text-[26px] font-normal leading-tight"
+                className="kiosk-search-brand block text-[26px] font-normal leading-tight"
                 style={serifStyle}
               >
                 소망이 있는 곳
               </span>
-              <span className="mt-1 block text-sm text-[#777]">
+              <span className="kiosk-search-brand-caption mt-1 block text-sm text-[#777]">
                 소망교회 추모관
               </span>
             </span>
@@ -254,7 +267,7 @@ export default function Kiosk() {
 
         <section
           className={cn(
-            "px-8 pb-10 pt-16",
+            "kiosk-search-intro px-8 pb-10 pt-16",
             !submittedKeyword &&
               "sm:portrait:flex sm:portrait:flex-1 sm:portrait:flex-col sm:portrait:justify-center sm:portrait:py-12"
           )}
@@ -267,19 +280,19 @@ export default function Kiosk() {
             )}
             <h1
               className={cn(
-                "break-keep text-[42px] font-normal leading-[1.2] [overflow-wrap:anywhere]",
+                "kiosk-search-title break-keep text-[42px] font-normal leading-[1.2] [overflow-wrap:anywhere]",
                 !submittedKeyword && "mt-4"
               )}
               style={serifStyle}
             >
               그리운 분을 찾아보세요
             </h1>
-            <p className="mt-4 break-keep text-base leading-7 text-[#616161] [overflow-wrap:anywhere]">
+            <p className="kiosk-search-description mt-4 break-keep text-base leading-7 text-[#616161] [overflow-wrap:anywhere]">
               고인의 성함을 두 글자 이상 입력한 뒤, 검색을 눌러 주세요.
             </p>
 
             <form onSubmit={handleSearch} className="mt-10">
-              <label className="flex h-[76px] items-center gap-4 border border-[#18181b] bg-white px-5">
+              <label className="kiosk-search-input-row flex h-[76px] items-center gap-4 border border-[#18181b] bg-white px-5">
                 <Search className="h-6 w-6 shrink-0" strokeWidth={1.7} />
                 <input
                   ref={searchKeyboard.ref}
@@ -321,7 +334,7 @@ export default function Kiosk() {
 
               <button
                 type="submit"
-                className="mt-4 flex h-16 w-full items-center justify-center gap-3 bg-[#18181b] text-lg font-medium text-white"
+                className="kiosk-search-submit mt-4 flex h-16 w-full items-center justify-center gap-3 bg-[#18181b] text-lg font-medium text-white"
               >
                 검색
                 <ArrowRight className="h-5 w-5" strokeWidth={1.7} />
@@ -329,7 +342,7 @@ export default function Kiosk() {
             </form>
 
             {!submittedKeyword && (
-              <div className="mt-10 border-y border-[#b5b0a7] py-6">
+              <div className="kiosk-search-guide mt-10 border-y border-[#b5b0a7] py-6">
                 <p className="text-sm text-[#616161]">추모관 이용 안내</p>
                 <ol className="mt-4 grid grid-cols-3 gap-4 break-keep text-sm leading-6 text-[#454545] [overflow-wrap:anywhere]">
                   <li>
