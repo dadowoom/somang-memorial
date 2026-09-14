@@ -3,6 +3,8 @@ import {
   insertKioskKeyboardToken,
 } from "@/lib/kioskKeyboardInput";
 import { cn } from "@/lib/utils";
+import { getKioskKeyboardScrollOffset } from "@/lib/kioskKeyboardLayout";
+import "./kioskKeyboard.css";
 import { ArrowUp, CornerDownLeft, Delete as DeleteIcon, X } from "lucide-react";
 import {
   createContext,
@@ -39,6 +41,7 @@ type ActiveField = {
 type KioskKeyboardContextValue = {
   activeFieldId: string | null;
   isOpen: boolean;
+  keyboardHeight: number;
   closeKeyboard: () => void;
   closeKeyboardField: (id: string) => void;
   openKeyboard: (field: ActiveField) => void;
@@ -73,6 +76,7 @@ const SHIFTED_KOREAN: Record<string, string> = {
 
 export function KioskKeyboardProvider({ children }: { children: ReactNode }) {
   const [activeField, setActiveField] = useState<ActiveField | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const closeKeyboard = useCallback(() => setActiveField(null), []);
   const closeKeyboardField = useCallback((id: string) => {
@@ -96,6 +100,7 @@ export function KioskKeyboardProvider({ children }: { children: ReactNode }) {
   const contextValue: KioskKeyboardContextValue = {
     activeFieldId: activeField?.id ?? null,
     isOpen: Boolean(activeField),
+    keyboardHeight: activeField ? keyboardHeight : 0,
     closeKeyboard,
     closeKeyboardField,
     openKeyboard,
@@ -107,8 +112,12 @@ export function KioskKeyboardProvider({ children }: { children: ReactNode }) {
       {children}
       {activeField && (
         <>
-          <div aria-hidden="true" className="h-[min(360px,55dvh)]" />
-          <KioskKeyboard field={activeField} onClose={closeKeyboard} />
+          <div aria-hidden="true" style={{ height: keyboardHeight }} />
+          <KioskKeyboard
+            field={activeField}
+            onClose={closeKeyboard}
+            onHeightChange={setKeyboardHeight}
+          />
         </>
       )}
     </KioskKeyboardContext.Provider>
@@ -226,9 +235,11 @@ export function useKioskKeyboardField<
 function KioskKeyboard({
   field,
   onClose,
+  onHeightChange,
 }: {
   field: ActiveField;
   onClose: () => void;
+  onHeightChange: (height: number) => void;
 }) {
   const [mode, setMode] = useState<KioskKeyboardMode>(field.defaultMode);
   const [shifted, setShifted] = useState(false);
@@ -237,23 +248,41 @@ function KioskKeyboard({
   useEffect(() => {
     setMode(field.defaultMode);
     setShifted(false);
+  }, [field.id, field.defaultMode]);
 
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    let firstFrame = 0;
     let secondFrame = 0;
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => {
-        const element = field.elementRef.current;
-        if (!element) return;
-
-        element.scrollIntoView({ behavior: "auto", block: "nearest" });
-        moveElementAboveKeyboard(element, panelRef.current);
+    const updateLayout = () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+      onHeightChange(panel.getBoundingClientRect().height);
+      // Let the measured spacer and fixed password dialog update before scrolling.
+      firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => {
+          const element = field.elementRef.current;
+          if (!element) return;
+          // The site's smooth scrolling must not animate the input underneath
+          // the keyboard while its size is changing.
+          element.scrollIntoView({ behavior: "instant", block: "nearest" });
+          moveElementAboveKeyboard(element, panel);
+        });
       });
-    });
+    };
+    const observer = new ResizeObserver(updateLayout);
+    observer.observe(panel);
+    window.addEventListener("resize", updateLayout);
+    updateLayout();
 
     return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateLayout);
       window.cancelAnimationFrame(firstFrame);
       window.cancelAnimationFrame(secondFrame);
     };
-  }, [field.id]);
+  }, [field.id, field.elementRef, onHeightChange]);
 
   const restoreSelection = useCallback(
     (cursor: number) => {
@@ -317,18 +346,18 @@ function KioskKeyboard({
       ref={panelRef}
       role="region"
       aria-label="화면 키보드"
-      className="fixed inset-x-0 bottom-0 z-[70] border-t border-[#c8c5c0] bg-[#ececec] shadow-[0_-12px_32px_rgba(0,0,0,0.16)]"
+      className="kiosk-keyboard fixed inset-x-0 bottom-0 z-[70] border-t border-[#c8c5c0] bg-[#ececec] shadow-[0_-12px_32px_rgba(0,0,0,0.16)]"
       onPointerDown={keepInputFocused}
     >
-      <div className="mx-auto w-full max-w-[760px] px-2 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 sm:px-3 sm:pt-3">
-        <div className="mb-2 flex h-9 items-center justify-between gap-3 px-1">
-          <p className="min-w-0 truncate text-sm font-medium text-[#57534e]">
+      <div className="kiosk-keyboard-inner mx-auto w-full max-w-[760px] px-2 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 sm:px-3 sm:pt-3">
+        <div className="kiosk-keyboard-header mb-2 flex h-9 items-center justify-between gap-3 px-1">
+          <p className="kiosk-keyboard-label min-w-0 truncate text-sm font-medium text-[#57534e]">
             {field.label} · {modeLabel(mode)}
           </p>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 items-center gap-1.5 rounded-md border border-[#bdb8b0] bg-white px-3 text-sm font-medium active:bg-[#d9d9d9]"
+            className="kiosk-keyboard-close flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-[#bdb8b0] bg-white px-3 text-sm font-medium active:bg-[#d9d9d9]"
             aria-label="화면 키보드 닫기"
           >
             <X className="h-4 w-4" />
@@ -350,7 +379,7 @@ function KioskKeyboard({
           />
         )}
 
-        <div className="mt-1.5 flex gap-1.5">
+        <div className="kiosk-keyboard-actions mt-1.5 flex gap-1.5">
           <ModeKey
             active={mode === "ko"}
             label="한글"
@@ -386,7 +415,7 @@ function KioskKeyboard({
           <KeyboardKey
             label="띄어쓰기"
             onClick={() => insertToken(" ")}
-            className="min-w-0 flex-[2.7] text-base"
+            className="kiosk-keyboard-space min-w-0 flex-[2.7] text-base"
           />
           {field.multiline && (
             <KeyboardKey
@@ -401,7 +430,7 @@ function KioskKeyboard({
             label={field.submitLabel ?? "완료"}
             onClick={submit}
             disabled={field.submitDisabled}
-            className="min-w-[68px] flex-[1.15] border-[#18181b] bg-[#18181b] text-base font-semibold text-white active:bg-black"
+            className="kiosk-keyboard-submit min-w-[68px] flex-[1.15] border-[#18181b] bg-[#18181b] text-base font-semibold text-white active:bg-black"
           />
         </div>
       </div>
@@ -431,8 +460,8 @@ function TextLayout({
   };
 
   return (
-    <>
-      <div className="mb-1.5 flex gap-1">
+    <div className="kiosk-keyboard-layout">
+      <div className="kiosk-keyboard-row mb-1.5 flex gap-1">
         {["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"].map(key => (
           <KeyboardKey
             key={key}
@@ -446,7 +475,7 @@ function TextLayout({
         <div
           key={rowIndex}
           className={cn(
-            "mb-1.5 flex gap-1",
+            "kiosk-keyboard-row mb-1.5 flex gap-1",
             rowIndex === 1 && "px-[4.5%]",
             rowIndex === 2 && "px-[1.5%]"
           )}
@@ -482,7 +511,7 @@ function TextLayout({
           )}
         </div>
       ))}
-      <div className="flex gap-1">
+      <div className="kiosk-keyboard-row flex gap-1">
         {["-", "'", ",", ".", "?", "!"].map(key => (
           <KeyboardKey
             key={key}
@@ -492,7 +521,7 @@ function TextLayout({
           />
         ))}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -510,15 +539,15 @@ function NumberLayout({
   ];
 
   return (
-    <div className="mx-auto max-w-[460px]">
+    <div className="kiosk-keyboard-layout kiosk-keyboard-numbers mx-auto max-w-[460px]">
       {rows.map(row => (
-        <div key={row[0]} className="mb-1.5 flex gap-1.5">
+        <div key={row[0]} className="kiosk-keyboard-row mb-1.5 flex gap-1.5">
           {row.map(key => (
             <KeyboardKey key={key} label={key} onClick={() => onToken(key)} />
           ))}
         </div>
       ))}
-      <div className="flex gap-1.5">
+      <div className="kiosk-keyboard-row flex gap-1.5">
         <KeyboardKey label="-" onClick={() => onToken("-")} />
         <KeyboardKey label="0" onClick={() => onToken("0")} />
         <KeyboardKey
@@ -547,15 +576,15 @@ function SymbolLayout({
   ];
 
   return (
-    <>
+    <div className="kiosk-keyboard-layout">
       {rows.map(row => (
-        <div key={row[0]} className="mb-1.5 flex gap-1">
+        <div key={row[0]} className="kiosk-keyboard-row mb-1.5 flex gap-1">
           {row.map(key => (
             <KeyboardKey key={key} label={key} onClick={() => onToken(key)} />
           ))}
         </div>
       ))}
-      <div className="flex gap-1">
+      <div className="kiosk-keyboard-row flex gap-1">
         <KeyboardKey
           label="지우기"
           ariaLabel="한 글자 지우기"
@@ -563,7 +592,7 @@ function SymbolLayout({
           icon={<DeleteIcon className="h-5 w-5" />}
         />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -613,7 +642,7 @@ function KeyboardKey({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex min-w-0 flex-1 touch-manipulation select-none items-center justify-center rounded-md border border-[#cbc6be] bg-white text-xl font-medium text-[#18181b] shadow-sm active:bg-[#d4d4d4] sm:text-2xl",
+        "kiosk-keyboard-key flex min-w-0 flex-1 touch-manipulation select-none items-center justify-center rounded-md border border-[#cbc6be] bg-white text-xl font-medium text-[#18181b] shadow-sm active:bg-[#d4d4d4] sm:text-2xl",
         compact ? "h-[clamp(30px,4.3dvh,36px)]" : "h-[clamp(36px,5.6dvh,48px)]",
         active && "border-[#18181b] bg-[#d2d2d2]",
         disabled && "cursor-not-allowed opacity-45 active:bg-white",
@@ -637,17 +666,23 @@ function moveElementAboveKeyboard(
   panel: HTMLDivElement | null
 ) {
   const panelTop = panel?.getBoundingClientRect().top ?? window.innerHeight;
-  const elementBottom = element.getBoundingClientRect().bottom;
-  const distance = elementBottom - (panelTop - 20);
+  const elementRect = element.getBoundingClientRect();
+  const formBottom = element.closest("form")?.getBoundingClientRect().bottom;
+  const distance = getKioskKeyboardScrollOffset({
+    inputTop: elementRect.top,
+    inputBottom: elementRect.bottom,
+    keyboardTop: panelTop,
+    formBottom,
+  });
   if (distance <= 0) return;
 
   const scrollParent = findScrollableParent(element);
   if (scrollParent) {
-    scrollParent.scrollTop += distance;
+    scrollParent.scrollBy({ top: distance, behavior: "instant" });
     return;
   }
 
-  window.scrollBy({ top: distance, behavior: "auto" });
+  window.scrollBy({ top: distance, behavior: "instant" });
 }
 
 function findScrollableParent(element: HTMLElement) {

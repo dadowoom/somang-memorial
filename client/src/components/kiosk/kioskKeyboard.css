@@ -1,0 +1,81 @@
+/* Only large portrait kiosks use the lower half of the display. Keep the
+   compact layout on phones and landscape PCs, where vertical space is scarce. */
+@media (min-width: 640px) and (min-height: 900px) and (orientation: portrait) {
+  .kiosk-keyboard {
+    height: 50dvh;
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-inner {
+    display: flex;
+    height: 100%;
+    max-width: 1200px;
+    flex-direction: column;
+    gap: clamp(8px, 0.65dvh, 14px);
+    padding: clamp(12px, 1dvh, 20px) clamp(12px, 2.2vw, 24px);
+    padding-bottom: max(12px, 1dvh, env(safe-area-inset-bottom));
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-header {
+    flex: 0 0 clamp(48px, 3.75dvh, 72px);
+    margin: 0;
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-label {
+    font-size: clamp(18px, 2.3vw, 26px);
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-close {
+    height: 100%;
+    gap: 10px;
+    padding-inline: 24px;
+    font-size: clamp(18px, 2.3vw, 26px);
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-layout {
+    display: flex;
+    min-height: 0;
+    width: 100%;
+    flex: 1;
+    flex-direction: column;
+    gap: clamp(6px, 0.65dvh, 12px);
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-numbers {
+    max-width: 800px;
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-row {
+    min-height: 0;
+    flex: 1;
+    gap: clamp(6px, 1vw, 10px);
+    margin: 0;
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-key {
+    height: 100%;
+    border-radius: 10px;
+    font-size: clamp(26px, 3.15vw, 38px);
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-actions {
+    min-height: 0;
+    flex: 0 0 clamp(56px, 6.5dvh, 128px);
+    gap: clamp(6px, 1vw, 10px);
+    margin: 0;
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-actions .kiosk-keyboard-key {
+    padding-inline: 4px;
+    font-size: clamp(18px, 2.15vw, 26px);
+    word-break: keep-all;
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-submit {
+    flex-grow: 1.6;
+  }
+
+  .kiosk-keyboard svg {
+    width: clamp(24px, 3vw, 34px);
+    height: clamp(24px, 3vw, 34px);
+  }
+}

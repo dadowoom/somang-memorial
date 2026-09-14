@@ -544,7 +544,7 @@ function PrivateAccessPanel({
   onClose: () => void;
   onSubmit: () => void;
 }) {
-  const { isOpen } = useKioskKeyboard();
+  const { isOpen, keyboardHeight } = useKioskKeyboard();
   const passwordKeyboard = useKioskKeyboardField<HTMLInputElement>({
     id: `kiosk-private-password-${memorial.slug}`,
     label: `${memorial.name} 추모관 비밀번호`,
@@ -562,10 +562,10 @@ function PrivateAccessPanel({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/30 p-8"
-      style={{ paddingBottom: isOpen ? "min(370px, 56dvh)" : "2rem" }}
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/30 p-8"
+      style={{ bottom: isOpen ? keyboardHeight : 0 }}
     >
-      <section className="w-full max-w-[600px] border border-[#b5b0a7] bg-white p-8">
+      <section className="my-auto w-full max-w-[600px] shrink-0 border border-[#b5b0a7] bg-white p-8">
         <div className="mb-7 flex items-start justify-between gap-6">
           <div>
             <p className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-[#616161]">
