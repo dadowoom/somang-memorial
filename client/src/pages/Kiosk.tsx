@@ -19,6 +19,7 @@ import {
   kioskAccessStorageKey,
   useKioskIdleReset,
 } from "@/hooks/useKioskIdleReset";
+import { useKioskAutoReload } from "@/hooks/useKioskAutoReload";
 import {
   useKioskKeyboard,
   useKioskKeyboardField,
@@ -130,6 +131,18 @@ export default function Kiosk() {
     : "100dvh";
 
   useKioskIdleReset(resetKiosk);
+
+  // 아무도 새로고침을 눌러 주지 않는 기기라, 새 배포가 있거나 새벽이면 손님이
+  // 없을 때 스스로 새로고침한다. 광고 화면이거나 아무것도 입력하지 않은 검색
+  // 화면이 "손님 없음"이다 (2026-09-15).
+  useKioskAutoReload(
+    attractOpen ||
+      (query === "" &&
+        submittedKeyword === "" &&
+        !selectedPrivate &&
+        !selectedInterment &&
+        !searchKeyboard.keyboardOpen)
+  );
 
   useEffect(() => {
     clearBrowserKioskAccessStorage();
