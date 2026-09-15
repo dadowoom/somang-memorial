@@ -1,0 +1,58 @@
+.life-garden-page {
+  min-height: 100vh;
+  background: #fff;
+}
+.life-garden-page main {
+  padding-top: 64px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.life-garden-page .life-garden-eyebrow {
+  margin-bottom: 20px;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  color: #666;
+}
+.life-garden-page .public-hero h1 {
+  font-family: "Noto Serif KR", serif;
+  font-size: clamp(42px, 5vw, 64px);
+}
+.life-garden-notice {
+  padding-block: 84px 100px;
+  text-align: center;
+}
+.life-garden-notice h2 {
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: -0.04em;
+}
+.life-garden-notice p {
+  margin-top: 20px;
+  font-size: 16px;
+  line-height: 1.9;
+  color: #666;
+}
+.life-garden-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  margin-top: 36px;
+  background: #171717;
+  color: #fff;
+  font-size: 14px;
+}
+@media (max-width: 767px) {
+  .life-garden-notice {
+    padding-block: 60px 76px;
+  }
+  .life-garden-notice h2 {
+    font-size: 24px;
+  }
+  .life-garden-notice p {
+    font-size: 14px;
+  }
+  .life-garden-notice p br {
+    display: none;
+  }
+}

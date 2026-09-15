@@ -4,11 +4,12 @@ import { trpc } from "@/lib/trpc";
 import { ArrowRight, PenLine, Search, Send } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { Link } from "wouter";
+import "./publicEditorial.css";
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
-const warmGold = "oklch(0.50 0.07 72)";
-const warmText = "oklch(0.25 0.04 50)";
-const mutedText = "oklch(0.42 0.02 55)";
+const warmGold = "#626262";
+const warmText = "#171717";
+const mutedText = "#666666";
 const pageSize = 10;
 // 편지 카드 배경. 외부(Unsplash) 사진을 쓰다가 2026-09-14 에 소망동산 사진으로
 // 바꿨다. 외부 서비스가 막히면 카드가 깨지고, 방문자 주소가 외부로 나가며,
@@ -144,11 +145,11 @@ export default function Letters() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-[#121212]">
+    <div className="public-editorial letters-page min-h-screen bg-white text-[#121212]">
       <Navbar />
 
       <main className="pt-16">
-        <section className="border-b border-[#b5b0a7]">
+        <section className="public-hero border-b border-[#b5b0a7]">
           <div className="container py-12 md:py-16">
             <div className="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.55fr)] lg:items-end">
               <div>
@@ -166,7 +167,7 @@ export default function Letters() {
                 </h1>
               </div>
 
-              <div className="border-l border-[#d5c9b4] pl-0 lg:pl-8">
+              <div className="border-l border-[#dedede] pl-0 lg:pl-8">
                 <p
                   className="text-pretty break-keep text-base leading-8 [overflow-wrap:anywhere]"
                   style={{ color: mutedText }}
@@ -178,16 +179,18 @@ export default function Letters() {
                 <button
                   type="button"
                   onClick={() => setFormOpen(value => !value)}
-                  className="mt-7 inline-flex h-11 items-center justify-center gap-2 bg-[#1f1d1a] px-5 text-sm font-medium text-white transition-colors hover:bg-[#33302b]"
+                  aria-expanded={formOpen}
+                  aria-controls="letter-form"
+                  className="editorial-action mt-7 inline-flex h-11 items-center justify-center gap-2 bg-[#171717] px-5 text-sm font-medium text-white transition-colors hover:bg-[#393939]"
                 >
                   <PenLine className="h-4 w-4" strokeWidth={1.7} />
-                  편지 쓰기
+                  {formOpen ? "편지 접기" : "편지 쓰기"}
                 </button>
               </div>
             </div>
 
             <div className="mt-10 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-              <div className="border border-[#b5b0a7]">
+              <div className="editorial-search border border-[#b5b0a7]">
                 <label className="flex items-center gap-3 px-5 py-4">
                   <Search
                     className="h-5 w-5 shrink-0 text-[#616161]"
@@ -197,11 +200,12 @@ export default function Letters() {
                     value={query}
                     onChange={event => updateQuery(event.target.value)}
                     placeholder="성함이나 편지 내용으로 찾기"
+                    aria-label="성함이나 편지 내용으로 찾기"
                     className="h-10 min-w-0 flex-1 bg-transparent text-base text-[#121212] outline-none placeholder:text-[#9a9a9a]"
                   />
                 </label>
               </div>
-              <div className="grid grid-cols-4 border border-[#b5b0a7] sm:flex">
+              <div className="editorial-tabs grid grid-cols-4 border border-[#b5b0a7] sm:flex">
                 {[
                   ["all", "전체"],
                   ["to", "받는 분"],
@@ -212,10 +216,11 @@ export default function Letters() {
                     key={value}
                     type="button"
                     onClick={() => updateField(value as SearchField)}
+                    aria-pressed={field === value}
                     className={`h-12 whitespace-nowrap px-1.5 text-sm transition-colors sm:px-4 ${
                       field === value
-                        ? "bg-[#1f1d1a] text-white"
-                        : "bg-white text-[#4f4638] hover:bg-[#f9f9f9]"
+                        ? "bg-[#171717] text-white"
+                        : "bg-white text-[#666666] hover:bg-[#f9f9f9]"
                     }`}
                   >
                     {label}
@@ -226,10 +231,11 @@ export default function Letters() {
 
             {formOpen && (
               <form
+                id="letter-form"
                 onSubmit={submitLetter}
-                className="mt-6 border border-[#d5c9b4] bg-white"
+                className="mt-6 border border-[#dedede] bg-white"
               >
-                <div className="grid gap-px bg-[#d5c9b4] md:grid-cols-[1fr_1fr]">
+                <div className="grid gap-px bg-[#dedede] md:grid-cols-[1fr_1fr]">
                   <label className="bg-white p-5">
                     <span
                       className="text-xs font-medium uppercase tracking-[0.16em]"
@@ -261,7 +267,7 @@ export default function Letters() {
                     />
                   </label>
                 </div>
-                <label className="block border-t border-[#d5c9b4] bg-white p-5">
+                <label className="block border-t border-[#dedede] bg-white p-5">
                   <span
                     className="text-xs font-medium uppercase tracking-[0.16em]"
                     style={{ color: warmGold }}
@@ -277,7 +283,7 @@ export default function Letters() {
                     className="mt-4 w-full resize-none bg-transparent text-sm leading-7 text-[#121212] outline-none placeholder:text-[#9a9a9a]"
                   />
                 </label>
-                <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
+                <div className="flex flex-col justify-between gap-3 border-t border-[#dedede] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
                   <p
                     className="text-pretty break-keep text-xs leading-6 [overflow-wrap:anywhere]"
                     style={{ color: mutedText }}
@@ -288,7 +294,7 @@ export default function Letters() {
                   <button
                     type="submit"
                     disabled={createLetter.isPending}
-                    className="inline-flex h-11 items-center justify-center gap-2 bg-[#1f1d1a] px-5 text-sm font-medium text-white transition-colors hover:bg-[#33302b] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-11 items-center justify-center gap-2 bg-[#171717] px-5 text-sm font-medium text-white transition-colors hover:bg-[#393939] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {createLetter.isPending ? "남기는 중" : "편지 남기기"}
                     <Send className="h-4 w-4" strokeWidth={1.7} />
@@ -356,8 +362,8 @@ export default function Letters() {
                       onClick={() => setPage(pageNumber)}
                       className={`h-10 min-w-10 border px-3 text-sm transition-colors ${
                         safePage === pageNumber
-                          ? "border-[#1f1d1a] bg-[#1f1d1a] text-white"
-                          : "border-[#b5b0a7] bg-white text-[#4f4638] hover:bg-[#f9f9f9]"
+                          ? "border-[#171717] bg-[#171717] text-white"
+                          : "border-[#b5b0a7] bg-white text-[#666666] hover:bg-[#f9f9f9]"
                       }`}
                     >
                       {pageNumber}
@@ -410,18 +416,18 @@ function LetterCard({
 
   return (
     <article
-      className={`grid h-[300px] overflow-hidden bg-white shadow-[0_10px_28px_rgba(31,29,26,0.14)] ring-1 ring-[#d5c9b4] transition-transform duration-300 hover:-translate-y-1 md:grid-cols-[minmax(0,1fr)_92px] lg:grid-cols-[minmax(0,1fr)_112px] ${
+      className={`grid h-[300px] overflow-hidden bg-white shadow-none ring-1 ring-[#dedede] transition-shadow duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.05)] md:grid-cols-[minmax(0,1fr)_92px] lg:grid-cols-[minmax(0,1fr)_112px] ${
         stagger ? "md:mt-10" : ""
       }`}
     >
       <div className="flex min-w-0 flex-col overflow-hidden p-6 md:p-8">
-        <div className="flex items-center justify-between gap-3 text-sm text-[#7a7771]">
+        <div className="flex items-center justify-between gap-3 text-sm text-[#777777]">
           <p>No.{String(serial).padStart(3, "0")}</p>
         </div>
 
         <div className="mt-8 grid min-w-0 grid-cols-[88px_minmax(0,1fr)] gap-4 md:grid-cols-[108px_minmax(0,1fr)] md:gap-6">
           <p
-            className="pt-1 text-5xl italic leading-none text-[#2d2b28] md:text-7xl"
+            className="pt-1 text-5xl italic leading-none text-[#222222] md:text-7xl"
             style={{ fontFamily: "'Cormorant Garamond', serif" }}
           >
             To
@@ -430,7 +436,7 @@ function LetterCard({
             {href ? (
               <Link href={href}>
                 <span
-                  className="inline-flex max-w-full cursor-pointer items-center gap-2 text-2xl font-light text-[#2d2b28] transition-colors hover:text-[#7f673d] md:text-3xl"
+                  className="inline-flex max-w-full cursor-pointer items-center gap-2 text-2xl font-light text-[#222222] transition-colors hover:text-[#555555] md:text-3xl"
                   style={serifStyle}
                 >
                   <span className="min-w-0 truncate">{recipient}</span>
@@ -439,14 +445,14 @@ function LetterCard({
               </Link>
             ) : (
               <span
-                className="block max-w-full truncate text-2xl font-light text-[#2d2b28] md:text-3xl"
+                className="block max-w-full truncate text-2xl font-light text-[#222222] md:text-3xl"
                 style={serifStyle}
               >
                 {recipient}
               </span>
             )}
             <p
-              className="mt-4 whitespace-pre-line text-center text-base leading-8 text-[#74706b] md:text-[17px]"
+              className="mt-4 whitespace-pre-line text-center text-base leading-8 text-[#707070] md:text-[17px]"
               style={{
                 ...serifStyle,
                 display: "-webkit-box",
@@ -461,10 +467,10 @@ function LetterCard({
           </div>
         </div>
 
-        <div className="mt-auto flex items-end justify-between gap-4 pt-6 text-base text-[#2d2b28]">
+        <div className="mt-auto flex items-end justify-between gap-4 pt-6 text-base text-[#222222]">
           {href ? (
             <Link href={href}>
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-[#7f673d] transition-colors hover:text-[#2d2b28]">
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-[#555555] transition-colors hover:text-[#222222]">
                 추모관 보기
                 <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.7} />
               </span>
@@ -482,7 +488,7 @@ function LetterCard({
       <div
         className="hidden bg-[#d1d1d1] bg-cover bg-center md:block"
         style={{
-          backgroundImage: `linear-gradient(180deg, rgba(31,29,26,0.08), rgba(31,29,26,0.18)), url(${imageUrl})`,
+          backgroundImage: `linear-gradient(180deg, rgba(24,24,24,0.08), rgba(24,24,24,0.18)), url(${imageUrl})`,
           filter: "grayscale(0.18) saturate(0.68) contrast(0.94)",
         }}
       />

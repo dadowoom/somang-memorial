@@ -1,4 +1,11 @@
-import { ArrowRight, BookOpenText, Flower2, Send } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BookOpenText,
+  Flower2,
+  Plus,
+  Send,
+} from "lucide-react";
 import { Link } from "wouter";
 import "./homeSections.css";
 
@@ -11,7 +18,7 @@ const VALUES = [
   {
     number: "02",
     title: "교회에는 기억",
-    desc: "한 사람의 예배와 봉사, 기도와 헌신은 소망교회가 걸어온 믿음의 길 위에 남겨진 귀한 흔적입니다.",
+    desc: "한 성도의 예배와 봉사, 기도와 헌신은 소망교회가 걸어온 믿음의 길 위에 남겨진 귀한 흔적입니다.",
   },
   {
     number: "03",
@@ -24,27 +31,33 @@ const SERVICES = [
   {
     number: "01",
     title: "추모관 만들기",
-    desc: "사랑하는 분의 삶과 신앙을 사진과 글로 차근차근 남깁니다.",
+    desc: "한 성도의 삶과 신앙을 사진과 글로 차근차근 남깁니다.",
     icon: BookOpenText,
+    href: "/memorial/create",
+    action: "기억 남기기",
   },
   {
     number: "02",
-    title: "부고 전하기",
-    desc: "부고장을 만들어 가족과 이웃에게 소식을 전합니다.",
-    icon: Send,
+    title: "인생화원",
+    desc: "신앙의 유산 남기기 서비스",
+    icon: Flower2,
+    href: "/services/life-garden",
+    action: "서비스 이용하기",
   },
   {
     number: "03",
     title: "편지 남기기",
     desc: "다 전하지 못한 말과 함께한 기억을 편지에 담습니다.",
-    icon: Flower2,
+    icon: Send,
+    href: "/letters",
+    action: "마음 전하기",
   },
 ];
 
 const STEPS = [
-  "처음 방문하셨다면 회원가입을, 이미 가입하셨다면 로그인을 해 주세요.",
-  "고인의 기본 정보와 글을 작성하고, 등록 요청 후 사진을 준비합니다.",
-  "관리자 확인 후 공개된 추모관의 링크를 가족과 공동체에 공유합니다.",
+  "소망교회 성도라면 누구나 회원가입 후 자유롭게 이용하실 수 있습니다.",
+  "성도의 기본 정보와 사진, 삶과 신앙의 이야기를 담아 추모관을 만듭니다.",
+  "관리자 확인 없이 추모관이 완성됩니다. 공개 범위를 정하고 가족과 추억을 나눠 보세요.",
 ];
 
 export default function HomeSections() {
@@ -66,7 +79,11 @@ export default function HomeSections() {
 
           <div className="home-sections__memories-grid">
             <figure className="home-sections__place">
-              <div className="home-sections__place-image-frame">
+              <Link
+                href="/somang-hill"
+                className="home-sections__place-image-frame"
+                aria-label="소망동산 둘러보기"
+              >
                 <img
                   src="/somang-hill-1.jpg"
                   alt="소망동산의 정원과 추모 공간 전경"
@@ -76,28 +93,37 @@ export default function HomeSections() {
                   decoding="async"
                   className="home-sections__place-image"
                 />
-              </div>
+              </Link>
               <figcaption className="home-sections__place-caption">
-                소망동산
+                <span>소망동산</span>
+                <Link href="/somang-hill">
+                  공간 둘러보기 <ArrowUpRight size={17} aria-hidden="true" />
+                </Link>
               </figcaption>
             </figure>
 
             <div className="home-sections__values">
-              {VALUES.map(value => (
-                <article key={value.number} className="home-sections__value">
-                  <span
-                    className="home-sections__value-number"
-                    aria-hidden="true"
-                  >
-                    {value.number}
-                  </span>
-                  <div className="home-sections__value-content">
+              {VALUES.map((value, index) => (
+                <details
+                  key={value.number}
+                  name="home-values"
+                  open={index === 0}
+                  className="home-sections__value"
+                >
+                  <summary>
+                    <span
+                      className="home-sections__value-number"
+                      aria-hidden="true"
+                    >
+                      {value.number}
+                    </span>
                     <h3 className="home-sections__value-title">
                       {value.title}
                     </h3>
-                    <p className="home-sections__body">{value.desc}</p>
-                  </div>
-                </article>
+                    <Plus size={18} strokeWidth={1.2} aria-hidden="true" />
+                  </summary>
+                  <p className="home-sections__body">{value.desc}</p>
+                </details>
               ))}
             </div>
           </div>
@@ -118,7 +144,8 @@ export default function HomeSections() {
               </h2>
             </div>
             <p className="home-sections__intro home-sections__body">
-              삶을 기록하고, 소식을 전하고, 그리운 마음을 함께 나눕니다.
+              믿음의 여정을 기록하고, 신앙의 유산을 남기며, 그리운 마음을 함께
+              나눕니다.
             </p>
           </div>
 
@@ -126,8 +153,10 @@ export default function HomeSections() {
             {SERVICES.map(service => {
               const Icon = service.icon;
               return (
-                <article
+                <Link
                   key={service.number}
+                  href={service.href}
+                  aria-label={service.title}
                   className="home-sections__service-card"
                 >
                   <div className="home-sections__service-top">
@@ -148,7 +177,14 @@ export default function HomeSections() {
                     {service.title}
                   </h3>
                   <p className="home-sections__body">{service.desc}</p>
-                </article>
+                  <span
+                    className="home-sections__service-action"
+                    aria-hidden="true"
+                  >
+                    {service.action}
+                    <ArrowUpRight size={22} strokeWidth={1.3} />
+                  </span>
+                </Link>
               );
             })}
           </div>
@@ -199,7 +235,7 @@ export default function HomeSections() {
           </div>
           <Link href="/memorial/create" className="home-sections__cta-button">
             추모관 만들기
-            <ArrowRight size={18} strokeWidth={1.6} aria-hidden="true" />
+            <ArrowRight size={30} strokeWidth={1.2} aria-hidden="true" />
           </Link>
         </div>
       </section>

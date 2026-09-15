@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { ArrowRight, LockKeyhole, Search } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
+import "./publicEditorial.css";
 
 export default function MemorialSearch() {
   const [query, setQuery] = useState("");
@@ -17,11 +18,11 @@ export default function MemorialSearch() {
   const results = memorialsQuery.data ?? [];
 
   return (
-    <div className="min-h-screen bg-white text-[#121212]">
+    <div className="public-editorial memorial-search-page min-h-screen bg-white text-[#121212]">
       <Navbar />
 
       <main className="pt-16">
-        <section className="border-b border-[#b5b0a7]">
+        <section className="public-hero border-b border-[#b5b0a7]">
           <div className="container py-14 md:py-20">
             <div className="max-w-3xl">
               <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.28em] text-[#616161]">
@@ -39,7 +40,7 @@ export default function MemorialSearch() {
               </p>
             </div>
 
-            <div className="mt-10 max-w-3xl border border-[#b5b0a7]">
+            <div className="editorial-search mt-10 max-w-3xl border border-[#b5b0a7]">
               <label className="flex items-center gap-3 px-5 py-4">
                 <Search
                   className="h-5 w-5 shrink-0 text-[#616161]"
@@ -49,6 +50,7 @@ export default function MemorialSearch() {
                   value={query}
                   onChange={event => setQuery(event.target.value)}
                   placeholder="고인의 성함 (두 글자 이상)"
+                  aria-label="고인의 성함 (두 글자 이상)"
                   className="h-10 min-w-0 flex-1 bg-transparent text-base text-[#121212] outline-none placeholder:text-[#9a9a9a]"
                   autoFocus
                 />
@@ -72,7 +74,8 @@ export default function MemorialSearch() {
             </div>
 
             {!canSearch ? (
-              <div className="border border-[#b5b0a7] bg-[#fafafa] px-5 py-14 text-center md:py-20">
+              <div className="public-empty border border-[#b5b0a7] bg-[#fafafa] px-5 py-14 text-center md:py-20">
+                <Search className="public-empty__icon" size={30} strokeWidth={1} aria-hidden="true" />
                 <p
                   className="text-balance break-keep text-2xl font-normal text-[#121212] [overflow-wrap:anywhere] md:text-3xl"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
@@ -138,11 +141,9 @@ export default function MemorialSearch() {
                         {memorial.church}
                       </p>
                       <p className="text-sm text-[#616161]">{memorial.role}</p>
-                      <Link href={memorial.href}>
-                        <button className="group inline-flex h-10 w-fit items-center justify-center gap-2 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:border-[#18181b] md:ml-auto">
+                      <Link href={memorial.href} className="editorial-link group inline-flex h-10 w-fit items-center justify-center gap-2 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:border-[#18181b] md:ml-auto">
                           {memorial.isPrivate ? "비밀번호 입력" : "추모관 보기"}
                           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                        </button>
                       </Link>
                     </article>
                   ))}

@@ -18,6 +18,8 @@ import KioskConnectionBanner from "./components/kiosk/KioskConnectionBanner";
 const Home = lazy(() => import("./pages/Home"));
 const MemorialCreate = lazy(() => import("./pages/MemorialCreate"));
 const Letters = lazy(() => import("./pages/Letters"));
+const LifeGarden = lazy(() => import("./pages/LifeGarden"));
+const Guide = lazy(() => import("./pages/Guide"));
 const Login = lazy(() => import("./pages/Login"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
@@ -93,6 +95,8 @@ function Router() {
         <Route path={"/invite/:token"} component={InvitePage} />
         <Route path={"/memorial/create"} component={MemorialCreate} />
         <Route path={"/letters"} component={Letters} />
+        <Route path={"/services/life-garden"} component={LifeGarden} />
+        <Route path={"/guide"} component={Guide} />
         <Route path={"/memorial/search"} component={MemorialSearch} />
         <Route path={"/somang-hill"} component={SomangHill} />
         <Route path={"/memorial/:slug/archive"} component={MemorialArchivePage} />

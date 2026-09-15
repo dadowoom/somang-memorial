@@ -1,5 +1,6 @@
 import { ORG_INFO } from "@/lib/orgInfo";
 import { Link } from "wouter";
+import "./siteChrome.css";
 
 const serviceLinks = [
   { label: "추모관 찾기", href: "/memorial/search", type: "route" },
@@ -9,14 +10,14 @@ const serviceLinks = [
     type: "route",
   },
   { label: "추모관 만들기", href: "/memorial/create", type: "route" },
-  { label: "이용 안내", href: "/#services", type: "hash" },
+  { label: "이용 안내", href: "/guide", type: "route" },
 ];
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#b5b0a7] bg-white text-[#616161]">
+    <footer className="site-footer border-t border-[#b5b0a7] bg-white text-[#616161]">
       <div className="container py-12 md:py-16">
-        <div className="grid gap-10 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
+        <div className="site-footer__grid grid gap-10 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
             <div className="mb-5 flex items-center gap-3">
               <img
@@ -39,7 +40,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="max-w-sm break-keep text-sm leading-7 [overflow-wrap:anywhere]">
-              소중한 분의 삶과 신앙을 교회 공동체가 함께 기억합니다.
+              한 성도의 삶과 믿음을 가족과 교회가 함께 기억하고, 다음 세대에 전합니다.
             </p>
           </div>
 
@@ -47,7 +48,7 @@ export default function Footer() {
             <h2 className="mb-4 text-xs font-medium tracking-[0.22em] text-[#121212] uppercase">
               이용 안내
             </h2>
-            <ul className="text-sm">
+            <ul className="site-footer__links text-sm">
               {serviceLinks.map((link) => (
                 <li key={link.href}>
                   {link.type === "route" ? (
@@ -96,6 +97,9 @@ export default function Footer() {
               이용약관
             </Link>
           </div>
+        </div>
+        <div className="site-footer__admin">
+          <Link href="/login?redirect=/admin">관리자 로그인</Link>
         </div>
       </div>
     </footer>
