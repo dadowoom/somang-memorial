@@ -12,7 +12,7 @@ const menus = {
     eyebrow: "MEMORIAL",
     title: "기억을 잇는 공간",
     description:
-      "사랑하는 분의 삶과 신앙을 돌아보고, 가족과 함께 소중한 기억을 이어갑니다.",
+      "한 성도의 삶과 신앙을 돌아보고, 가족과 교회가 함께 믿음의 유산을 이어갑니다.",
     links: [
       {
         href: "/memorial/search",
@@ -22,7 +22,7 @@ const menus = {
       {
         href: "/memorial/create",
         label: "추모관 만들기",
-        description: "사진과 글로 한 사람의 삶을 남깁니다.",
+        description: "사진과 글로 한 성도의 삶과 믿음을 남깁니다.",
       },
       {
         href: "/login?redirect=/my/find-parent&mode=signup",

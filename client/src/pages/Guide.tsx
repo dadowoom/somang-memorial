@@ -33,11 +33,11 @@ const examples = [
     id: "story",
     label: "글과 신앙",
     icon: BookOpenText,
-    title: "평범한 하루가, 신앙의 이야기로",
+    title: "일상의 믿음이, 신앙의 유산으로",
     description:
-      "어떤 삶을 살았는지, 무엇을 믿고 사랑했는지. 짧은 소개부터 오래 간직한 말씀과 삶의 이야기를 차근차근 담습니다.",
+      "주님과 함께 걸어온 길, 기도와 섬김으로 살아온 날들. 짧은 소개부터 마음에 품은 말씀과 신앙의 고백을 차근차근 담습니다.",
     details: [
-      "한 사람을 기억하는 소개글",
+      "한 성도를 기억하는 소개글",
       "삶과 신앙의 이야기",
       "마음에 품었던 성경 말씀",
     ],
@@ -49,10 +49,10 @@ const examples = [
     icon: Film,
     title: "표정과 목소리도, 오래도록",
     description:
-      "사진과 글만으로 다 담기지 않는 순간이 있습니다. 예배와 찬양, 삶의 이야기가 담긴 영상을 추모관에서 함께 돌아봅니다.",
+      "사진과 글만으로 다 담기지 않는 순간이 있습니다. 예배와 찬양, 믿음의 여정이 담긴 영상을 추모관에서 함께 돌아봅니다.",
     details: [
       "다시 보고 싶은 예배와 찬양",
-      "삶을 돌아보는 기록 영상",
+      "믿음의 여정을 돌아보는 영상",
       "그리운 표정과 목소리",
     ],
     note: "영상은 유튜브 링크를 연결하는 방식입니다. 현재 영상 등록은 교회 관리자가 진행합니다.",
@@ -66,7 +66,7 @@ const steps = [
   },
   {
     title: "삶과 신앙 기록하기",
-    text: "기본 정보와 소개, 삶의 이야기와 말씀을 적습니다. 선택 항목은 비워 두고 나중에 보완해도 됩니다.",
+    text: "기본 정보와 소개, 삶과 신앙의 이야기, 마음에 품은 말씀을 적습니다. 선택 항목은 비워 두고 나중에 보완해도 됩니다.",
   },
   {
     title: "등록 요청 · 사진 준비",
@@ -82,7 +82,7 @@ const questions = [
   {
     title: "누구를 위한 공간인가요?",
     answer:
-      "소망교회 성도의 삶과 신앙을 가족과 교회가 함께 기억하는 온라인 추모관입니다. 사진과 글, 말씀과 영상을 통해 한 사람의 믿음이 자녀와 손주에게 이어지도록 돕습니다.",
+      "소망교회 성도의 삶과 신앙을 가족과 교회가 함께 기억하는 온라인 추모관입니다. 사진과 글, 말씀과 영상을 통해 한 성도가 걸어온 믿음의 길이 자녀와 손주에게 이어지도록 돕습니다.",
   },
   {
     title: "살아 있을 때 미리 만들어도 되나요?",
@@ -137,7 +137,7 @@ export default function Guide() {
                 다음 세대의 신앙으로.
               </h1>
               <p className="guide-hero__description">
-                한 사람의 삶과 믿음은, 남겨질 때 이어집니다.
+                한 성도의 삶과 믿음을, 신앙의 유산으로 남깁니다.
                 <br /> 소망교회 성도의 사진과 글, 말씀과 영상을 모아
                 <br /> 가족과 교회가 함께 간직하는 온라인 추모관입니다.
               </p>
@@ -193,13 +193,13 @@ export default function Guide() {
               <div>
                 <p className="guide-eyebrow">01 · 기억을 담는 방법</p>
                 <h2 id="guide-records-title">
-                  한 사람의 삶이,
+                  한 성도의 삶이,
                   <br />
                   이렇게 남겨집니다.
                 </h2>
               </div>
               <p className="guide-description">
-                사진을 넘겨 보고, 삶의 이야기를 읽고,
+                사진을 넘겨 보고, 신앙의 이야기를 읽고,
                 <br /> 그리운 목소리를 다시 만나는 공간.
                 <br /> 아래에서 기록의 모습을 살펴보세요.
               </p>
@@ -413,8 +413,9 @@ export default function Guide() {
               </div>
               <div className="guide-prepare__intro">
                 <p className="guide-description">
-                  내가 걸어온 믿음의 길을 내 말로 남겨 보세요. 자녀에게 전하는
-                  마지막 인사도, 지금의 따뜻한 목소리로 준비할 수 있습니다.
+                  주님과 함께 걸어온 믿음의 길을 내 말로 남겨 보세요. 자녀에게
+                  전하는 마지막 인사에 감사와 사랑, 축복의 마음을 담을 수
+                  있습니다.
                 </p>
                 <p className="guide-note">
                   미리 추모관을 만들 때는 소천일을 비워둘 수 있습니다.
@@ -504,7 +505,7 @@ export default function Guide() {
                 인생화원.
               </h2>
               <p className="guide-description">
-                소중한 삶의 이야기가 오래도록 전해지도록.
+                한 성도의 믿음의 여정이 다음 세대에 전해지도록.
                 <br /> 신앙의 유산을 더 아름답게 담아내는 인생화원 서비스를
                 준비하고 있습니다.
               </p>
@@ -559,7 +560,8 @@ export default function Guide() {
               className="guide-button guide-button--light"
               href="/memorial/create"
             >
-              나의 이야기 남기기 <ArrowRight size={18} aria-hidden="true" />
+              나의 신앙 이야기 남기기{" "}
+              <ArrowRight size={18} aria-hidden="true" />
             </Link>
             <Link className="guide-closing__letter-link" href="/letters">
               그리운 분께 편지 보내기{" "}

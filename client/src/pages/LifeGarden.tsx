@@ -29,7 +29,7 @@ export default function LifeGarden() {
             />
             <h2 id="life-garden-status">서비스 준비 중</h2>
             <p>
-              삶과 신앙의 이야기를 오래도록 간직할 수 있도록 <br />
+              한 성도의 삶과 신앙이 다음 세대에 아름답게 전해지도록 <br />
               인생화원 서비스를 준비하고 있습니다.
             </p>
             <Link href="/" className="editorial-action life-garden-home">

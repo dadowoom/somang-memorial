@@ -40,7 +40,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="max-w-sm break-keep text-sm leading-7 [overflow-wrap:anywhere]">
-              소중한 분의 삶과 신앙을 교회 공동체가 함께 기억합니다.
+              한 성도의 삶과 믿음을 가족과 교회가 함께 기억하고, 다음 세대에 전합니다.
             </p>
           </div>
 
