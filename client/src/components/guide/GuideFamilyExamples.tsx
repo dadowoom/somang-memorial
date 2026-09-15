@@ -82,16 +82,16 @@ export default function GuideFamilyExamples() {
               {index === 1 && (
                 <div className="guide-family-card__photo">
                   <img
-                    src="/guide-family-album-v1.jpg"
-                    alt="할머니와 손자, 손녀가 사진첩을 함께 보는 안내용 AI 이미지"
+                    src="/guide-family-birthday-v1.jpg"
+                    alt="집에서 할머니의 생신을 함께 축하하는 딸과 손주들의 안내용 AI 이미지"
                     width={1536}
                     height={1024}
                     loading="lazy"
                     draggable={false}
                   />
                   <div>
-                    <small>OUR FAMILY</small>
-                    <p>함께 웃던 날을 기억해</p>
+                    <small>우리끼리 간직하는 순간</small>
+                    <p>할머니 생신날, 우리 집에서</p>
                   </div>
                 </div>
               )}
