@@ -354,18 +354,18 @@ export function KioskKeyboard({
       role="region"
       aria-label="화면 키보드"
       data-keyboard-variant={field.variant}
-      className="kiosk-keyboard fixed inset-x-0 bottom-0 z-[70] border-t border-[#c8c5c0] bg-[#ececec] shadow-[0_-12px_32px_rgba(0,0,0,0.16)]"
+      className="kiosk-keyboard fixed inset-x-0 bottom-0 z-[70] border-t border-[#33333a] bg-[#1b1b1e] shadow-[0_-18px_44px_rgba(0,0,0,0.4)]"
       onPointerDown={keepInputFocused}
     >
       <div className="kiosk-keyboard-inner mx-auto w-full max-w-[760px] px-2 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 sm:px-3 sm:pt-3">
         <div className="kiosk-keyboard-header mb-2 flex h-9 items-center justify-between gap-3 px-1">
-          <p className="kiosk-keyboard-label min-w-0 truncate text-sm font-medium text-[#57534e]">
+          <p className="kiosk-keyboard-label min-w-0 truncate text-sm font-medium text-[#a7a7af]">
             {field.label} · {modeLabel(displayedMode)}
           </p>
           <button
             type="button"
             onClick={onClose}
-            className="kiosk-keyboard-close flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-[#bdb8b0] bg-white px-3 text-sm font-medium active:bg-[#d9d9d9]"
+            className="kiosk-keyboard-close flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-[#4a4a53] bg-[#2b2b30] px-3 text-sm font-medium text-[#e9e9e6] active:bg-[#222226]"
             aria-label="화면 키보드 닫기"
           >
             <X className="h-4 w-4" />
@@ -443,7 +443,7 @@ export function KioskKeyboard({
             label={field.submitLabel ?? "완료"}
             onClick={submit}
             disabled={field.submitDisabled}
-            className="kiosk-keyboard-submit min-w-[68px] flex-[1.15] border-[#18181b] bg-[#18181b] text-base font-semibold text-white active:bg-black"
+            className="kiosk-keyboard-submit min-w-[68px] flex-[1.15] border-[#f4f4f1] bg-[linear-gradient(180deg,#fbfbf9,#e7e7e3)] text-base font-semibold text-[#1b1b1e] shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_3px_0_#9d9d98,0_6px_14px_rgba(0,0,0,0.4)] active:bg-[linear-gradient(180deg,#e7e7e3,#dadad6)] active:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_1px_0_#9d9d98]"
           />
         </div>
       </div>
@@ -503,7 +503,11 @@ function TextLayout({
               ariaLabel={lettersOnly ? "쌍자음 전환" : "대문자와 쌍자음 전환"}
               onClick={onShift}
               active={shifted}
-              className="flex-[1.25]"
+              className={cn(
+                "flex-[1.25]",
+                !shifted &&
+                  "bg-[linear-gradient(180deg,#34343a,#2a2a2f)] text-[#d6d6d3]"
+              )}
               icon={<ArrowUp className="h-5 w-5" />}
             />
           )}
@@ -522,7 +526,7 @@ function TextLayout({
               label="지우기"
               ariaLabel="한 글자 지우기"
               onClick={onBackspace}
-              className="flex-[1.25]"
+              className="flex-[1.25] bg-[linear-gradient(180deg,#34343a,#2a2a2f)] text-[#d6d6d3]"
               icon={<DeleteIcon className="h-5 w-5" />}
             />
           )}
@@ -573,6 +577,7 @@ function NumberLayout({
           label="지우기"
           ariaLabel="한 글자 지우기"
           onClick={onBackspace}
+          className="bg-[linear-gradient(180deg,#34343a,#2a2a2f)] text-[#d6d6d3]"
           icon={<DeleteIcon className="h-5 w-5" />}
         />
       </div>
@@ -608,6 +613,7 @@ function SymbolLayout({
           label="지우기"
           ariaLabel="한 글자 지우기"
           onClick={onBackspace}
+          className="bg-[linear-gradient(180deg,#34343a,#2a2a2f)] text-[#d6d6d3]"
           icon={<DeleteIcon className="h-5 w-5" />}
         />
       </div>
@@ -629,7 +635,10 @@ function ModeKey({
       active={active}
       label={label}
       onClick={onClick}
-      className="min-w-[44px] flex-[0.85] text-xs sm:text-base"
+      className={cn(
+        "min-w-[44px] flex-[0.85] text-xs sm:text-base",
+        !active && "bg-[linear-gradient(180deg,#34343a,#2a2a2f)] text-[#d6d6d3]"
+      )}
     />
   );
 }
@@ -661,10 +670,11 @@ function KeyboardKey({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "kiosk-keyboard-key flex min-w-0 flex-1 touch-manipulation select-none items-center justify-center rounded-md border border-[#cbc6be] bg-white text-xl font-medium text-[#18181b] shadow-sm active:bg-[#d4d4d4] sm:text-2xl",
+        "kiosk-keyboard-key flex min-w-0 flex-1 touch-manipulation select-none items-center justify-center rounded-[10px] border border-[#4d4d55] bg-[linear-gradient(180deg,#46464d,#36363c)] text-xl font-medium text-[#f3f3f0] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_3px_0_#111113,0_6px_14px_rgba(0,0,0,0.4)] transition-[transform,box-shadow] duration-75 active:translate-y-[2px] active:bg-[linear-gradient(180deg,#2d2d33,#27272c)] active:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1px_0_#111113] sm:text-2xl",
         compact ? "h-[clamp(30px,4.3dvh,36px)]" : "h-[clamp(36px,5.6dvh,48px)]",
-        active && "border-[#18181b] bg-[#d2d2d2]",
-        disabled && "cursor-not-allowed opacity-45 active:bg-white",
+        active &&
+          "border-[#f4f4f1] bg-[linear-gradient(180deg,#f7f7f4,#e5e5e1)] text-[#1b1b1e] shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_3px_0_#9d9d98,0_6px_14px_rgba(0,0,0,0.4)]",
+        disabled && "cursor-not-allowed opacity-40 active:translate-y-0",
         className
       )}
     >

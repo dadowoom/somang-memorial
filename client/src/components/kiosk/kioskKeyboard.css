@@ -13,10 +13,11 @@
     padding: 16px;
   }
 
-  /* The panel height follows its content. The extra bottom padding lifts the
-     action row above the very bottom of a tall standing kiosk. */
+  /* The panel height follows its content. The generous bottom padding lifts
+     the whole keyboard off the floor of a tall standing kiosk, so the bottom
+     row sits within comfortable reach and the tray reads as a solid base. */
   .kiosk-keyboard {
-    padding-bottom: max(22px, 3.5dvh, env(safe-area-inset-bottom));
+    padding-bottom: max(40px, 8dvh, env(safe-area-inset-bottom));
   }
 
   .kiosk-keyboard .kiosk-keyboard-inner {
@@ -50,7 +51,7 @@
   }
 
   .kiosk-keyboard .kiosk-keyboard-row {
-    gap: clamp(6px, 1vw, 12px);
+    gap: clamp(8px, 1.1vw, 14px);
     margin: 0;
   }
 
@@ -58,7 +59,7 @@
      close to square instead of becoming a tall column. */
   .kiosk-keyboard .kiosk-keyboard-key {
     height: clamp(60px, 8.4vw, 108px);
-    border-radius: 12px;
+    border-radius: 14px;
     font-size: clamp(30px, 4.2vw, 52px);
   }
 
@@ -100,12 +101,12 @@
    bottom row stays within comfortable reach. */
 @media (min-width: 640px) and (min-height: 1600px) and (orientation: portrait) {
   .kiosk-keyboard {
-    padding-bottom: max(9dvh, env(safe-area-inset-bottom));
+    padding-bottom: max(12dvh, env(safe-area-inset-bottom));
   }
 }
 
 @media (min-width: 640px) and (min-height: 1800px) and (orientation: portrait) {
   .kiosk-keyboard {
-    padding-bottom: max(12dvh, env(safe-area-inset-bottom));
+    padding-bottom: max(15dvh, env(safe-area-inset-bottom));
   }
 }
