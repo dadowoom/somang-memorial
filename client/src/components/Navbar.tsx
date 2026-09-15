@@ -31,30 +31,6 @@ const menus = {
       },
     ],
   },
-  guide: {
-    label: "이용 안내",
-    eyebrow: "GUIDE",
-    title: "처음 오셨나요?",
-    description:
-      "기억을 남기는 방법부터 추모관을 준비하는 순서까지, 하나씩 안내합니다.",
-    links: [
-      {
-        href: "/#services",
-        label: "함께 기억하는 방법",
-        description: "추모관, 부고장, 그리고 편지",
-      },
-      {
-        href: "/#process",
-        label: "추모관 준비 순서",
-        description: "회원가입부터 가족과 공유하기까지",
-      },
-      {
-        href: "/#membership",
-        label: "추모관 시작하기",
-        description: "소망교회 성도를 위한 기억의 공간",
-      },
-    ],
-  },
 };
 type MenuKey = keyof typeof menus;
 
@@ -209,7 +185,14 @@ export default function Navbar() {
           >
             하늘로 보내는 편지
           </Link>
-          {menuTrigger("guide")}
+          <Link
+            href="/guide"
+            className="site-nav__link"
+            onPointerEnter={() => setActiveMenu(null)}
+            aria-current={location === "/guide" ? "page" : undefined}
+          >
+            이용 안내
+          </Link>
           {isAuthenticated && (
             <Link
               href="/my/memorials"
@@ -287,9 +270,9 @@ export default function Navbar() {
           <Link href="/letters" onClick={closeMenus}>
             하늘로 보내는 편지 <ArrowRight size={20} aria-hidden="true" />
           </Link>
-          <a href="/#services" onClick={closeMenus}>
+          <Link href="/guide" onClick={closeMenus}>
             이용 안내 <ArrowRight size={20} aria-hidden="true" />
-          </a>
+          </Link>
           <div className="site-mobile__account">
             {isAuthenticated ? (
               <>

@@ -73,12 +73,12 @@ export default function Home() {
               </span>
               <ArrowUpRight aria-hidden="true" size={22} strokeWidth={1.3} />
             </Link>
-            <a href="#services">
+            <Link href="/guide">
               <span>
                 <small aria-hidden="true">03 — GUIDE</small>이용 안내
               </span>
-              <ArrowDown aria-hidden="true" size={22} strokeWidth={1.3} />
-            </a>
+              <ArrowUpRight aria-hidden="true" size={22} strokeWidth={1.3} />
+            </Link>
           </div>
         </section>
         <HomeSections />

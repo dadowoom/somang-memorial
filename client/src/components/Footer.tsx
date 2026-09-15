@@ -10,7 +10,7 @@ const serviceLinks = [
     type: "route",
   },
   { label: "추모관 만들기", href: "/memorial/create", type: "route" },
-  { label: "이용 안내", href: "/#services", type: "hash" },
+  { label: "이용 안내", href: "/guide", type: "route" },
 ];
 
 export default function Footer() {
