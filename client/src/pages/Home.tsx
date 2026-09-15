@@ -13,7 +13,7 @@ import "./home.css";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white text-[#121212]">
+    <div className="home-page min-h-screen bg-white text-[#121212]">
       <Navbar />
 
       <main className="somang-home">
