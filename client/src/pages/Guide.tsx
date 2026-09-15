@@ -11,9 +11,17 @@ import {
   LockKeyhole,
   Plus,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import "./guide.css";
+
+const guideSections = [
+  { id: "records", label: "기록 예시" },
+  { id: "family", label: "가족관" },
+  { id: "prepare", label: "미리 남기기" },
+  { id: "start", label: "만드는 순서" },
+  { id: "life-garden", label: "인생화원" },
+];
 
 const examples = [
   {
@@ -105,7 +113,46 @@ const questions = [
 
 export default function Guide() {
   const [exampleIndex, setExampleIndex] = useState(0);
+  const [activeSection, setActiveSection] = useState("");
+  const indexRef = useRef<HTMLDivElement>(null);
   const selected = examples[exampleIndex];
+
+  useEffect(() => {
+    let frame = 0;
+    const updateSection = () => {
+      frame = 0;
+      const offset = 64 + (indexRef.current?.offsetHeight ?? 64) + 32;
+      let current = "";
+      for (const section of guideSections) {
+        const element = document.getElementById(section.id);
+        if (element && element.getBoundingClientRect().top <= offset)
+          current = section.id;
+      }
+      setActiveSection(current);
+    };
+    const scheduleUpdate = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateSection);
+    };
+    scheduleUpdate();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    const index = indexRef.current;
+    const link = index?.querySelector<HTMLElement>('[aria-current="location"]');
+    if (!index || !link || index.scrollWidth <= index.clientWidth) return;
+    // Keep the current chapter visible without moving the page itself.
+    index.scrollTo({
+      left: link.offsetLeft - (index.clientWidth - link.clientWidth) / 2,
+      behavior: "instant",
+    });
+  }, [activeSection]);
 
   useEffect(() => {
     // The lazy route can mount after the app's initial hash-scroll attempt.
@@ -161,22 +208,19 @@ export default function Guide() {
         </section>
 
         <nav className="guide-index" aria-label="이용 안내 목차">
-          <div className="guide-inner">
-            <a href="#records">
-              <span>01</span> 기록 예시
-            </a>
-            <a href="#family">
-              <span>02</span> 가족관
-            </a>
-            <a href="#prepare">
-              <span>03</span> 미리 남기기
-            </a>
-            <a href="#start">
-              <span>04</span> 만드는 순서
-            </a>
-            <a href="#life-garden">
-              <span>05</span> 인생화원
-            </a>
+          <div className="guide-inner" ref={indexRef}>
+            {guideSections.map((section, index) => (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                aria-current={
+                  activeSection === section.id ? "location" : undefined
+                }
+              >
+                <span>{String(index + 1).padStart(2, "0")}</span>{" "}
+                {section.label}
+              </a>
+            ))}
           </div>
         </nav>
 

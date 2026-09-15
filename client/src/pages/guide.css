@@ -146,6 +146,7 @@
   border-block: 1px solid #dedede;
 }
 .guide-index > div {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
@@ -169,6 +170,15 @@
 }
 .guide-index a:hover {
   background: #f1f1f1;
+}
+.guide-index a[aria-current="location"] {
+  background: #f5f5f5;
+  color: #171717;
+  box-shadow: inset 0 -2px #171717;
+  font-weight: 500;
+}
+.guide-page .guide-index a:focus-visible {
+  outline-offset: -4px;
 }
 .guide-example-choices {
   display: grid;
@@ -796,6 +806,26 @@
     display: none;
   }
 }
+@media (max-width: 1023px) {
+  .guide-hero__grid,
+  .guide-example,
+  .guide-family__grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 36px;
+  }
+  .guide-family__grid {
+    max-width: 800px;
+  }
+  .guide-hero__photo img {
+    height: auto;
+    max-height: 420px;
+    aspect-ratio: 3 / 2;
+    object-position: center 40%;
+  }
+  .guide-example__copy {
+    max-width: 640px;
+  }
+}
 @media (max-width: 767px) {
   .guide-inner {
     padding-inline: 24px;
@@ -804,14 +834,14 @@
     padding-block: 68px;
   }
   .guide-page main [id] {
-    scroll-margin-top: 84px;
+    scroll-margin-top: 144px;
   }
   .guide-eyebrow {
     margin-bottom: 20px;
     font-size: 11px;
   }
   .guide-description {
-    font-size: 14px;
+    font-size: 15px;
   }
   .guide-description br {
     display: none;
@@ -838,30 +868,47 @@
   }
   .guide-hero__description {
     margin-top: 22px;
-    font-size: 14px;
+    font-size: 15px;
   }
   .guide-hero__photo img {
-    height: 220px;
+    height: auto;
+    aspect-ratio: 3 / 2;
     object-position: 50% 42%;
   }
   .guide-hero__photo figcaption {
-    font-size: 8px;
-    letter-spacing: 0.08em;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    font-size: 10px;
+    letter-spacing: 0.04em;
   }
   .guide-index {
-    position: static;
+    top: 64px;
+  }
+  .guide-index::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 16px;
+    background: linear-gradient(90deg, transparent, #fff);
+    pointer-events: none;
   }
   .guide-index > div {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 8px 18px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding: 0 16px;
+    scroll-padding-inline: 16px;
+  }
+  .guide-index > div::-webkit-scrollbar {
+    display: none;
   }
   .guide-index a {
-    min-height: 48px;
-    padding-inline: 12px;
+    flex: 0 0 auto;
+    min-height: 54px;
+    padding-inline: 14px;
     gap: 7px;
-    font-size: 12px;
+    font-size: 13px;
   }
   .guide-index a + a {
     border-left: 0;
@@ -888,7 +935,7 @@
   }
   .guide-preview__bar {
     padding: 13px 16px;
-    font-size: 9px;
+    font-size: 10px;
   }
   .guide-preview__canvas {
     min-height: 300px;
@@ -906,7 +953,14 @@
   }
   .guide-preview__caption {
     padding: 12px 16px;
-    font-size: 10px;
+    font-size: 12px;
+  }
+  .guide-preview__story {
+    font-size: 15px;
+    line-height: 2;
+  }
+  .guide-preview__album figcaption {
+    font-size: 12px;
   }
   .guide-preview__verse {
     font-size: 16px;
@@ -939,22 +993,20 @@
     font-size: 16px;
   }
   .guide-family-card {
-    padding: 22px;
+    padding: 22px 18px;
   }
   .guide-family-card__letter,
   .guide-family-card__photo,
   .guide-family-card__video {
+    height: 360px;
     margin-top: 22px;
   }
   .guide-family-card__salutation {
     font-size: 20px;
   }
   .guide-family-card blockquote {
-    font-size: 14px;
+    font-size: 15px;
     line-height: 2;
-  }
-  .guide-family-card blockquote br {
-    display: none;
   }
   .guide-family-card__signature {
     margin-top: 22px;
@@ -992,8 +1044,8 @@
     color: #666;
   }
   .guide-family-card figcaption {
-    font-size: 10px;
-    min-height: 52px;
+    font-size: 12px;
+    min-height: 60px;
   }
   .guide-family-examples__controls {
     flex-wrap: wrap;
@@ -1007,7 +1059,7 @@
     font-size: 12px;
   }
   .guide-family-examples__notice {
-    font-size: 11px;
+    font-size: 12px;
   }
   .guide-prompts {
     grid-template-columns: minmax(0, 1fr);
@@ -1032,7 +1084,7 @@
     font-size: 17px;
   }
   .guide-steps p {
-    font-size: 13px;
+    font-size: 15px;
   }
   .guide-garden__symbol {
     width: 150px;
@@ -1051,11 +1103,11 @@
   }
   .guide-faq summary {
     min-height: 74px;
-    font-size: 14px;
+    font-size: 15px;
   }
   .guide-faq details p {
     padding-right: 4px;
-    font-size: 13px;
+    font-size: 15px;
   }
   .guide-closing {
     padding-block: 64px;

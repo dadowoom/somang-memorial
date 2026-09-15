@@ -209,8 +209,8 @@
   }
   .somang-home .home-hero-inner {
     width: calc(100% - 48px);
-    min-height: clamp(560px, calc(100svh - 140px), 720px);
-    padding-block: 80px;
+    min-height: clamp(480px, calc(100svh - 224px), 620px);
+    padding-block: 64px;
   }
   .somang-home .home-hero-visual img {
     object-position: 56% center;
@@ -233,6 +233,10 @@
     margin-top: 28px;
   }
   .somang-home .home-hero-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 400px;
+    margin-inline: auto;
     gap: 10px;
     margin-top: 26px;
   }
@@ -262,6 +266,18 @@
   .somang-home .home-hero-bottom small {
     margin-bottom: 6px;
     font-size: 8px;
+  }
+}
+@media (max-width: 359px) {
+  .somang-home .home-hero-actions {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 260px;
+  }
+}
+@media (max-height: 500px) and (max-width: 767px) {
+  .somang-home .home-hero-inner {
+    min-height: 0;
+    padding-block: 48px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

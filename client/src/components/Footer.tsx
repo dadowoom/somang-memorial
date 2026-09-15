@@ -17,7 +17,7 @@ export default function Footer() {
   return (
     <footer className="site-footer border-t border-[#b5b0a7] bg-white text-[#616161]">
       <div className="container py-12 md:py-16">
-        <div className="grid gap-10 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
+        <div className="site-footer__grid grid gap-10 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
             <div className="mb-5 flex items-center gap-3">
               <img
@@ -48,7 +48,7 @@ export default function Footer() {
             <h2 className="mb-4 text-xs font-medium tracking-[0.22em] text-[#121212] uppercase">
               이용 안내
             </h2>
-            <ul className="text-sm">
+            <ul className="site-footer__links text-sm">
               {serviceLinks.map((link) => (
                 <li key={link.href}>
                   {link.type === "route" ? (

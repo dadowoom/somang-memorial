@@ -87,7 +87,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-height: 32px;
+  min-height: 44px;
   color: #333;
 }
 .somang-home .home-sections__place-caption a:hover {
@@ -204,7 +204,7 @@
   gap: 12px;
   margin-top: auto;
   padding-top: 32px;
-  font-size: 10px;
+  font-size: 12px;
   color: #707070;
 }
 .somang-home .home-sections__service-action svg {
@@ -373,6 +373,15 @@
   .somang-home .home-sections__inner {
     width: calc(100% - 48px);
   }
+  .somang-home .home-sections__memories,
+  .somang-home .home-sections__services,
+  .somang-home .home-sections__process {
+    padding-block: 64px;
+  }
+  .somang-home .home-sections__body,
+  .somang-home .home-sections__step-text {
+    font-size: 15px;
+  }
   .somang-home .home-sections__memories > .home-sections__inner {
     display: flex;
     flex-direction: column;
@@ -408,17 +417,32 @@
     grid-template-columns: 1fr;
   }
   .somang-home .home-sections__service-card {
-    min-height: 260px;
-    padding: 24px;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    grid-template-areas: "icon title" "icon description" ". action";
+    column-gap: 18px;
+    min-height: 0;
+    padding: 26px 22px;
   }
   .somang-home .home-sections__service-top {
-    margin-bottom: 24px;
+    grid-area: icon;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 12px;
+    margin: 3px 0 0;
   }
   .somang-home .home-sections__service-title {
-    font-size: 23px;
+    grid-area: title;
+    margin-bottom: 10px;
+    font-size: 22px;
+  }
+  .somang-home .home-sections__service-card .home-sections__body {
+    grid-area: description;
+    font-size: 14px;
   }
   .somang-home .home-sections__service-action {
-    padding-top: 24px;
+    grid-area: action;
+    padding-top: 18px;
   }
   .somang-home .home-sections__steps {
     grid-template-columns: 1fr;
@@ -441,9 +465,17 @@
     gap: 36px;
   }
   .somang-home .home-sections__cta-button {
-    width: 130px;
-    height: 130px;
-    gap: 14px;
-    justify-self: end;
+    width: fit-content;
+    height: auto;
+    min-height: 54px;
+    flex-direction: row;
+    border-radius: 999px;
+    padding: 14px 24px;
+    gap: 32px;
+    justify-self: start;
+  }
+  .somang-home .home-sections__cta-button svg {
+    width: 22px;
+    height: 22px;
   }
 }

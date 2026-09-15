@@ -51,6 +51,7 @@
   color: #555;
 }
 .public-editorial .editorial-link {
+  min-height: 44px;
   border-color: #777;
   border-radius: 999px;
   padding-inline: 20px;
@@ -122,7 +123,7 @@
     padding-block: 48px;
   }
   .public-editorial .editorial-search input {
-    font-size: 15px;
+    font-size: 16px;
   }
   .public-editorial .editorial-search label {
     min-height: 66px;
@@ -134,6 +135,12 @@
   }
   .public-editorial .public-empty {
     padding: 60px 0;
+  }
+  .public-editorial main :is(input, textarea, select) {
+    font-size: 16px;
+  }
+  .public-editorial.letters-page .public-hero .border-l {
+    border-left: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {

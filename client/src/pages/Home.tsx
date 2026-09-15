@@ -2,10 +2,24 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import HomeSections from "@/components/home/HomeSections";
 import { ArrowDown, ArrowRight, ArrowUpRight } from "lucide-react";
+import { useEffect } from "react";
 import { Link } from "wouter";
 import "./home.css";
 
 export default function Home() {
+  useEffect(() => {
+    // Restore section links after the lazy home page has mounted.
+    const sectionId = window.location.hash.slice(1);
+    if (!sectionId) return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(sectionId)?.scrollIntoView({
+        block: "start",
+        behavior: "instant",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <div className="home-page min-h-screen bg-white text-[#121212]">
       <Navbar />
