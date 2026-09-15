@@ -138,7 +138,7 @@ describe("home page SSR regression", () => {
   it("renders one named main heading and labels the hero with it", () => {
     const headings = content.filter(element => element.tag === "h1");
     expect(headings).toHaveLength(1);
-    expect(name(headings[0])).toBe("나는 부활이요 생명이니");
+    expect(name(headings[0])).toBe("“나는 부활이요 생명이니”");
     const headingId = attribute(headings[0], "id");
     expect(headingId).toBeTruthy();
     expect(
@@ -152,7 +152,7 @@ describe("home page SSR regression", () => {
 
   it("keeps the verse as readable text without forced line-break wrappers", () => {
     const heading = content.find(element => element.tag === "h1")!;
-    expect(heading.children).toEqual(["나는 부활이요 생명이니"]);
+    expect(heading.children).toEqual(["“나는 부활이요 생명이니”"]);
   });
 
   it.each([

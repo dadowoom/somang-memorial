@@ -15,12 +15,12 @@ export default function Home() {
             <div className="home-hero-inner">
               <div className="home-hero-copy">
                 <h1 id="home-title" className="home-hero-title">
-                  나는 부활이요 생명이니
+                  “나는 부활이요 생명이니”
                 </h1>
                 <p className="home-hero-reference">요한복음 11:25</p>
                 <p className="home-hero-description">
-                  <span>한 사람의 삶과 신앙을</span>
-                  <span>가족과 교회가 함께 기억합니다.</span>
+                  <span>신앙의 유산 100년을 담아,</span>{" "}
+                  <span>100년을 남깁니다.</span>
                 </p>
                 <div className="home-hero-actions">
                   <Link
