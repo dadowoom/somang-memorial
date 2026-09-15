@@ -120,6 +120,27 @@ export default function Kiosk() {
     clearBrowserKioskAccessStorage();
   }, []);
 
+  // On tall portrait kiosks the keyboard panel grows up to the search form so
+  // no empty page shows between them. Publish the form's bottom edge as a CSS
+  // variable; kioskKeyboard.css turns it into the panel's minimum height. The
+  // search block is anchored at the top, so the panel height never moves it.
+  useEffect(() => {
+    if (!searchKeyboard.keyboardOpen) return;
+    const root = document.documentElement;
+    const update = () => {
+      const form = searchKeyboard.ref.current?.closest("form");
+      if (!form) return;
+      const top = Math.ceil(form.getBoundingClientRect().bottom + 28);
+      root.style.setProperty("--kiosk-keyboard-top", `${top}px`);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      root.style.removeProperty("--kiosk-keyboard-top");
+    };
+  }, [searchKeyboard.keyboardOpen, searchKeyboard.ref]);
+
   function resetKiosk() {
     resetGenerationRef.current += 1;
     resetKioskSubmissionLock(passwordSubmissionLockRef);
