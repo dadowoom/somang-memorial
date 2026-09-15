@@ -12,6 +12,7 @@ import KioskNotFound from "./pages/KioskNotFound";
 import MemorialWritingSafety from "./components/memorial/MemorialWritingSafety";
 import { KioskKeyboardProvider } from "./components/kiosk/KioskKeyboard";
 import KioskConnectionBanner from "./components/kiosk/KioskConnectionBanner";
+import "./pages/memberEditorial.css";
 
 // Kiosk routes stay in the first download. Less frequently used web and admin
 // pages load only when opened, keeping the kiosk's first screen responsive.
@@ -65,8 +66,11 @@ function KioskMemorialRoute() {
 }
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
-  return (
+  const [location] = useLocation();
+  const memberPage =
+    /^\/(login|forgot-password|reset-password|my|invite|letters|privacy|terms|memorial)(?:\/|$)/.test(location) &&
+    !location.endsWith("/obituary");
+  const routes = (
     <Suspense fallback={<RouteLoading />}>
       <Switch>
         <Route path={"/"} component={Home} />
@@ -113,6 +117,9 @@ function Router() {
       </Switch>
     </Suspense>
   );
+  return memberPage ? (
+    <div className="member-editorial">{routes}</div>
+  ) : routes;
 }
 
 function RouteLoading() {

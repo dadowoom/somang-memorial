@@ -84,7 +84,7 @@ export default function MyMemorials() {
               </p>
             </div>
 
-            <div className="grid gap-px border border-[#b5b0a7] bg-[#b5b0a7] sm:grid-cols-4">
+            <div className="member-stats">
               <Stat label="전체" value={`${memorials.length}`} />
               <Stat label="공개" value={`${publicCount}`} />
               <Stat label="링크" value={`${linkCount}`} />

@@ -111,10 +111,10 @@ export default function MemorialFamilyPage() {
 
       <main className="pt-16">
         {unlockedRoom ? (
-          <section className="border-b border-[#d5c9b4] bg-white">
+          <section className="border-b border-[#dedede] bg-white">
             <div className="container py-12 md:py-20">
               <Link href={`/memorial/${slug}/archive`}>
-                <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
+                <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#dedede] bg-white px-4 text-sm text-[#555555] transition-colors hover:bg-[#f9f9f9]">
                   <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
                   추모관으로 돌아가기
                 </button>
@@ -122,7 +122,7 @@ export default function MemorialFamilyPage() {
 
               <div className="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.55fr)] lg:items-end">
                 <div>
-                  <p className="mb-6 text-[11px] font-medium uppercase tracking-[0.28em] text-[#7f673d]">
+                  <p className="mb-6 text-[11px] font-medium uppercase tracking-[0.28em] text-[#666666]">
                     Family Room
                   </p>
                   <h1
@@ -132,27 +132,27 @@ export default function MemorialFamilyPage() {
                     가족관
                   </h1>
                   <p
-                    className="mt-5 text-xl font-light text-[#7f673d]"
+                    className="mt-5 text-xl font-light text-[#666666]"
                     style={serifStyle}
                   >
                     {unlockedRoom.memorialName} {unlockedRoom.memorialRole}
                   </p>
                   <p className="mt-6 max-w-2xl text-base leading-8 text-[#4f4f4f]">
-                    비밀번호 확인이 완료되었습니다. 가족에게만 남기고 싶은
-                    기억과 안부를 이 공간에서 조용히 이어갈 수 있습니다.
+                    가족에게만 전하는 사랑과 믿음의 이야기.
+                    함께 간직할 기억을 이곳에서 이어갑니다.
                   </p>
                 </div>
 
-                <div className="border border-[#d5c9b4] bg-[#ffffff] p-6 md:p-7">
+                <div className="border border-[#dedede] bg-[#ffffff] p-6 md:p-7">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-[#1f1d1a] text-white">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-[#171717] text-white">
                       <ShieldCheck className="h-5 w-5" strokeWidth={1.7} />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-[#121212]">
                         가족 전용 공간
                       </p>
-                      <p className="mt-2 text-sm leading-7 text-[#6f6a61]">
+                      <p className="mt-2 text-sm leading-7 text-[#666666]">
                         공개 추모관과 분리된 비공개 기록 공간입니다.
                       </p>
                     </div>
@@ -219,9 +219,9 @@ function PasswordGate({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="family-gate">
       <Link href={backHref}>
-        <button className="mb-6 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
+        <button className="mb-6 inline-flex h-10 items-center gap-2 border border-[#dedede] bg-white px-4 text-sm text-[#555555] transition-colors hover:bg-[#f9f9f9]">
           <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
           추모관으로 돌아가기
         </button>
@@ -229,13 +229,13 @@ function PasswordGate({
 
       <form
         onSubmit={onSubmit}
-        className="border border-[#d5c9b4] bg-white p-6 md:p-10"
+        className="border border-[#dedede] bg-white p-6 md:p-10"
       >
-        <div className="mb-8 border-b border-[#d5c9b4] pb-8 text-center">
-          <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center bg-[#1f1d1a] text-white">
+        <div className="mb-8 border-b border-[#dedede] pb-8 text-center">
+          <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center bg-[#171717] text-white">
             <LockKeyhole className="h-5 w-5" strokeWidth={1.7} />
           </div>
-          <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.28em] text-[#7f673d]">
+          <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.28em] text-[#666666]">
             Private Family Room
           </p>
           <h1
@@ -244,25 +244,26 @@ function PasswordGate({
           >
             가족관
           </h1>
-          <p className="mt-5 text-lg font-light text-[#7f673d]" style={serifStyle}>
+          <p className="mt-5 text-lg font-light text-[#666666]" style={serifStyle}>
             {memorialName} {memorialRole}
           </p>
-          <p className="mx-auto mt-6 max-w-xl text-sm leading-7 text-[#6f6a61]">
+          <p className="mx-auto mt-6 max-w-xl text-sm leading-7 text-[#666666]">
             이 공간은 유족과 가족을 위한 비공개 공간입니다. 전달받은
             비밀번호를 입력한 뒤 들어갈 수 있습니다.
           </p>
         </div>
 
-        <label className="mb-3 block text-sm font-medium text-[#4f4638]">
+        <label htmlFor="family-password" className="mb-3 block text-sm font-medium text-[#555555]">
           가족관 비밀번호
         </label>
         <input
           value={password}
           onChange={event => onPasswordChange(event.target.value)}
+          id="family-password"
           type="password"
           placeholder="비밀번호를 입력해 주세요"
-          autoFocus
-          className="h-12 w-full border border-[#d5c9b4] bg-white px-4 text-base outline-none transition-colors focus:border-[#1f1d1a]"
+          autoComplete="off"
+          className="h-12 w-full border border-[#dedede] bg-white px-4 text-base outline-none transition-colors focus:border-[#171717]"
         />
         {message && (
           <p className="mt-3 text-sm text-red-500">{message}</p>
@@ -270,7 +271,7 @@ function PasswordGate({
         <button
           type="submit"
           disabled={isPending}
-          className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-[#1f1d1a] px-5 text-sm font-medium text-white transition-colors hover:bg-[#33302b] disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-[#171717] px-5 text-sm font-medium text-white transition-colors hover:bg-[#393939] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPending ? "확인 중" : "비밀번호 확인"}
           <ShieldCheck className="h-4 w-4" strokeWidth={1.7} />
@@ -285,9 +286,9 @@ function UnlockedRoom({ room }: { room: FamilyRoom }) {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="border border-[#d5c9b4] bg-[#ffffff] p-6 md:p-10">
-        <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.28em] text-[#7f673d]">
-          Unlocked
+      <div className="family-letter border border-[#dedede] bg-white p-6 md:p-10">
+        <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.28em] text-[#666666]">
+          가족에게 남기는 마음
         </p>
         <h2 className="text-3xl font-light md:text-5xl" style={serifStyle}>
           {room.title}
@@ -301,18 +302,18 @@ function UnlockedRoom({ room }: { room: FamilyRoom }) {
         <FamilyVideoCard key={room.video.youtubeVideoId} video={room.video} />
       )}
 
-      <div className="mt-6 grid gap-px bg-[#d5c9b4] md:grid-cols-3">
+      <div className="mt-6 grid gap-px bg-[#dedede] md:grid-cols-3">
         {room.notes.map((note, index) => {
           const Icon = icons[index] ?? BookOpenText;
           return (
             <article key={note.title} className="bg-white p-6 md:p-7">
-              <div className="mb-8 flex h-10 w-10 items-center justify-center border border-[#d5c9b4]">
-                <Icon className="h-5 w-5 text-[#1f1d1a]" strokeWidth={1.6} />
+              <div className="mb-8 flex h-10 w-10 items-center justify-center border border-[#dedede]">
+                <Icon className="h-5 w-5 text-[#171717]" strokeWidth={1.6} />
               </div>
               <h3 className="text-xl font-light" style={serifStyle}>
                 {note.title}
               </h3>
-              <p className="mt-4 text-sm leading-7 text-[#6f6a61]">{note.body}</p>
+              <p className="mt-4 text-sm leading-7 text-[#666666]">{note.body}</p>
             </article>
           );
         })}
@@ -333,20 +334,20 @@ function FamilyVideoCard({
   if (!isValidYouTubeVideoId(video.youtubeVideoId) || !embedUrl) return null;
 
   return (
-    <section className="mt-6 overflow-hidden border border-[#d5c9b4] bg-white">
+    <section className="mt-6 overflow-hidden border border-[#dedede] bg-white">
       <div className="p-6 md:p-8">
-        <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.24em] text-[#7f673d]">
+        <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.24em] text-[#666666]">
           Family Video
         </p>
         <h3 className="text-2xl font-light md:text-3xl" style={serifStyle}>
           {video.title}
         </h3>
-        <p className="mt-4 text-sm leading-7 text-[#6f6a61]">
+        <p className="mt-4 text-sm leading-7 text-[#666666]">
           {video.description}
         </p>
       </div>
 
-      <div className="aspect-video bg-[#1f1d1a]">
+      <div className="aspect-video bg-[#171717]">
         {isPlaying ? (
           <iframe
             src={embedUrl}
@@ -373,7 +374,7 @@ function FamilyVideoCard({
               />
             )}
             <span className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/25">
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-[#1f1d1a] shadow-lg md:h-20 md:w-20">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-[#171717] shadow-lg md:h-20 md:w-20">
                 <Play className="ml-1 h-7 w-7 fill-current md:h-9 md:w-9" />
               </span>
               <span className="bg-black/60 px-4 py-2 text-sm font-medium md:text-base">
@@ -389,7 +390,7 @@ function FamilyVideoCard({
 
 function StateBlock({ text }: { text: string }) {
   return (
-    <div className="border border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]">
+    <div className="border border-[#dedede] bg-white py-16 text-center text-sm text-[#666666]">
       {text}
     </div>
   );

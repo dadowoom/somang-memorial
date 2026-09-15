@@ -81,22 +81,22 @@ const CoverPage = forwardRef<HTMLDivElement, { book: MemorialBook }>(
         ref={ref}
         className="flex h-full flex-col items-center justify-center bg-[#fdfdfd] p-8 text-center"
       >
-        <div className="mb-8 h-px w-16 bg-[#7f673d]" />
-        <p className="mb-5 text-[11px] uppercase tracking-[0.28em] text-[#7f673d]">
+        <div className="mb-8 h-px w-16 bg-[#666666]" />
+        <p className="mb-5 text-[11px] uppercase tracking-[0.28em] text-[#666666]">
           The Book Of Faith
         </p>
         <h3
-          className="text-3xl font-light leading-tight text-[#2e2218]"
+          className="text-3xl font-light leading-tight text-[#171717]"
           style={{ fontFamily: "'Noto Serif KR', serif" }}
         >
           {book.title}
         </h3>
         {book.subtitle && (
-          <p className="mt-5 text-sm leading-7 text-[#6f6a61]">
+          <p className="mt-5 text-sm leading-7 text-[#666666]">
             {book.subtitle}
           </p>
         )}
-        <p className="mt-10 inline-flex items-center gap-2 text-xs text-[#7f673d]">
+        <p className="mt-10 inline-flex items-center gap-2 text-xs text-[#666666]">
           <BookOpen className="h-3.5 w-3.5" />
           넘겨서 읽어주세요
         </p>
@@ -114,12 +114,12 @@ const ContentPage = forwardRef<HTMLDivElement, { page: BookPage }>(
         className="relative flex h-full flex-col overflow-hidden bg-[#fdfdfd] p-6 md:p-8"
       >
         {date && (
-          <p className="mb-3 text-xs uppercase tracking-[0.18em] text-[#7f673d]">
+          <p className="mb-3 text-xs uppercase tracking-[0.18em] text-[#666666]">
             {date}
           </p>
         )}
         {page.photoUrl && (
-          <div className="mb-4 h-[38%] shrink-0 overflow-hidden border border-[#d5c9b4]">
+          <div className="mb-4 h-[38%] shrink-0 overflow-hidden border border-[#dedede]">
             <img
               src={toImgUrl(page.photoUrl)}
               alt={page.title || date || "기록 사진"}
@@ -130,14 +130,14 @@ const ContentPage = forwardRef<HTMLDivElement, { page: BookPage }>(
         )}
         {page.title && (
           <h4
-            className="mb-3 text-xl font-light leading-snug text-[#2e2218]"
+            className="mb-3 text-xl font-light leading-snug text-[#171717]"
             style={{ fontFamily: "'Noto Serif KR', serif" }}
           >
             {page.title}
           </h4>
         )}
         {page.content && (
-          <p className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap text-sm leading-8 text-[#4f4638]">
+          <p className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap text-sm leading-8 text-[#555555]">
             {page.content}
           </p>
         )}
@@ -152,11 +152,11 @@ const EndPage = forwardRef<HTMLDivElement>(function EndPage(_, ref) {
       ref={ref}
       className="flex h-full flex-col items-center justify-center bg-[#fdfdfd] p-8 text-center"
     >
-      <p className="text-xs uppercase tracking-[0.28em] text-[#7f673d]">
+      <p className="text-xs uppercase tracking-[0.28em] text-[#666666]">
         Soli Deo Gloria
       </p>
       <p
-        className="mt-5 text-2xl font-light text-[#2e2218]"
+        className="mt-5 text-2xl font-light text-[#171717]"
         style={{ fontFamily: "'Noto Serif KR', serif" }}
       >
         오직 하나님께 영광
@@ -253,10 +253,10 @@ export default function MemorialBookSection({
   if (!booksQuery.isLoading && books.length === 0 && !isAdmin) return null;
 
   return (
-    <section className="border-t border-[#d5c9b4] bg-white py-20 md:py-28">
+    <section className="border-t border-[#dedede] bg-white py-20 md:py-28">
       <div className="container">
-        <div className="mx-auto mb-10 max-w-3xl text-center">
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.28em] text-[#7f673d]">
+        <div className="memorial-section-heading">
+          <p className="mb-3 text-xs font-medium uppercase tracking-[0.28em] text-[#666666]">
             The Book Of Faith
           </p>
           <h2
@@ -265,21 +265,21 @@ export default function MemorialBookSection({
           >
             책장과 연표
           </h2>
-          <p className="mt-4 text-pretty break-keep text-sm leading-7 text-[#6f6a61] [overflow-wrap:anywhere]">
+          <p className="mt-4 text-pretty break-keep text-sm leading-7 text-[#666666] [overflow-wrap:anywhere]">
             페이지마다 날짜와 사진, 이야기를 담아 더 깊은 기록을 남깁니다.
           </p>
         </div>
 
         {books.length > 0 && (
           <div className="mb-7 flex flex-wrap items-center justify-center gap-2">
-            <div className="inline-flex border border-[#d5c9b4] bg-white p-1">
+            <div className="inline-flex border border-[#dedede] bg-white p-1">
               <button
                 type="button"
                 onClick={() => setViewMode("book")}
                 className={`inline-flex h-9 items-center gap-2 px-4 text-xs ${
                   viewMode === "book"
-                    ? "bg-[#1f1d1a] text-white"
-                    : "text-[#4f4638]"
+                    ? "bg-[#171717] text-white"
+                    : "text-[#555555]"
                 }`}
               >
                 <BookOpen className="h-3.5 w-3.5" />
@@ -290,8 +290,8 @@ export default function MemorialBookSection({
                 onClick={() => setViewMode("timeline")}
                 className={`inline-flex h-9 items-center gap-2 px-4 text-xs ${
                   viewMode === "timeline"
-                    ? "bg-[#1f1d1a] text-white"
-                    : "text-[#4f4638]"
+                    ? "bg-[#171717] text-white"
+                    : "text-[#555555]"
                 }`}
               >
                 <List className="h-3.5 w-3.5" />
@@ -313,8 +313,8 @@ export default function MemorialBookSection({
                 }}
                 className={`border px-4 py-2 text-xs ${
                   index === selectedBookIndex
-                    ? "border-[#1f1d1a] bg-[#1f1d1a] text-white"
-                    : "border-[#d5c9b4] bg-white text-[#4f4638]"
+                    ? "border-[#171717] bg-[#171717] text-white"
+                    : "border-[#dedede] bg-white text-[#555555]"
                 }`}
               >
                 {book.title}
@@ -340,7 +340,7 @@ export default function MemorialBookSection({
                     if (event.key === "Escape") setAddingBook(false);
                   }}
                   placeholder="책 제목"
-                  className="h-10 border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
+                  className="h-10 border border-[#dedede] bg-white px-3 text-sm outline-none"
                   autoFocus
                 />
                 <button
@@ -353,7 +353,7 @@ export default function MemorialBookSection({
                       });
                     }
                   }}
-                  className="h-10 bg-[#1f1d1a] px-3 text-white"
+                  className="h-10 bg-[#171717] px-3 text-white"
                   aria-label="책 추가"
                 >
                   <Check className="h-4 w-4" />
@@ -361,7 +361,7 @@ export default function MemorialBookSection({
                 <button
                   type="button"
                   onClick={() => setAddingBook(false)}
-                  className="h-10 border border-[#d5c9b4] bg-white px-3 text-[#4f4638]"
+                  className="h-10 border border-[#dedede] bg-white px-3 text-[#555555]"
                   aria-label="취소"
                 >
                   <X className="h-4 w-4" />
@@ -371,7 +371,7 @@ export default function MemorialBookSection({
               <button
                 type="button"
                 onClick={() => setAddingBook(true)}
-                className="inline-flex h-10 items-center gap-2 border border-dashed border-[#c8b383] bg-white px-4 text-sm text-[#4f4638]"
+                className="inline-flex h-10 items-center gap-2 border border-dashed border-[#bcbcbc] bg-white px-4 text-sm text-[#555555]"
               >
                 <Plus className="h-4 w-4" />책 추가
               </button>
@@ -382,7 +382,7 @@ export default function MemorialBookSection({
                 <button
                   type="button"
                   onClick={() => setEditingPage({ bookId: selectedBook.id })}
-                  className="inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638]"
+                  className="inline-flex h-10 items-center gap-2 border border-[#dedede] bg-white px-4 text-sm text-[#555555]"
                 >
                   <Plus className="h-4 w-4" />
                   페이지 추가
@@ -406,7 +406,7 @@ export default function MemorialBookSection({
         )}
 
         {booksQuery.isLoading ? (
-          <div className="border border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]">
+          <div className="border border-[#dedede] bg-white py-16 text-center text-sm text-[#666666]">
             책장을 불러오고 있습니다.
           </div>
         ) : selectedBook ? (
@@ -444,7 +444,7 @@ export default function MemorialBookSection({
           )
         ) : (
           isAdmin && (
-            <div className="border border-dashed border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]">
+            <div className="border border-dashed border-[#dedede] bg-white py-16 text-center text-sm text-[#666666]">
               첫 번째 책을 추가해 주세요.
             </div>
           )
@@ -572,18 +572,18 @@ function BookView({
         <button
           type="button"
           onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
-          className="flex h-10 w-10 items-center justify-center border border-[#d5c9b4] bg-white text-[#4f4638]"
+          className="flex h-10 w-10 items-center justify-center border border-[#dedede] bg-white text-[#555555]"
           aria-label="이전 페이지"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="text-xs text-[#6f6a61]">
+        <span className="text-xs text-[#666666]">
           {Math.min(currentPage + 1, pages.length)} / {pages.length}
         </span>
         <button
           type="button"
           onClick={() => bookRef.current?.pageFlip()?.flipNext()}
-          className="flex h-10 w-10 items-center justify-center border border-[#d5c9b4] bg-white text-[#4f4638]"
+          className="flex h-10 w-10 items-center justify-center border border-[#dedede] bg-white text-[#555555]"
           aria-label="다음 페이지"
         >
           <ChevronRight className="h-4 w-4" />
@@ -595,7 +595,7 @@ function BookView({
           <button
             type="button"
             onClick={() => onEditPage(editablePage)}
-            className="inline-flex h-9 items-center gap-2 border border-[#d5c9b4] bg-white px-3 text-xs text-[#4f4638]"
+            className="inline-flex h-9 items-center gap-2 border border-[#dedede] bg-white px-3 text-xs text-[#555555]"
           >
             <Pencil className="h-3.5 w-3.5" />
             페이지 편집
@@ -627,7 +627,7 @@ function TimelineView({
 }) {
   if (pages.length === 0) {
     return (
-      <div className="border border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]">
+      <div className="border border-[#dedede] bg-white py-16 text-center text-sm text-[#666666]">
         등록된 페이지가 없습니다.
       </div>
     );
@@ -638,18 +638,18 @@ function TimelineView({
       {pages.map(page => {
         const date = formatDate(page.dateYear, page.dateMonth, page.dateDay);
         return (
-          <article key={page.id} className="border-l border-[#7f673d] pl-5">
-            <div className="border border-[#d5c9b4] bg-white p-5 md:p-6">
+          <article key={page.id} className="border-l border-[#666666] pl-5">
+            <div className="border border-[#dedede] bg-white p-5 md:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   {date && (
-                    <p className="mb-2 text-xs uppercase tracking-[0.18em] text-[#7f673d]">
+                    <p className="mb-2 text-xs uppercase tracking-[0.18em] text-[#666666]">
                       {date}
                     </p>
                   )}
                   {page.title && (
                     <h3
-                      className="text-2xl font-light text-[#2e2218]"
+                      className="text-2xl font-light text-[#171717]"
                       style={{ fontFamily: "'Noto Serif KR', serif" }}
                     >
                       {page.title}
@@ -661,7 +661,7 @@ function TimelineView({
                     <button
                       type="button"
                       onClick={() => onEditPage(page)}
-                      className="inline-flex h-8 items-center gap-1 border border-[#d5c9b4] px-3 text-xs text-[#4f4638]"
+                      className="inline-flex h-8 items-center gap-1 border border-[#dedede] px-3 text-xs text-[#555555]"
                     >
                       <Pencil className="h-3 w-3" />
                       편집
@@ -681,12 +681,12 @@ function TimelineView({
                 <img
                   src={toImgUrl(page.photoUrl)}
                   alt={page.title || date || "기록 사진"}
-                  className="mt-5 max-h-[420px] w-full border border-[#d5c9b4] object-contain"
+                  className="mt-5 max-h-[420px] w-full border border-[#dedede] object-contain"
                   style={{ filter: memorialPhotoFilter }}
                 />
               )}
               {page.content && (
-                <p className="mt-5 whitespace-pre-wrap text-sm leading-8 text-[#6f5b35]">
+                <p className="mt-5 whitespace-pre-wrap text-sm leading-8 text-[#555555]">
                   {page.content}
                 </p>
               )}
@@ -749,29 +749,29 @@ function PageEditModal({
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4">
-      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto border border-[#d5c9b4] bg-white p-5 shadow-2xl md:p-6">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto border border-[#dedede] bg-white p-5 shadow-2xl md:p-6">
         <div className="mb-5 flex items-center justify-between">
           <h3
-            className="text-xl font-light text-[#2e2218]"
+            className="text-xl font-light text-[#171717]"
             style={{ fontFamily: "'Noto Serif KR', serif" }}
           >
             페이지 편집
           </h3>
           <button type="button" onClick={onClose} aria-label="닫기">
-            <X className="h-5 w-5 text-[#4f4638]" />
+            <X className="h-5 w-5 text-[#555555]" />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs text-[#6f6a61]">날짜</label>
+            <label className="mb-1 block text-xs text-[#666666]">날짜</label>
             <div className="grid grid-cols-3 gap-2">
               <input
                 value={dateYear}
                 onChange={event => setDateYear(event.target.value)}
                 placeholder="연도"
                 type="number"
-                className="h-10 border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
+                className="h-10 border border-[#dedede] bg-white px-3 text-sm outline-none"
               />
               <input
                 value={dateMonth}
@@ -780,7 +780,7 @@ function PageEditModal({
                 type="number"
                 min={1}
                 max={12}
-                className="h-10 border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
+                className="h-10 border border-[#dedede] bg-white px-3 text-sm outline-none"
               />
               <input
                 value={dateDay}
@@ -789,22 +789,22 @@ function PageEditModal({
                 type="number"
                 min={1}
                 max={31}
-                className="h-10 border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
+                className="h-10 border border-[#dedede] bg-white px-3 text-sm outline-none"
               />
             </div>
           </div>
 
           <label className="block">
-            <span className="mb-1 block text-xs text-[#6f6a61]">제목</span>
+            <span className="mb-1 block text-xs text-[#666666]">제목</span>
             <input
               value={title}
               onChange={event => setTitle(event.target.value)}
-              className="h-10 w-full border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
+              className="h-10 w-full border border-[#dedede] bg-white px-3 text-sm outline-none"
             />
           </label>
 
           <div>
-            <span className="mb-1 block text-xs text-[#6f6a61]">사진</span>
+            <span className="mb-1 block text-xs text-[#666666]">사진</span>
             <input
               ref={inputRef}
               type="file"
@@ -817,18 +817,18 @@ function PageEditModal({
               }}
             />
             {photoUrl ? (
-              <div className="overflow-hidden border border-[#d5c9b4] bg-white">
+              <div className="overflow-hidden border border-[#dedede] bg-white">
                 <img
                   src={toImgUrl(photoUrl)}
                   alt="페이지 사진"
                   className="h-44 w-full object-cover"
                   style={{ filter: memorialPhotoFilter }}
                 />
-                <div className="flex gap-2 border-t border-[#d5c9b4] p-2">
+                <div className="flex gap-2 border-t border-[#dedede] p-2">
                   <button
                     type="button"
                     onClick={() => inputRef.current?.click()}
-                    className="flex-1 border border-[#d5c9b4] py-2 text-xs text-[#4f4638]"
+                    className="flex-1 border border-[#dedede] py-2 text-xs text-[#555555]"
                   >
                     사진 교체
                   </button>
@@ -849,7 +849,7 @@ function PageEditModal({
                 type="button"
                 onClick={() => inputRef.current?.click()}
                 disabled={uploading}
-                className="flex h-28 w-full flex-col items-center justify-center gap-2 border border-dashed border-[#d5c9b4] bg-white text-sm text-[#6f6a61] disabled:opacity-50"
+                className="flex h-28 w-full flex-col items-center justify-center gap-2 border border-dashed border-[#dedede] bg-white text-sm text-[#666666] disabled:opacity-50"
               >
                 <Upload className="h-5 w-5" />
                 {uploading ? "업로드 중" : "사진 추가"}
@@ -858,12 +858,12 @@ function PageEditModal({
           </div>
 
           <label className="block">
-            <span className="mb-1 block text-xs text-[#6f6a61]">본문</span>
+            <span className="mb-1 block text-xs text-[#666666]">본문</span>
             <textarea
               value={content}
               onChange={event => setContent(event.target.value)}
               rows={6}
-              className="w-full resize-y border border-[#d5c9b4] bg-white px-3 py-2 text-sm leading-7 outline-none"
+              className="w-full resize-y border border-[#dedede] bg-white px-3 py-2 text-sm leading-7 outline-none"
             />
           </label>
         </div>
@@ -872,7 +872,7 @@ function PageEditModal({
           <button
             type="button"
             onClick={onClose}
-            className="h-10 flex-1 border border-[#d5c9b4] text-sm text-[#4f4638]"
+            className="h-10 flex-1 border border-[#dedede] text-sm text-[#555555]"
           >
             취소
           </button>
@@ -890,7 +890,7 @@ function PageEditModal({
               })
             }
             disabled={uploading}
-            className="h-10 flex-1 bg-[#1f1d1a] text-sm text-white disabled:opacity-50"
+            className="h-10 flex-1 bg-[#171717] text-sm text-white disabled:opacity-50"
           >
             저장
           </button>
