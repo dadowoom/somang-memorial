@@ -126,7 +126,7 @@
   height: 360px;
   object-fit: cover;
   object-position: 54% center;
-  filter: grayscale(1);
+  filter: saturate(0.65);
 }
 .guide-hero__photo figcaption {
   display: flex;
@@ -259,9 +259,9 @@
 }
 .guide-preview__album img {
   width: 100%;
-  aspect-ratio: 1.25;
+  aspect-ratio: 1.5;
   object-fit: cover;
-  filter: grayscale(1);
+  filter: saturate(0.65);
 }
 .guide-preview__album figcaption {
   margin-top: 12px;
@@ -351,91 +351,225 @@
 }
 .guide-family__grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
-  gap: 100px;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 80px;
   align-items: center;
+}
+.guide-family h2 {
+  font-size: clamp(40px, 4.1vw, 56px);
 }
 .guide-family .guide-eyebrow,
 .guide-closing .guide-eyebrow {
   color: #bdbdbd;
 }
 .guide-family .guide-description {
-  margin-top: 26px;
+  margin-top: 28px;
   color: #c0c0c0;
+  font-size: 18px;
 }
 .guide-family__privacy {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-block: 28px;
+  margin-top: 32px;
   font-size: 14px;
   line-height: 1.8;
 }
 .guide-family__privacy svg {
   flex-shrink: 0;
 }
-.guide-family__features li {
-  display: grid;
-  grid-template-columns: 140px minmax(0, 1fr);
-  gap: 16px;
-  border-top: 1px solid #484848;
-  padding-block: 18px;
-  font-size: 13px;
-  line-height: 1.9;
+.guide-family-examples {
+  min-width: 0;
 }
-.guide-family__features strong {
-  font-weight: 400;
+.guide-family-examples [data-slot="carousel-content"] {
+  cursor: grab;
+  touch-action: pan-y pinch-zoom;
 }
-.guide-family__features span,
-.guide-family .guide-note {
-  color: #bcbcbc;
+.guide-family-examples [data-slot="carousel-content"]:active {
+  cursor: grabbing;
 }
-.guide-family .guide-note {
-  padding-top: 20px;
-  border-top: 1px solid #484848;
-  font-size: 12px;
+.guide-family-examples__track {
+  margin-left: 0;
 }
-.guide-family__letter {
-  position: relative;
+.guide-family-examples__slide {
+  padding-left: 0;
+}
+.guide-family-card {
   background: #f5f5f3;
   color: #242424;
-  padding: 34px 42px 40px;
-  box-shadow: 12px 12px 0 #343434;
+  padding: 28px 34px 22px;
 }
-.guide-family__letter-top {
+.guide-family-card__header {
   display: flex;
   gap: 10px;
   align-items: center;
   border-bottom: 1px solid #d5d5d5;
-  padding-bottom: 22px;
+  padding-bottom: 18px;
   font-size: 11px;
   color: #666;
 }
-.guide-family__letter-top span:last-child {
+.guide-family-card__header span:last-child {
   margin-left: auto;
 }
-.guide-family__salutation {
-  margin-top: 42px;
-  font-size: 20px;
+.guide-family-card__letter,
+.guide-family-card__photo,
+.guide-family-card__video {
+  height: 340px;
+  margin-top: 26px;
+}
+.guide-family-card__salutation {
+  padding-top: 12px;
+  font-size: 22px;
   font-family: "Noto Serif KR", serif;
   line-height: 1.7;
 }
-.guide-family__letter blockquote {
+.guide-family-card blockquote {
   margin-top: 28px;
   font-family: "Noto Serif KR", serif;
   font-size: 16px;
-  line-height: 2.5;
+  line-height: 2.1;
   color: #555;
 }
-.guide-family__letter blockquote p + p {
-  margin-top: 28px;
+.guide-family-card blockquote p + p {
+  margin-top: 24px;
 }
-.guide-family__letter figcaption {
-  margin-top: 42px;
-  padding-top: 20px;
+.guide-family-card__signature {
+  margin-top: 28px;
+  font-size: 12px;
+  color: #666;
+}
+.guide-family-card figcaption {
+  padding-top: 16px;
   border-top: 1px solid #d5d5d5;
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1.8;
   color: #6a6a6a;
+}
+.guide-family-card__photo {
+  position: relative;
+  overflow: hidden;
+}
+.guide-family-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  filter: saturate(0.65);
+}
+.guide-family-card__photo > div {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 32px 22px 20px;
+  background: linear-gradient(transparent, #000b);
+  color: #fff;
+}
+.guide-family-card__photo small {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: #eee;
+}
+.guide-family-card__photo p {
+  margin-top: 6px;
+  font-family: "Noto Serif KR", serif;
+  font-size: 18px;
+}
+.guide-family-card__video {
+  position: relative;
+  overflow: hidden;
+  background: #171717;
+}
+.guide-family-card__video img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.5);
+  opacity: 0.3;
+}
+.guide-family-card__video > div {
+  position: relative;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 20px;
+  color: #fff;
+  text-align: center;
+}
+.guide-family-card__video small {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+.guide-family-card__video p {
+  font-family: "Noto Serif KR", serif;
+  font-size: 26px;
+  line-height: 1.6;
+  letter-spacing: -0.04em;
+}
+.guide-family-card__video span {
+  font-size: 11px;
+  color: #d0d0d0;
+}
+.guide-family-examples__controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+.guide-family-examples__choices,
+.guide-family-examples__arrows {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.guide-family-examples__choices button {
+  min-height: 44px;
+  padding-inline: 12px;
+  border-bottom: 1px solid transparent;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 13px;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+.guide-family-examples__choices button:hover,
+.guide-family-examples__choices button[aria-pressed="true"] {
+  color: #fff;
+  border-color: #fff;
+}
+.guide-family-examples .guide-family-examples__arrow {
+  position: static;
+  transform: none;
+  translate: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #777;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    background 0.2s;
+}
+.guide-family-examples .guide-family-examples__arrow:hover {
+  background: #fff;
+  color: #171717;
+}
+.guide-page .guide-family-examples button:focus-visible {
+  outline-color: #ddd;
+}
+.guide-family-examples__notice {
+  margin-top: 14px;
+  color: #aaa;
+  font-size: 12px;
+  line-height: 1.8;
 }
 .guide-prepare__intro {
   max-width: 450px;
@@ -616,12 +750,8 @@
   .guide-garden__grid {
     gap: 40px;
   }
-  .guide-family__letter {
-    padding-inline: 28px;
-  }
-  .guide-family__features li {
-    grid-template-columns: 1fr;
-    gap: 5px;
+  .guide-family-card {
+    padding-inline: 26px;
   }
   .guide-prompts article {
     padding: 28px 20px;
@@ -732,10 +862,11 @@
     font-size: 20px;
   }
   .guide-preview__album {
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
   }
   .guide-preview__album img {
-    aspect-ratio: 0.85;
+    aspect-ratio: 1.5;
   }
   .guide-preview__caption {
     padding: 12px 16px;
@@ -760,27 +891,73 @@
   .guide-family__privacy {
     font-size: 13px;
   }
-  .guide-family__features li {
-    grid-template-columns: 1fr;
-    gap: 4px;
+  .guide-family h2 {
+    font-size: clamp(34px, 8vw, 46px);
   }
-  .guide-family__letter {
-    padding: 24px;
-    box-shadow: 8px 8px 0 #343434;
+  .guide-family .guide-description {
+    font-size: 16px;
   }
-  .guide-family__salutation {
-    margin-top: 30px;
-    font-size: 19px;
+  .guide-family-card {
+    padding: 22px;
   }
-  .guide-family__letter blockquote {
+  .guide-family-card__letter,
+  .guide-family-card__photo,
+  .guide-family-card__video {
+    margin-top: 22px;
+  }
+  .guide-family-card__salutation {
+    font-size: 20px;
+  }
+  .guide-family-card blockquote {
     font-size: 14px;
-    line-height: 2.3;
+    line-height: 2;
   }
-  .guide-family__letter blockquote br {
+  .guide-family-card blockquote br {
     display: none;
   }
-  .guide-family__letter figcaption {
-    margin-top: 30px;
+  .guide-family-card__signature {
+    margin-top: 22px;
+  }
+  .guide-family-card__video p {
+    font-size: 23px;
+  }
+  .guide-family-card__photo {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+  .guide-family-card__photo img {
+    min-height: 0;
+    flex: 1;
+    object-fit: contain;
+  }
+  .guide-family-card__photo > div {
+    position: static;
+    padding: 16px 0;
+    background: none;
+    color: #242424;
+  }
+  .guide-family-card__photo small {
+    color: #666;
+  }
+  .guide-family-card figcaption {
+    font-size: 10px;
+    min-height: 52px;
+  }
+  .guide-family-examples__controls {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .guide-family-examples__choices {
+    gap: 4px;
+  }
+  .guide-family-examples__choices button {
+    padding-inline: 9px;
+    font-size: 12px;
+  }
+  .guide-family-examples__notice {
+    font-size: 11px;
   }
   .guide-prompts {
     grid-template-columns: minmax(0, 1fr);
@@ -847,7 +1024,7 @@
   .guide-steps {
     grid-template-columns: minmax(0, 1fr);
   }
-  .guide-family__salutation {
+  .guide-family-card__salutation {
     font-size: 17px;
   }
 }

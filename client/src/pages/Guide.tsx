@@ -1,5 +1,6 @@
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
+import GuideFamilyExamples from "@/components/guide/GuideFamilyExamples";
 import {
   ArrowDown,
   ArrowRight,
@@ -148,16 +149,16 @@ export default function Guide() {
             </div>
             <figure className="guide-hero__photo">
               <img
-                src="/hero-somang-memorial-v1.jpg"
-                width={1710}
-                height={920}
-                alt="소망교회 성도의 묘와 그 앞에 놓인 꽃들"
+                src="/guide-family-garden-v1.jpg"
+                width={1536}
+                height={1024}
+                alt="할머니와 손자, 손녀가 온 가족과 함께 웃는 안내용 AI 이미지"
                 fetchPriority="high"
                 decoding="async"
               />
               <figcaption>
                 <span>SOMANG MEMORIAL</span>
-                <span>신앙의 유산, 세대를 잇다</span>
+                <span>가족의 기억 · 안내용 AI 이미지</span>
               </figcaption>
             </figure>
           </div>
@@ -249,19 +250,19 @@ export default function Guide() {
                       <div className="guide-preview__album">
                         <figure>
                           <img
-                            src="/somang-hill-1.jpg"
-                            alt="소망동산 전경을 담은 사진 예시"
+                            src="/guide-family-garden-v1.jpg"
+                            alt="할머니와 온 가족이 함께한 안내용 AI 사진 예시"
                             loading="lazy"
                           />
-                          <figcaption>마음에 남은 풍경</figcaption>
+                          <figcaption>함께 웃던 날</figcaption>
                         </figure>
                         <figure>
                           <img
-                            src="/somang-hill-2.jpg"
-                            alt="소망동산의 또 다른 풍경을 담은 사진 예시"
+                            src="/guide-family-album-v1.jpg"
+                            alt="할머니와 손자, 손녀가 사진첩을 보는 안내용 AI 사진 예시"
                             loading="lazy"
                           />
-                          <figcaption>함께 걸었던 길</figcaption>
+                          <figcaption>할머니와 나눈 이야기</figcaption>
                         </figure>
                       </div>
                     </>
@@ -290,7 +291,7 @@ export default function Guide() {
                       </div>
                       <div className="guide-preview__film">
                         <img
-                          src="/hero-somang-memorial-v1.jpg"
+                          src="/guide-family-album-v1.jpg"
                           alt="영상 기록의 표지 구성 예시"
                           loading="lazy"
                         />
@@ -300,7 +301,7 @@ export default function Guide() {
                             strokeWidth={1.1}
                             aria-hidden="true"
                           />
-                          <span>함께 드린 예배의 기억</span>
+                          <span>할머니가 들려주는 믿음의 이야기</span>
                           <small>영상 표지 예시 · 재생 영상이 아닙니다</small>
                         </div>
                       </div>
@@ -308,8 +309,8 @@ export default function Guide() {
                   )}
                 </div>
                 <figcaption className="guide-preview__caption">
-                  이해를 돕기 위한 구성 예시입니다. 소망동산 사진과 안내용 예시
-                  문구를 사용했습니다.
+                  이해를 돕기 위한 구성 예시입니다. 가족 사진은 AI로 만든
+                  이미지이며, 글은 안내용 예시 문구입니다.
                 </figcaption>
               </figure>
               <div className="guide-example__copy">
@@ -339,60 +340,18 @@ export default function Guide() {
         >
           <div className="guide-inner guide-family__grid">
             <div>
-              <p className="guide-eyebrow">02 · 가족관</p>
-              <h2 id="guide-family-title">
-                우리 가족에게만,
-                <br />
-                꺼내 놓는 마음.
-              </h2>
+              <p className="guide-eyebrow">02. 가족에게 남기는 글</p>
+              <h2 id="guide-family-title">가족 전용 공간</h2>
               <p className="guide-description">
-                모두에게 전할 이야기와 가족에게만 남길 마음은 다르니까요. 공개
-                추모관과 분리된 가족관에서, 우리끼리 간직할 이야기를 나눕니다.
+                가족에게만 전하고 싶은
+                <br /> 사랑과 믿음의 이야기를 남겨요.
               </p>
               <div className="guide-family__privacy">
                 <LockKeyhole size={20} strokeWidth={1.3} aria-hidden="true" />
-                <span>주소와 비밀번호를 나눈 가족이 들어오는 공간</span>
+                <span>비밀번호로 여는 가족관</span>
               </div>
-              <ul className="guide-family__features">
-                <li>
-                  <strong>가족에게 남기는 글</strong>
-                  <span>가족관 제목과 소개글에 안부와 인사를 담아 주세요.</span>
-                </li>
-                <li>
-                  <strong>별도의 입장 비밀번호</strong>
-                  <span>
-                    가족관 관리에서 정하고, 함께 읽을 가족에게만 알려 주세요.
-                  </span>
-                </li>
-              </ul>
-              <p className="guide-note">
-                현재 가족관은 제목과 소개글을 남기는 공간입니다. 가족관 전용
-                사진 업로드는 아직 지원하지 않으며, 사진은 추모관 사진첩에
-                등록할 수 있습니다.
-              </p>
             </div>
-            <figure className="guide-family__letter">
-              <div className="guide-family__letter-top">
-                <LockKeyhole size={17} aria-hidden="true" />
-                <span>우리 가족의 공간</span>
-                <span>글 예시</span>
-              </div>
-              <p className="guide-family__salutation">
-                사랑하는 나의 아이들에게
-              </p>
-              <blockquote>
-                <p>
-                  너희와 함께한 평범한 날들이
-                  <br /> 내 삶의 가장 큰 선물이었단다.
-                </p>
-                <p>
-                  어디에 있든 서로를 아끼고,
-                  <br /> 기도 안에서 마음을 나누며 살아가렴.
-                  <br /> 너희의 모든 날을 사랑하고 축복한다.
-                </p>
-              </blockquote>
-              <figcaption>가족관 소개글에 남길 수 있는 인사 예시</figcaption>
-            </figure>
+            <GuideFamilyExamples />
           </div>
         </section>
 
