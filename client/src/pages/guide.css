@@ -299,9 +299,21 @@
 }
 .guide-preview__film {
   position: relative;
-  min-height: 210px;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 16 / 9;
+  min-height: 280px;
   overflow: hidden;
   background: #171717;
+}
+.guide-preview__film::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, #0008, transparent 75%),
+    linear-gradient(0deg, #000c, transparent 70%);
 }
 .guide-preview__film img {
   position: absolute;
@@ -309,24 +321,39 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(1);
-  opacity: 0.28;
+  object-position: 65% center;
+  filter: grayscale(0.8);
 }
 .guide-preview__film > div {
   position: relative;
+  z-index: 1;
   display: flex;
-  min-height: 210px;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 20px;
-  text-align: center;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 48px;
+  padding: 24px;
   color: #fff;
 }
+.guide-preview__interview-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.guide-preview__interview-title > span {
+  display: block;
+  font-family: "Noto Serif KR", serif;
+  font-size: clamp(22px, 2vw, 30px);
+  line-height: 1.5;
+  letter-spacing: -0.04em;
+}
 .guide-preview__film small {
-  color: #d1d1d1;
+  display: block;
+  margin-top: 12px;
+  color: #e5e5e5;
   font-size: 10px;
+  line-height: 1.7;
 }
 .guide-example__copy h3 {
   font-size: 26px;
@@ -875,12 +902,17 @@
   .guide-preview__verse {
     font-size: 16px;
   }
-  .guide-preview__film,
-  .guide-preview__film > div {
-    min-height: 180px;
+  .guide-preview__film {
+    min-height: 280px;
   }
-  .guide-preview__film span {
-    font-size: 13px;
+  .guide-preview__film > div {
+    padding: 18px;
+  }
+  .guide-preview__interview-label {
+    font-size: 10px;
+  }
+  .guide-preview__interview-title > span {
+    font-size: 23px;
   }
   .guide-example__copy h3 {
     font-size: 23px;

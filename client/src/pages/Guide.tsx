@@ -50,11 +50,11 @@ const examples = [
     icon: Film,
     title: "표정과 목소리도, 오래도록",
     description:
-      "사진과 글만으로 다 담기지 않는 순간이 있습니다. 예배와 찬양, 믿음의 여정이 담긴 영상을 추모관에서 함께 돌아봅니다.",
+      "처음 교회에 갔던 날, 어려운 시간을 기도로 지나온 이야기. 직접 들려주시는 믿음의 여정을 인터뷰 영상으로 남깁니다.",
     details: [
-      "다시 보고 싶은 예배와 찬양",
-      "믿음의 여정을 돌아보는 영상",
-      "그리운 표정과 목소리",
+      "내 목소리로 들려주는 신앙 이야기",
+      "자녀와 손주들에게 전하는 축복",
+      "말할 때의 표정과 웃음까지",
     ],
     note: "본인이 유튜브에 올린 영상을 링크로 연결합니다. (참고) 유튜브에서 ‘일부 공개’로 설정한 뒤, 링크를 복사해 넣어 주세요.",
   },
@@ -293,23 +293,36 @@ export default function Guide() {
                   {selected.id === "video" && (
                     <>
                       <div className="guide-preview__heading">
-                        <small>VIDEO ARCHIVE</small>
+                        <small>FAITH INTERVIEW</small>
                         <h3>다시 만나는 목소리</h3>
                       </div>
                       <div className="guide-preview__film">
                         <img
-                          src="/guide-family-album-v1.jpg"
-                          alt="영상 기록의 표지 구성 예시"
+                          src="/guide-grandmother-interview-v1.jpg"
+                          alt="마이크를 달고 믿음의 이야기를 들려주는 할머니의 인터뷰 표지용 AI 이미지"
+                          width={1672}
+                          height={941}
                           loading="lazy"
                         />
                         <div>
-                          <Film
-                            size={32}
-                            strokeWidth={1.1}
-                            aria-hidden="true"
-                          />
-                          <span>할머니가 들려주는 믿음의 이야기</span>
-                          <small>영상 표지 예시 · 재생 영상이 아닙니다</small>
+                          <span className="guide-preview__interview-label">
+                            <Film
+                              size={16}
+                              strokeWidth={1.3}
+                              aria-hidden="true"
+                            />
+                            신앙의 기억 · 인터뷰 예시
+                          </span>
+                          <div className="guide-preview__interview-title">
+                            <span>
+                              할머니가 들려주는
+                              <br />
+                              믿음의 이야기
+                            </span>
+                            <small>
+                              인터뷰 표지 예시 · 재생 영상이 아닙니다
+                            </small>
+                          </div>
                         </div>
                       </div>
                     </>
