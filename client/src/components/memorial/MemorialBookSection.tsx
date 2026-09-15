@@ -63,9 +63,6 @@ function formatDate(
   return `${year}년`;
 }
 
-// 넘김 애니메이션 시간(데스크톱 850ms · 모바일 700ms) 중 큰 값
-const FLIP_MS = 850;
-
 function sortPages(pages: BookPage[]) {
   return [...pages].sort((a, b) => {
     const yearDiff = (a.dateYear ?? 9999) - (b.dateYear ?? 9999);
@@ -485,18 +482,20 @@ function BookView({
   // 화살표가 보이지 않는 쪽 책을 넘기고 눈앞의 책은 그대로였다.
   const isMobile = useIsMobile();
 
-  // 쪽 번호는 책에게 직접 묻는다. onFlip 의 값은 한 박자 늦어서 눌러도
-  // 숫자가 그대로였다(실제 브라우저에서 확인).
+  // 쪽 번호는 우리가 직접 센다.
   //
-  // 이벤트는 넘김이 "끝나기 전"에 오므로 그 순간 물어도 옛 번호가 나온다.
-  // 그래서 지금 한 번, 넘김이 끝날 시간(FLIP_MS)이 지난 뒤 한 번 더 읽는다.
-  const readCurrentPage = () => {
-    const index = bookRef.current?.pageFlip?.()?.getCurrentPageIndex();
-    if (typeof index === "number") setCurrentPage(index);
+  // 책이 알려주는 값(onFlip 의 data, getCurrentPageIndex)은 모두 한 박자 늦어서
+  // 눌러도 숫자가 그대로였다 — 운영 화면에서 두 방법 다 확인했다. 그래서 숫자의
+  // 주인을 우리가 갖고, 책은 넘기기만 시킨다. 대신 끌어서 넘기면 숫자가 어긋나므로
+  // 넘기는 길을 화살표 하나로 모았다(아래 useMouseEvents/disableFlipByClick).
+  const pageStep = isMobile ? 1 : 2;
+  const goToPrevPage = () => {
+    setCurrentPage(Math.max(0, currentPage - pageStep));
+    bookRef.current?.pageFlip?.()?.flipPrev();
   };
-  const syncCurrentPage = () => {
-    readCurrentPage();
-    window.setTimeout(readCurrentPage, FLIP_MS + 120);
+  const goToNextPage = () => {
+    setCurrentPage(Math.min(pages.length - 1, currentPage + pageStep));
+    bookRef.current?.pageFlip?.()?.flipNext();
   };
 
   if (!bookOpened) {
@@ -548,8 +547,6 @@ function BookView({
           maxHeight={860}
           showCover={false}
           mobileScrollSupport
-          onFlip={syncCurrentPage}
-          onChangeState={syncCurrentPage}
           className="mx-auto"
           startPage={0}
           drawShadow
@@ -559,8 +556,8 @@ function BookView({
           autoSize
           maxShadowOpacity={0.18}
           showPageCorners
-          disableFlipByClick={false}
-          useMouseEvents
+          disableFlipByClick
+          useMouseEvents={false}
           swipeDistance={30}
           clickEventForward
           style={{}}
@@ -584,8 +581,6 @@ function BookView({
           maxHeight={560}
           showCover={false}
           mobileScrollSupport={false}
-          onFlip={syncCurrentPage}
-          onChangeState={syncCurrentPage}
           className="mx-auto"
           startPage={0}
           drawShadow
@@ -595,8 +590,8 @@ function BookView({
           autoSize
           maxShadowOpacity={0.14}
           showPageCorners
-          disableFlipByClick={false}
-          useMouseEvents
+          disableFlipByClick
+          useMouseEvents={false}
           swipeDistance={20}
           clickEventForward
           style={{}}
@@ -620,7 +615,7 @@ function BookView({
       <div className="mt-6 flex items-center justify-center gap-6">
         <button
           type="button"
-          onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
+          onClick={goToPrevPage}
           className="flex h-10 w-10 items-center justify-center border border-[#dedede] bg-white text-[#555555]"
           aria-label="이전 페이지"
         >
@@ -631,7 +626,7 @@ function BookView({
         </span>
         <button
           type="button"
-          onClick={() => bookRef.current?.pageFlip()?.flipNext()}
+          onClick={goToNextPage}
           className="flex h-10 w-10 items-center justify-center border border-[#dedede] bg-white text-[#555555]"
           aria-label="다음 페이지"
         >
