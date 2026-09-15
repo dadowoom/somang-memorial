@@ -6,12 +6,16 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
+import { installChunkReloadHandler } from "./lib/chunkReload";
 import {
   fetchWithKioskTimeout,
   isKioskPathname,
   shouldRedirectToLoginOnUnauthorized,
 } from "./lib/kioskRequest";
 import "./index.css";
+
+// 배포 직후 옛 탭이 새 화면 조각을 못 받으면 한 번 새로고침한다 (2026-09-15).
+installChunkReloadHandler();
 
 const queryClient = new QueryClient();
 

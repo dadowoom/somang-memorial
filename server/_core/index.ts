@@ -12,7 +12,11 @@ import { startReminderNotificationScheduler } from "./reminderScheduler";
 import { isDatabaseHealthy } from "../db";
 import { validateRuntimeConfig } from "./runtimeConfig";
 import { registerSecurityHeaders } from "./securityHeaders";
-import { registerErrorHandler, registerRequestLogging } from "./requestLogging";
+import {
+  logTrpcError,
+  registerErrorHandler,
+  registerRequestLogging,
+} from "./requestLogging";
 import { serveStatic, setupVite } from "./vite";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -71,6 +75,10 @@ async function startServer() {
     createExpressMiddleware({
       router: appRouter,
       createContext,
+      // 절차 안에서 난 서버 쪽 오류(DB 실패 등)를 기록한다. 입력값은 남기지 않는다.
+      onError({ error, path, type }) {
+        logTrpcError({ code: error.code, path, type, error });
+      },
     })
   );
   // development mode uses Vite, production mode uses static files
