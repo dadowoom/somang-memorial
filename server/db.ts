@@ -10,8 +10,10 @@ import {
   InsertMemorial,
   SomangIntermentRecord,
   InsertUser,
+  InsertKioskPoster,
   InsertMemorialVideo,
   adminAuditLogs,
+  kioskPosters,
   memorialBookPages,
   memorialBooks,
   memorialFamilyInvitations,
@@ -2305,6 +2307,79 @@ export async function deleteMemorialVideo(id: number) {
   }
 
   await db.delete(memorialVideos).where(eq(memorialVideos.id, id));
+}
+
+// 키오스크 대기(광고) 화면 포스터 (2026-09-15).
+export async function listActiveKioskPosters() {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  return db
+    .select()
+    .from(kioskPosters)
+    .where(eq(kioskPosters.isActive, 1))
+    .orderBy(asc(kioskPosters.sortOrder), asc(kioskPosters.id));
+}
+
+export async function listAllKioskPosters() {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  return db
+    .select()
+    .from(kioskPosters)
+    .orderBy(asc(kioskPosters.sortOrder), asc(kioskPosters.id));
+}
+
+export async function getKioskPosterById(id: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select()
+    .from(kioskPosters)
+    .where(eq(kioskPosters.id, id))
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
+export async function createKioskPoster(data: InsertKioskPoster) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db.insert(kioskPosters).values(data);
+}
+
+export async function updateKioskPoster(
+  id: number,
+  data: Partial<InsertKioskPoster>
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  if (Object.keys(data).length === 0) return;
+
+  await db.update(kioskPosters).set(data).where(eq(kioskPosters.id, id));
+}
+
+export async function deleteKioskPoster(id: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db.delete(kioskPosters).where(eq(kioskPosters.id, id));
 }
 
 export async function listMemorialBooks(memorialId: number) {

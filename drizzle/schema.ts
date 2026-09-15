@@ -245,6 +245,30 @@ export const memorialVideos = mysqlTable(
 export type MemorialVideo = typeof memorialVideos.$inferSelect;
 export type InsertMemorialVideo = typeof memorialVideos.$inferInsert;
 
+/**
+ * 키오스크가 놀고 있을 때 화면 가득 돌려 보여 주는 광고 포스터.
+ * 사진 파일은 업로드 폴더에 두고 여기에는 주소와 순서·시간만 남긴다.
+ */
+export const kioskPosters = mysqlTable(
+  "kiosk_posters",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    imageUrl: text("imageUrl").notNull(),
+    imageKey: varchar("imageKey", { length: 500 }).notNull(),
+    caption: varchar("caption", { length: 200 }),
+    /** 한 장을 보여 줄 시간(초). */
+    displaySeconds: int("displaySeconds").default(8).notNull(),
+    sortOrder: int("sortOrder").default(0).notNull(),
+    isActive: int("isActive").default(1).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("kiosk_posters_sortOrder_idx").on(table.sortOrder)]
+);
+
+export type KioskPoster = typeof kioskPosters.$inferSelect;
+export type InsertKioskPoster = typeof kioskPosters.$inferInsert;
+
 export const memorialBooks = mysqlTable(
   "memorial_books",
   {

@@ -35,6 +35,9 @@ vi.mock("@/lib/trpc", () => ({
       memorialSearch: { useQuery: () => mocks.query },
       intermentSearch: { useQuery: () => mocks.query },
     },
+    kioskPoster: {
+      list: { useQuery: () => mocks.query },
+    },
     memorial: {
       verifyAccess: {
         useMutation: () => ({

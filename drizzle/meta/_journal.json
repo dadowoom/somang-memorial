@@ -141,6 +141,13 @@
       "when": 1788300000000,
       "tag": "0021_add_memorial_family_members",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1788400000000,
+      "tag": "0022_add_kiosk_posters",
+      "breakpoints": true
     }
   ]
 }
