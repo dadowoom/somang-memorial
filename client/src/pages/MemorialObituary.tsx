@@ -3,7 +3,7 @@ import { toImgUrl } from "@/lib/imageUrl";
 import { ORG_INFO } from "@/lib/orgInfo";
 import { buildCalendarFile, parseServiceMoment } from "@/lib/serviceSchedule";
 import { trpc } from "@/lib/trpc";
-import { CalendarPlus, MapPin, Phone, Share2 } from "lucide-react";
+import { ArrowLeft, CalendarPlus, MapPin, Phone, Share2 } from "lucide-react";
 import { ReactNode, useMemo, useState } from "react";
 import { Link, useRoute } from "wouter";
 
@@ -140,7 +140,7 @@ function ObituarySheet({
   if (memorial.servicePlace?.trim())
     rows.push({ label: "빈소", value: memorial.servicePlace.trim() });
   if (memorial.serviceTime?.trim())
-    rows.push({ label: "예배", value: memorial.serviceTime.trim() });
+    rows.push({ label: "예배", value: memorial.serviceTime.trim().replace("T", " ") });
   if (memorial.memorialDay?.trim())
     rows.push({ label: "추도일", value: memorial.memorialDay.trim() });
   if (memorial.familyContact?.trim() || memorial.familyPhone?.trim())
@@ -207,6 +207,13 @@ function ObituarySheet({
 
   return (
     <div className="mx-auto w-full max-w-[420px] px-[22px] pb-10 pt-[22px]">
+      <Link
+        href={`/memorial/${memorial.slug}`}
+        className="mb-4 inline-flex h-11 items-center gap-2 text-sm text-[#a49c88] transition-colors hover:text-[#e8e4dc]"
+      >
+        <ArrowLeft size={16} strokeWidth={1.6} />
+        추모관으로 돌아가기
+      </Link>
       <div className="border border-[#4a463c] pb-[30px]">
         <div className="flex flex-col items-center gap-4 px-6 pt-[34px]">
           <div className="h-px w-[34px] bg-[#8a8270]" />

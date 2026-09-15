@@ -49,6 +49,7 @@ type MemorialForm = {
   verseRef: string;
   summary: string;
   story: string;
+  servicePlace: string;
   serviceTime: string;
   memorialDay: string;
   visibility: Visibility;
@@ -76,6 +77,7 @@ const initialForm: MemorialForm = {
   verseRef: "",
   summary: "",
   story: "",
+  servicePlace: "",
   serviceTime: "",
   memorialDay: "",
   visibility: "public",
@@ -821,6 +823,15 @@ export default function MemorialCreate() {
                     />
                   </Field>
 
+                  <Field label="빈소" maxLength={255} hint="장례가 치러지는 곳입니다. 부고장의 길찾기가 이 주소를 씁니다. 예: 소망교회 본당">
+                    <input
+                      className={inputClass}
+                      value={form.servicePlace}
+                      onChange={event => updateField("servicePlace", event.target.value)}
+                      placeholder="예: 소망교회 본당"
+                    />
+                  </Field>
+
                   <div className="grid gap-6 md:grid-cols-2">
                     <Field label="예배 일시" hint="정해진 예배가 있을 때만 날짜와 시간을 선택해 주세요.">
                       <input
@@ -1047,6 +1058,7 @@ export default function MemorialCreate() {
                     <ReviewValue label="삶의 기록" value={form.story || "필수 항목을 입력해 주세요"} wide />
                     <ReviewValue label="대표 말씀" value={form.verse} wide />
                     <ReviewValue label="말씀 출처" value={form.verseRef} />
+                    <ReviewValue label="빈소" value={form.servicePlace} />
                     <ReviewValue label="예배 일시" value={form.serviceTime.replace("T", " ")} />
                     <ReviewValue label="추도일" value={form.memorialDay} />
                   </ReviewGroup>

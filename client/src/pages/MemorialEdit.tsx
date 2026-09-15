@@ -63,6 +63,7 @@ type FormState = {
   verseRef: string;
   summary: string;
   story: string;
+  servicePlace: string;
   serviceTime: string;
   memorialDay: string;
   visibility: StoredVisibility;
@@ -83,6 +84,7 @@ const initialForm: FormState = {
   verseRef: "",
   summary: "",
   story: "",
+  servicePlace: "",
   serviceTime: "",
   memorialDay: "",
   visibility: "public",
@@ -162,6 +164,7 @@ export default function MemorialEdit() {
       verseRef: memorial.verseRef ?? "",
       summary: memorial.summary,
       story: memorial.story,
+      servicePlace: memorial.servicePlace ?? "",
       serviceTime: memorial.serviceTime ?? "",
       memorialDay: memorial.memorialDay ?? "",
       visibility:
@@ -294,6 +297,7 @@ export default function MemorialEdit() {
         verseRef: form.verseRef || null,
         summary: form.summary,
         story: form.story,
+        servicePlace: form.servicePlace || null,
         serviceTime: form.serviceTime || null,
         memorialDay: form.memorialDay || null,
         // 링크 공개는 보내지 않는다. 서버는 값이 없으면 기존 공개 범위를 유지한다.
@@ -607,6 +611,16 @@ export default function MemorialEdit() {
                         onChange={event =>
                           updateField("story", event.target.value)
                         }
+                      />
+                    </Field>
+
+                    <Field label="빈소">
+                      <input
+                        className={inputClass}
+                        maxLength={255}
+                        value={form.servicePlace}
+                        onChange={event => updateField("servicePlace", event.target.value)}
+                        placeholder="예: 소망교회 본당"
                       />
                     </Field>
 
