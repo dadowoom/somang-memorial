@@ -136,17 +136,26 @@ function ScrollToRouteTop() {
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
 
-    window.requestAnimationFrame(() => {
-      if (hash) {
-        const target = document.getElementById(hash);
-        if (target) {
-          target.scrollIntoView({ block: "start" });
-          return;
-        }
-      }
+    if (!hash) {
+      window.requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0 }));
+      return;
+    }
 
-      window.scrollTo({ top: 0, left: 0 });
-    });
+    // 추모관 자료는 서버에서 받아온 뒤에 그려지므로, 페이지가 열리는 순간에는
+    // #gallery 같은 대상이 아직 없을 수 있다. 잠시 기다렸다가 생기면 그때 간다.
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      const target = document.getElementById(hash);
+      tries += 1;
+      if (target) {
+        target.scrollIntoView({ block: "start" });
+        window.clearInterval(timer);
+      } else if (tries >= 40) {
+        window.clearInterval(timer);
+      }
+    }, 75);
+
+    return () => window.clearInterval(timer);
   }, [location]);
 
   return null;
