@@ -17,7 +17,7 @@
      the whole keyboard off the floor of a tall standing kiosk, so the bottom
      row sits within comfortable reach and the tray reads as a solid base. */
   .kiosk-keyboard {
-    padding-bottom: max(40px, 8dvh, env(safe-area-inset-bottom));
+    padding-bottom: max(40px, 10dvh, env(safe-area-inset-bottom));
   }
 
   .kiosk-keyboard .kiosk-keyboard-inner {
@@ -101,12 +101,12 @@
    bottom row stays within comfortable reach. */
 @media (min-width: 640px) and (min-height: 1600px) and (orientation: portrait) {
   .kiosk-keyboard {
-    padding-bottom: max(12dvh, env(safe-area-inset-bottom));
+    padding-bottom: max(16dvh, env(safe-area-inset-bottom));
   }
 }
 
 @media (min-width: 640px) and (min-height: 1800px) and (orientation: portrait) {
   .kiosk-keyboard {
-    padding-bottom: max(15dvh, env(safe-area-inset-bottom));
+    padding-bottom: max(20dvh, env(safe-area-inset-bottom));
   }
 }
