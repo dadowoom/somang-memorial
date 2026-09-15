@@ -86,7 +86,7 @@ describe("getMemorialFamilyRoomVideo", () => {
 });
 
 describe("관리자 확인을 기다리는 추모관", () => {
-  // 부모찾기로 만든 추모관은 pending 으로 시작한다. 유가족이 정한 비밀번호를
+  // 기존 pending 추모관도 계속 지원한다. 유가족이 정한 비밀번호를
   // 가족에게 알려줬는데 아무도 못 들어가면 서비스가 성립하지 않는다.
   const pendingMemorial = {
     slug: "pending-memorial",

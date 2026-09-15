@@ -429,9 +429,7 @@ export default function MemorialCreate() {
       try { usedDraftKeys.current.forEach(key => localStorage.removeItem(key)); } catch { /* Registration already succeeded. */ }
       forgetWriting();
       setCreatedMemorial(created);
-      setNotice(created.status === "pending"
-        ? "등록 요청이 완료되었습니다. 관리자 확인 전에는 검색과 키오스크에 표시되지 않습니다."
-        : "추모관이 생성되었습니다. 등록된 내용을 확인해 주세요.");
+      setNotice("추모관이 완성되었습니다. 사진과 이야기를 계속 더해 주세요.");
       setSubmitted(true);
     } catch (error) {
       console.error("[Memorial Create] Failed to save", error);
@@ -532,7 +530,7 @@ export default function MemorialCreate() {
                 />
               </div>
 
-              <p className="mt-5 text-sm leading-6 text-[#616161]">현재 {step + 1} / 5단계 · {steps[step].label}<br />생애 기록은 선택 사항입니다. 사진은 등록 요청 후 ‘사진 추가하기’에서 준비합니다.</p>
+              <p className="mt-5 text-sm leading-6 text-[#616161]">현재 {step + 1} / 5단계 · {steps[step].label}<br />생애 기록은 선택 사항입니다. 추모관을 만든 뒤 ‘사진 추가하기’에서 사진을 올립니다.</p>
 
               {missingLabels.length > 0 && (
                 <div className="mt-5">
@@ -971,15 +969,8 @@ export default function MemorialCreate() {
                 <SectionHeader number="05" title="공개 설정 · 최종 확인" />
                 <StepGuide>
                   <p>누가 추모관을 볼 수 있을지 선택하고, 아래에 모아둔 입력 내용을 확인해 주세요.</p>
-                  <p>{isAdmin ? "관리자가 생성한 추모관은 선택한 공개 범위로 바로 게시됩니다." : "등록 요청 후 관리자가 확인합니다. 게시된 뒤에도 글과 사진을 직접 고칠 수 있습니다."}</p>
+                  <p>관리자 확인 없이 선택한 공개 범위로 추모관이 완성됩니다. 완성한 뒤에도 글과 사진을 직접 고칠 수 있습니다.</p>
                 </StepGuide>
-
-                {!isAdmin && (
-                  <p className="mb-6 border-l-2 border-[#18181b] bg-[#f7f7f7] px-4 py-3 text-sm leading-6 text-[#414141]">
-                    작성한 추모관은 관리자 확인을 거친 뒤 게시됩니다. 확인 전에는
-                    검색 결과와 키오스크에 보이지 않습니다.
-                  </p>
-                )}
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <Field label="공개 범위" required>
@@ -1010,9 +1001,7 @@ export default function MemorialCreate() {
                       })}
                     </div>
                     <p className="mt-3 text-xs leading-6 text-[#616161]">
-                      {isAdmin
-                        ? "전체 공개는 검색과 키오스크에도 표시됩니다. 비공개는 검색과 키오스크에서 제외됩니다."
-                        : "관리자 확인 전에는 검색과 키오스크에 표시되지 않습니다. 비공개를 선택한 경우 확인 후에도 검색과 키오스크에서 제외됩니다."}
+                      전체 공개는 검색과 키오스크에도 표시됩니다. 비공개는 검색과 키오스크에서 제외되며 입장 비밀번호가 필요합니다.
                     </p>
                   </Field>
 
@@ -1066,10 +1055,10 @@ export default function MemorialCreate() {
                   </ReviewGroup>
                   <div className="border-t border-[#d5cfc5] pt-5">
                     <dl className="grid gap-4 sm:grid-cols-2">
-                      <ReviewValue label="사진" value={isAdmin ? "생성 후 사진 추가하기" : "등록 요청 후 직접 추가 · 게시된 뒤에도 가능"} />
+                      <ReviewValue label="사진" value="완성 후 사진 추가하기 · 언제든 수정 가능" />
                       <ReviewValue label="공개 범위" value={form.visibility === "private" ? "비공개 · 본문에 입장 비밀번호 필요" : "전체 공개"} />
                       {form.visibility === "private" && <ReviewValue label="입장 비밀번호" value={form.accessPassword.trim() ? "입력됨 (임시저장되지 않음)" : "입력이 필요합니다"} />}
-                      <ReviewValue label="등록 후 상태" value={isAdmin ? "바로 게시" : "관리자 확인 대기"} />
+                      <ReviewValue label="등록 후 상태" value={form.visibility === "private" ? "바로 완성 · 비공개" : "바로 완성 · 전체 공개"} />
                     </dl>
                   </div>
                 </div>
@@ -1127,7 +1116,7 @@ export default function MemorialCreate() {
                       >
                         {createMemorialMutation.isPending
                           ? "저장 중"
-                          : submitted ? "등록 완료" : isAdmin ? "추모관 생성" : "관리자 확인 요청"}
+                          : submitted ? "등록 완료" : "추모관 만들기"}
                         <ArrowRight className="h-4 w-4" strokeWidth={1.6} />
                       </button>
                     ) : (
@@ -1175,7 +1164,7 @@ export default function MemorialCreate() {
                             createdMemorial?.status === "published"
                               ? "등록 완료"
                               : createdMemorial?.status === "pending"
-                                ? "관리자 확인 중"
+                                ? "미게시"
                               : createdMemorial?.status || "등록 완료"
                           }
                         />
