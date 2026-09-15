@@ -73,13 +73,13 @@ export default function MemorialVideoSection({
     [videos]
   );
   const canEdit = isAdmin && memorialId > 0;
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  // 방문자 화면: 표지를 누르기 전에는 유튜브를 불러오지 않는다(무거움·자동재생 방지).
+  const [isPlaying, setIsPlaying] = useState(false);
   // 방문자가 볼 영상: 고른 것이 있으면 그것, 없으면 첫 번째
   const visitorVideo =
     visibleVideos.find(video => video.youtubeVideoId === selectedVideoId) ??
     visibleVideos[0];
-  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
-  // 방문자 화면: 표지를 누르기 전에는 유튜브를 불러오지 않는다(무거움·자동재생 방지).
-  const [isPlaying, setIsPlaying] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newUrl, setNewUrl] = useState("");
