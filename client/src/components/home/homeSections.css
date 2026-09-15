@@ -1,11 +1,11 @@
 .somang-home .home-sections {
-  color: var(--home-ink, #29352f);
+  color: var(--home-ink);
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
 
 .somang-home .home-sections__inner {
-  width: min(1160px, calc(100% - 40px));
+  width: min(1216px, calc(100% - 80px));
   margin-inline: auto;
 }
 
@@ -36,7 +36,7 @@
   align-items: center;
   gap: 12px;
   margin: 0 0 20px;
-  color: var(--home-gold, #92794f);
+  color: var(--home-accent);
   font-size: 12px;
   font-weight: 500;
   line-height: 1.7;
@@ -44,8 +44,8 @@
 }
 
 .somang-home .home-sections__eyebrow::before {
-  width: 26px;
-  height: 1px;
+  width: 20px;
+  height: 2px;
   flex: 0 0 auto;
   background: currentColor;
   content: "";
@@ -54,11 +54,11 @@
 .somang-home .home-sections__heading {
   max-width: 820px;
   margin: 0;
-  font-family: "Noto Serif KR", serif;
+  font-family: var(--home-font);
   font-size: clamp(28px, 3vw, 40px);
-  font-weight: 400;
-  line-height: 1.55;
-  letter-spacing: -0.04em;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.05em;
   text-wrap: balance;
 }
 
@@ -69,7 +69,7 @@
 
 .somang-home .home-sections__body {
   margin: 0;
-  color: var(--home-muted, #696b61);
+  color: var(--home-muted);
   font-size: 15px;
   font-weight: 400;
   line-height: 1.95;
@@ -93,8 +93,7 @@
 .somang-home .home-sections__place-image-frame {
   aspect-ratio: 6 / 5;
   overflow: hidden;
-  border-radius: 3px;
-  background: var(--home-paper, #f7f5ef);
+  background: var(--home-paper);
 }
 
 .somang-home .home-sections__place-image {
@@ -103,11 +102,12 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
+  filter: grayscale(1);
 }
 
 .somang-home .home-sections__place-caption {
   margin-top: 15px;
-  color: var(--home-muted, #696b61);
+  color: var(--home-muted);
   font-size: 12px;
   line-height: 1.7;
   letter-spacing: 0.08em;
@@ -122,7 +122,7 @@
   grid-template-columns: 27px minmax(0, 1fr);
   gap: 18px;
   padding-block: 25px;
-  border-bottom: 1px solid var(--home-line, #dedbd1);
+  border-bottom: 1px solid var(--home-line);
 }
 
 .somang-home .home-sections__value:first-child {
@@ -136,7 +136,7 @@
 
 .somang-home .home-sections__value-number {
   padding-top: 5px;
-  color: var(--home-gold, #92794f);
+  color: var(--home-accent);
   font-size: 12px;
   line-height: 1.7;
   font-variant-numeric: tabular-nums;
@@ -148,16 +148,16 @@
 
 .somang-home .home-sections__value-title {
   margin: 0 0 10px;
-  font-family: "Noto Serif KR", serif;
+  font-family: var(--home-font);
   font-size: clamp(20px, 1.9vw, 23px);
-  font-weight: 400;
+  font-weight: 500;
   line-height: 1.6;
   letter-spacing: -0.035em;
   text-wrap: balance;
 }
 
 .somang-home .home-sections__services {
-  background: var(--home-paper, #f7f5ef);
+  background: var(--home-paper);
 }
 
 .somang-home .home-sections__section-header {
@@ -183,10 +183,8 @@
 .somang-home .home-sections__service-card {
   min-width: 0;
   padding: 29px 28px 32px;
-  border: 1px solid var(--home-line, #dedbd1);
-  border-radius: 8px;
+  border-top: 1px solid var(--home-ink);
   background: #fff;
-  box-shadow: 0 3px 12px rgb(41 53 47 / 3%);
 }
 
 .somang-home .home-sections__service-top {
@@ -204,14 +202,12 @@
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  border: 1px solid var(--home-line, #dedbd1);
-  border-radius: 50%;
-  background: var(--home-paper, #f7f5ef);
-  color: var(--home-gold, #92794f);
+  background: var(--home-paper);
+  color: var(--home-ink);
 }
 
 .somang-home .home-sections__service-number {
-  color: var(--home-muted, #696b61);
+  color: var(--home-muted);
   font-size: 12px;
   line-height: 1.7;
   letter-spacing: 0.08em;
@@ -220,9 +216,9 @@
 
 .somang-home .home-sections__service-title {
   margin: 0 0 12px;
-  font-family: "Noto Serif KR", serif;
+  font-family: var(--home-font);
   font-size: 23px;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 1.6;
   letter-spacing: -0.035em;
   text-wrap: balance;
@@ -240,7 +236,7 @@
 .somang-home .home-sections__step {
   min-width: 0;
   padding-top: 24px;
-  border-top: 1px solid var(--home-line, #dedbd1);
+  border-top: 1px solid var(--home-line);
 }
 
 .somang-home .home-sections__step-number {
@@ -249,9 +245,8 @@
   height: 38px;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: var(--home-paper, #f7f5ef);
-  color: var(--home-gold, #92794f);
+  background: var(--home-ink);
+  color: #fff;
   font-size: 13px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -260,7 +255,7 @@
 .somang-home .home-sections__step-text {
   max-width: 320px;
   margin: 18px 0 0;
-  color: var(--home-muted, #696b61);
+  color: var(--home-muted);
   font-size: 16px;
   line-height: 1.9;
   letter-spacing: -0.02em;
@@ -269,8 +264,8 @@
 
 .somang-home .home-sections__membership {
   padding-block: clamp(60px, 6vw, 86px);
-  background: var(--home-ink, #29352f);
-  color: var(--home-paper, #f7f5ef);
+  background: var(--home-ink);
+  color: #fff;
 }
 
 .somang-home .home-sections__membership-inner {
@@ -285,7 +280,7 @@
 }
 
 .somang-home .home-sections__membership .home-sections__eyebrow {
-  color: #d6c8ac;
+  color: #bfbfbf;
 }
 
 .somang-home .home-sections__membership .home-sections__heading {
@@ -296,7 +291,7 @@
 .somang-home .home-sections__membership-description {
   max-width: 580px;
   margin: 22px 0 0;
-  color: #d5d9d1;
+  color: #c7c7c7;
   font-size: 15px;
   line-height: 1.95;
   letter-spacing: -0.015em;
@@ -310,10 +305,10 @@
   justify-content: center;
   gap: 18px;
   padding: 14px 24px;
-  border: 1px solid var(--home-paper, #f7f5ef);
-  border-radius: 5px;
-  background: var(--home-paper, #f7f5ef);
-  color: var(--home-ink, #29352f);
+  border: 1px solid #fff;
+  border-radius: 2px;
+  background: #fff;
+  color: var(--home-ink);
   font-size: 15px;
   font-weight: 500;
   line-height: 1.6;
@@ -322,15 +317,19 @@
 }
 
 .somang-home .home-sections__cta-button:hover {
-  background: #e8e7dc;
+  background: #e2e2e2;
 }
 
 .somang-home .home-sections__cta-button:focus-visible {
-  outline: 2px solid var(--home-paper, #f7f5ef);
+  outline: 2px solid #fff;
   outline-offset: 5px;
 }
 
 @media (max-width: 899px) {
+  .somang-home .home-sections__inner {
+    width: calc(100% - 48px);
+  }
+
   .somang-home .home-sections__memories-grid {
     gap: 36px;
   }
@@ -371,6 +370,10 @@
 }
 
 @media (max-width: 639px) {
+  .somang-home .home-sections__inner {
+    width: calc(100% - 40px);
+  }
+
   .somang-home .home-sections__eyebrow {
     margin-bottom: 16px;
     font-size: 11px;
