@@ -1002,10 +1002,8 @@ export const appRouter = router({
             story: copy.story,
             memorialDay: copy.memorialDay,
             visibility: "private",
-            // 관리자 확인을 기다리는 상태로 시작한다. 예전에는 "private" 이었는데,
-            // 그건 관리자가 내린 상태를 뜻한다. 그래서 관리자 할 일 목록에도
-            // 안 잡히고, 가족이 비밀번호를 알아도 들어오지 못했다.
-            status: "pending",
+            // 바로 완성하되, 가족이 공개 범위를 정하기 전에는 비공개로 유지한다.
+            status: "published",
           });
 
           return {
@@ -1210,7 +1208,6 @@ export const appRouter = router({
     create: protectedProcedure
       .input(memorialCreateInput)
       .mutation(async ({ ctx, input }) => {
-        const isAdmin = ctx.user.role === "admin";
         const visibility = input.visibility;
 
         if (
@@ -1249,9 +1246,8 @@ export const appRouter = router({
             visibility === "private" && input.accessPassword
               ? hashMemorialAccessPassword(input.accessPassword)
               : null,
-          // Self-service memorials keep the family's requested visibility, but
-          // are never searchable or public until an administrator publishes them.
-          status: isAdmin ? "published" : "pending",
+          // 회원은 관리자 확인 없이 완성하며, 공개 범위는 본인의 선택을 따른다.
+          status: "published",
           timelineJson: JSON.stringify(timeline),
           managerMemo: input.managerMemo || null,
         });

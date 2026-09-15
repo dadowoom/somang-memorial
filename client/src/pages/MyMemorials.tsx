@@ -240,7 +240,7 @@ function StatusBadge({ status }: { status: string }) {
     status === "published"
       ? "게시 중"
       : status === "pending"
-        ? "관리자 확인 중"
+        ? "미게시"
       : status === "private"
         ? "비공개"
         : status || "상태 확인";
