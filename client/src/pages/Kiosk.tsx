@@ -1,8 +1,10 @@
 import { trpc } from "@/lib/trpc";
 import type { KioskInterment } from "@shared/kioskInterment";
+import KioskAttract from "@/components/kiosk/KioskAttract";
 import { KioskIntermentDetails } from "@/components/kiosk/KioskIntermentDetails";
 import { formatLifespan } from "@/lib/lifespan";
 import { ORG_INFO } from "@/lib/orgInfo";
+import type { KioskPoster } from "@/lib/kioskAttract";
 import {
   getKioskPasswordErrorMessage,
   KIOSK_CONNECTION_ERROR_MESSAGE,
@@ -87,6 +89,16 @@ export default function Kiosk() {
       networkMode: "always",
     }
   );
+  // 대기(광고) 화면. 관리자가 올린 포스터가 있으면 키오스크는 광고부터
+  // 보여 주고, 화면을 터치하면 이 검색 화면으로 넘어간다 (2026-09-15).
+  const postersQuery = trpc.kioskPoster.list.useQuery(undefined, {
+    retry: false,
+    networkMode: "always",
+    staleTime: 5 * 60 * 1000,
+  });
+  const posters = (postersQuery.data ?? []) as KioskPoster[];
+  const [searchStarted, setSearchStarted] = useState(false);
+  const attractOpen = !searchStarted && posters.length > 0;
   const results = (memorialsQuery.data ?? []) as KioskMemorial[];
   const intermentResults = (intermentQuery.data ?? []).filter(
     record =>
@@ -156,6 +168,8 @@ export default function Kiosk() {
     setSelectedInterment(null);
     setPassword("");
     setPasswordMessage("");
+    // 손을 뗀 채 시간이 지나면 광고 화면으로 돌아간다.
+    setSearchStarted(false);
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
   }
 
@@ -517,6 +531,13 @@ export default function Kiosk() {
           }}
           onClose={closePrivatePanel}
           onSubmit={submitPassword}
+        />
+      )}
+
+      {attractOpen && (
+        <KioskAttract
+          posters={posters}
+          onActivate={() => setSearchStarted(true)}
         />
       )}
     </main>
