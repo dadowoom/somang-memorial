@@ -108,7 +108,7 @@ export default function MemorialSearch() {
               </div>
             ) : (
               <div className="overflow-hidden border-y border-[#b5b0a7]">
-                <div className="hidden grid-cols-[150px_1.1fr_1fr_0.8fr_128px] border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] md:grid">
+                <div className="hidden grid-cols-[150px_1.1fr_1fr_0.8fr_160px] border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] md:grid">
                   <span>생애</span>
                   <span>성함</span>
                   <span>교회</span>
@@ -120,7 +120,7 @@ export default function MemorialSearch() {
                   {results.map(memorial => (
                     <article
                       key={memorial.slug}
-                      className="grid gap-3 bg-white px-4 py-4 transition-colors hover:bg-[#fafafa] md:grid-cols-[150px_1.1fr_1fr_0.8fr_128px] md:items-center md:px-5"
+                      className="grid gap-3 bg-white px-4 py-4 transition-colors hover:bg-[#fafafa] md:grid-cols-[150px_1.1fr_1fr_0.8fr_160px] md:items-center md:px-5"
                     >
                       <p className="text-xs tracking-[0.1em] text-[#616161] md:text-sm">
                         {formatLifespan(memorial.birthDate, memorial.deathDate)}
@@ -141,7 +141,7 @@ export default function MemorialSearch() {
                         {memorial.church}
                       </p>
                       <p className="text-sm text-[#616161]">{memorial.role}</p>
-                      <Link href={memorial.href} className="editorial-link group inline-flex h-10 w-fit items-center justify-center gap-2 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:border-[#18181b] md:ml-auto">
+                      <Link href={memorial.href} className="editorial-link group inline-flex h-10 w-fit items-center whitespace-nowrap justify-center gap-2 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:border-[#18181b] md:ml-auto">
                           {memorial.isPrivate ? "비밀번호 입력" : "추모관 보기"}
                           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </Link>
