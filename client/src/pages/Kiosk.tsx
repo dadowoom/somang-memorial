@@ -346,7 +346,7 @@ export default function Kiosk() {
             {!submittedKeyword && (
               <div className="kiosk-search-guide mt-10 border-y border-[#b5b0a7] py-6">
                 <p className="text-sm text-[#616161]">추모관 이용 안내</p>
-                <ol className="mt-4 grid grid-cols-3 gap-4 break-keep text-sm leading-6 text-[#454545] [overflow-wrap:anywhere]">
+                <ol className="mt-4 grid grid-cols-3 gap-4 break-keep text-center text-sm leading-6 text-[#454545] [overflow-wrap:anywhere]">
                   <li>
                     <span className="block text-xs text-[#888]">01</span>
                     성함을 입력해 주세요.

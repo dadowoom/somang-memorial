@@ -1,5 +1,7 @@
-/* Only large portrait kiosks use the lower 60% of the display. Keep the
-   compact layout on phones and landscape PCs, where vertical space is scarce. */
+/* Large portrait kiosks (standing FHD screens) use bigger keys than the compact
+   phone/landscape layout. Keys stay close to square so they never stretch into
+   tall columns, and the whole panel is lifted off the floor-level screen edge so
+   the bottom action row (띄어쓰기·검색) stays easy to reach. */
 @media (min-width: 640px) and (min-height: 900px) and (orientation: portrait) {
   /* While writing, retain the title and all controls by trimming spacing,
      without shrinking text or the textarea. Restored when the keyboard closes. */
@@ -11,72 +13,64 @@
     padding: 16px;
   }
 
+  /* The panel height follows its content. The extra bottom padding lifts the
+     action row above the very bottom of a tall standing kiosk. */
   .kiosk-keyboard {
-    height: 60dvh;
+    padding-bottom: max(22px, 3.5dvh, env(safe-area-inset-bottom));
   }
 
   .kiosk-keyboard .kiosk-keyboard-inner {
-    display: flex;
-    height: 100%;
-    max-width: 1200px;
-    flex-direction: column;
-    gap: clamp(8px, 0.65dvh, 14px);
-    padding: clamp(12px, 1dvh, 20px) clamp(12px, 2.2vw, 24px);
-    padding-bottom: max(12px, 1dvh, env(safe-area-inset-bottom));
+    max-width: 1100px;
+    gap: clamp(8px, 1.1dvh, 16px);
+    padding: clamp(12px, 1.4dvh, 22px) clamp(14px, 2.4vw, 28px);
+    padding-bottom: clamp(8px, 1dvh, 16px);
   }
 
   .kiosk-keyboard .kiosk-keyboard-header {
-    flex: 0 0 clamp(48px, 3.75dvh, 72px);
+    height: clamp(44px, 4dvh, 64px);
     margin: 0;
   }
 
   .kiosk-keyboard .kiosk-keyboard-label {
-    font-size: clamp(22px, 2.8vw, 32px);
+    font-size: clamp(20px, 2.6vw, 30px);
   }
 
   .kiosk-keyboard .kiosk-keyboard-close {
     height: 100%;
     gap: 10px;
-    padding-inline: 24px;
-    font-size: clamp(22px, 2.8vw, 32px);
+    padding-inline: 22px;
+    font-size: clamp(20px, 2.6vw, 30px);
   }
 
   .kiosk-keyboard .kiosk-keyboard-layout {
     display: flex;
-    min-height: 0;
     width: 100%;
-    flex: 1;
     flex-direction: column;
-    gap: clamp(6px, 0.65dvh, 12px);
-  }
-
-  .kiosk-keyboard .kiosk-keyboard-numbers {
-    max-width: 1000px;
+    gap: clamp(8px, 1.1dvh, 14px);
   }
 
   .kiosk-keyboard .kiosk-keyboard-row {
-    min-height: 0;
-    flex: 1;
-    gap: clamp(6px, 1vw, 10px);
+    gap: clamp(6px, 1vw, 12px);
     margin: 0;
   }
 
+  /* Height is tuned to the flex-driven key width so a plain letter key stays
+     close to square instead of becoming a tall column. */
   .kiosk-keyboard .kiosk-keyboard-key {
-    height: 100%;
-    border-radius: 10px;
-    font-size: clamp(36px, 5vw, 60px);
+    height: clamp(60px, 8.4vw, 108px);
+    border-radius: 12px;
+    font-size: clamp(30px, 4.2vw, 52px);
   }
 
   .kiosk-keyboard .kiosk-keyboard-actions {
-    min-height: 0;
-    flex: 0 0 clamp(72px, 7.5dvh, 144px);
-    gap: clamp(6px, 1vw, 10px);
-    margin: 0;
+    gap: clamp(6px, 1vw, 12px);
+    margin-top: clamp(10px, 1.3dvh, 18px);
   }
 
   .kiosk-keyboard .kiosk-keyboard-actions .kiosk-keyboard-key {
-    padding-inline: 4px;
-    font-size: clamp(22px, 2.8vw, 34px);
+    height: clamp(60px, 7vw, 96px);
+    padding-inline: 6px;
+    font-size: clamp(20px, 2.6vw, 32px);
     word-break: keep-all;
   }
 
@@ -85,44 +79,33 @@
   }
 
   .kiosk-keyboard svg {
-    width: clamp(30px, 4vw, 48px);
-    height: clamp(30px, 4vw, 48px);
+    width: clamp(28px, 3.6vw, 46px);
+    height: clamp(28px, 3.6vw, 46px);
   }
 
   .kiosk-keyboard[data-keyboard-variant="korean-name"]
     .kiosk-keyboard-layout
     .kiosk-keyboard-key {
-    font-size: clamp(42px, 6.7vw, 80px);
+    font-size: clamp(34px, 5.2vw, 64px);
   }
 
   .kiosk-keyboard[data-keyboard-variant="korean-name"]
     .kiosk-keyboard-actions
     .kiosk-keyboard-key {
-    font-size: clamp(28px, 3.7vw, 44px);
+    font-size: clamp(24px, 3vw, 40px);
   }
 }
 
-/* On full-height standing kiosks, preserve the large key area but lift every
-   row, including the bottom actions, away from the floor-level screen edge.
-   Keeping the rest area inside the panel also reserves it for input scrolling. */
+/* Taller standing kiosks lift the whole keyboard further off the floor so the
+   bottom row stays within comfortable reach. */
 @media (min-width: 640px) and (min-height: 1600px) and (orientation: portrait) {
   .kiosk-keyboard {
-    height: 72dvh;
-  }
-
-  .kiosk-keyboard .kiosk-keyboard-inner {
-    padding-bottom: calc(12dvh + max(12px, 1dvh, env(safe-area-inset-bottom)));
+    padding-bottom: max(9dvh, env(safe-area-inset-bottom));
   }
 }
 
-/* Extra-tall displays lift the same key area another 3%, while retaining
-   enough room for the search and writing controls above the keyboard. */
 @media (min-width: 640px) and (min-height: 1800px) and (orientation: portrait) {
   .kiosk-keyboard {
-    height: 75dvh;
-  }
-
-  .kiosk-keyboard .kiosk-keyboard-inner {
-    padding-bottom: calc(15dvh + max(12px, 1dvh, env(safe-area-inset-bottom)));
+    padding-bottom: max(12dvh, env(safe-area-inset-bottom));
   }
 }
