@@ -521,13 +521,6 @@ function BookView({
           showCover
           mobileScrollSupport
           onFlip={(event: { data: number }) => setCurrentPage(event.data)}
-          // onFlip 이 주는 번호는 직전 넘김의 것이라 카운터가 한 박자 늦었다.
-          // 넘김이 끝나면(read) 책에 지금 쪽을 직접 물어 맞춘다.
-          onChangeState={(event: { data: string }) => {
-            if (event.data !== "read") return;
-            const index = bookRef.current?.pageFlip()?.getCurrentPageIndex();
-            if (typeof index === "number") setCurrentPage(index);
-          }}
           className="mx-auto"
           startPage={0}
           drawShadow
@@ -563,13 +556,6 @@ function BookView({
           showCover
           mobileScrollSupport={false}
           onFlip={(event: { data: number }) => setCurrentPage(event.data)}
-          // onFlip 이 주는 번호는 직전 넘김의 것이라 카운터가 한 박자 늦었다.
-          // 넘김이 끝나면(read) 책에 지금 쪽을 직접 물어 맞춘다.
-          onChangeState={(event: { data: string }) => {
-            if (event.data !== "read") return;
-            const index = bookRef.current?.pageFlip()?.getCurrentPageIndex();
-            if (typeof index === "number") setCurrentPage(index);
-          }}
           className="mx-auto"
           startPage={0}
           drawShadow
