@@ -13,10 +13,12 @@
     padding: 16px;
   }
 
-  /* The panel height follows its content. The generous bottom padding lifts
-     the whole keyboard off the floor of a tall standing kiosk, so the bottom
-     row sits within comfortable reach and the tray reads as a solid base. */
+  /* The panel height follows its content, lifted off the floor by the bottom
+     padding. When the search screen publishes --kiosk-keyboard-top (the form's
+     bottom edge), the panel grows up to that line so the keys sit right under
+     the search block and the remaining panel becomes a solid dark base. */
   .kiosk-keyboard {
+    min-height: calc(100dvh - var(--kiosk-keyboard-top, 100dvh));
     padding-bottom: max(40px, 10dvh, env(safe-area-inset-bottom));
   }
 
