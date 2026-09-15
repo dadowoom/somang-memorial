@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { Router } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import Navbar from "./Navbar";
+import Footer from "./Footer";
 
 vi.mock("@/_core/hooks/useAuth", () => ({ useAuth: vi.fn() }));
 
@@ -24,10 +25,14 @@ describe("public navigation account access", () => {
 
   it("offers sign-in without showing signed-in account actions to guests", () => {
     const markup = renderNavigation();
-    expect(markup).toContain('href="/login?redirect=/admin"');
+    expect(markup).not.toContain('href="/login?redirect=/admin"');
     expect(markup).toContain('href="/login"');
     expect(markup).not.toContain('href="/my/account"');
     expect(markup).not.toContain("로그아웃");
+    const footer = renderToStaticMarkup(
+      createElement(Router, { ssrPath: "/" }, createElement(Footer))
+    );
+    expect(footer).toContain('href="/login?redirect=/admin"');
   });
 
   it("preserves account and memorial navigation without an admin link for members", () => {

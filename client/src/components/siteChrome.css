@@ -73,6 +73,37 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.site-header a.site-login {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 22px;
+  border: 1px solid #fff;
+  border-radius: 999px;
+  background: #fff;
+  color: #171717;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.site-header__utility .site-login {
+  display: inline-flex;
+}
+.site-header__mobile-login {
+  display: none;
+}
+.site-header a.site-login:hover {
+  background: #e7e7e7;
+  border-color: #e7e7e7;
+  color: #171717;
+}
+.site-header a.site-login:focus-visible {
+  outline-color: #fff;
+}
 .site-nav {
   display: flex;
   align-items: center;
@@ -137,6 +168,7 @@
 }
 .site-header__toggle {
   display: none;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 44px;
@@ -330,6 +362,15 @@
   color: #555;
   font-size: 13px;
 }
+.site-mobile__account .site-mobile__login {
+  justify-content: center;
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: #171717;
+  color: #fff;
+  font-size: 15px;
+}
 .site-mobile > a:hover {
   color: #777;
 }
@@ -364,6 +405,16 @@
   color: #171717;
   font-size: 13px;
   letter-spacing: 0.04em;
+}
+.site-footer__admin {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.site-footer__admin a {
+  padding-block: 12px;
+  font-size: 12px;
+  color: #777;
 }
 @keyframes menu-enter {
   from {
@@ -408,9 +459,23 @@
     width: calc(100% - 40px);
   }
   .site-header__masthead,
-  .site-header--home .site-header__masthead {
+  .site-header--home .site-header__masthead,
+  .site-header--compact .site-header__masthead {
     min-height: 64px;
     justify-content: space-between;
+    gap: 8px;
+  }
+  .site-header--compact .site-header__inner {
+    padding-right: 0;
+  }
+  .site-header--compact .site-header__toggle {
+    position: static;
+  }
+  .site-header .site-header__mobile-login {
+    display: inline-flex;
+    margin-left: auto;
+    padding-inline: 12px;
+    font-size: 12px;
   }
   .site-brand__text {
     font-size: 18px;
@@ -435,6 +500,20 @@
   }
   .site-footer > .container {
     padding: 48px 24px 24px;
+  }
+}
+@media (max-width: 359px) {
+  .site-brand {
+    gap: 8px;
+  }
+  .site-header .site-brand img {
+    width: 28px;
+  }
+  .site-header .site-brand__text {
+    font-size: 16px;
+  }
+  .site-header .site-brand__caption {
+    font-size: 6px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

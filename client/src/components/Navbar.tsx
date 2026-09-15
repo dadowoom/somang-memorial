@@ -160,16 +160,24 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <>
-                <Link href="/login?redirect=/admin" onClick={closeMenus}>
-                  관리자 로그인
-                </Link>
-                <a href={getLoginUrl()} onClick={closeMenus}>
-                  로그인
-                </a>
-              </>
+              <a
+                href={getLoginUrl()}
+                onClick={closeMenus}
+                className="site-login"
+              >
+                로그인 <ArrowRight size={16} aria-hidden="true" />
+              </a>
             )}
           </div>
+          {!isAuthenticated && (
+            <a
+              href={getLoginUrl()}
+              onClick={closeMenus}
+              className="site-header__mobile-login site-login"
+            >
+              로그인
+            </a>
+          )}
           <button
             ref={mobileButton}
             type="button"
@@ -219,7 +227,7 @@ export default function Navbar() {
             <Search size={16} aria-hidden="true" /> 추모관 찾기
           </Link>
           <a
-            className="site-nav__account"
+            className={`site-nav__account${isAuthenticated ? "" : " site-login"}`}
             href={isAuthenticated ? "/my/account" : getLoginUrl()}
           >
             {isAuthenticated ? "내 계정" : "로그인"}
@@ -310,14 +318,13 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <>
-                <Link href="/login?redirect=/admin" onClick={closeMenus}>
-                  관리자 로그인
-                </Link>
-                <a href={getLoginUrl()} onClick={closeMenus}>
-                  로그인 <ArrowRight size={16} aria-hidden="true" />
-                </a>
-              </>
+              <a
+                href={getLoginUrl()}
+                onClick={closeMenus}
+                className="site-mobile__login"
+              >
+                로그인 <ArrowRight size={16} aria-hidden="true" />
+              </a>
             )}
           </div>
         </nav>

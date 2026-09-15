@@ -98,6 +98,9 @@ export default function Footer() {
             </Link>
           </div>
         </div>
+        <div className="site-footer__admin">
+          <Link href="/login?redirect=/admin">관리자 로그인</Link>
+        </div>
       </div>
     </footer>
   );
