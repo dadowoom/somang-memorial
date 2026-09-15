@@ -198,14 +198,6 @@ export default function MemorialGallerySection({
         processFiles(Array.from(event.dataTransfer.files));
       }}
     >
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.018]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 1px 1px, rgba(180,140,60,0.8) 1px, transparent 0)",
-          backgroundSize: "32px 32px",
-        }}
-      />
       <div className="container">
         <SectionHeading
           eyebrow="Photo Gallery"
@@ -219,20 +211,20 @@ export default function MemorialGallerySection({
               type="button"
               disabled={uploading}
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex h-11 items-center justify-center gap-2 border border-dashed border-[#c8b383] bg-white px-5 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#f9f9f9]"
+              className="inline-flex h-11 items-center justify-center gap-2 border border-dashed border-[#bcbcbc] bg-white px-5 text-sm font-medium text-[#555555] transition-colors hover:bg-[#f9f9f9]"
             >
               <ImagePlus className="h-4 w-4" />
               사진 추가
             </button>
-            <p className="mt-2 text-xs text-[#6f6a61]">
+            <p className="mt-2 text-xs text-[#666666]">
               여러 장을 한 번에 선택하거나 이 영역으로 끌어오세요.
             </p>
-            <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-[#6f6a61]">
+            <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-[#666666]">
               {isAdmin
                 ? "사진을 확인한 뒤 별 모양 버튼으로 대표 사진을 지정할 수 있습니다."
                 : "추모관을 만든 가족은 게시된 뒤에도 사진을 직접 추가하고 고칠 수 있습니다. 첫 사진은 대표 사진이 되며, 별 모양 버튼으로 바꿀 수 있습니다. 최대 30장입니다."}
             </p>
-            <p className="mt-2 text-sm leading-6 text-[#6f6a61]">
+            <p className="mt-2 text-sm leading-6 text-[#666666]">
               용량이 큰 사진은 자동으로 줄여 저장합니다. 열리지 않는 사진은
               JPG·PNG 형식으로 바꿔 다시 선택해 주세요. 함께 찍힌 분의 공개
               동의도 확인해 주세요.
@@ -268,8 +260,8 @@ export default function MemorialGallerySection({
         )}
 
         {dragging && canEdit && (
-          <div className="absolute inset-4 z-30 flex items-center justify-center border-2 border-dashed border-[#c8b383] bg-white/92">
-            <div className="text-center text-[#4f4638]">
+          <div className="absolute inset-4 z-30 flex items-center justify-center border-2 border-dashed border-[#bcbcbc] bg-white/92">
+            <div className="text-center text-[#555555]">
               <Upload className="mx-auto mb-3 h-10 w-10" />
               <p className="text-sm font-medium">사진을 여기에 놓으세요.</p>
             </div>
@@ -281,11 +273,11 @@ export default function MemorialGallerySection({
             <div className="w-64 text-center">
               <div className="h-2 bg-white">
                 <div
-                  className="h-full bg-[#1f1d1a] transition-all"
+                  className="h-full bg-[#171717] transition-all"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="mt-3 text-sm text-[#6f5123]">
+              <p className="mt-3 text-sm text-[#171717]">
                 업로드 중 {progress}%
               </p>
             </div>
@@ -304,7 +296,7 @@ export default function MemorialGallerySection({
                 className="group relative overflow-hidden bg-white shadow-[0_10px_30px_rgba(31,29,26,0.05)]"
                 style={{
                   gridRow: index % 5 === 0 ? "span 2" : "span 1",
-                  border: "1px solid #d5c9b4",
+                  border: "1px solid #dedede",
                 }}
               >
                 <button
@@ -315,14 +307,14 @@ export default function MemorialGallerySection({
                   <img
                     src={toImgUrl(photo.photoUrl)}
                     alt={photo.caption || "추모 사진"}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
                     style={{ filter: memorialPhotoFilter }}
                   />
-                  <span className="absolute inset-0 bg-gradient-to-t from-[#6f5123]/0 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-hover:from-[#6f5123]/75" />
+                  <span className="absolute inset-0 bg-gradient-to-t from-[#171717]/0 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-hover:from-[#171717]/75" />
                   {(photo.caption ||
                     photo.year ||
                     photo.isRepresentative === 1) && (
-                    <span className="absolute bottom-0 left-0 right-0 translate-y-0 bg-gradient-to-t from-[#6f5123]/80 to-transparent p-4 text-white transition-transform duration-500 md:translate-y-full md:group-hover:translate-y-0">
+                    <span className="absolute bottom-0 left-0 right-0 translate-y-0 bg-gradient-to-t from-[#171717]/80 to-transparent p-4 text-white transition-transform duration-500 ">
                       {photo.isRepresentative === 1 && (
                         <span className="mb-2 inline-flex items-center gap-1 text-[11px]">
                           <Star className="h-3 w-3 fill-white" />
@@ -380,7 +372,7 @@ export default function MemorialGallerySection({
                     </div>
 
                     <div
-                      className="absolute bottom-2 left-2 right-2 z-10 border border-[#d5c9b4] bg-white/95 p-2 text-xs shadow-sm"
+                      className="absolute bottom-2 left-2 right-2 z-10 border border-[#dedede] bg-white/95 p-2 text-xs shadow-sm"
                       onClick={event => event.stopPropagation()}
                     >
                       <InlineEditText
@@ -391,7 +383,7 @@ export default function MemorialGallerySection({
                           updatePhoto.mutateAsync({ id: photo.id, caption })
                         }
                       />
-                      <div className="mt-1 text-[#7a674a]">
+                      <div className="mt-1 text-[#666666]">
                         <InlineEditText
                           value={photo.year || ""}
                           isAdmin
@@ -410,7 +402,7 @@ export default function MemorialGallerySection({
         ) : (
           <button
             type="button"
-            className="w-full border border-dashed border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]"
+            className="w-full border border-dashed border-[#dedede] bg-white py-16 text-center text-sm text-[#666666]"
             onClick={() => fileInputRef.current?.click()}
           >
             사진을 추가해 주세요.
@@ -500,12 +492,12 @@ function Lightbox({
           style={{ filter: memorialPhotoFilter }}
         />
         {(photo.caption || photo.year) && (
-          <div className="border-t border-[#d5c9b4] bg-white px-5 py-4 text-center">
+          <div className="border-t border-[#dedede] bg-white px-5 py-4 text-center">
             {photo.caption && (
-              <p className="text-sm text-[#2e2218]">{photo.caption}</p>
+              <p className="text-sm text-[#171717]">{photo.caption}</p>
             )}
             {photo.year && (
-              <p className="mt-1 text-xs text-[#7a674a]">{photo.year}</p>
+              <p className="mt-1 text-xs text-[#666666]">{photo.year}</p>
             )}
           </div>
         )}
@@ -524,8 +516,8 @@ function SectionHeading({
   description: string;
 }) {
   return (
-    <div className="mx-auto mb-12 max-w-3xl text-center">
-      <p className="mb-3 text-xs font-medium uppercase tracking-[0.28em] text-[#7f673d]">
+    <div className="memorial-section-heading">
+      <p className="mb-3 text-xs font-medium uppercase tracking-[0.28em] text-[#666666]">
         {eyebrow}
       </p>
       <h2
@@ -534,7 +526,7 @@ function SectionHeading({
       >
         {title}
       </h2>
-      <p className="mt-4 text-pretty break-keep text-sm leading-7 text-[#6f6a61] [overflow-wrap:anywhere]">
+      <p className="mt-4 text-pretty break-keep text-sm leading-7 text-[#666666] [overflow-wrap:anywhere]">
         {description}
       </p>
     </div>
@@ -543,7 +535,7 @@ function SectionHeading({
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div className="border border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]">
+    <div className="border border-[#dedede] bg-white py-16 text-center text-sm text-[#666666]">
       {text}
     </div>
   );
@@ -575,7 +567,7 @@ function IconButton({
       className={`flex h-11 w-11 items-center justify-center border shadow-sm transition-colors disabled:opacity-35 ${
         danger
           ? "border-red-200 bg-red-500 text-white hover:bg-red-600"
-          : "border-[#d5c9b4] bg-white/90 text-[#4f4638] hover:bg-white"
+          : "border-[#dedede] bg-white/90 text-[#555555] hover:bg-white"
       }`}
     >
       {children}

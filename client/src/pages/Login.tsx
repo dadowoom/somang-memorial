@@ -161,8 +161,8 @@ export default function Login() {
 
       <main className="pt-16">
         <section className="border-b border-[#b5b0a7]">
-          <div className="container grid gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.72fr)] lg:items-start">
-            <div>
+          <div className="account-layout container grid lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)] lg:items-start">
+            <div className="account-intro">
               <p className="mb-5 text-xs font-medium tracking-[0.24em] text-[#777]">
                 SOMANG ACCOUNT
               </p>
@@ -178,22 +178,13 @@ export default function Login() {
                 {introText}
               </p>
 
-              <div className="mt-10 grid gap-px border border-[#b5b0a7] bg-[#b5b0a7] sm:grid-cols-3">
-                {[
-                  ["01", "계정 확인"],
-                  ["02", "필수 동의"],
-                  ["03", "추모관 이용"],
-                ].map(([number, text]) => (
-                  <div key={number} className="bg-white p-5">
-                    <p className="text-xs text-[#777]">{number}</p>
-                    <p className="mt-4 text-sm font-medium">{text}</p>
-                  </div>
-                ))}
+              <div className="account-steps" aria-label="이용 순서">
+                <span>01 회원가입</span><span>02 기록 남기기</span><span>03 가족과 나누기</span>
               </div>
             </div>
 
-            <div className="border border-[#b5b0a7] p-5 md:p-7">
-              <div className="grid grid-cols-2 gap-px bg-[#b5b0a7]">
+            <div className="account-panel">
+              <div className="account-tabs">
                 {(["login", "signup"] as Mode[]).map(value => (
                   <button
                     key={value}
@@ -203,14 +194,8 @@ export default function Login() {
                       setMode(value);
                       setMessage("");
                     }}
-                    className={`min-h-16 bg-white px-2 py-3 text-base font-medium transition-colors ${
-                      mode === value
-                        ? "text-[#121212] ring-1 ring-inset ring-[#18181b]"
-                        : "text-[#777] hover:bg-[#fafafa]"
-                    }`}
                   >
-                    <span className="block">{value === "login" ? "이미 가입했습니다" : "처음 이용합니다"}</span>
-                    <span className="mt-1 block text-sm font-normal">{value === "login" ? "로그인" : "회원가입"}</span>
+                    {value === "login" ? "로그인" : "회원가입"}
                   </button>
                 ))}
               </div>
@@ -229,7 +214,7 @@ export default function Login() {
                         value={loginIdentifier}
                         onChange={event => setLoginIdentifier(event.target.value)}
                         className={`${inputClass} pr-9`}
-                        placeholder="admin 또는 name@example.com"
+                        placeholder="아이디 또는 이메일 주소"
                         autoComplete="username"
                         required
                       />

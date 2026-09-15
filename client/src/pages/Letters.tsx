@@ -2,7 +2,7 @@ import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, PenLine, Search, Send } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import "./publicEditorial.css";
 
@@ -11,17 +11,6 @@ const warmGold = "#626262";
 const warmText = "#171717";
 const mutedText = "#666666";
 const pageSize = 10;
-// 편지 카드 배경. 외부(Unsplash) 사진을 쓰다가 2026-09-14 에 소망동산 사진으로
-// 바꿨다. 외부 서비스가 막히면 카드가 깨지고, 방문자 주소가 외부로 나가며,
-// 남의 풍경 사진은 추모관 성격과도 맞지 않았다. 아래 파일은 이미 홈·소망동산
-// 화면에서 쓰는 것이라 새로 내려받을 것이 거의 없다.
-const letterImages = [
-  "/somang-hill-1.jpg",
-  "/somang-hill-2.jpg",
-  "/somang-hill-3.jpg",
-  "/somang-hill-4.jpg",
-];
-
 type SearchField = "all" | "to" | "content" | "author";
 
 function formatDate(value: Date | string) {
@@ -30,38 +19,6 @@ function formatDate(value: Date | string) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}.${month}.${day}`;
-}
-
-function wrapLetterContent(value: string, maxLineLength = 32) {
-  return value
-    .split("\n")
-    .map(paragraph => {
-      const words = paragraph.split(" ");
-      const lines: string[] = [];
-      let current = "";
-
-      words.forEach(word => {
-        if (!current) {
-          current = word;
-          return;
-        }
-
-        if (`${current} ${word}`.length > maxLineLength) {
-          lines.push(current);
-          current = word;
-        } else {
-          current = `${current} ${word}`;
-        }
-      });
-
-      if (current) lines.push(current);
-      return lines.join("\n");
-    })
-    .join("\n");
-}
-
-function getLetterImage(index: number) {
-  return letterImages[index % letterImages.length];
 }
 
 export default function Letters() {
@@ -327,7 +284,7 @@ export default function Letters() {
             ) : visibleLetters.length === 0 ? (
               <StateBox text="아직 남겨진 편지가 없습니다." />
             ) : (
-              <div className="grid gap-7 md:grid-cols-2 md:gap-x-9 md:gap-y-10">
+              <div className="letter-grid">
                 {visibleLetters.map((letter, index) => {
                   const serial =
                     results.length - ((safePage - 1) * pageSize + index);
@@ -344,8 +301,6 @@ export default function Letters() {
                       author={letter.author}
                       date={formatDate(letter.createdAt)}
                       href={letter.memorialHref}
-                      imageUrl={getLetterImage(index)}
-                      stagger={index % 2 === 1}
                     />
                   );
                 })}
@@ -353,13 +308,15 @@ export default function Letters() {
             )}
 
             {totalPages > 1 && (
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+              <div className="letter-pagination mt-8 flex flex-wrap items-center justify-center gap-2">
                 {Array.from({ length: totalPages }, (_, index) => index + 1).map(
                   pageNumber => (
                     <button
                       key={pageNumber}
                       type="button"
                       onClick={() => setPage(pageNumber)}
+                      aria-label={`${pageNumber}페이지`}
+                      aria-current={safePage === pageNumber ? "page" : undefined}
                       className={`h-10 min-w-10 border px-3 text-sm transition-colors ${
                         safePage === pageNumber
                           ? "border-[#171717] bg-[#171717] text-white"
@@ -399,8 +356,6 @@ function LetterCard({
   author,
   date,
   href,
-  imageUrl,
-  stagger,
 }: {
   serial: number;
   toName: string;
@@ -409,89 +364,62 @@ function LetterCard({
   author: string;
   date: string;
   href: string | null;
-  imageUrl: string;
-  stagger: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const [canExpand, setCanExpand] = useState(false);
+  const contentRef = useRef<HTMLParagraphElement>(null);
+  const contentId = useId();
   const recipient = `${toName} ${toRole}`.trim();
 
+  useEffect(() => {
+    const element = contentRef.current;
+    if (!element || expanded) return;
+    const measure = () =>
+      setCanExpand(element.scrollHeight > element.clientHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [content, expanded]);
+
   return (
-    <article
-      className={`grid h-[300px] overflow-hidden bg-white shadow-none ring-1 ring-[#dedede] transition-shadow duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.05)] md:grid-cols-[minmax(0,1fr)_92px] lg:grid-cols-[minmax(0,1fr)_112px] ${
-        stagger ? "md:mt-10" : ""
-      }`}
-    >
-      <div className="flex min-w-0 flex-col overflow-hidden p-6 md:p-8">
-        <div className="flex items-center justify-between gap-3 text-sm text-[#777777]">
-          <p>No.{String(serial).padStart(3, "0")}</p>
-        </div>
-
-        <div className="mt-8 grid min-w-0 grid-cols-[88px_minmax(0,1fr)] gap-4 md:grid-cols-[108px_minmax(0,1fr)] md:gap-6">
-          <p
-            className="pt-1 text-5xl italic leading-none text-[#222222] md:text-7xl"
-            style={{ fontFamily: "'Cormorant Garamond', serif" }}
-          >
-            To
-          </p>
-          <div className="min-w-0">
-            {href ? (
-              <Link href={href}>
-                <span
-                  className="inline-flex max-w-full cursor-pointer items-center gap-2 text-2xl font-light text-[#222222] transition-colors hover:text-[#555555] md:text-3xl"
-                  style={serifStyle}
-                >
-                  <span className="min-w-0 truncate">{recipient}</span>
-                  <ArrowRight className="h-4 w-4 shrink-0" strokeWidth={1.7} />
-                </span>
-              </Link>
-            ) : (
-              <span
-                className="block max-w-full truncate text-2xl font-light text-[#222222] md:text-3xl"
-                style={serifStyle}
-              >
-                {recipient}
-              </span>
-            )}
-            <p
-              className="mt-4 whitespace-pre-line text-center text-base leading-8 text-[#707070] md:text-[17px]"
-              style={{
-                ...serifStyle,
-                display: "-webkit-box",
-                WebkitLineClamp: 4,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-                overflowWrap: "anywhere",
-              }}
-            >
-              {wrapLetterContent(content)}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-auto flex items-end justify-between gap-4 pt-6 text-base text-[#222222]">
-          {href ? (
-            <Link href={href}>
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-[#555555] transition-colors hover:text-[#222222]">
-                추모관 보기
-                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.7} />
-              </span>
-            </Link>
-          ) : (
-            <span />
-          )}
-          <div className="flex flex-col items-end gap-2 sm:flex-row sm:gap-8">
-            <p>{date}</p>
-            <p>From {author}</p>
-          </div>
-        </div>
+    <article className="letter-card">
+      <div className="letter-card__meta">
+        <span>LETTER {String(serial).padStart(3, "0")}</span>
+        <span>{date}</span>
       </div>
-
-      <div
-        className="hidden bg-[#d1d1d1] bg-cover bg-center md:block"
-        style={{
-          backgroundImage: `linear-gradient(180deg, rgba(24,24,24,0.08), rgba(24,24,24,0.18)), url(${imageUrl})`,
-          filter: "grayscale(0.18) saturate(0.68) contrast(0.94)",
-        }}
-      />
+      <h2 className="letter-card__recipient">
+        <small>그리운 분께</small>
+        {recipient}
+      </h2>
+      <p
+        ref={contentRef}
+        id={contentId}
+        className={`letter-card__content ${expanded ? "" : "letter-card__content--excerpt"}`}
+      >
+        {content}
+      </p>
+      {(canExpand || expanded) && (
+        <button
+          type="button"
+          className="letter-card__read"
+          aria-expanded={expanded}
+          aria-controls={contentId}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded ? "편지 접기" : "편지 펼쳐 읽기"}
+          <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+        </button>
+      )}
+      <div className="letter-card__footer">
+        <span>보내는 분 · {author}</span>
+        {href && (
+          <Link href={href}>
+            추모관 보기
+            <ArrowRight aria-hidden="true" />
+          </Link>
+        )}
+      </div>
     </article>
   );
 }

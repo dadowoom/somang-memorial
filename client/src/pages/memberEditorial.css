@@ -1,0 +1,703 @@
+/* Member-facing pages share the public site's type, spacing and controls.
+   The route boundary deliberately excludes admin, kiosk and obituary pages. */
+.member-editorial {
+  color: #171717;
+  background: #fff;
+}
+.member-editorial main {
+  font-family: "Noto Sans KR", sans-serif;
+}
+.member-editorial main .container {
+  max-width: 1320px;
+  padding-inline: 40px;
+}
+.member-editorial main :is(h1, h2, h3) {
+  font-weight: 400;
+  letter-spacing: -0.045em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.member-editorial main h1 {
+  font-family: "Noto Serif KR", serif;
+  line-height: 1.4;
+}
+.member-editorial
+  main
+  :is([class~="border-[#b5b0a7]"], [class~="border-[#e2e2e2]"]) {
+  border-color: #dedede;
+}
+.member-editorial main :is(input, textarea, select) {
+  accent-color: #171717;
+}
+.member-editorial
+  main
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    textarea,
+    select
+  ) {
+  font-size: 16px;
+  border-color: #ccc;
+  border-radius: 0;
+}
+.member-editorial
+  main
+  :is(a, button, input, textarea, select, summary):focus-visible {
+  outline: 2px solid #555;
+  outline-offset: 4px;
+}
+.member-editorial
+  main
+  :where(
+    button.h-10,
+    button.h-11,
+    button.h-12,
+    button.min-h-12,
+    a.h-11,
+    a > span.h-11,
+    a > span.min-h-12,
+    a.h-12
+  ) {
+  min-height: 44px;
+  height: auto;
+  padding-block: 10px;
+  border-radius: 999px;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+}
+.member-editorial main :is(button, a).inline-flex > svg,
+.member-editorial main a > span.inline-flex > svg {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+@media (hover: hover) {
+  .member-editorial main :is(button, a).inline-flex:hover > svg,
+  .member-editorial main a:hover > span.inline-flex > svg {
+    transform: translateX(3px);
+  }
+}
+.member-editorial main :is(section[id], div[id]) {
+  scroll-margin-top: 88px;
+}
+.member-editorial main :is(p, dd, label, article) {
+  overflow-wrap: anywhere;
+}
+
+/* Personal memorial: quiet portrait, clear hierarchy, one record menu. */
+.memorial-hero {
+  background: #f5f5f4;
+}
+.member-editorial .memorial-hero > .container {
+  padding-block: 28px 64px;
+}
+.member-editorial a.memorial-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-bottom: 40px;
+  color: #656565;
+  font-size: 12px;
+}
+.memorial-back:hover {
+  color: #171717;
+}
+.memorial-hero__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.65fr);
+  align-items: center;
+  gap: clamp(48px, 8vw, 120px);
+}
+.memorial-hero__copy {
+  min-width: 0;
+}
+.memorial-hero__eyebrow {
+  margin-bottom: 24px;
+  color: #656565;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+}
+.member-editorial .memorial-hero__name {
+  font-size: clamp(44px, 5vw, 72px);
+  line-height: 1.2;
+}
+.memorial-hero__role {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+  color: #666;
+  font-size: 14px;
+}
+.memorial-hero__role span + span {
+  border-left: 1px solid #ccc;
+  padding-left: 12px;
+}
+.memorial-hero__summary {
+  max-width: 580px;
+  margin-top: 32px;
+  color: #515151;
+  font-size: 16px;
+  line-height: 2;
+  word-break: keep-all;
+}
+.memorial-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 40px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #d5d5d5;
+}
+.memorial-facts > div {
+  padding: 0;
+  background: transparent;
+}
+.memorial-facts p:first-child {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.memorial-facts p:last-child {
+  font-family: "Noto Sans KR", sans-serif !important;
+  font-size: 14px;
+  font-weight: 400;
+}
+.memorial-portrait {
+  width: 100%;
+  max-width: 350px;
+  margin: 0 auto;
+}
+.memorial-portrait__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  background: #e9e9e9;
+}
+.memorial-portrait__empty {
+  display: grid;
+  place-content: center;
+  aspect-ratio: 4 / 5;
+  background: #e9e9e9;
+  color: #777;
+  font-family: "Noto Serif KR", serif;
+  font-size: 72px;
+}
+.memorial-portrait figcaption {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 16px;
+  color: #737373;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+.memorial-record-nav {
+  background: #1c1c1c;
+  color: #fff;
+}
+.memorial-record-nav__inner {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #777 #1c1c1c;
+}
+.memorial-record-nav a {
+  display: inline-flex;
+  flex: 1 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 72px;
+  padding: 14px 20px;
+  border-right: 1px solid #ffffff20;
+  color: #eee;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.memorial-record-nav a:first-child {
+  border-left: 1px solid #ffffff20;
+}
+.memorial-record-nav a:hover {
+  background: #373737;
+}
+.member-editorial .memorial-record-nav a:focus-visible {
+  outline-color: #fff;
+  outline-offset: -5px;
+}
+.memorial-record-nav svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.5;
+}
+.memorial-section-heading {
+  margin-bottom: 48px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #dcdcdc;
+}
+.memorial-section-heading h2 {
+  font-size: clamp(28px, 3vw, 40px);
+}
+.memorial-section-heading p:first-child {
+  margin-bottom: 16px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+}
+.memorial-section-heading > div:last-child {
+  display: none;
+}
+.memorial-life__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  gap: clamp(32px, 6vw, 80px);
+  align-items: start;
+}
+.member-editorial .memorial-verse {
+  background: #1c1c1c;
+  border: 0;
+  padding: 36px;
+}
+.memorial-verse p {
+  color: #fff !important;
+  line-height: 1.9;
+}
+.memorial-verse p + p {
+  color: #b9b9b9 !important;
+  font-size: 12px;
+}
+.member-editorial .memorial-service {
+  border: 0;
+  padding: 24px 0 0;
+}
+.member-editorial .memorial-story {
+  border: 0;
+  padding: 0;
+}
+.memorial-story p {
+  line-height: 2.1;
+}
+.memorial-journey {
+  background: #f5f5f5;
+}
+.memorial-journey article {
+  padding-block: 32px;
+}
+.memorial-journey article > p {
+  font-size: 28px;
+}
+.memorial-letter-form {
+  border-top: 2px solid #222 !important;
+}
+.member-editorial .memorial-letter-form > div:first-child {
+  grid-template-columns: 1fr;
+}
+.memorial-letter-form label + label {
+  border-top: 1px solid #dedede;
+}
+.memorial-letter-form textarea {
+  min-height: 170px;
+  line-height: 2;
+}
+.memorial-letter-list article {
+  background: #f6f6f6;
+  padding: 28px;
+  margin-bottom: 12px;
+  border: 0;
+}
+.memorial-letter-list article > p {
+  max-width: 780px;
+  font-family: "Noto Serif KR", serif;
+  font-size: 16px;
+  line-height: 2;
+}
+
+/* A private room has a restrained, narrow entrance. */
+.family-gate {
+  max-width: 540px;
+  margin-inline: auto;
+}
+.member-editorial .family-gate form {
+  border: 0;
+  border-top: 2px solid #171717;
+  background: #f6f6f6;
+  padding: 40px;
+}
+.family-gate h1 {
+  font-size: 40px;
+}
+.family-gate form > div:first-child {
+  padding-bottom: 28px;
+  margin-bottom: 28px;
+}
+.family-gate form > div:first-child > div {
+  border-radius: 50%;
+}
+.member-editorial .family-letter {
+  border: 0;
+  border-top: 2px solid #222;
+  padding: 48px;
+  background: #f6f6f6;
+}
+.family-letter > p:last-child {
+  max-width: 760px;
+  white-space: pre-wrap;
+  font-family: "Noto Serif KR", serif;
+  font-size: 18px;
+  line-height: 2.2;
+}
+
+/* Letter cards have a readable excerpt and an explicit expand control. */
+.letter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+.letter-card {
+  position: relative;
+  min-width: 0;
+  padding: 32px;
+  border: 1px solid #ddd;
+  border-top: 2px solid #262626;
+  background: #fff;
+  transition:
+    border-color 0.25s,
+    box-shadow 0.25s;
+}
+.letter-card:hover {
+  border-color: #a5a5a5;
+  box-shadow: 0 12px 30px #00000005;
+}
+.letter-card__meta,
+.letter-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: 12px;
+  color: #737373;
+}
+.letter-card__recipient {
+  margin-top: 26px;
+  font-family: "Noto Serif KR", serif;
+  font-size: 25px;
+  line-height: 1.6;
+}
+.letter-card__recipient small {
+  display: block;
+  margin-bottom: 8px;
+  color: #777;
+  font-family: "Noto Sans KR", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.letter-card__content {
+  min-height: 128px;
+  margin-top: 20px;
+  white-space: pre-wrap;
+  color: #565656;
+  font-family: "Noto Serif KR", serif;
+  font-size: 16px;
+  line-height: 2;
+}
+.letter-card__content--excerpt {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.letter-card__read {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  margin-top: 8px;
+  color: #454545;
+  font-size: 12px;
+}
+.letter-card__footer {
+  min-height: 65px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e3e3e3;
+}
+.letter-card__footer a {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  color: #171717;
+}
+.letter-card__footer svg {
+  width: 16px;
+}
+.letter-card__footer span {
+  overflow-wrap: anywhere;
+}
+.letter-pagination button {
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+}
+.member-editorial main .editorial-tabs button {
+  border-radius: 0;
+  min-height: 56px;
+  height: 100%;
+}
+.member-editorial .public-editorial main .editorial-search {
+  border: 0;
+  border-bottom: 1px solid #555;
+}
+
+/* Sign in and member forms retain their existing validation and workflow. */
+.member-editorial .account-layout {
+  padding-block: 76px 96px;
+  gap: 80px;
+}
+.account-intro {
+  padding-top: 24px;
+}
+.member-editorial .account-panel {
+  padding: 36px;
+  border: 0;
+  border-top: 2px solid #171717;
+  background: #f6f6f6;
+}
+.account-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: 1px solid #ccc;
+}
+.account-tabs button {
+  padding: 16px 8px;
+  border-bottom: 2px solid transparent;
+  color: #777;
+  font-size: 16px;
+}
+.account-tabs button[aria-pressed="true"] {
+  border-bottom-color: #171717;
+  color: #171717;
+}
+.account-panel input {
+  background: transparent;
+}
+.account-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid #ddd;
+  color: #777;
+  font-size: 12px;
+}
+.account-steps span {
+  display: inline-flex;
+  gap: 8px;
+}
+.member-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid #333;
+}
+.member-stats > div {
+  padding: 24px 12px;
+  border-bottom: 1px solid #ddd;
+}
+.member-stats > div + div {
+  border-left: 1px solid #ddd;
+}
+.member-stats p:last-child {
+  font-size: 28px;
+  font-weight: 400;
+}
+.member-editorial main.mx-auto > h1 {
+  font-size: clamp(32px, 3vw, 42px);
+}
+.member-editorial main.mx-auto > section {
+  border-top: 1px solid #d8d8d8;
+  padding-top: 28px;
+}
+.member-editorial main > section > .container > aside {
+  align-self: start;
+  border: 0;
+  border-top: 2px solid #171717;
+  background: #f5f5f5;
+  padding: 28px;
+}
+.member-editorial main > section > .container > aside > div:nth-child(2) {
+  background: #ddd;
+}
+@media (max-width: 1023px) {
+  .memorial-hero__layout {
+    gap: 40px;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 0.65fr);
+  }
+  .memorial-life__layout {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 32px;
+  }
+  .member-editorial .account-layout {
+    gap: 40px;
+  }
+}
+@media (max-width: 767px) {
+  .member-editorial main .container {
+    padding-inline: 24px;
+  }
+  .member-editorial main > section:is(.py-20, .py-14),
+  .member-editorial .memorial-gallery > section,
+  .member-editorial #video > section,
+  .member-editorial #book > section {
+    padding-block: 56px;
+  }
+  .member-editorial .memorial-hero > .container {
+    padding-block: 16px 40px;
+  }
+  .member-editorial a.memorial-back {
+    margin-bottom: 24px;
+  }
+  .memorial-hero__layout {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 32px;
+  }
+  .memorial-portrait {
+    max-width: 240px;
+  }
+  .memorial-hero__eyebrow {
+    margin-bottom: 18px;
+    font-size: 10px;
+  }
+  .memorial-hero__role {
+    margin-top: 16px;
+  }
+  .memorial-hero__summary {
+    margin-top: 24px;
+    font-size: 15px;
+  }
+  .memorial-facts {
+    gap: 20px 28px;
+    margin-top: 24px;
+  }
+  .member-editorial .memorial-record-nav__inner {
+    padding-inline: 0;
+  }
+  .memorial-record-nav a {
+    flex: 0 0 auto;
+    min-height: 62px;
+    padding-inline: 20px;
+    font-size: 12px;
+  }
+  .memorial-section-heading {
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+  }
+  .memorial-life__layout {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 32px;
+  }
+  .memorial-life__layout > * {
+    width: 100%;
+  }
+  .member-editorial .memorial-verse {
+    padding: 28px;
+  }
+  .memorial-letter-list article {
+    padding: 24px;
+  }
+  .family-gate h1 {
+    font-size: 34px;
+  }
+  .member-editorial .family-gate form,
+  .member-editorial .family-letter {
+    padding: 28px 24px;
+  }
+  .family-letter > p:last-child {
+    font-size: 16px;
+  }
+  .letter-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .letter-card {
+    padding: 24px;
+  }
+  .letter-card__recipient {
+    font-size: 23px;
+  }
+  .letter-card__content {
+    font-size: 15px;
+  }
+  .member-editorial .account-layout {
+    padding-block: 40px 56px;
+    gap: 32px;
+  }
+  .account-intro {
+    padding: 0;
+  }
+  .account-intro h1 {
+    font-size: 34px;
+  }
+  .account-steps {
+    gap: 12px 20px;
+    margin-top: 24px;
+  }
+  .member-editorial .account-panel {
+    padding: 24px;
+  }
+}
+.member-editorial .memorial-back-to-top {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  width: 56px;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid #d8d8d8;
+  border-radius: 28px;
+  background: #fff;
+  color: #171717;
+  box-shadow: 0 4px 20px #00000012;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+.member-editorial .memorial-back-to-top:focus-visible {
+  outline: 2px solid #171717;
+  outline-offset: 4px;
+}
+@media (hover: hover) {
+  .member-editorial .memorial-back-to-top:hover {
+    border-color: #171717;
+    background: #171717;
+    color: #fff;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .member-editorial .memorial-back-to-top,
+  .member-editorial main *,
+  .member-editorial main *::before,
+  .member-editorial main *::after {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,7 +1,8 @@
 import Footer from "@/components/Footer";
 import { formatLifespan } from "@/lib/lifespan";
 import Navbar from "@/components/Navbar";
-import { toImgUrl } from "@/lib/imageUrl";
+import MemorialPortrait from "@/components/memorial/MemorialPortrait";
+import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
@@ -20,10 +21,9 @@ import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { Link, useRoute } from "wouter";
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
-const warmGold = "oklch(0.50 0.07 72)";
-const warmText = "oklch(0.25 0.04 50)";
-const mutedText = "oklch(0.42 0.02 55)";
-const memorialPhotoFilter = "grayscale(1) contrast(1.04) brightness(1.02)";
+const warmGold = "#666666";
+const warmText = "#171717";
+const mutedText = "#626262";
 
 type TimelineItem = {
   year: string;
@@ -138,6 +138,7 @@ export default function MemorialPublicDetail() {
       </main>
 
       <Footer />
+      <MemorialBackToTop />
     </div>
   );
 }
@@ -218,7 +219,8 @@ function PrivateMemorialGate({
               onChange={event => setPassword(event.target.value)}
               className="mt-5 h-12 w-full border-0 border-b border-[#b5b0a7] bg-transparent text-sm outline-none focus:border-[#18181b]"
               placeholder="비밀번호"
-              autoFocus
+              aria-label="추모관 입장 비밀번호"
+              autoComplete="off"
             />
             {message && (
               <p className="mt-3 text-xs text-[#9f2a2a]">{message}</p>
@@ -260,133 +262,67 @@ function MemorialContent({
 
   return (
     <>
-      <section
-        className="relative overflow-hidden"
-        style={{
-          background: "linear-gradient(180deg, #ffffff 0%, #ffffff 100%)",
-        }}
-      >
-        <GoldDust />
-
-        <div className="container relative z-10 py-10 md:py-16 lg:py-20">
-          <Link href="/memorial/search">
-            <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
-              <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
-              추모관 찾기로 돌아가기
-            </button>
+      <section className="memorial-hero">
+        <div className="container">
+          <Link href="/memorial/search" className="memorial-back">
+            <ArrowLeft size={16} /> 추모관 찾기
           </Link>
-
-          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,0.98fr)_minmax(300px,0.68fr)] lg:gap-20">
-            <div>
-              <div className="mb-8 flex items-center gap-3">
-                <span className="h-px w-8" style={{ background: warmGold }} />
-                <p
-                  className="text-[11px] font-medium uppercase tracking-[0.28em]"
-                  style={{ color: warmGold }}
-                >
-                  Somang Memorial
-                </p>
-              </div>
-
-              <h1
-                className="text-5xl font-light leading-tight sm:text-6xl lg:text-7xl"
-                style={{ ...serifStyle, color: warmText }}
-              >
+          <div className="memorial-hero__layout">
+            <div className="memorial-hero__copy">
+              <p className="memorial-hero__eyebrow">
+                SOMANG MEMORIAL · 한 성도의 믿음의 여정
+              </p>
+              <h1 className="memorial-hero__name" style={serifStyle}>
                 {memorial.name}
               </h1>
-              <p
-                className="mt-4 text-xl font-light"
-                style={{ ...serifStyle, color: warmGold }}
-              >
-                {memorial.role}
-              </p>
-              <p className="mt-2 text-sm" style={{ color: mutedText }}>
-                {memorial.church} 온라인 추모관
-              </p>
-
-              <div
-                className="my-8 h-px w-16"
-                style={{ background: warmGold }}
-              />
-
-              <p
-                className="max-w-2xl text-base font-light leading-8 md:text-lg"
-                style={{ ...serifStyle, color: "oklch(0.34 0.04 50)" }}
-              >
-                {memorial.summary}
-              </p>
-
-              <div
-                className={`mt-10 grid max-w-xl grid-cols-1 gap-px overflow-hidden border border-[#d5c9b4] bg-[#d5c9b4] ${
-                  memorial.deathDate ? "sm:grid-cols-3" : "sm:grid-cols-2"
-                }`}
-              >
+              <div className="memorial-hero__role">
+                <span>{memorial.role}</span>
+                <span>{memorial.church}</span>
+              </div>
+              <p className="memorial-hero__summary">{memorial.summary}</p>
+              <div className="memorial-facts">
                 <HeroFact label="출생" value={memorial.birthDate} />
-                {memorial.deathDate ? (
+                {memorial.deathDate && (
                   <HeroFact label="소천" value={memorial.deathDate} />
-                ) : null}
+                )}
                 <HeroFact label="교회" value={memorial.church} />
               </div>
-
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                <Link href={`/memorial/${memorial.slug}/archive`}>
-                  <span className="inline-flex h-11 items-center justify-center gap-2 bg-[#2e2218] px-5 text-sm font-medium text-white transition-colors hover:bg-[#4a3420]">
-                    <Images className="h-4 w-4" strokeWidth={1.7} />
-                    사진과 기록 더 보기
-                  </span>
-                </Link>
-                <a
-                  href="#letters"
-                  className="inline-flex h-11 items-center justify-center gap-2 border border-[#1f1d1a] bg-white px-5 text-sm font-medium text-[#1f1d1a] transition-colors hover:bg-[#f9f9f9]"
-                >
-                  <Mail className="h-4 w-4" strokeWidth={1.7} />
-                  편지 남기기
-                </a>
-                <a
-                  href="#life"
-                  className="inline-flex h-11 items-center justify-center gap-2 border border-[#d5c9b4] bg-white px-5 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#f9f9f9]"
-                >
-                  <BookOpenText className="h-4 w-4" strokeWidth={1.7} />
-                  삶의 기록 보기
-                </a>
-                <Link href={`/memorial/${memorial.slug}/family`}>
-                  <span className="inline-flex h-11 items-center justify-center gap-2 border border-[#d5c9b4] bg-white px-5 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
-                    <LockKeyhole className="h-4 w-4" strokeWidth={1.7} />
-                    가족관
-                  </span>
-                </Link>
-                {memorial.deathDate ? (
-                  <Link href={`/memorial/${memorial.slug}/obituary`}>
-                    <span className="inline-flex h-11 items-center justify-center gap-2 border border-[#d5c9b4] bg-white px-5 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
-                      <Scroll className="h-4 w-4" strokeWidth={1.7} />
-                      부고장
-                    </span>
-                  </Link>
-                ) : null}
-              </div>
             </div>
-
             <MemorialPortrait
-              memorial={memorial}
-              portraitPhoto={portraitPhoto}
+              name={memorial.name}
+              birthDate={memorial.birthDate}
+              deathDate={memorial.deathDate}
+              photo={portraitPhoto}
             />
           </div>
         </div>
-
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 1440 60"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M0 60L1440 60L1440 20C1200 60 960 0 720 20C480 40 240 0 0 20L0 60Z"
-              fill="#ffffff"
-            />
-          </svg>
-        </div>
       </section>
+      <nav className="memorial-record-nav" aria-label="추모관 기록 메뉴">
+        <div className="container memorial-record-nav__inner">
+          <a href="#life">
+            <BookOpenText />
+            삶과 신앙
+          </a>
+          <Link href={`/memorial/${memorial.slug}/archive#gallery`}>
+            <Images />
+            사진과 기록
+          </Link>
+          <a href="#letters">
+            <Mail />
+            편지 남기기
+          </a>
+          <Link href={`/memorial/${memorial.slug}/family`}>
+            <LockKeyhole />
+            가족관
+          </Link>
+          {memorial.deathDate && (
+            <Link href={`/memorial/${memorial.slug}/obituary`}>
+              <Scroll />
+              부고장
+            </Link>
+          )}
+        </div>
+      </nav>
 
       <section id="life" className="py-20 md:py-28">
         <div className="container">
@@ -396,10 +332,10 @@ function MemorialContent({
             description="가족과 교회가 기억하는 따뜻한 여정을 조용히 담았습니다."
           />
 
-          <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          <div className="memorial-life__layout">
             <div className="space-y-6">
               {memorial.verse && (
-                <section className="border border-[#d5c9b4] bg-white p-6 md:p-8">
+                <section className="memorial-verse border border-[#dedede] bg-white p-6 md:p-8">
                   <p
                     className="text-[17px] font-light leading-relaxed md:text-[21px]"
                     style={{ ...serifStyle, color: warmText }}
@@ -414,7 +350,7 @@ function MemorialContent({
                 </section>
               )}
 
-              <section className="border border-[#d5c9b4] bg-[#ffffff] p-6 md:p-8">
+              <section className="memorial-service border border-[#dedede] bg-white p-6 md:p-8">
                 <div className="mb-5 flex items-center gap-3">
                   <Church
                     className="h-5 w-5"
@@ -455,7 +391,7 @@ function MemorialContent({
               </section>
             </div>
 
-            <article className="border border-[#d5c9b4] bg-white p-6 md:p-10">
+            <article className="memorial-story border border-[#dedede] bg-white p-6 md:p-10">
               <p
                 className="mb-4 text-[11px] font-medium uppercase tracking-[0.26em]"
                 style={{ color: warmGold }}
@@ -486,8 +422,7 @@ function MemorialContent({
 
       {memorial.timeline.length > 0 && (
         <section
-          className="py-20 md:py-28"
-          style={{ background: "linear-gradient(180deg, #ffffff, #ffffff)" }}
+          className="memorial-journey py-20 md:py-28"
         >
           <div className="container">
             <SectionHeader
@@ -496,11 +431,11 @@ function MemorialContent({
               description="하나님과 함께 걸어온 삶의 발자취를 돌아봅니다."
             />
 
-            <div className="mx-auto max-w-4xl border-t border-[#d5c9b4]">
+            <div className="mx-auto max-w-4xl border-t border-[#dedede]">
               {memorial.timeline.map((item, index) => (
                 <article
                   key={`${item.year}-${item.title}-${index}`}
-                  className="grid gap-5 border-b border-[#d5c9b4] py-7 md:grid-cols-[140px_1fr]"
+                  className="grid gap-5 border-b border-[#dedede] py-7 md:grid-cols-[140px_1fr]"
                 >
                   <p
                     className="text-lg font-light"
@@ -544,7 +479,7 @@ function MemorialContent({
 function CenteredState({ children }: { children: ReactNode }) {
   return (
     <section className="container py-20">
-      <div className="border border-[#d5c9b4] bg-white py-20 text-center">
+      <div className="border border-[#dedede] bg-white py-20 text-center">
         <p className="text-sm" style={{ color: mutedText }}>
           {children}
         </p>
@@ -622,7 +557,7 @@ function MemorialReminderForm({
   return (
     <form
       onSubmit={submitReminder}
-      className="mt-6 border-t border-[#d5c9b4] pt-5"
+      className="mt-6 border-t border-[#dedede] pt-5"
     >
       <div className="mb-4 flex items-start gap-3">
         <Phone
@@ -647,7 +582,7 @@ function MemorialReminderForm({
           placeholder="010-0000-0000"
           inputMode="tel"
           maxLength={20}
-          className="h-11 w-full border border-[#d5c9b4] bg-white px-3 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#8a6a3e]"
+          className="h-11 w-full border border-[#dedede] bg-white px-3 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#555555]"
         />
         <label
           className="flex cursor-pointer items-start gap-3 py-2 text-xs leading-5"
@@ -666,7 +601,7 @@ function MemorialReminderForm({
         <button
           type="submit"
           disabled={subscribeMutation.isPending}
-          className="inline-flex h-11 items-center justify-center gap-2 bg-[#1f1d1a] px-4 text-sm font-medium text-white transition-colors hover:bg-[#33302b] disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-11 items-center justify-center gap-2 bg-[#171717] px-4 text-sm font-medium text-white transition-colors hover:bg-[#393939] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {subscribeMutation.isPending ? "신청 중" : "알림 신청"}
           <Bell className="h-4 w-4" strokeWidth={1.7} />
@@ -682,96 +617,6 @@ function MemorialReminderForm({
   );
 }
 
-function MemorialPortrait({
-  memorial,
-  portraitPhoto,
-}: {
-  memorial: MemorialRecord;
-  portraitPhoto?: string;
-}) {
-  const initial = getMemorialInitial(memorial.name);
-
-  return (
-    <div className="relative mx-auto w-full max-w-[390px] lg:mx-0 lg:justify-self-end">
-      <div
-        className="absolute -right-4 -top-4 h-full w-full border"
-        style={{ borderColor: warmGold, opacity: 0.3 }}
-      />
-      <div
-        className="absolute -bottom-4 -left-4 h-full w-full border"
-        style={{ borderColor: warmGold, opacity: 0.16 }}
-      />
-      <div
-        className="relative overflow-hidden border border-[#d5c9b4] bg-white"
-        style={{ boxShadow: "0 22px 70px rgba(31, 29, 26, 0.08)" }}
-      >
-        {portraitPhoto ? (
-          <>
-            <img
-              src={toImgUrl(portraitPhoto)}
-              alt={`${memorial.name} 사진`}
-              className="aspect-[4/5] w-full object-cover"
-              style={{ filter: memorialPhotoFilter }}
-            />
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#7a5428]/85 to-transparent px-5 py-5 text-center">
-              <p className="text-xs italic text-white" style={serifStyle}>
-                {formatLifespan(memorial.birthDate, memorial.deathDate)}
-              </p>
-            </div>
-          </>
-        ) : (
-          <div className="relative flex aspect-[4/5] flex-col justify-between p-8 text-center">
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "radial-gradient(circle at 50% 30%, rgba(191,147,74,0.08), transparent 38%), linear-gradient(180deg, rgba(255,255,255,0.86), rgba(250,249,247,0.95))",
-              }}
-            />
-            <div className="relative">
-              <p
-                className="text-[11px] font-medium uppercase tracking-[0.28em]"
-                style={{ color: warmGold }}
-              >
-                In Memoriam
-              </p>
-            </div>
-            <div className="relative">
-              <div
-                className="mx-auto flex h-32 w-32 items-center justify-center rounded-full border border-[#d5c9b4] bg-white text-6xl font-light md:h-40 md:w-40 md:text-7xl"
-                style={{ ...serifStyle, color: warmGold }}
-              >
-                {initial}
-              </div>
-              <p
-                className="mt-8 text-3xl font-light"
-                style={{ ...serifStyle, color: warmText }}
-              >
-                {memorial.name}
-              </p>
-              <p className="mt-3 text-sm" style={{ color: mutedText }}>
-                {memorial.role}
-              </p>
-            </div>
-            <div className="relative">
-              <p
-                className="text-sm font-light"
-                style={{ ...serifStyle, color: warmText }}
-              >
-                {formatLifespan(memorial.birthDate, memorial.deathDate)}
-              </p>
-              <div
-                className="mx-auto mt-5 h-px w-16"
-                style={{ background: warmGold, opacity: 0.55 }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function SectionHeader({
   eyebrow,
   title,
@@ -782,7 +627,7 @@ function SectionHeader({
   description?: string;
 }) {
   return (
-    <div className="mx-auto mb-14 max-w-3xl text-center">
+    <div className="memorial-section-heading">
       <p
         className="mb-3 text-xs font-medium uppercase tracking-[0.28em]"
         style={{ color: warmGold }}
@@ -817,38 +662,6 @@ function SectionHeader({
           style={{ background: warmGold, opacity: 0.55 }}
         />
       </div>
-    </div>
-  );
-}
-
-function GoldDust() {
-  const dots = [
-    { left: "8%", top: "18%", size: 3, opacity: 0.07 },
-    { left: "16%", top: "72%", size: 2, opacity: 0.06 },
-    { left: "28%", top: "12%", size: 4, opacity: 0.05 },
-    { left: "42%", top: "82%", size: 3, opacity: 0.06 },
-    { left: "57%", top: "20%", size: 2, opacity: 0.07 },
-    { left: "70%", top: "70%", size: 4, opacity: 0.04 },
-    { left: "84%", top: "28%", size: 3, opacity: 0.06 },
-    { left: "91%", top: "78%", size: 2, opacity: 0.05 },
-  ];
-
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {dots.map(dot => (
-        <span
-          key={`${dot.left}-${dot.top}`}
-          className="absolute rounded-full"
-          style={{
-            left: dot.left,
-            top: dot.top,
-            width: dot.size,
-            height: dot.size,
-            background: warmGold,
-            opacity: dot.opacity,
-          }}
-        />
-      ))}
     </div>
   );
 }
@@ -917,9 +730,9 @@ function MemorialLetters({
         <div className="mx-auto max-w-5xl">
           <form
             onSubmit={submitLetter}
-            className="border border-[#d5c9b4] bg-white"
+            className="memorial-letter-form border border-[#dedede] bg-white"
           >
-            <div className="grid gap-px bg-[#d5c9b4] md:grid-cols-[190px_1fr]">
+            <div className="grid gap-px bg-[#dedede] md:grid-cols-[190px_1fr]">
               <label className="bg-white p-5">
                 <span
                   className="text-xs font-medium uppercase tracking-[0.16em]"
@@ -952,7 +765,7 @@ function MemorialLetters({
                 />
               </label>
             </div>
-            <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
+            <div className="flex flex-col justify-between gap-3 border-t border-[#dedede] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
               <p
                 className="text-pretty break-keep text-xs leading-6 [overflow-wrap:anywhere]"
                 style={{ color: mutedText }}
@@ -965,7 +778,7 @@ function MemorialLetters({
               <button
                 type="submit"
                 disabled={createLetterMutation.isPending}
-                className="inline-flex h-11 items-center justify-center gap-2 bg-[#1f1d1a] px-5 text-sm font-medium text-white transition-colors hover:bg-[#33302b] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 items-center justify-center gap-2 bg-[#171717] px-5 text-sm font-medium text-white transition-colors hover:bg-[#393939] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {createLetterMutation.isPending ? "남기는 중" : "편지 남기기"}
                 <Send className="h-4 w-4" strokeWidth={1.7} />
@@ -973,10 +786,10 @@ function MemorialLetters({
             </div>
           </form>
 
-          <div className="mt-8 border-t border-[#d5c9b4]">
+          <div className="memorial-letter-list mt-8">
             {lettersQuery.isLoading ? (
               <p
-                className="border-b border-[#d5c9b4] py-7 text-sm"
+                className="border-b border-[#dedede] py-7 text-sm"
                 style={{ color: mutedText }}
               >
                 편지를 불러오고 있습니다.
@@ -985,7 +798,7 @@ function MemorialLetters({
               lettersQuery.data.map(letter => (
                 <article
                   key={letter.id}
-                  className="border-b border-[#d5c9b4] py-7"
+                  className="border-b border-[#dedede] py-7"
                 >
                   <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
                     <p
@@ -1008,7 +821,7 @@ function MemorialLetters({
               ))
             ) : (
               <p
-                className="border-b border-[#d5c9b4] py-7 text-sm"
+                className="border-b border-[#dedede] py-7 text-sm"
                 style={{ color: mutedText }}
               >
                 아직 남겨진 편지가 없습니다.
@@ -1019,8 +832,8 @@ function MemorialLetters({
           <div className="mt-8 text-center">
             <Link href="/letters">
               <span
-                className="inline-flex h-11 items-center justify-center border border-[#d5c9b4] bg-white px-5 text-sm font-medium transition-colors hover:bg-[#f9f9f9]"
-                style={{ color: "#4f4638" }}
+                className="inline-flex h-11 items-center justify-center border border-[#dedede] bg-white px-5 text-sm font-medium transition-colors hover:bg-[#f9f9f9]"
+                style={{ color: "#555555" }}
               >
                 편지 모아 보기
               </span>
@@ -1039,11 +852,6 @@ function splitParagraphs(value: string) {
     .filter(Boolean);
 
   return paragraphs.length > 0 ? paragraphs : [value];
-}
-
-function getMemorialInitial(name: string) {
-  const cleaned = name.replace(/^(고|故)\s*/, "").trim();
-  return cleaned.charAt(0) || "소";
 }
 
 function formatDate(value: Date | string) {

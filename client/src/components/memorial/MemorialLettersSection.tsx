@@ -4,9 +4,9 @@ import { FormEvent, useState } from "react";
 import { Link } from "wouter";
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
-const warmGold = "oklch(0.50 0.07 72)";
-const warmText = "oklch(0.25 0.04 50)";
-const mutedText = "oklch(0.42 0.02 55)";
+const warmGold = "#666666";
+const warmText = "#171717";
+const mutedText = "#626262";
 
 export default function MemorialLettersSection({
   memorialSlug,
@@ -72,9 +72,9 @@ export default function MemorialLettersSection({
         <div className="mx-auto max-w-5xl">
           <form
             onSubmit={submitLetter}
-            className="border border-[#d5c9b4] bg-white"
+            className="memorial-letter-form border border-[#dedede] bg-white"
           >
-            <div className="grid gap-px bg-[#d5c9b4] md:grid-cols-[190px_1fr]">
+            <div className="grid gap-px bg-[#dedede] md:grid-cols-[190px_1fr]">
               <label className="bg-white p-5">
                 <span
                   className="text-xs font-medium uppercase tracking-[0.16em]"
@@ -107,7 +107,7 @@ export default function MemorialLettersSection({
                 />
               </label>
             </div>
-            <div className="flex flex-col justify-between gap-3 border-t border-[#d5c9b4] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
+            <div className="flex flex-col justify-between gap-3 border-t border-[#dedede] bg-[#ffffff] p-5 sm:flex-row sm:items-center">
               <p
                 className="break-keep text-xs leading-6 [overflow-wrap:anywhere]"
                 style={{ color: mutedText }}
@@ -120,7 +120,7 @@ export default function MemorialLettersSection({
               <button
                 type="submit"
                 disabled={createLetterMutation.isPending}
-                className="inline-flex h-11 items-center justify-center gap-2 bg-[#1f1d1a] px-5 text-sm font-medium text-white transition-colors hover:bg-[#33302b] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 items-center justify-center gap-2 bg-[#171717] px-5 text-sm font-medium text-white transition-colors hover:bg-[#393939] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {createLetterMutation.isPending ? "남기는 중" : "편지 남기기"}
                 <Send className="h-4 w-4" strokeWidth={1.7} />
@@ -128,10 +128,10 @@ export default function MemorialLettersSection({
             </div>
           </form>
 
-          <div className="mt-8 border-t border-[#d5c9b4]">
+          <div className="memorial-letter-list mt-8">
             {lettersQuery.isLoading ? (
               <p
-                className="border-b border-[#d5c9b4] py-7 text-sm"
+                className="border-b border-[#dedede] py-7 text-sm"
                 style={{ color: mutedText }}
               >
                 편지를 불러오고 있습니다.
@@ -140,7 +140,7 @@ export default function MemorialLettersSection({
               lettersQuery.data.map(letter => (
                 <article
                   key={letter.id}
-                  className="border-b border-[#d5c9b4] py-7"
+                  className="border-b border-[#dedede] py-7"
                 >
                   <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
                     <p
@@ -163,7 +163,7 @@ export default function MemorialLettersSection({
               ))
             ) : (
               <p
-                className="border-b border-[#d5c9b4] py-7 text-sm"
+                className="border-b border-[#dedede] py-7 text-sm"
                 style={{ color: mutedText }}
               >
                 아직 남겨진 편지가 없습니다.
@@ -174,8 +174,8 @@ export default function MemorialLettersSection({
           <div className="mt-8 text-center">
             <Link href="/letters">
               <span
-                className="inline-flex h-11 items-center justify-center border border-[#d5c9b4] bg-white px-5 text-sm font-medium transition-colors hover:bg-[#f9f9f9]"
-                style={{ color: "#4f4638" }}
+                className="inline-flex h-11 items-center justify-center border border-[#dedede] bg-white px-5 text-sm font-medium transition-colors hover:bg-[#f9f9f9]"
+                style={{ color: "#555555" }}
               >
                 편지 모아 보기
               </span>
@@ -197,7 +197,7 @@ function SectionHeader({
   description?: string;
 }) {
   return (
-    <div className="mx-auto mb-14 max-w-3xl text-center">
+    <div className="memorial-section-heading">
       <p
         className="mb-3 text-xs font-medium uppercase tracking-[0.28em]"
         style={{ color: warmGold }}

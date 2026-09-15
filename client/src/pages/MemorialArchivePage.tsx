@@ -1,12 +1,13 @@
 import InlineEditText from "@/components/InlineEditText";
 import Footer from "@/components/Footer";
+import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
 import MemorialBookSection from "@/components/memorial/MemorialBookSection";
 import MemorialGallerySection from "@/components/memorial/MemorialGallerySection";
 import MemorialLettersSection from "@/components/memorial/MemorialLettersSection";
 import MemorialVideoSection from "@/components/memorial/MemorialVideoSection";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { toImgUrl } from "@/lib/imageUrl";
+import MemorialPortrait from "@/components/memorial/MemorialPortrait";
 import {
   getNarrativeFontSize,
   normalizeTextDisplaySize,
@@ -18,6 +19,7 @@ import {
   CalendarDays,
   Church,
   Images,
+  Mail,
   LockKeyhole,
   Video,
 } from "lucide-react";
@@ -50,10 +52,9 @@ type ArchivePhoto = {
 };
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
-const warmGold = "oklch(0.50 0.07 72)";
-const warmText = "oklch(0.25 0.04 50)";
-const mutedText = "oklch(0.42 0.02 55)";
-const memorialPhotoFilter = "grayscale(1) contrast(1.04) brightness(1.02)";
+const warmGold = "#666666";
+const warmText = "#171717";
+const mutedText = "#626262";
 const getMemorialAccessStorageKey = (slug: string) =>
   `somang.memorialAccess.${slug}`;
 const readStoredAccessToken = (slug: string) => {
@@ -130,74 +131,40 @@ export default function MemorialArchivePage() {
           <StateBlock text="기념관을 찾을 수 없습니다." />
         ) : (
           <>
-            <section
-              className="relative flex min-h-[calc(100vh-4rem)] items-center overflow-hidden"
-              style={{
-                background: "linear-gradient(180deg, #ffffff 0%, #ffffff 100%)",
-              }}
-            >
-              <GoldDust />
-
-              <div className="container relative z-10 py-12 md:py-20">
-                <Link href={`/memorial/${memorial.slug}`}>
-                  <button className="mb-10 inline-flex h-10 items-center gap-2 border border-[#d5c9b4] bg-white px-4 text-sm text-[#4f4638] transition-colors hover:bg-[#f9f9f9]">
-                    <ArrowLeft className="h-4 w-4" strokeWidth={1.6} />
-                    추모관으로 돌아가기
-                  </button>
+            <section className="memorial-hero">
+              <div className="container">
+                <Link href={`/memorial/${memorial.slug}`} className="memorial-back">
+                  <ArrowLeft size={16} />
+                  추모관으로 돌아가기
                 </Link>
-
-                <div className="grid min-w-0 items-center gap-12 md:grid-cols-2 md:gap-20">
-                  <div className="min-w-0">
-                    <div className="mb-8 flex items-center gap-3">
-                      <span
-                        className="h-px w-8"
-                        style={{ background: warmGold }}
-                      />
-                      <p
-                        className="text-[11px] font-medium uppercase tracking-[0.28em]"
-                        style={{ color: warmGold }}
-                      >
-                        소망 만들기 · 개인 기념관
-                      </p>
-                    </div>
-
-                    <h1
-                      className="break-words text-5xl font-light leading-tight md:text-6xl lg:text-7xl"
-                      style={{ ...serifStyle, color: warmText }}
-                    >
+                <div className="memorial-hero__layout">
+                  <div className="memorial-hero__copy">
+                    <p className="memorial-hero__eyebrow">
+                      LIFE ARCHIVE · 사진과 신앙의 기록
+                    </p>
+                    <h1 className="memorial-hero__name" style={serifStyle}>
                       <InlineEditText
                         value={memorial.name}
                         isAdmin={isAdmin}
                         onSave={saveField("name")}
                       />
                     </h1>
-                    <p
-                      className="mt-4 text-xl font-light"
-                      style={{ ...serifStyle, color: warmGold }}
-                    >
-                      <InlineEditText
-                        value={memorial.role}
-                        isAdmin={isAdmin}
-                        onSave={saveField("role")}
-                      />
-                    </p>
-                    <p className="mt-2 text-sm" style={{ color: mutedText }}>
-                      {memorial.church} 가족 기록관
-                    </p>
-
+                    <div className="memorial-hero__role">
+                      <span>
+                        <InlineEditText
+                          value={memorial.role}
+                          isAdmin={isAdmin}
+                          onSave={saveField("role")}
+                        />
+                      </span>
+                      <span>{memorial.church}</span>
+                    </div>
                     <div
-                      className="my-8 h-px w-16"
-                      style={{ background: warmGold }}
-                    />
-
-                    <div
-                      className="max-w-2xl break-words font-light leading-8"
+                      className="memorial-hero__summary"
                       style={{
-                        ...serifStyle,
-                        color: "oklch(0.34 0.04 50)",
                         fontSize: getNarrativeFontSize(
                           memorial.summary,
-                          normalizeTextDisplaySize(memorial.summaryDisplaySize)
+                          normalizeTextDisplaySize(memorial.summaryDisplaySize),
                         ),
                       }}
                     >
@@ -205,124 +172,65 @@ export default function MemorialArchivePage() {
                         value={memorial.summary}
                         isAdmin={isAdmin}
                         onSave={saveField("summary")}
-                        textSize={normalizeTextDisplaySize(
-                          memorial.summaryDisplaySize
-                        )}
+                        textSize={normalizeTextDisplaySize(memorial.summaryDisplaySize)}
                         onTextSizeSave={saveSize("summaryDisplaySize")}
                         multiline
                         rows={3}
                       />
                     </div>
-
-                    <div
-                      className={`mt-10 grid max-w-xl grid-cols-1 gap-px overflow-hidden border border-[#d5c9b4] bg-[#d5c9b4] ${
-                        memorial.deathDate ? "sm:grid-cols-3" : "sm:grid-cols-2"
-                      }`}
-                    >
+                    <div className="memorial-facts">
                       <ArchiveFact
-                        icon={<CalendarDays className="h-4 w-4" />}
+                        icon={<CalendarDays size={14} />}
                         label="출생"
                         value={memorial.birthDate}
                       />
-                      {memorial.deathDate ? (
+                      {memorial.deathDate && (
                         <ArchiveFact
-                          icon={<CalendarDays className="h-4 w-4" />}
+                          icon={<CalendarDays size={14} />}
                           label="소천"
                           value={memorial.deathDate}
                         />
-                      ) : null}
+                      )}
                       <ArchiveFact
-                        icon={<Church className="h-4 w-4" />}
+                        icon={<Church size={14} />}
                         label="교회"
                         value={memorial.church}
                       />
                     </div>
-
-                    <div className="mt-8 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
-                      <a
-                        href="#gallery"
-                        className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap bg-[#1f1d1a] px-4 text-sm font-medium text-white transition-colors hover:bg-[#33302b]"
-                      >
-                        <Images className="h-4 w-4" strokeWidth={1.7} />
-                        사진첩 보기
-                      </a>
-                      <a
-                        href="#video"
-                        className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap border border-[#1f1d1a] bg-white px-4 text-sm font-medium text-[#1f1d1a] transition-colors hover:bg-[#f9f9f9]"
-                      >
-                        <Video className="h-4 w-4" strokeWidth={1.7} />
-                        영상 기록
-                      </a>
-                      <Link href={`/memorial/${memorial.slug}/family`}>
-                        <span className="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap border border-[#1f1d1a] bg-white px-4 text-sm font-medium text-[#1f1d1a] transition-colors hover:bg-[#f9f9f9]">
-                          <LockKeyhole className="h-4 w-4" strokeWidth={1.7} />
-                          가족관
-                        </span>
-                      </Link>
-                      <a
-                        href="#book"
-                        className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap border border-[#d5c9b4] bg-white px-4 text-sm font-medium text-[#4f4638] transition-colors hover:bg-[#f9f9f9]"
-                      >
-                        <BookOpenText className="h-4 w-4" strokeWidth={1.7} />
-                        책장과 연표
-                      </a>
-                    </div>
                   </div>
-
-                  <div className="relative mx-auto w-full max-w-[390px] md:justify-self-end">
-                    <div
-                      className="absolute -right-4 -top-4 h-full w-full border"
-                      style={{ borderColor: warmGold, opacity: 0.3 }}
-                    />
-                    <div
-                      className="absolute -bottom-4 -left-4 h-full w-full border"
-                      style={{ borderColor: warmGold, opacity: 0.16 }}
-                    />
-                    <div className="relative overflow-hidden bg-white shadow-[0_22px_70px_rgba(31,29,26,0.08)]">
-                      {heroPhoto ? (
-                        <img
-                          src={toImgUrl(heroPhoto)}
-                          alt={`${memorial.name} 사진`}
-                          className="aspect-[4/5] w-full object-cover"
-                          style={{ filter: memorialPhotoFilter }}
-                        />
-                      ) : (
-                        <div
-                          className="flex aspect-[4/5] items-center justify-center text-7xl font-light"
-                          style={{ ...serifStyle, color: warmGold }}
-                        >
-                          {memorial.name.slice(0, 1)}
-                        </div>
-                      )}
-                      {memorial.verse && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#7a5428]/85 to-transparent px-5 py-4">
-                          <p
-                            className="text-center text-xs italic text-white"
-                            style={serifStyle}
-                          >
-                            "{memorial.verse.slice(0, 32)}..."
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <MemorialPortrait
+                    name={memorial.name}
+                    birthDate={memorial.birthDate}
+                    deathDate={memorial.deathDate}
+                    photo={heroPhoto}
+                  />
                 </div>
               </div>
-
-              <div className="absolute bottom-0 left-0 right-0">
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 1440 60"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M0 60L1440 60L1440 20C1200 60 960 0 720 20C480 40 240 0 0 20L0 60Z"
-                    fill="#ffffff"
-                  />
-                </svg>
-              </div>
             </section>
+            <nav className="memorial-record-nav" aria-label="사진과 기록 메뉴">
+              <div className="container memorial-record-nav__inner">
+                <a href="#gallery">
+                  <Images />
+                  사진첩
+                </a>
+                <a href="#video">
+                  <Video />
+                  영상
+                </a>
+                <a href="#book">
+                  <BookOpenText />
+                  책장과 연표
+                </a>
+                <a href="#letters">
+                  <Mail />
+                  편지
+                </a>
+                <Link href={`/memorial/${memorial.slug}/family`}>
+                  <LockKeyhole />
+                  가족관
+                </Link>
+              </div>
+            </nav>
 
             <section className="py-20 md:py-28">
               <div className="container">
@@ -333,8 +241,7 @@ export default function MemorialArchivePage() {
                 />
 
                 <div className="mx-auto grid max-w-5xl gap-10 md:grid-cols-[0.85fr_1.15fr] md:items-center">
-                  <div className="relative overflow-hidden border border-[#d5c9b4] bg-white p-9 text-center md:p-12">
-                    <GoldDust />
+                  <div className="memorial-verse p-9 text-center md:p-12">
                     <div className="relative z-10">
                       <div
                         className="mb-4 text-5xl font-light"
@@ -378,7 +285,7 @@ export default function MemorialArchivePage() {
                     <div
                       className="mt-6 whitespace-pre-wrap break-words font-light leading-8"
                       style={{
-                        color: "oklch(0.4 0.04 50)",
+                        color: "#555555",
                         fontSize: getNarrativeFontSize(
                           memorial.story,
                           normalizeTextDisplaySize(memorial.storyDisplaySize)
@@ -402,7 +309,7 @@ export default function MemorialArchivePage() {
               </div>
             </section>
 
-            <div id="gallery">
+            <div className="memorial-gallery">
               <MemorialGallerySection
                 memorialId={memorial.id}
                 isAdmin={isAdmin}
@@ -437,6 +344,7 @@ export default function MemorialArchivePage() {
       </main>
 
       <Footer />
+      <MemorialBackToTop />
     </div>
   );
 }
@@ -479,7 +387,7 @@ function SectionHeader({
   description?: string;
 }) {
   return (
-    <div className="mx-auto mb-14 max-w-3xl text-center">
+    <div className="memorial-section-heading">
       <p
         className="mb-3 text-xs font-medium uppercase tracking-[0.28em]"
         style={{ color: warmGold }}
@@ -518,43 +426,11 @@ function SectionHeader({
   );
 }
 
-function GoldDust() {
-  const dots = [
-    { left: "8%", top: "18%", size: 3, opacity: 0.07 },
-    { left: "16%", top: "72%", size: 2, opacity: 0.06 },
-    { left: "28%", top: "12%", size: 4, opacity: 0.05 },
-    { left: "42%", top: "82%", size: 3, opacity: 0.06 },
-    { left: "57%", top: "20%", size: 2, opacity: 0.07 },
-    { left: "70%", top: "70%", size: 4, opacity: 0.04 },
-    { left: "84%", top: "28%", size: 3, opacity: 0.06 },
-    { left: "91%", top: "78%", size: 2, opacity: 0.05 },
-  ];
-
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {dots.map(dot => (
-        <span
-          key={`${dot.left}-${dot.top}`}
-          className="absolute rounded-full"
-          style={{
-            left: dot.left,
-            top: dot.top,
-            width: dot.size,
-            height: dot.size,
-            background: warmGold,
-            opacity: dot.opacity,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
 function StateBlock({ text }: { text: string }) {
   return (
     <section className="container py-20">
-      <div className="border border-[#d5c9b4] bg-white py-20 text-center">
-        <p className="text-sm text-[#7a674a]">{text}</p>
+      <div className="border border-[#dedede] bg-white py-20 text-center">
+        <p className="text-sm text-[#666666]">{text}</p>
       </div>
     </section>
   );

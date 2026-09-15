@@ -155,10 +155,10 @@ export default function MemorialVideoSection({
   }
 
   return (
-    <section className="border-t border-[#d5c9b4] bg-white py-20 md:py-28">
+    <section className="border-t border-[#dedede] bg-white py-20 md:py-28">
       <div className="container">
-        <div className="mx-auto mb-10 max-w-3xl text-center">
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.28em] text-[#7f673d]">
+        <div className="memorial-section-heading">
+          <p className="mb-3 text-xs font-medium uppercase tracking-[0.28em] text-[#666666]">
             Video Archive
           </p>
           <h2
@@ -167,18 +167,18 @@ export default function MemorialVideoSection({
           >
             영상 기록
           </h2>
-          <p className="mt-4 text-sm leading-7 text-[#6f6a61]">
+          <p className="mt-4 text-sm leading-7 text-[#666666]">
             {churchName} · {memorialName}
           </p>
         </div>
 
         {videosQuery.isLoading ? (
-          <div className="border border-[#d5c9b4] bg-white py-16 text-center text-sm text-[#6f6a61]">
+          <div className="border border-[#dedede] bg-white py-16 text-center text-sm text-[#666666]">
             영상을 불러오고 있습니다.
           </div>
         ) : !canEdit && visibleVideos.length > 0 ? (
-          <div className="mx-auto grid max-w-5xl overflow-hidden border border-[#d5c9b4] bg-[#ffffff] md:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.72fr)]">
-            <div className="relative min-h-[260px] overflow-hidden bg-[#2e2218] md:min-h-[420px]">
+          <div className="mx-auto grid max-w-5xl overflow-hidden border border-[#dedede] bg-[#ffffff] md:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.72fr)]">
+            <div className="relative min-h-[260px] overflow-hidden bg-[#171717] md:min-h-[420px]">
               {coverImageUrl ? (
                 <img
                   src={toImgUrl(coverImageUrl)}
@@ -186,12 +186,12 @@ export default function MemorialVideoSection({
                   className="absolute inset-0 h-full w-full object-cover grayscale"
                 />
               ) : (
-                <div className="absolute inset-0 bg-[#2e2218]" />
+                <div className="absolute inset-0 bg-[#171717]" />
               )}
-              <div className="absolute inset-0 bg-[#2e2218]/35" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#1f1d1a]/72 via-transparent to-white/10" />
+              <div className="absolute inset-0 bg-[#171717]/35" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#171717]/72 via-transparent to-white/10" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="flex h-16 w-16 items-center justify-center border border-white/70 bg-white/82 text-[#2e2218] shadow-[0_16px_50px_rgba(31,29,26,0.18)]">
+                <span className="flex h-16 w-16 items-center justify-center border border-white/70 bg-white/82 text-[#171717] shadow-[0_16px_50px_rgba(31,29,26,0.18)]">
                   <Play
                     className="ml-1 h-7 w-7 fill-current"
                     strokeWidth={1.6}
@@ -212,20 +212,20 @@ export default function MemorialVideoSection({
             </div>
 
             <div className="flex flex-col justify-center p-6 md:p-9">
-              <p className="break-keep text-sm leading-7 text-[#6f6a61] [overflow-wrap:anywhere]">
+              <p className="break-keep text-sm leading-7 text-[#666666] [overflow-wrap:anywhere]">
                 고인의 표정과 목소리를 영상으로 함께 기억합니다.
               </p>
-              <div className="mt-8 border-t border-[#d5c9b4] pt-6">
-                <p className="text-xs font-medium uppercase tracking-[0.24em] text-[#7f673d]">
+              <div className="mt-8 border-t border-[#dedede] pt-6">
+                <p className="text-xs font-medium uppercase tracking-[0.24em] text-[#666666]">
                   Archive
                 </p>
                 <p
-                  className="mt-3 text-xl font-light text-[#2e2218]"
+                  className="mt-3 text-xl font-light text-[#171717]"
                   style={{ fontFamily: "'Noto Serif KR', serif" }}
                 >
                   영상 기록 {visibleVideos.length}편
                 </p>
-                <p className="mt-3 text-sm leading-7 text-[#6f6a61]">
+                <p className="mt-3 text-sm leading-7 text-[#666666]">
                   {churchName} · {memorialName}
                 </p>
               </div>
@@ -233,7 +233,7 @@ export default function MemorialVideoSection({
           </div>
         ) : videos.length > 0 ? (
           <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-            <div className="overflow-hidden border border-[#d5c9b4] bg-black">
+            <div className="overflow-hidden border border-[#dedede] bg-black">
               {currentVideo ? (
                 <div className="aspect-video">
                   <iframe
@@ -246,7 +246,7 @@ export default function MemorialVideoSection({
                 </div>
               ) : (
                 <div className="flex aspect-video items-center justify-center bg-[#ffffff]">
-                  <Youtube className="h-10 w-10 text-[#7f673d]" />
+                  <Youtube className="h-10 w-10 text-[#666666]" />
                 </div>
               )}
             </div>
@@ -262,8 +262,8 @@ export default function MemorialVideoSection({
                     key={video.id}
                     className={`group relative flex gap-3 border p-2 transition-colors ${
                       active
-                        ? "border-[#1f1d1a] bg-white"
-                        : "border-[#d5c9b4] bg-white hover:bg-[#f9f9f9]"
+                        ? "border-[#171717] bg-white"
+                        : "border-[#dedede] bg-white hover:bg-[#f9f9f9]"
                     }`}
                     style={{ opacity: hidden ? 0.55 : 1 }}
                   >
@@ -285,7 +285,7 @@ export default function MemorialVideoSection({
                         )}
                       </span>
                       <span className="min-w-0 pt-1">
-                        <span className="block text-sm font-medium leading-6 text-[#2e2218]">
+                        <span className="block text-sm font-medium leading-6 text-[#171717]">
                           {canEdit ? (
                             <InlineEditText
                               value={video.title}
@@ -299,7 +299,7 @@ export default function MemorialVideoSection({
                           )}
                         </span>
                         {hidden && (
-                          <span className="mt-1 inline-block border border-[#d5c9b4] px-2 py-0.5 text-[11px] text-[#6f6a61]">
+                          <span className="mt-1 inline-block border border-[#dedede] px-2 py-0.5 text-[11px] text-[#666666]">
                             숨김
                           </span>
                         )}
@@ -358,7 +358,7 @@ export default function MemorialVideoSection({
         ) : (
           <button
             type="button"
-            className="mx-auto flex aspect-video w-full max-w-4xl flex-col items-center justify-center border border-dashed border-[#d5c9b4] bg-white text-[#6f6a61]"
+            className="mx-auto flex aspect-video w-full max-w-4xl flex-col items-center justify-center border border-dashed border-[#dedede] bg-white text-[#666666]"
             onClick={() => setShowAddForm(true)}
           >
             <Youtube className="mb-3 h-10 w-10" />
@@ -369,15 +369,15 @@ export default function MemorialVideoSection({
         {canEdit && (
           <div className="mx-auto mt-6 max-w-xl">
             {showAddForm ? (
-              <div className="border border-[#d5c9b4] bg-white p-4">
-                <p className="mb-3 flex items-center gap-2 text-sm font-medium text-[#4f4638]">
+              <div className="border border-[#dedede] bg-white p-4">
+                <p className="mb-3 flex items-center gap-2 text-sm font-medium text-[#555555]">
                   <Youtube className="h-4 w-4" />새 영상 추가
                 </p>
                 <input
                   value={newTitle}
                   onChange={event => setNewTitle(event.target.value)}
                   placeholder="영상 제목"
-                  className="mb-2 h-10 w-full border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
+                  className="mb-2 h-10 w-full border border-[#dedede] bg-white px-3 text-sm outline-none"
                 />
                 <input
                   value={newUrl}
@@ -387,16 +387,16 @@ export default function MemorialVideoSection({
                     if (event.key === "Escape") setShowAddForm(false);
                   }}
                   placeholder="유튜브 주소 또는 영상 ID"
-                  className="h-10 w-full border border-[#d5c9b4] bg-white px-3 text-sm outline-none"
+                  className="h-10 w-full border border-[#dedede] bg-white px-3 text-sm outline-none"
                 />
-                <p className="mt-2 text-xs text-[#6f6a61]">
+                <p className="mt-2 text-xs text-[#666666]">
                   유튜브 주소를 붙여 넣으면 영상 ID를 자동으로 추출합니다.
                 </p>
                 <div className="mt-4 flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setShowAddForm(false)}
-                    className="inline-flex h-9 items-center gap-1 border border-[#d5c9b4] px-3 text-xs text-[#4f4638]"
+                    className="inline-flex h-9 items-center gap-1 border border-[#dedede] px-3 text-xs text-[#555555]"
                   >
                     <X className="h-3 w-3" />
                     취소
@@ -405,7 +405,7 @@ export default function MemorialVideoSection({
                     type="button"
                     onClick={addVideo}
                     disabled={saving}
-                    className="inline-flex h-9 items-center gap-1 bg-[#1f1d1a] px-3 text-xs text-white disabled:opacity-50"
+                    className="inline-flex h-9 items-center gap-1 bg-[#171717] px-3 text-xs text-white disabled:opacity-50"
                   >
                     <Check className="h-3 w-3" />
                     {saving ? "저장 중" : "추가"}
@@ -417,7 +417,7 @@ export default function MemorialVideoSection({
                 <button
                   type="button"
                   onClick={() => setShowAddForm(true)}
-                  className="inline-flex h-10 items-center gap-2 border border-dashed border-[#c8b383] bg-white px-4 text-sm text-[#4f4638]"
+                  className="inline-flex h-10 items-center gap-2 border border-dashed border-[#bcbcbc] bg-white px-4 text-sm text-[#555555]"
                 >
                   <Plus className="h-4 w-4" />
                   영상 추가
@@ -457,7 +457,7 @@ function SmallButton({
       className={`flex h-6 w-6 items-center justify-center border text-xs disabled:opacity-30 ${
         danger
           ? "border-red-200 bg-red-500 text-white"
-          : "border-[#d5c9b4] bg-white/90 text-[#4f4638]"
+          : "border-[#dedede] bg-white/90 text-[#555555]"
       }`}
     >
       {children}
