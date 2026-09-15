@@ -488,13 +488,17 @@ function BookView({
   // 눌러도 숫자가 그대로였다 — 운영 화면에서 두 방법 다 확인했다. 그래서 숫자의
   // 주인을 우리가 갖고, 책은 넘기기만 시킨다. 대신 끌어서 넘기면 숫자가 어긋나므로
   // 넘기는 길을 화살표 하나로 모았다(아래 useMouseEvents/disableFlipByClick).
+  // 펼침 보기는 한 번에 두 장씩 넘어간다. 마지막 칸을 (전체-1) 로 잡으면
+  // 책은 더 못 넘어가는데 숫자만 올라가 어긋난다(운영에서 4/4 로 확인).
+  // 그래서 "마지막으로 펼쳐지는 자리"까지만 센다.
   const pageStep = isMobile ? 1 : 2;
+  const lastPageIndex = Math.max(0, pages.length - pageStep);
   const goToPrevPage = () => {
     setCurrentPage(Math.max(0, currentPage - pageStep));
     bookRef.current?.pageFlip?.()?.flipPrev();
   };
   const goToNextPage = () => {
-    setCurrentPage(Math.min(pages.length - 1, currentPage + pageStep));
+    setCurrentPage(Math.min(lastPageIndex, currentPage + pageStep));
     bookRef.current?.pageFlip?.()?.flipNext();
   };
 
@@ -622,7 +626,10 @@ function BookView({
           <ChevronLeft className="h-4 w-4" />
         </button>
         <span className="text-xs text-[#666666]">
-          {Math.min(currentPage + 1, pages.length)} / {pages.length}
+          {pageStep > 1 && currentPage + 1 < pages.length
+            ? `${currentPage + 1}–${Math.min(currentPage + pageStep, pages.length)}`
+            : Math.min(currentPage + 1, pages.length)}{" "}
+          / {pages.length}
         </span>
         <button
           type="button"
