@@ -1,5 +1,6 @@
 import InlineEditText from "@/components/InlineEditText";
 import Footer from "@/components/Footer";
+import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
 import MemorialBookSection from "@/components/memorial/MemorialBookSection";
 import MemorialGallerySection from "@/components/memorial/MemorialGallerySection";
 import MemorialLettersSection from "@/components/memorial/MemorialLettersSection";
@@ -343,6 +344,7 @@ export default function MemorialArchivePage() {
       </main>
 
       <Footer />
+      <MemorialBackToTop />
     </div>
   );
 }

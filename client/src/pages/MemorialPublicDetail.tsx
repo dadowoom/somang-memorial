@@ -2,6 +2,7 @@ import Footer from "@/components/Footer";
 import { formatLifespan } from "@/lib/lifespan";
 import Navbar from "@/components/Navbar";
 import MemorialPortrait from "@/components/memorial/MemorialPortrait";
+import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
@@ -137,6 +138,7 @@ export default function MemorialPublicDetail() {
       </main>
 
       <Footer />
+      <MemorialBackToTop />
     </div>
   );
 }
