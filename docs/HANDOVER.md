@@ -89,24 +89,36 @@ git pull --ff-only origin main
    pnpm run build
    ```
 
-5. 권한 준비 도구를 **점검 → 적용** 순서로 돌린다. `current` 를 바꾸기 전이다.
+5. **소유자를 root 로 맞춘다.** 복사 방식으로 설치해도 `node_modules` 의 수천 개 파일이
+   `joychdeploy` 소유로 만들어진다(2026-09-13·09-15 두 번 다 그랬다). 그대로 두면 앱이
+   읽지 못하고, 6번 권한 도구도 "root 소유가 아니다" 라며 거부한다.
+   **링크 수가 1인 파일만** 바꾼다 — 링크 수 2 이상은 다른 서비스와 같은 파일이라 절대
+   손대지 않는다.
+
+   ```bash
+   find "$REL" ! -type l ! -uid 0 -links 1 -exec chown root:root {} +
+   find "$REL" ! -type l ! -uid 0 | wc -l          # 0 이어야 한다
+   find "$REL" ! -type l ! -uid 0 -links +1 | wc -l # 0 이어야 한다 (아니면 멈추고 사람에게)
+   ```
+
+6. 권한 준비 도구를 **점검 → 적용** 순서로 돌린다. `current` 를 바꾸기 전이다.
 
    ```bash
    /usr/bin/python3 -I /usr/local/bin/somang-runtime-permissions.py --release "$REL" --check
    /usr/bin/python3 -I /usr/local/bin/somang-runtime-permissions.py --release "$REL" --apply
    ```
 
-6. `current` 링크를 새 폴더로 바꾼다.
-7. 재시작은 **정식 명령**으로만 한다. `pm2 restart` 를 직접 치지 않는다.
+7. `current` 링크를 새 폴더로 바꾼다.
+8. 재시작은 **정식 명령**으로만 한다. `pm2 restart` 를 직접 치지 않는다.
 
    ```bash
    /usr/local/bin/somang-pm2-restart somang-memorial
    ```
 
-8. 화면이 뜨는 것만 보지 말고 **데이터베이스를 읽는 요청**까지 확인한다.
+9. 화면이 뜨는 것만 보지 말고 **데이터베이스를 읽는 요청**까지 확인한다.
    화면은 떠도 DB 연결이 끊겨 있을 수 있다.
 
-되돌리기는 링크를 이전 릴리스 폴더로 다시 걸고 7번을 다시 하면 끝난다.
+되돌리기는 링크를 이전 릴리스 폴더로 다시 걸고 8번을 다시 하면 끝난다.
 이전 릴리스는 지우지 않고 남겨 둔다.
 
 > 서버 한 대에 여러 서비스가 함께 돌고 있다. `pm2 restart all` 처럼
