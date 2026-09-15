@@ -44,11 +44,25 @@ export default function Navbar() {
     Partial<Record<MenuKey, HTMLButtonElement | null>>
   >({});
   const mobileButton = useRef<HTMLButtonElement>(null);
+  const header = useRef<HTMLElement>(null);
   const closeMenus = () => {
     setMobileOpen(false);
     setActiveMenu(null);
   };
   useEffect(closeMenus, [location]);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (
+        event.target instanceof Node &&
+        !header.current?.contains(event.target)
+      )
+        setMobileOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () =>
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, [mobileOpen]);
   const menuTrigger = (key: MenuKey) => (
     <button
       ref={element => {
@@ -78,6 +92,7 @@ export default function Navbar() {
   );
   return (
     <header
+      ref={header}
       className={`site-header ${isHome ? "site-header--home" : "site-header--compact"}`}
       onMouseLeave={() => setActiveMenu(null)}
       onBlur={event => {
@@ -85,7 +100,7 @@ export default function Navbar() {
           event.relatedTarget &&
           !event.currentTarget.contains(event.relatedTarget)
         )
-          setActiveMenu(null);
+          closeMenus();
       }}
       onKeyDown={event => {
         if (event.key !== "Escape") return;
@@ -257,22 +272,26 @@ export default function Navbar() {
           className="site-mobile"
           aria-label="전체 메뉴"
         >
-          <p className="site-mobile__eyebrow">소망이 있는 곳</p>
-          <Link href="/somang-hill" onClick={closeMenus}>
-            소망동산 <ArrowRight size={20} aria-hidden="true" />
-          </Link>
-          <Link href="/memorial/search" onClick={closeMenus}>
-            추모관 찾기 <ArrowRight size={20} aria-hidden="true" />
-          </Link>
-          <Link href="/memorial/create" onClick={closeMenus}>
-            추모관 만들기 <ArrowRight size={20} aria-hidden="true" />
-          </Link>
-          <Link href="/letters" onClick={closeMenus}>
-            하늘로 보내는 편지 <ArrowRight size={20} aria-hidden="true" />
-          </Link>
-          <Link href="/guide" onClick={closeMenus}>
-            이용 안내 <ArrowRight size={20} aria-hidden="true" />
-          </Link>
+          <p className="site-mobile__eyebrow">전체 메뉴</p>
+          <div className="site-mobile__links">
+            {[
+              { href: "/somang-hill", label: "소망동산" },
+              { href: "/memorial/search", label: "추모관 찾기" },
+              { href: "/memorial/create", label: "추모관 만들기" },
+              { href: "/letters", label: "하늘로 보내는 편지" },
+              { href: "/guide", label: "이용 안내" },
+            ].map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={closeMenus}
+                aria-current={location === link.href ? "page" : undefined}
+              >
+                {link.label}
+                <ArrowRight size={18} strokeWidth={1.4} aria-hidden="true" />
+              </Link>
+            ))}
+          </div>
           <div className="site-mobile__account">
             {isAuthenticated ? (
               <>
@@ -301,13 +320,16 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <a
-                href={getLoginUrl()}
-                onClick={closeMenus}
-                className="site-mobile__login"
-              >
-                로그인 <ArrowRight size={16} aria-hidden="true" />
-              </a>
+              <div className="site-mobile__welcome">
+                <p>소중한 기억을 남겨 보세요.</p>
+                <a
+                  href={getLoginUrl()}
+                  onClick={closeMenus}
+                  className="site-mobile__login"
+                >
+                  로그인 <ArrowRight size={16} aria-hidden="true" />
+                </a>
+              </div>
             )}
           </div>
         </nav>
