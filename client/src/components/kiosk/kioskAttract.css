@@ -1,0 +1,122 @@
+/* 키오스크 대기(광고) 화면. 사진이 화면을 가득 채우고, 아래쪽에만 터치
+   안내가 얹힌다. 위쪽에는 아무것도 두지 않아 포스터가 그대로 보인다. */
+.kiosk-attract {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #000000;
+  cursor: pointer;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kiosk-attract:focus-visible {
+  outline: 4px solid #ffffff;
+  outline-offset: -8px;
+}
+
+.kiosk-attract-slide {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0;
+  transition: opacity 900ms ease;
+}
+
+.kiosk-attract-slide.is-active {
+  opacity: 1;
+}
+
+.kiosk-attract-hint {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 64px 20px calc(36px + env(safe-area-inset-bottom));
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.74),
+    rgba(0, 0, 0, 0.32) 55%,
+    rgba(0, 0, 0, 0)
+  );
+  color: #ffffff;
+  text-align: center;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.kiosk-attract-touch {
+  position: relative;
+  width: clamp(44px, 5.5vw, 72px);
+  height: clamp(44px, 5.5vw, 72px);
+  border: 3px solid rgba(255, 255, 255, 0.88);
+  border-radius: 50%;
+}
+
+.kiosk-attract-touch::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border: 3px solid rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  animation: kiosk-attract-pulse 2.2s ease-out infinite;
+}
+
+.kiosk-attract-title {
+  margin: 0;
+  font-size: clamp(20px, 3vw, 40px);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.kiosk-attract-caption {
+  margin: 0;
+  max-width: 34ch;
+  font-size: clamp(14px, 1.7vw, 22px);
+  line-height: 1.6;
+  opacity: 0.86;
+}
+
+.kiosk-attract-dots {
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.kiosk-attract-dots span {
+  width: clamp(6px, 0.7vw, 10px);
+  height: clamp(6px, 0.7vw, 10px);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.kiosk-attract-dots span.is-active {
+  background: #ffffff;
+}
+
+@keyframes kiosk-attract-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  to {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-attract-slide {
+    transition: none;
+  }
+
+  .kiosk-attract-touch::after {
+    animation: none;
+  }
+}

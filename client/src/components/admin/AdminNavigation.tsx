@@ -2,6 +2,7 @@ import {
   ArrowUpRight,
   ClipboardList,
   LayoutDashboard,
+  MonitorPlay,
   Plus,
   UsersRound,
 } from "lucide-react";
@@ -25,6 +26,12 @@ const navigationItems = [
     label: "회원 관리",
     description: "권한 · 이용 상태",
     icon: UsersRound,
+  },
+  {
+    href: "/admin/kiosk",
+    label: "키오스크 광고",
+    description: "대기 화면 포스터",
+    icon: MonitorPlay,
   },
 ];
 

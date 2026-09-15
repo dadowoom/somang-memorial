@@ -107,6 +107,7 @@ import {
 } from "./_core/trpc";
 import { bookRouter } from "./routers/book";
 import { galleryRouter } from "./routers/gallery";
+import { kioskPosterRouter } from "./routers/kioskPoster";
 import { uploadRouter } from "./routers/upload";
 import { videoRouter } from "./routers/video";
 import { maskEmailForAudit, maskPhoneForAudit } from "../shared/auditNotes";
@@ -1981,6 +1982,7 @@ export const appRouter = router({
   video: videoRouter,
   book: bookRouter,
   upload: uploadRouter,
+  kioskPoster: kioskPosterRouter,
 
   // TODO: add feature routers here, e.g.
   // todo: router({
