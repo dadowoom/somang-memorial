@@ -74,6 +74,12 @@ export default function MemorialVideoSection({
   );
   const canEdit = isAdmin && memorialId > 0;
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  // 방문자 화면: 표지를 누르기 전에는 유튜브를 불러오지 않는다(무거움·자동재생 방지).
+  const [isPlaying, setIsPlaying] = useState(false);
+  // 방문자가 볼 영상: 고른 것이 있으면 그것, 없으면 첫 번째
+  const visitorVideo =
+    visibleVideos.find(video => video.youtubeVideoId === selectedVideoId) ??
+    visibleVideos[0];
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -178,7 +184,23 @@ export default function MemorialVideoSection({
           </div>
         ) : !canEdit && visibleVideos.length > 0 ? (
           <div className="mx-auto grid max-w-5xl overflow-hidden border border-[#dedede] bg-[#ffffff] md:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.72fr)]">
-            <div className="relative min-h-[260px] overflow-hidden bg-[#171717] md:min-h-[420px]">
+            {isPlaying && visitorVideo ? (
+              <div className="aspect-video bg-black md:aspect-auto md:min-h-[420px]">
+                <iframe
+                  src={`https://www.youtube.com/embed/${visitorVideo.youtubeVideoId}?autoplay=1&rel=0`}
+                  title={visitorVideo.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="h-full w-full"
+                />
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsPlaying(true)}
+                aria-label="영상 재생"
+                className="group relative block min-h-[260px] w-full overflow-hidden bg-[#171717] text-left md:min-h-[420px]"
+              >
               {coverImageUrl ? (
                 <img
                   src={toImgUrl(coverImageUrl)}
@@ -209,8 +231,8 @@ export default function MemorialVideoSection({
                   영상으로 남은 기억
                 </p>
               </div>
-            </div>
-
+                          </button>
+            )}
             <div className="flex flex-col justify-center p-6 md:p-9">
               <p className="break-keep text-sm leading-7 text-[#666666] [overflow-wrap:anywhere]">
                 고인의 표정과 목소리를 영상으로 함께 기억합니다.
@@ -228,6 +250,33 @@ export default function MemorialVideoSection({
                 <p className="mt-3 text-sm leading-7 text-[#666666]">
                   {churchName} · {memorialName}
                 </p>
+                {visibleVideos.length > 1 && (
+                  <ul className="mt-5 space-y-2">
+                    {visibleVideos.map(video => (
+                      <li key={video.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedVideoId(video.youtubeVideoId);
+                            setIsPlaying(true);
+                          }}
+                          className={`flex w-full items-center gap-3 border p-2 text-left text-sm transition-colors ${
+                            visitorVideo?.id === video.id
+                              ? "border-[#171717] bg-white"
+                              : "border-[#dedede] bg-white hover:bg-[#f9f9f9]"
+                          }`}
+                        >
+                          <img
+                            src={youtubeThumb(video.youtubeVideoId)}
+                            alt=""
+                            className="h-12 w-20 shrink-0 object-cover"
+                          />
+                          <span className="min-w-0 truncate text-[#171717]">{video.title}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </div>

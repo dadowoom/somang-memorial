@@ -310,11 +310,13 @@ export default function MemorialArchivePage() {
             </section>
 
             <div className="memorial-gallery">
-              <MemorialGallerySection
-                memorialId={memorial.id}
-                isAdmin={isAdmin}
-                accessToken={accessToken || undefined}
-              />
+              <div id="gallery">
+                <MemorialGallerySection
+                  memorialId={memorial.id}
+                  isAdmin={isAdmin}
+                  accessToken={accessToken || undefined}
+                />
+              </div>
             </div>
             <div id="video">
               <MemorialVideoSection
@@ -333,12 +335,14 @@ export default function MemorialArchivePage() {
                 accessToken={accessToken || undefined}
               />
             </div>
-            <MemorialLettersSection
-              memorialSlug={memorial.slug}
-              memorialName={memorial.name}
-              accessToken={accessToken || undefined}
-              isPrivate={memorial.visibility === "private"}
-            />
+            <div id="letters">
+              <MemorialLettersSection
+                memorialSlug={memorial.slug}
+                memorialName={memorial.name}
+                accessToken={accessToken || undefined}
+                isPrivate={memorial.visibility === "private"}
+              />
+            </div>
           </>
         )}
       </main>

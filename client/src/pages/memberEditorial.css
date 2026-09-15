@@ -196,9 +196,22 @@
   font-size: 11px;
   letter-spacing: 0.06em;
 }
+/* 탭을 눌러 아래로 내려가도 바가 화면 위에 남아 있어야 다른 칸으로 옮기거나
+   돌아올 수 있다. 헤더(64px 고정) 바로 아래에 붙인다. */
 .memorial-record-nav {
+  position: sticky;
+  top: 64px;
+  z-index: 20;
   background: #1c1c1c;
   color: #fff;
+}
+/* 앵커로 도착할 때 고정 헤더(64px)와 탭 바(72px)에 가려지지 않도록 */
+#life,
+#letters,
+#gallery,
+#video,
+#book {
+  scroll-margin-top: 150px;
 }
 .memorial-record-nav__inner {
   display: flex;
