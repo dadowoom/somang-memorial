@@ -16,6 +16,7 @@ import {
 import type { MutableRefObject, ReactElement } from "react";
 import { forwardRef, useMemo, useRef, useState } from "react";
 import HTMLFlipBook from "react-pageflip";
+import { useIsMobile } from "@/hooks/useMobile";
 import { toast } from "sonner";
 
 type BookPage = {
@@ -499,10 +500,14 @@ function BookView({
   onDeletePage: (page: BookPage) => void;
 }) {
   const editablePage = sortedPages[currentPage - 1];
+  // 책은 한 벌만 그린다. 두 벌을 CSS 로 숨겨 두면 둘 다 같은 bookRef 를 잡아,
+  // 화살표가 보이지 않는 쪽 책을 넘기고 눈앞의 책은 그대로였다.
+  const isMobile = useIsMobile();
 
   return (
     <div>
-      <div className="hidden md:block">
+      {!isMobile && (
+      <div>
         <HTMLFlipBook
           key={`desktop-${selectedBook.id}-${sortedPages.map(page => page.id).join("-")}`}
           ref={bookRef}
@@ -534,8 +539,10 @@ function BookView({
           {pages}
         </HTMLFlipBook>
       </div>
+      )}
 
-      <div className="block md:hidden">
+      {isMobile && (
+      <div>
         <HTMLFlipBook
           key={`mobile-${selectedBook.id}-${sortedPages.map(page => page.id).join("-")}`}
           ref={bookRef}
@@ -567,6 +574,7 @@ function BookView({
           {pages}
         </HTMLFlipBook>
       </div>
+      )}
 
       <div className="mt-8 flex items-center justify-center gap-6">
         <button
