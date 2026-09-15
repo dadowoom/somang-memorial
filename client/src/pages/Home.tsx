@@ -12,16 +12,6 @@ export default function Home() {
       <main className="somang-home">
         <section className="home-hero" aria-labelledby="home-title">
           <div className="home-hero-stage">
-            <div className="home-hero-visual" aria-hidden="true">
-              <img
-                src="/hero-somang-chapel-v1.jpg"
-                alt=""
-                width={1672}
-                height={941}
-                fetchPriority="high"
-                decoding="async"
-              />
-            </div>
             <div className="home-hero-inner">
               <div className="home-hero-copy">
                 <p className="home-eyebrow">소망교회 온라인 추모관</p>
@@ -57,10 +47,16 @@ export default function Home() {
                   </Link>
                 </div>
               </div>
-              <div className="home-hero-caption" aria-hidden="true">
-                <span>SOMANG MEMORIAL</span>
-                <span>삶과 신앙의 기억</span>
-              </div>
+            </div>
+            <div className="home-hero-visual" aria-hidden="true">
+              <img
+                src="/hero-somang-memorial-v1.jpg"
+                alt=""
+                width={1710}
+                height={920}
+                fetchPriority="high"
+                decoding="async"
+              />
             </div>
           </div>
           <div className="home-hero-bottom">
