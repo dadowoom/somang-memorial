@@ -8,6 +8,7 @@ import {
   Play,
   TreePine,
 } from "lucide-react";
+import "./publicEditorial.css";
 
 // 사진은 우리 서버에서 내보낸다.
 //
@@ -52,11 +53,11 @@ const HILL_VIDEO_POSTER =
 
 export default function SomangHill() {
   return (
-    <div className="min-h-screen bg-white text-[#121212]">
+    <div className="public-editorial somang-hill-page min-h-screen bg-white text-[#121212]">
       <Navbar />
 
       <main className="pt-16">
-        <section className="border-b border-[#b5b0a7]">
+        <section className="public-hero border-b border-[#b5b0a7]">
           <div className="container py-12 md:py-16">
             <div className="grid gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:items-start">
               <div>
