@@ -39,7 +39,8 @@ describe("currentEntryBundle", () => {
 });
 
 describe("decideKioskReload", () => {
-  const noon = new Date("2026-09-16T12:00:00+09:00");
+  // The kiosk follows its local clock; fixtures must do the same in UTC CI.
+  const noon = new Date(2026, 8, 16, 12, 0);
   const base = {
     idle: true,
     online: true,
@@ -77,7 +78,7 @@ describe("decideKioskReload", () => {
   });
 
   it("새벽 4시대에 12시간 이상 켜져 있었으면 한 번 새로고침한다", () => {
-    const dawn = new Date("2026-09-16T04:10:00+09:00");
+    const dawn = new Date(2026, 8, 16, 4, 10);
     expect(
       decideKioskReload({
         ...base,
@@ -88,7 +89,7 @@ describe("decideKioskReload", () => {
   });
 
   it("새벽에 방금 새로고침한 뒤에는 또 하지 않는다", () => {
-    const dawn = new Date("2026-09-16T04:20:00+09:00");
+    const dawn = new Date(2026, 8, 16, 4, 20);
     expect(
       decideKioskReload({
         ...base,
