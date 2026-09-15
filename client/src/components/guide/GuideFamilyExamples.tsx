@@ -98,20 +98,22 @@ export default function GuideFamilyExamples() {
               {index === 2 && (
                 <div className="guide-family-card__video">
                   <img
-                    src="/guide-family-garden-v1.jpg"
-                    alt="할머니와 온 가족이 함께한 영상 표지용 AI 이미지"
+                    src="/guide-grandmother-farewell-v1.jpg"
+                    alt="카메라를 바라보며 자녀와 손주들에게 마지막 인사를 남기는 할머니의 안내용 AI 이미지"
                     width={1536}
                     height={1024}
                     loading="lazy"
                     draggable={false}
                   />
                   <div>
-                    <Film size={36} strokeWidth={1.2} aria-hidden="true" />
-                    <small>FAMILY FILM</small>
+                    <small>
+                      <Film size={16} strokeWidth={1.2} aria-hidden="true" />
+                      가족에게 남기는 마지막 인사
+                    </small>
                     <p>
-                      너희에게 남기는
+                      사랑하는
                       <br />
-                      사랑과 축복의 인사
+                      우리 아이들에게
                     </p>
                     <span>영상 표지 예시</span>
                   </div>

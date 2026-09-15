@@ -511,25 +511,34 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: center top;
   filter: saturate(0.5);
-  opacity: 0.3;
 }
 .guide-family-card__video > div {
   position: relative;
   display: flex;
   height: 100%;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 20px;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 22px;
+  background: linear-gradient(#0004, transparent 35%, #000c);
   color: #fff;
-  text-align: center;
+  text-align: left;
 }
 .guide-family-card__video small {
+  position: absolute;
+  top: 20px;
+  left: 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 10px;
-  letter-spacing: 0.18em;
+  line-height: 1.8;
+}
+.guide-family-card__video small svg {
+  flex-shrink: 0;
 }
 .guide-family-card__video p {
   font-family: "Noto Serif KR", serif;
@@ -952,6 +961,15 @@
   }
   .guide-family-card__video p {
     font-size: 23px;
+  }
+  .guide-family-card__video > div {
+    padding: 18px;
+  }
+  .guide-family-card__video small {
+    top: 18px;
+    left: 18px;
+    right: 18px;
+    font-size: 9px;
   }
   .guide-family-card__photo {
     display: flex;
