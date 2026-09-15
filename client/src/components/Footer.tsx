@@ -1,5 +1,6 @@
 import { ORG_INFO } from "@/lib/orgInfo";
 import { Link } from "wouter";
+import "./siteChrome.css";
 
 const serviceLinks = [
   { label: "추모관 찾기", href: "/memorial/search", type: "route" },
@@ -14,7 +15,7 @@ const serviceLinks = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#b5b0a7] bg-white text-[#616161]">
+    <footer className="site-footer border-t border-[#b5b0a7] bg-white text-[#616161]">
       <div className="container py-12 md:py-16">
         <div className="grid gap-10 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div>
