@@ -14,10 +14,10 @@ export default function Home() {
           <div className="home-hero-stage">
             <div className="home-hero-inner">
               <div className="home-hero-copy">
-                <p className="home-eyebrow">소망교회 온라인 추모관</p>
                 <h1 id="home-title" className="home-hero-title">
-                  소망이 있는 곳
+                  나는 부활이요 생명이니
                 </h1>
+                <p className="home-hero-reference">요한복음 11:25</p>
                 <p className="home-hero-description">
                   <span>한 사람의 삶과 신앙을</span>
                   <span>가족과 교회가 함께 기억합니다.</span>
