@@ -94,7 +94,10 @@ export default function Kiosk() {
   const postersQuery = trpc.kioskPoster.list.useQuery(undefined, {
     retry: false,
     networkMode: "always",
-    staleTime: 5 * 60 * 1000,
+    // 키오스크는 새로고침 없이 하루 종일 켜 두는 기기다. 관리자가 포스터를
+    // 올리거나 바꾸면 1분 안에 스스로 따라오도록 주기적으로 다시 읽는다.
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
   });
   const posters = (postersQuery.data ?? []) as KioskPoster[];
   const [searchStarted, setSearchStarted] = useState(false);
