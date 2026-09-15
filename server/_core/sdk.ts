@@ -43,11 +43,12 @@ const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserI
 
 class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
-    console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
-    if (!ENV.oAuthServerUrl) {
-      console.error(
-        "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
-      );
+    // 이 사이트는 아이디·비밀번호 로그인만 쓴다. 외부 로그인 주소가 없는 것은
+    // 정상이라 기동 때마다 오류 로그를 남기지 않는다 (2026-09-15).
+    if (ENV.oAuthServerUrl) {
+      console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
+    } else {
+      console.log("[OAuth] 외부 로그인 사용 안 함 (OAUTH_SERVER_URL 미설정)");
     }
   }
 

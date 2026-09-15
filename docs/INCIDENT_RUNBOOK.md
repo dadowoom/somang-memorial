@@ -1,6 +1,6 @@
 # 장애 대응 순서 (INCIDENT RUNBOOK)
 
-마지막 갱신: 2026-09-14
+마지막 갱신: 2026-09-15
 
 사이트가 이상할 때 **이 문서 순서대로** 본다. 급할수록 순서를 건너뛰지 않는다.
 서버 접속은 [HANDOVER.md](HANDOVER.md) 의 규칙(열쇠가 있는 PC 에서만, 한 번에 한 곳에서만)을 따른다.
@@ -112,15 +112,15 @@ tail -30 /var/log/somang-memorial-backup.log
 
 ## 9. 어디를 보나 — 로그·자동 감시 한눈에
 
-| 무엇            | 어디                                                                                                                              |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| 앱 오류         | `/root/.pm2/logs/somang-memorial-error.log`                                                                                       |
-| 앱 요청 기록    | `/root/.pm2/logs/somang-memorial-out.log` (본문·비밀번호는 안 남긴다)                                                             |
-| nginx           | `/var/log/nginx/access.log`, `/var/log/nginx/error.log`                                                                           |
-| 배포            | `/root/somang-deploy.log`, `/root/somang-deploy-run-*.log`                                                                        |
-| 백업            | `/var/log/somang-memorial-backup.log` (매일 04:37)                                                                                |
-| 서버 자동 감시  | `/var/log/dadowoom-watch.log` — 07:20·19:20 에 사이트 응답·백업 성공·디스크 85%·인증서·재시작 횟수를 보고 **텔레그램**으로 알린다 |
-| 관리자 감사기록 | 사이트 관리자 화면 → 회원 → 감사기록 (누가 언제 무엇을 바꿨나)                                                                    |
+| 무엇            | 어디                                                                                                                                                                                |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 앱 오류         | `/root/.pm2/logs/somang-memorial-error.log` — `[error]` 는 서버 잘못(500), `[trpc]` 는 API 절차 안의 서버 오류, `[warn]` 은 없는 사진·깨진 요청 같은 호출자 쪽(4xx)이라 급하지 않다 |
+| 앱 요청 기록    | `/root/.pm2/logs/somang-memorial-out.log` (본문·비밀번호는 안 남긴다)                                                                                                               |
+| nginx           | `/var/log/nginx/access.log`, `/var/log/nginx/error.log`                                                                                                                             |
+| 배포            | `/root/somang-deploy.log`, `/root/somang-deploy-run-*.log`                                                                                                                          |
+| 백업            | `/var/log/somang-memorial-backup.log` (매일 04:37)                                                                                                                                  |
+| 서버 자동 감시  | `/var/log/dadowoom-watch.log` — 07:20·19:20 에 사이트 응답·백업 성공·디스크 85%·인증서·재시작 횟수를 보고 **텔레그램**으로 알린다                                                   |
+| 관리자 감사기록 | 사이트 관리자 화면 → 회원 → 감사기록 (누가 언제 무엇을 바꿨나)                                                                                                                      |
 
 ## 10. 계정이 잠겼다·관리자 비밀번호를 잊었다
 
