@@ -270,16 +270,23 @@ export default function Guide() {
                   {selected.id === "story" && (
                     <>
                       <div className="guide-preview__heading">
-                        <small>FAITH STORY</small>
-                        <h3>삶에 새겨진 믿음</h3>
+                        <small>손녀가 남기는 글 · 예시</small>
+                        <h3>할머니의 성경책에 남은 우리 이름</h3>
                       </div>
                       <blockquote className="guide-preview__verse">
                         “나는 부활이요 생명이니”<cite>요한복음 11:25</cite>
                       </blockquote>
                       <p className="guide-preview__story">
-                        하루를 기도로 시작하고, 작은 일에도 감사하던 마음을
-                        기억합니다. 그 믿음이 우리 가족의 일상에도 조용히
-                        이어지고 있습니다.
+                        할머니의 성경책 맨 뒤에는 자녀들과 손주들의 이름이
+                        빼곡히 적혀 있었습니다. 시험을 앞둔 날, 첫 출근을 하던
+                        날, 아파서 잠 못 들던 밤까지. 우리에게는 지나간 하루가
+                        할머니에게는 매일의 기도 제목이었습니다.
+                      </p>
+                      <p className="guide-preview__story">
+                        힘든 일이 있어 전화를 드리면 늘 “밥은 먹었니? 할머니가
+                        기도하고 있다” 하셨지요. 이제는 제가 아이들의 이름을
+                        부르며 기도합니다. 그럴 때마다 할머니가 남겨 주신 믿음이
+                        우리 집에 이어지고 있음을 느낍니다.
                       </p>
                     </>
                   )}
