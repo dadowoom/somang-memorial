@@ -19,7 +19,7 @@ export default function Home() {
                 </h1>
                 <p className="home-hero-reference">요한복음 11:25</p>
                 <p className="home-hero-description">
-                  <span>신앙의 유산 100년을 담아,</span>{" "}
+                  <span>신앙의 유산, 100년을 담아</span>{" "}
                   <span>100년을 남깁니다.</span>
                 </p>
                 <div className="home-hero-actions">
