@@ -74,21 +74,33 @@
   white-space: nowrap;
 }
 .site-header a.site-login {
+  position: relative;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 10px 22px;
+  gap: 8px;
+  height: 34px;
+  min-height: 34px;
+  padding: 6px 16px;
   border: 1px solid #fff;
   border-radius: 999px;
   background: #fff;
   color: #171717;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
   white-space: nowrap;
   transition:
     background 0.2s,
     border-color 0.2s;
+}
+.site-header a.site-login::after {
+  content: "";
+  position: absolute;
+  inset: -5px 0;
+}
+.site-header a.site-login svg {
+  width: 14px;
+  height: 14px;
 }
 .site-header__utility .site-login {
   display: inline-flex;
