@@ -75,12 +75,15 @@ function sortPages(pages: BookPage[]) {
   });
 }
 
-const ContentPage = forwardRef<HTMLDivElement, { page: BookPage }>(
-  function ContentPage({ page }, ref) {
+const ContentPage = forwardRef<
+  HTMLDivElement,
+  { page: BookPage; pageIndex?: number }
+>(function ContentPage({ page, pageIndex }, ref) {
     const date = formatDate(page.dateYear, page.dateMonth, page.dateDay);
     return (
       <div
         ref={ref}
+        data-page-index={pageIndex}
         className="relative flex h-full flex-col overflow-hidden bg-[#fdfdfd] p-6 md:p-8"
       >
         {date && (
@@ -116,10 +119,12 @@ const ContentPage = forwardRef<HTMLDivElement, { page: BookPage }>(
   }
 );
 
-const EndPage = forwardRef<HTMLDivElement>(function EndPage(_, ref) {
+const EndPage = forwardRef<HTMLDivElement, { pageIndex?: number }>(
+  function EndPage({ pageIndex }, ref) {
   return (
     <div
       ref={ref}
+      data-page-index={pageIndex}
       className="flex h-full flex-col items-center justify-center bg-[#fdfdfd] p-8 text-center"
     >
       <p className="text-xs uppercase tracking-[0.28em] text-[#666666]">
@@ -135,9 +140,17 @@ const EndPage = forwardRef<HTMLDivElement>(function EndPage(_, ref) {
   );
 });
 
-const BlankPage = forwardRef<HTMLDivElement>(function BlankPage(_, ref) {
-  return <div ref={ref} className="h-full bg-[#fdfdfd]" />;
-});
+const BlankPage = forwardRef<HTMLDivElement, { pageIndex?: number }>(
+  function BlankPage({ pageIndex }, ref) {
+    return (
+      <div
+        ref={ref}
+        data-page-index={pageIndex}
+        className="h-full bg-[#fdfdfd]"
+      />
+    );
+  }
+);
 
 export default function MemorialBookSection({
   memorialId,
@@ -216,10 +229,13 @@ export default function MemorialBookSection({
     // 표지는 책 밖에서 한 장으로 꽉 차게 보여준다. 책 안에 두면 펼침 보기에서
     // 왼쪽 절반이 빈 종이로 남아 고장난 화면처럼 보인다.
     const pages = [
-      ...sortedPages.map(page => <ContentPage key={page.id} page={page} />),
-      <EndPage key="end" />,
+      ...sortedPages.map((page, index) => (
+        <ContentPage key={page.id} page={page} pageIndex={index} />
+      )),
+      <EndPage key="end" pageIndex={sortedPages.length} />,
     ];
-    if (pages.length % 2 !== 0) pages.push(<BlankPage key="blank" />);
+    if (pages.length % 2 !== 0)
+      pages.push(<BlankPage key="blank" pageIndex={pages.length} />);
     return pages;
   }, [selectedBook, sortedPages]);
 
@@ -482,25 +498,53 @@ function BookView({
   // 화살표가 보이지 않는 쪽 책을 넘기고 눈앞의 책은 그대로였다.
   const isMobile = useIsMobile();
 
-  // 쪽 번호는 우리가 직접 센다.
+
+  // 펼침 보기는 한 번에 두 장씩 넘어간다. 마지막 칸을 (전체-1) 로 잡으면
+  // 책은 더 못 넘어가는데 숫자만 올라가 어긋난다(운영에서 4/4 로 확인).
+  // 그래서 "마지막으로 펼쳐지는 자리"까지만 센다.
+  const pageStep = isMobile ? 1 : 2;
+  const lastPageIndex = Math.max(0, pages.length - pageStep);
+
+  // 쪽 번호는 "화면에 실제로 보이는 쪽"에서 읽는다.
   //
   // 책이 알려주는 값(onFlip 의 data, getCurrentPageIndex)은 모두 한 박자 늦어서
-  // 눌러도 숫자가 그대로였다 — 운영 화면에서 두 방법 다 확인했다. 그래서 숫자의
-  // 주인을 우리가 갖고, 책은 넘기기만 시킨다. 대신 끌어서 넘기면 숫자가 어긋나므로
-  // 넘기는 길을 화살표 하나로 모았다(아래 useMouseEvents/disableFlipByClick).
-  const pageStep = isMobile ? 1 : 2;
+  // 눌러도 숫자가 그대로였다 — 운영 화면에서 두 방법 다 확인했다. 반면 눈에 보이는
+  // 것은 거짓말을 하지 않는다. 손가락이나 마우스로 끌어 넘겨도 이 방법은 맞는다.
+  const bookAreaRef = useRef<HTMLDivElement>(null);
+  const syncPageFromScreen = () => {
+    const area = bookAreaRef.current;
+    if (!area) return;
+    const shown = Array.from(
+      area.querySelectorAll<HTMLElement>("[data-page-index]")
+    )
+      .filter(node => node.getBoundingClientRect().width > 50)
+      .map(node => Number(node.dataset.pageIndex))
+      .filter(index => Number.isInteger(index));
+    if (shown.length > 0) setCurrentPage(Math.min(...shown));
+  };
+  // 넘김이 끝나는 시점이 제각각이라 몇 번에 나눠 확인한다.
+  const syncPageSoon = () => {
+    [60, 400, 900].forEach(delay =>
+      window.setTimeout(syncPageFromScreen, delay)
+    );
+  };
+
+  // 화살표는 누르는 즉시 숫자를 바꿔 눌린 것이 보이게 하고,
+  // 넘김이 끝나면 화면에서 읽은 값으로 맞춘다.
   const goToPrevPage = () => {
     setCurrentPage(Math.max(0, currentPage - pageStep));
     bookRef.current?.pageFlip?.()?.flipPrev();
+    syncPageSoon();
   };
   const goToNextPage = () => {
-    setCurrentPage(Math.min(pages.length - 1, currentPage + pageStep));
+    setCurrentPage(Math.min(lastPageIndex, currentPage + pageStep));
     bookRef.current?.pageFlip?.()?.flipNext();
+    syncPageSoon();
   };
 
   if (!bookOpened) {
     return (
-      <div className="mx-auto max-w-3xl border border-[#dedede] bg-[#fdfdfd] px-6 py-16 text-center md:px-12 md:py-24">
+      <div className="memorial-book-cover mx-auto max-w-3xl border border-[#dedede] bg-[#fdfdfd] px-6 py-16 text-center md:px-12 md:py-24">
         <div className="mx-auto mb-8 h-px w-16 bg-[#666666]" />
         <p className="mb-5 text-[11px] uppercase tracking-[0.28em] text-[#666666]">
           The Book Of Faith
@@ -519,7 +563,7 @@ function BookView({
         <button
           type="button"
           onClick={() => setBookOpened(true)}
-          className="mt-10 inline-flex h-12 items-center justify-center gap-2 bg-[#171717] px-7 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          className="memorial-book-open-button mt-10 inline-flex h-12 items-center justify-center gap-2 bg-[#171717] px-7 text-sm font-medium text-white transition-opacity hover:opacity-90"
         >
           <BookOpen className="h-4 w-4" />
           책 펼쳐보기
@@ -532,7 +576,7 @@ function BookView({
   }
 
   return (
-    <div>
+    <div ref={bookAreaRef} className="memorial-book-open">
       {!isMobile && (
       <div>
         <HTMLFlipBook
@@ -546,6 +590,8 @@ function BookView({
           minHeight={520}
           maxHeight={860}
           showCover={false}
+          onFlip={syncPageSoon}
+          onChangeState={syncPageSoon}
           mobileScrollSupport
           className="mx-auto"
           startPage={0}
@@ -556,8 +602,8 @@ function BookView({
           autoSize
           maxShadowOpacity={0.18}
           showPageCorners
-          disableFlipByClick
-          useMouseEvents={false}
+          disableFlipByClick={false}
+          useMouseEvents
           swipeDistance={30}
           clickEventForward
           style={{}}
@@ -580,6 +626,8 @@ function BookView({
           minHeight={420}
           maxHeight={560}
           showCover={false}
+          onFlip={syncPageSoon}
+          onChangeState={syncPageSoon}
           mobileScrollSupport={false}
           className="mx-auto"
           startPage={0}
@@ -590,8 +638,8 @@ function BookView({
           autoSize
           maxShadowOpacity={0.14}
           showPageCorners
-          disableFlipByClick
-          useMouseEvents={false}
+          disableFlipByClick={false}
+          useMouseEvents
           swipeDistance={20}
           clickEventForward
           style={{}}
@@ -622,7 +670,10 @@ function BookView({
           <ChevronLeft className="h-4 w-4" />
         </button>
         <span className="text-xs text-[#666666]">
-          {Math.min(currentPage + 1, pages.length)} / {pages.length}
+          {pageStep > 1 && currentPage + 1 < pages.length
+            ? `${currentPage + 1}–${Math.min(currentPage + pageStep, pages.length)}`
+            : Math.min(currentPage + 1, pages.length)}{" "}
+          / {pages.length}
         </span>
         <button
           type="button"
