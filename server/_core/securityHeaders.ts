@@ -36,11 +36,11 @@ export function registerSecurityHeaders(app: Express) {
 
     // HSTS is emitted only on HTTPS so the current HTTP endpoint does not
     // accidentally pin an insecure origin in a visitor's browser.
+    // includeSubDomains 는 쓰지 않는다. 메일 웹화면(w.somangmemorial.co.kr)처럼
+    // 예스닉 서버에 얹힌 하위 주소는 우리 인증서가 없어서, 하위 주소까지 HTTPS 를
+    // 강제하면 브라우저가 그 주소를 아예 열지 못한다 (2026-09-15).
     if (isSecureRequest(req)) {
-      res.setHeader(
-        "Strict-Transport-Security",
-        "max-age=31536000; includeSubDomains"
-      );
+      res.setHeader("Strict-Transport-Security", "max-age=31536000");
     }
 
     next();
