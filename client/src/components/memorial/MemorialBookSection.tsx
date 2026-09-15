@@ -63,6 +63,9 @@ function formatDate(
   return `${year}년`;
 }
 
+// 넘김 애니메이션 시간(데스크톱 850ms · 모바일 700ms) 중 큰 값
+const FLIP_MS = 850;
+
 function sortPages(pages: BookPage[]) {
   return [...pages].sort((a, b) => {
     const yearDiff = (a.dateYear ?? 9999) - (b.dateYear ?? 9999);
@@ -74,37 +77,6 @@ function sortPages(pages: BookPage[]) {
     return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
   });
 }
-
-const CoverPage = forwardRef<HTMLDivElement, { book: MemorialBook }>(
-  function CoverPage({ book }, ref) {
-    return (
-      <div
-        ref={ref}
-        className="flex h-full flex-col items-center justify-center bg-[#fdfdfd] p-8 text-center"
-      >
-        <div className="mb-8 h-px w-16 bg-[#666666]" />
-        <p className="mb-5 text-[11px] uppercase tracking-[0.28em] text-[#666666]">
-          The Book Of Faith
-        </p>
-        <h3
-          className="text-3xl font-light leading-tight text-[#171717]"
-          style={{ fontFamily: "'Noto Serif KR', serif" }}
-        >
-          {book.title}
-        </h3>
-        {book.subtitle && (
-          <p className="mt-5 text-sm leading-7 text-[#666666]">
-            {book.subtitle}
-          </p>
-        )}
-        <p className="mt-10 inline-flex items-center gap-2 text-xs text-[#666666]">
-          <BookOpen className="h-3.5 w-3.5" />
-          넘겨서 읽어주세요
-        </p>
-      </div>
-    );
-  }
-);
 
 const ContentPage = forwardRef<HTMLDivElement, { page: BookPage }>(
   function ContentPage({ page }, ref) {
@@ -182,6 +154,8 @@ export default function MemorialBookSection({
   const [selectedBookIndex, setSelectedBookIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>("book");
+  // 책을 펼치기 전에는 표지만 보여준다.
+  const [bookOpened, setBookOpened] = useState(false);
   const [addingBook, setAddingBook] = useState(false);
   const [newBookTitle, setNewBookTitle] = useState("");
   const [editingPage, setEditingPage] = useState<
@@ -242,8 +216,9 @@ export default function MemorialBookSection({
 
   const flipPages = useMemo(() => {
     if (!selectedBook) return [];
+    // 표지는 책 밖에서 한 장으로 꽉 차게 보여준다. 책 안에 두면 펼침 보기에서
+    // 왼쪽 절반이 빈 종이로 남아 고장난 화면처럼 보인다.
     const pages = [
-      <CoverPage key="cover" book={selectedBook} />,
       ...sortedPages.map(page => <ContentPage key={page.id} page={page} />),
       <EndPage key="end" />,
     ];
@@ -415,6 +390,8 @@ export default function MemorialBookSection({
             <BookView
               bookRef={bookRef}
               pages={flipPages}
+              bookOpened={bookOpened}
+              setBookOpened={setBookOpened}
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}
               isAdmin={isAdmin}
@@ -483,6 +460,8 @@ function BookView({
   pages,
   currentPage,
   setCurrentPage,
+  bookOpened,
+  setBookOpened,
   isAdmin,
   selectedBook,
   sortedPages,
@@ -493,6 +472,8 @@ function BookView({
   pages: ReactElement[];
   currentPage: number;
   setCurrentPage: (page: number) => void;
+  bookOpened: boolean;
+  setBookOpened: (opened: boolean) => void;
   isAdmin: boolean;
   selectedBook: MemorialBook;
   sortedPages: BookPage[];
@@ -503,6 +484,53 @@ function BookView({
   // 책은 한 벌만 그린다. 두 벌을 CSS 로 숨겨 두면 둘 다 같은 bookRef 를 잡아,
   // 화살표가 보이지 않는 쪽 책을 넘기고 눈앞의 책은 그대로였다.
   const isMobile = useIsMobile();
+
+  // 쪽 번호는 책에게 직접 묻는다. onFlip 의 값은 한 박자 늦어서 눌러도
+  // 숫자가 그대로였다(실제 브라우저에서 확인).
+  //
+  // 이벤트는 넘김이 "끝나기 전"에 오므로 그 순간 물어도 옛 번호가 나온다.
+  // 그래서 지금 한 번, 넘김이 끝날 시간(FLIP_MS)이 지난 뒤 한 번 더 읽는다.
+  const readCurrentPage = () => {
+    const index = bookRef.current?.pageFlip?.()?.getCurrentPageIndex();
+    if (typeof index === "number") setCurrentPage(index);
+  };
+  const syncCurrentPage = () => {
+    readCurrentPage();
+    window.setTimeout(readCurrentPage, FLIP_MS + 120);
+  };
+
+  if (!bookOpened) {
+    return (
+      <div className="mx-auto max-w-3xl border border-[#dedede] bg-[#fdfdfd] px-6 py-16 text-center md:px-12 md:py-24">
+        <div className="mx-auto mb-8 h-px w-16 bg-[#666666]" />
+        <p className="mb-5 text-[11px] uppercase tracking-[0.28em] text-[#666666]">
+          The Book Of Faith
+        </p>
+        <h3
+          className="text-balance break-keep text-3xl font-light leading-tight text-[#171717] [overflow-wrap:anywhere] md:text-4xl"
+          style={{ fontFamily: "'Noto Serif KR', serif" }}
+        >
+          {selectedBook.title}
+        </h3>
+        {selectedBook.subtitle && (
+          <p className="mx-auto mt-5 max-w-xl break-keep text-sm leading-7 text-[#666666] [overflow-wrap:anywhere]">
+            {selectedBook.subtitle}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={() => setBookOpened(true)}
+          className="mt-10 inline-flex h-12 items-center justify-center gap-2 bg-[#171717] px-7 text-sm font-medium text-white transition-opacity hover:opacity-90"
+        >
+          <BookOpen className="h-4 w-4" />
+          책 펼쳐보기
+        </button>
+        <p className="mt-4 text-xs text-[#666666]">
+          모두 {pages.length}쪽입니다.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -518,9 +546,10 @@ function BookView({
           maxWidth={720}
           minHeight={520}
           maxHeight={860}
-          showCover
+          showCover={false}
           mobileScrollSupport
-          onFlip={(event: { data: number }) => setCurrentPage(event.data)}
+          onFlip={syncCurrentPage}
+          onChangeState={syncCurrentPage}
           className="mx-auto"
           startPage={0}
           drawShadow
@@ -553,9 +582,10 @@ function BookView({
           maxWidth={390}
           minHeight={420}
           maxHeight={560}
-          showCover
+          showCover={false}
           mobileScrollSupport={false}
-          onFlip={(event: { data: number }) => setCurrentPage(event.data)}
+          onFlip={syncCurrentPage}
+          onChangeState={syncCurrentPage}
           className="mx-auto"
           startPage={0}
           drawShadow
@@ -576,7 +606,18 @@ function BookView({
       </div>
       )}
 
-      <div className="mt-8 flex items-center justify-center gap-6">
+      <div className="mt-6 flex justify-center">
+        <button
+          type="button"
+          onClick={() => setBookOpened(false)}
+          className="inline-flex h-10 items-center justify-center gap-2 border border-[#dedede] bg-white px-4 text-xs text-[#555555] transition-colors hover:bg-[#f9f9f9]"
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          표지 보기
+        </button>
+      </div>
+
+      <div className="mt-6 flex items-center justify-center gap-6">
         <button
           type="button"
           onClick={() => bookRef.current?.pageFlip()?.flipPrev()}
