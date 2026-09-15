@@ -5,7 +5,7 @@
   }
 
   .kiosk-search-header {
-    padding-block: 16px;
+    padding-block: 28px 16px;
   }
 
   .kiosk-search-logo {
@@ -20,10 +20,12 @@
     font-size: clamp(16px, 1.85vw, 20px);
   }
 
+  /* Let the search block center itself in the space above the keyboard, with
+     breathing room below the logo. When the keyboard opens the block
+     re-centers in the smaller remaining space, so it visibly moves up as the
+     keyboard rises from the bottom. */
   .kiosk-search-intro {
-    flex: none;
-    justify-content: flex-start;
-    padding-block: 24px;
+    padding-block: 24px clamp(56px, 12dvh, 220px);
   }
 
   .kiosk-search-title {
@@ -61,8 +63,11 @@
       padding-block: 16px;
     }
 
+    /* Sit the search block directly above the rising keyboard, phone-style,
+       so the input and the keys share one zone instead of leaving a gap. */
     .kiosk-search-intro {
-      padding-block: 24px;
+      justify-content: flex-end;
+      padding-block: 24px 40px;
     }
 
     .kiosk-search-eyebrow,
