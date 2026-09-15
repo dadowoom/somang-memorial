@@ -48,7 +48,7 @@
 }
 .member-editorial
   main
-  :is(
+  :where(
     button.h-10,
     button.h-11,
     button.h-12,
@@ -451,7 +451,7 @@
   min-height: 56px;
   height: 100%;
 }
-.member-editorial main .editorial-search {
+.member-editorial .public-editorial main .editorial-search {
   border: 0;
   border-bottom: 1px solid #555;
 }
