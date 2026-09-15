@@ -38,17 +38,17 @@ const SERVICES = [
   },
   {
     number: "02",
-    title: "부고 전하기",
-    desc: "부고장을 만들어 가족과 이웃에게 소식을 전합니다.",
-    icon: Send,
-    href: "/my/memorials",
-    action: "내 추모관에서 준비하기",
+    title: "인생화원",
+    desc: "신앙의 유산 남기기 서비스",
+    icon: Flower2,
+    href: "/services/life-garden",
+    action: "서비스 이용하기",
   },
   {
     number: "03",
     title: "편지 남기기",
     desc: "다 전하지 못한 말과 함께한 기억을 편지에 담습니다.",
-    icon: Flower2,
+    icon: Send,
     href: "/letters",
     action: "마음 전하기",
   },
@@ -144,7 +144,7 @@ export default function HomeSections() {
               </h2>
             </div>
             <p className="home-sections__intro home-sections__body">
-              삶을 기록하고, 소식을 전하고, 그리운 마음을 함께 나눕니다.
+              삶을 기록하고, 신앙의 유산을 남기며, 그리운 마음을 함께 나눕니다.
             </p>
           </div>
 
