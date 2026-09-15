@@ -311,6 +311,28 @@ export async function createBootstrapAdmin(password: string) {
   return created;
 }
 
+// 서버 터미널에서 관리자 비밀번호를 새로 정한다 (server/scripts/resetAdminPassword.ts).
+// 관리자 계정은 진짜 메일 주소가 없어서 "비밀번호 찾기"로는 되돌릴 수 없다.
+// 비밀번호 지문(cred)이 바뀌므로 기존 관리자 로그인은 모두 풀린다 (2026-09-15).
+export async function resetAdminPassword(password: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const admin = await getUserByEmail(ADMIN_ACCOUNT_EMAIL);
+  if (!admin || admin.role !== "admin") {
+    throw new Error("The administrator account does not exist yet");
+  }
+
+  await db
+    .update(users)
+    .set({ passwordHash: hashUserPassword(password) })
+    .where(eq(users.id, admin.id));
+
+  return admin;
+}
+
 export async function listAdminUsers(limit = 500) {
   const db = await getDb();
   if (!db) {

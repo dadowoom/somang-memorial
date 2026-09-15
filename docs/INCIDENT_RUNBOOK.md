@@ -126,7 +126,11 @@ tail -30 /var/log/somang-memorial-backup.log
 
 - 로그인 실패가 잦으면 잠시 막힌다(같은 곳 5회/10분, 계정 15회/30분). 기다리면 풀린다.
 - 회원은 "비밀번호 찾기"(메일)로 재설정한다. 재설정하면 다른 기기의 로그인은 모두 풀린다(정상).
-- **관리자 계정**(아이디 `admin`)은 서버 터미널에서 `server/scripts/bootstrapAdmin.ts` 로 처음 한 번 만든다(이미 있으면 다시 만들지 못한다). 비밀번호를 잊었으면 개발 담당과 상의한다. 화면에서 다른 회원을 관리자로 올리는 것은 관리자 화면 → 회원 → 권한 변경.
+- **관리자 계정**(아이디 `admin`)은 서버 터미널에서 `server/scripts/bootstrapAdmin.ts` 로 처음 한 번 만든다(이미 있으면 다시 만들지 못한다). 화면에서 다른 회원을 관리자로 올리는 것은 관리자 화면 → 회원 → 권한 변경.
+- **관리자 비밀번호를 잊었으면** 서버 터미널에서 새로 정한다(관리자 계정은 진짜 메일이 없어 "비밀번호 찾기"가 안 된다). 비밀번호는 화면에 보이지 않게 입력하고 12자 이상, 두 번 확인한다. 기존 관리자 로그인은 모두 풀리며 감사기록에 `admin.password.reset` 로 남는다.
+  ```bash
+  ssh -t dadowoom "cd /var/www/somang-memorial/current && node_modules/.bin/tsx server/scripts/resetAdminPassword.ts"
+  ```
 
 ## 11. 절대 하지 않는 것
 
