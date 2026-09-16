@@ -12,6 +12,7 @@ import KioskNotFound from "./pages/KioskNotFound";
 import MemorialWritingSafety from "./components/memorial/MemorialWritingSafety";
 import { KioskKeyboardProvider } from "./components/kiosk/KioskKeyboard";
 import KioskConnectionBanner from "./components/kiosk/KioskConnectionBanner";
+import { useKioskDocumentMode } from "./hooks/useKioskDocumentMode";
 import "./pages/memberEditorial.css";
 
 // Kiosk routes stay in the first download. Less frequently used web and admin
@@ -48,6 +49,7 @@ const ParentFinder = lazy(() => import("./pages/ParentFinder"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function KioskIndexRoute() {
+  useKioskDocumentMode();
   return (
     <KioskKeyboardProvider>
       <KioskConnectionBanner />
@@ -57,6 +59,7 @@ function KioskIndexRoute() {
 }
 
 function KioskMemorialRoute() {
+  useKioskDocumentMode();
   return (
     <KioskKeyboardProvider>
       <KioskConnectionBanner />

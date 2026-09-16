@@ -65,6 +65,8 @@ foreach ($failLaunch in @($false, $true)) {
     }
     Assert ($capture.Delay -eq 3) 'Launcher must retry after three seconds'
     Assert ($capture.Args -contains '--kiosk') 'Missing kiosk argument'
+    Assert ($capture.Args -contains '--disable-pinch') 'Missing pinch zoom block'
+    Assert (($capture.Args | Where-Object { $_ -like '--disable-features=*OverscrollHistoryNavigation*' }).Count -eq 1) 'Missing swipe navigation block'
     Assert ($capture.Args -contains '--user-data-dir="C:\Kiosk\ChromeProfile"') 'Missing isolated Chrome profile'
     Assert (($capture.Args -match 'edge-kiosk|kiosk-idle-timeout').Count -eq 0) 'Edge-only arguments remain'
     if ($failLaunch) {

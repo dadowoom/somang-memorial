@@ -211,6 +211,8 @@ while ($true) {
     "--noerrdialogs",
     "--disable-session-crashed-bubble",
     "--overscroll-history-navigation=0",
+    "--disable-features=OverscrollHistoryNavigation,TouchpadOverscrollHistoryNavigation",
+    "--disable-pinch",
     "--user-data-dir=`"$profileDir`""
   )
   try {

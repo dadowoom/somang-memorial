@@ -250,6 +250,47 @@ html {
   scroll-behavior: smooth;
 }
 
+/* 키오스크: 손가락으로 좌우로 밀 때 화면 양옆에 뜨는 뒤로/앞으로 화살표와
+   이전 화면으로 넘어가기, 위에서 당길 때의 새로고침을 끈다 (2026-09-16).
+   hooks/useKioskDocumentMode.ts 가 키오스크 화면에서만 이 표시를 건다. */
+html.kiosk-mode,
+html.kiosk-mode body {
+  overscroll-behavior: none;
+}
+
+/* 키오스크 터치를 손가락에 맞춘다 (2026-09-16).
+   - 두 손가락 확대와 두 번 눌러 확대를 끈다. 위아래·좌우로 밀기는 그대로 된다.
+     확대가 꺼지면 누른 뒤 "두 번 누르기인지" 기다리는 틈도 없어져 반응이 빠르다.
+   - 누를 때 회색으로 번쩍이는 표시를 끈다.
+   - 길게 누르면 글자가 파랗게 선택되던 것을 막는다. 입력칸은 예외.
+   - 사진을 누른 채 밀면 사진이 끌려 나오던 것을 막는다. */
+html.kiosk-mode {
+  touch-action: pan-x pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+html.kiosk-mode body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+html.kiosk-mode input,
+html.kiosk-mode textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+html.kiosk-mode img {
+  -webkit-user-drag: none;
+}
+/* 책장을 넘기는 손가락 움직임은 책이 모두 받는다. 화면이 같이 밀리지 않는다. */
+html.kiosk-mode .memorial-book-open {
+  touch-action: none;
+}
+/* 책장 창의 단추(이전·다음·닫기)를 손가락으로 누르기 쉽게 키운다. */
+html.kiosk-mode .memorial-book-reader button {
+  min-width: 64px;
+  min-height: 64px;
+}
+
 /* Selection color */
 ::selection {
   background: #e3e3e3;
