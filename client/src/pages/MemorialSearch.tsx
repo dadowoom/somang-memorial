@@ -108,7 +108,7 @@ export default function MemorialSearch() {
               </div>
             ) : (
               <div className="overflow-hidden border-y border-[#b5b0a7]">
-                <div className="hidden grid-cols-[150px_1.1fr_1fr_0.8fr_160px] border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] md:grid">
+                <div className="hidden grid-cols-[210px_1.1fr_1fr_0.8fr_160px] gap-3 border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] md:grid">
                   <span>생애</span>
                   <span>성함</span>
                   <span>교회</span>
@@ -120,7 +120,7 @@ export default function MemorialSearch() {
                   {results.map(memorial => (
                     <article
                       key={memorial.slug}
-                      className="grid gap-3 bg-white px-4 py-4 transition-colors hover:bg-[#fafafa] md:grid-cols-[150px_1.1fr_1fr_0.8fr_160px] md:items-center md:px-5"
+                      className="grid gap-3 bg-white px-4 py-4 transition-colors hover:bg-[#fafafa] md:grid-cols-[210px_1.1fr_1fr_0.8fr_160px] md:items-center md:px-5"
                     >
                       <p className="text-xs tracking-[0.1em] text-[#616161] md:text-sm">
                         {formatLifespan(memorial.birthDate, memorial.deathDate)}
