@@ -770,3 +770,23 @@
     transform: none;
   }
 }
+
+/* 책장 읽기 창(팝업). 어두운 배경이 살짝 밝아지며 나타난다. (2026-09-16) */
+.memorial-book-reader {
+  animation: memorial-book-reader-in 240ms ease-out both;
+}
+
+@keyframes memorial-book-reader-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memorial-book-reader {
+    animation: none;
+  }
+}

@@ -14,9 +14,10 @@ import {
   X,
 } from "lucide-react";
 import type { MutableRefObject, ReactElement } from "react";
-import { forwardRef, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import HTMLFlipBook from "react-pageflip";
 import { useIsMobile } from "@/hooks/useMobile";
+import { bookReaderFrameWidth } from "@/lib/bookReaderLayout";
 import { toast } from "sonner";
 
 type BookPage = {
@@ -542,8 +543,27 @@ function BookView({
     syncPageSoon();
   };
 
-  if (!bookOpened) {
-    return (
+  // 읽기 창이 떠 있는 동안: Esc 로 닫고, 좌우 화살표 키로 넘기고,
+  // 뒤 페이지는 스크롤되지 않게 잠근다.
+  useEffect(() => {
+    if (!bookOpened) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setBookOpened(false);
+      if (event.key === "ArrowLeft") goToPrevPage();
+      if (event.key === "ArrowRight") goToNextPage();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+    // goToPrevPage/goToNextPage 는 currentPage 를 닫아 두므로 함께 갱신한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookOpened, currentPage, lastPageIndex]);
+
+  const cover = (
       <div className="memorial-book-cover mx-auto max-w-3xl border border-[#dedede] bg-[#fdfdfd] px-6 py-16 text-center md:px-12 md:py-24">
         <div className="mx-auto mb-8 h-px w-16 bg-[#666666]" />
         <p className="mb-5 text-[11px] uppercase tracking-[0.28em] text-[#666666]">
@@ -572,140 +592,176 @@ function BookView({
           모두 {pages.length}쪽입니다.
         </p>
       </div>
-    );
-  }
+  );
 
+  if (!bookOpened) return cover;
+
+  // 책은 화면 전체를 덮는 읽기 창(팝업) 안에서 넘긴다 (2026-09-16).
+  // 전에는 본문 안에 그려져 스크롤 위치에 따라 책이 잘려 보였고,
+  // 넘기다 보면 페이지가 같이 움직였다.
   return (
-    <div ref={bookAreaRef} className="memorial-book-open">
-      {!isMobile && (
-      <div>
-        <HTMLFlipBook
-          key={`desktop-${selectedBook.id}-${sortedPages.map(page => page.id).join("-")}`}
-          ref={bookRef}
-          width={560}
-          height={720}
-          size="stretch"
-          minWidth={420}
-          maxWidth={720}
-          minHeight={520}
-          maxHeight={860}
-          showCover={false}
-          onFlip={syncPageSoon}
-          onChangeState={syncPageSoon}
-          mobileScrollSupport
-          className="mx-auto"
-          startPage={0}
-          drawShadow
-          flippingTime={850}
-          usePortrait={false}
-          startZIndex={0}
-          autoSize
-          maxShadowOpacity={0.18}
-          showPageCorners
-          disableFlipByClick={false}
-          useMouseEvents
-          swipeDistance={30}
-          clickEventForward
-          style={{}}
-        >
-          {pages}
-        </HTMLFlipBook>
-      </div>
-      )}
-
-      {isMobile && (
-      <div>
-        <HTMLFlipBook
-          key={`mobile-${selectedBook.id}-${sortedPages.map(page => page.id).join("-")}`}
-          ref={bookRef}
-          width={340}
-          height={500}
-          size="stretch"
-          minWidth={280}
-          maxWidth={390}
-          minHeight={420}
-          maxHeight={560}
-          showCover={false}
-          onFlip={syncPageSoon}
-          onChangeState={syncPageSoon}
-          mobileScrollSupport={false}
-          className="mx-auto"
-          startPage={0}
-          drawShadow
-          flippingTime={700}
-          usePortrait
-          startZIndex={0}
-          autoSize
-          maxShadowOpacity={0.14}
-          showPageCorners
-          disableFlipByClick={false}
-          useMouseEvents
-          swipeDistance={20}
-          clickEventForward
-          style={{}}
-        >
-          {pages}
-        </HTMLFlipBook>
-      </div>
-      )}
-
-      <div className="mt-6 flex justify-center">
-        <button
-          type="button"
-          onClick={() => setBookOpened(false)}
-          className="inline-flex h-10 items-center justify-center gap-2 border border-[#dedede] bg-white px-4 text-xs text-[#555555] transition-colors hover:bg-[#f9f9f9]"
-        >
-          <BookOpen className="h-3.5 w-3.5" />
-          표지 보기
-        </button>
-      </div>
-
-      <div className="mt-6 flex items-center justify-center gap-6">
-        <button
-          type="button"
-          onClick={goToPrevPage}
-          className="flex h-10 w-10 items-center justify-center border border-[#dedede] bg-white text-[#555555]"
-          aria-label="이전 페이지"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <span className="text-xs text-[#666666]">
-          {pageStep > 1 && currentPage + 1 < pages.length
-            ? `${currentPage + 1}–${Math.min(currentPage + pageStep, pages.length)}`
-            : Math.min(currentPage + 1, pages.length)}{" "}
-          / {pages.length}
-        </span>
-        <button
-          type="button"
-          onClick={goToNextPage}
-          className="flex h-10 w-10 items-center justify-center border border-[#dedede] bg-white text-[#555555]"
-          aria-label="다음 페이지"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
-      {isAdmin && editablePage && (
-        <div className="mt-4 flex justify-center gap-2">
+    <>
+      {cover}
+      <div
+        className="memorial-book-reader fixed inset-0 z-[100] flex flex-col bg-[#101010]/95 text-white"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${selectedBook.title} 책장`}
+      >
+        <div className="flex items-center justify-between gap-3 px-4 py-3 md:px-6">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-white/50">
+              The Book Of Faith
+            </p>
+            <p
+              className="truncate text-base font-light md:text-lg"
+              style={{ fontFamily: "'Noto Serif KR', serif" }}
+            >
+              {selectedBook.title}
+            </p>
+          </div>
           <button
             type="button"
-            onClick={() => onEditPage(editablePage)}
-            className="inline-flex h-9 items-center gap-2 border border-[#dedede] bg-white px-3 text-xs text-[#555555]"
+            onClick={() => setBookOpened(false)}
+            className="flex h-11 w-11 shrink-0 items-center justify-center border border-white/30 text-white transition-colors hover:bg-white/10"
+            aria-label="책장 닫기"
           >
-            <Pencil className="h-3.5 w-3.5" />
-            페이지 편집
-          </button>
-          <button
-            type="button"
-            onClick={() => onDeletePage(editablePage)}
-            className="inline-flex h-9 items-center gap-2 border border-red-200 bg-white px-3 text-xs text-red-500"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            삭제
+            <X className="h-5 w-5" />
           </button>
         </div>
-      )}
-    </div>
+
+        <div className="flex min-h-0 flex-1 items-center justify-center px-2">
+          <div
+            ref={bookAreaRef}
+            className="memorial-book-open"
+            style={{ width: bookReaderFrameWidth(isMobile) }}
+          >
+            {!isMobile && (
+              <HTMLFlipBook
+                key={`desktop-${selectedBook.id}-${sortedPages.map(page => page.id).join("-")}`}
+                ref={bookRef}
+                width={560}
+                height={720}
+                size="stretch"
+                minWidth={320}
+                maxWidth={900}
+                minHeight={420}
+                maxHeight={1160}
+                showCover={false}
+                onFlip={syncPageSoon}
+                onChangeState={syncPageSoon}
+                mobileScrollSupport
+                className="mx-auto"
+                startPage={0}
+                drawShadow
+                flippingTime={850}
+                usePortrait={false}
+                startZIndex={0}
+                autoSize
+                maxShadowOpacity={0.18}
+                showPageCorners
+                disableFlipByClick={false}
+                useMouseEvents
+                swipeDistance={30}
+                clickEventForward
+                style={{}}
+              >
+                {pages}
+              </HTMLFlipBook>
+            )}
+
+            {isMobile && (
+              <HTMLFlipBook
+                key={`mobile-${selectedBook.id}-${sortedPages.map(page => page.id).join("-")}`}
+                ref={bookRef}
+                width={340}
+                height={500}
+                size="stretch"
+                minWidth={240}
+                maxWidth={520}
+                minHeight={360}
+                maxHeight={760}
+                showCover={false}
+                onFlip={syncPageSoon}
+                onChangeState={syncPageSoon}
+                mobileScrollSupport={false}
+                className="mx-auto"
+                startPage={0}
+                drawShadow
+                flippingTime={700}
+                usePortrait
+                startZIndex={0}
+                autoSize
+                maxShadowOpacity={0.14}
+                showPageCorners
+                disableFlipByClick={false}
+                useMouseEvents
+                swipeDistance={20}
+                clickEventForward
+                style={{}}
+              >
+                {pages}
+              </HTMLFlipBook>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-3 px-4 py-3 md:gap-6 md:py-4">
+          <button
+            type="button"
+            onClick={goToPrevPage}
+            className="flex h-11 w-11 items-center justify-center border border-white/30 text-white transition-colors hover:bg-white/10"
+            aria-label="이전 페이지"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <span className="min-w-[5rem] text-center text-sm text-white/80">
+            {pageStep > 1 && currentPage + 1 < pages.length
+              ? `${currentPage + 1}–${Math.min(currentPage + pageStep, pages.length)}`
+              : Math.min(currentPage + 1, pages.length)}{" "}
+            / {pages.length}
+          </span>
+          <button
+            type="button"
+            onClick={goToNextPage}
+            className="flex h-11 w-11 items-center justify-center border border-white/30 text-white transition-colors hover:bg-white/10"
+            aria-label="다음 페이지"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+
+          {isAdmin && editablePage && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => onEditPage(editablePage)}
+                className="inline-flex h-9 items-center gap-2 border border-white/30 px-3 text-xs text-white hover:bg-white/10"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                페이지 편집
+              </button>
+              <button
+                type="button"
+                onClick={() => onDeletePage(editablePage)}
+                className="inline-flex h-9 items-center gap-2 border border-red-300/60 px-3 text-xs text-red-200 hover:bg-red-500/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                삭제
+              </button>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setBookOpened(false)}
+            className="inline-flex h-9 items-center gap-2 border border-white/30 px-4 text-xs text-white transition-colors hover:bg-white/10"
+          >
+            <X className="h-3.5 w-3.5" />
+            닫기
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
