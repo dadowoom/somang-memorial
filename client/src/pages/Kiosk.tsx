@@ -21,6 +21,11 @@ import {
 } from "@/hooks/useKioskIdleReset";
 import { useKioskAutoReload } from "@/hooks/useKioskAutoReload";
 import {
+  KioskGuideOverlay,
+  KioskQuickActions,
+} from "@/components/kiosk/KioskQuickActions";
+import { kioskSampleMemorialPath } from "@/lib/kioskQuickActions";
+import {
   useKioskKeyboard,
   useKioskKeyboardField,
 } from "@/components/kiosk/KioskKeyboard";
@@ -103,6 +108,8 @@ export default function Kiosk() {
   const posters = (postersQuery.data ?? []) as KioskPoster[];
   const [searchStarted, setSearchStarted] = useState(false);
   const attractOpen = !searchStarted && posters.length > 0;
+  // 오른쪽 아래 "이용 안내" 단추로 여는 안내 창 (2026-09-16).
+  const [guideOpen, setGuideOpen] = useState(false);
   const results = (memorialsQuery.data ?? []) as KioskMemorial[];
   const intermentResults = (intermentQuery.data ?? []).filter(
     record =>
@@ -184,6 +191,7 @@ export default function Kiosk() {
     setSelectedInterment(null);
     setPassword("");
     setPasswordMessage("");
+    setGuideOpen(false);
     // 손을 뗀 채 시간이 지나면 광고 화면으로 돌아간다.
     setSearchStarted(false);
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
@@ -549,6 +557,22 @@ export default function Kiosk() {
           onSubmit={submitPassword}
         />
       )}
+
+      {/* 5시 방향 동그라미 단추 두 개. 비밀번호·안장 안내 창이 떠 있을 때는 겹치지 않게 뺀다. */}
+      {!selectedPrivate && !selectedInterment && (
+        <KioskQuickActions
+          onSample={() => {
+            closeKeyboard();
+            setLocation(kioskSampleMemorialPath());
+          }}
+          onGuide={() => {
+            closeKeyboard();
+            setGuideOpen(true);
+          }}
+        />
+      )}
+
+      {guideOpen && <KioskGuideOverlay onClose={() => setGuideOpen(false)} />}
 
       {attractOpen && (
         <KioskAttract
