@@ -998,6 +998,15 @@ function KioskMemorialContent({
             coverImageUrl={portraitPhoto?.photoUrl ?? undefined}
             isAdmin={false}
             accessToken={accessToken}
+            // 가족관 영상처럼 팝업으로 연다 (2026-09-16 현장 요청).
+            onPlay={video =>
+              onVideo({
+                id: video.id,
+                title: video.title,
+                description: video.description,
+                youtubeVideoId: video.youtubeVideoId,
+              })
+            }
           />
         </div>
         <div id="book">

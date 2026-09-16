@@ -34,6 +34,11 @@ type MemorialVideoSectionProps = {
   coverImageUrl?: string;
   isAdmin: boolean;
   accessToken?: string;
+  /**
+   * 주면 영상을 제자리에서 틀지 않고 이 함수로 넘긴다. 키오스크는 가족관 영상처럼
+   * 팝업(KioskVideoDialog)으로 연다 (2026-09-16 현장 요청).
+   */
+  onPlay?: (video: MemorialVideo) => void;
 };
 
 function youtubeThumb(id: string) {
@@ -47,6 +52,7 @@ export default function MemorialVideoSection({
   coverImageUrl,
   isAdmin,
   accessToken,
+  onPlay,
 }: MemorialVideoSectionProps) {
   const utils = trpc.useUtils();
   const listInput = { memorialId, accessToken: accessToken || undefined };
@@ -291,7 +297,13 @@ export default function MemorialVideoSection({
             ) : (
               <button
                 type="button"
-                onClick={() => setIsPlaying(true)}
+                onClick={() => {
+                  if (onPlay) {
+                    if (visitorVideo) onPlay(visitorVideo);
+                  } else {
+                    setIsPlaying(true);
+                  }
+                }}
                 aria-label="영상 재생"
                 className="group relative block min-h-[260px] w-full overflow-hidden bg-[#171717] text-left md:min-h-[420px]"
               >
@@ -352,7 +364,8 @@ export default function MemorialVideoSection({
                           type="button"
                           onClick={() => {
                             setSelectedVideoId(video.youtubeVideoId);
-                            setIsPlaying(true);
+                            if (onPlay) onPlay(video);
+                            else setIsPlaying(true);
                           }}
                           className={`flex w-full items-center gap-3 border p-2 text-left text-sm transition-colors ${
                             visitorVideo?.id === video.id
