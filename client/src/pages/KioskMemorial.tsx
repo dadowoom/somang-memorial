@@ -1,5 +1,6 @@
 import { toImgUrl } from "@/lib/imageUrl";
 import { formatLifespan } from "@/lib/lifespan";
+import KioskBackToTop from "@/components/kiosk/KioskBackToTop";
 import {
   formatPassingDate,
   KIOSK_MEMORIAL_DEFAULT_TAB,
@@ -301,6 +302,7 @@ export default function KioskMemorial() {
       {idleWarning && <KioskIdleWarning onStay={() => setIdleWarning(false)} />}
       <div className="mx-auto min-h-[100dvh] w-full max-w-[720px] bg-white pb-24">
         <KioskMemorialHeader onBack={returnToKiosk} />
+        <KioskBackToTop />
 
         {memorialQuery.isLoading ? (
           <KioskState>추모관을 불러오고 있습니다.</KioskState>
