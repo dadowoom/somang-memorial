@@ -69,6 +69,7 @@ vi.mock("@/components/kiosk/KioskKeyboard", () => ({
 }));
 
 vi.mock("@/hooks/useKioskIdleReset", () => ({
+  KIOSK_IDLE_RESET_MS: 3 * 60_000,
   useKioskIdleReset: vi.fn(),
   clearBrowserKioskAccessStorage: vi.fn(),
   kioskAccessStorageKey: (slug: string) => `kiosk-access:${slug}`,

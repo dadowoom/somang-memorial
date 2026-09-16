@@ -71,6 +71,8 @@ describe("KioskGuideOverlay", () => {
       createElement(KioskGuideOverlay, { onClose: () => {} })
     );
     expect(html).toContain('class="kiosk-guide-qr"');
+    // 사각형 자체가 단추다. 누르면 동그라미로 접힌다.
+    expect(html).toContain('aria-expanded="true"');
     expect(text(html)).toContain(KIOSK_GUIDE_QR_TITLE);
     expect(text(html)).toContain(KIOSK_GUIDE_QR_TEXT);
     // 본문 스크롤 상자와 QR 안내가 같은 부모 안에 있어야 자리가 고정된다.

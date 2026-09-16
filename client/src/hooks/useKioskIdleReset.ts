@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
 
-export const KIOSK_IDLE_RESET_MS = 90_000;
+// 첫 화면이 아닌 화면(검색 결과·이용 안내·문의 등)에서 아무도 만지지 않으면
+// 첫 화면으로 돌아가는 시간. 첫 화면 자체는 30초 뒤 광고다(kioskAttract.ts).
+// 2026-09-16 저녁 현장 결정: "나머지는 최소 3분" (전에는 90초).
+export const KIOSK_IDLE_RESET_MS = 3 * 60_000;
 // 추모관 화면은 글을 읽는 곳이라 검색 화면(90초)보다 길게 둔다 (2026-09-14).
 // 조문객이 천천히 읽다가 끊기지 않도록 3분으로 하고, 끝나기 30초 전에 알린다.
 export const KIOSK_MEMORIAL_IDLE_RESET_MS = 3 * 60_000;
@@ -46,6 +49,17 @@ export function readKioskLastActivityAt(storage: Storage, fallback: number) {
 
 function writeKioskLastActivityAt(storage: Storage, value: number) {
   storage.setItem(KIOSK_LAST_ACTIVITY_STORAGE_KEY, String(value));
+}
+
+/**
+ * 손가락 터치가 아닌 "쓰는 중" 신호. 영상이 재생 중일 때 영상 창이 보낸다.
+ * 영상 안을 누르는 손가락은 이 화면의 터치로 잡히지 않기 때문이다 (2026-09-16).
+ */
+export const KIOSK_ACTIVITY_EVENT = "somang:kiosk-activity";
+
+export function markKioskActivity() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(KIOSK_ACTIVITY_EVENT));
 }
 
 export function useKioskIdleReset(
@@ -156,6 +170,7 @@ export function useKioskIdleReset(
     window.addEventListener("input", restartTimer);
     window.addEventListener("wheel", restartTimer, { passive: true });
     window.addEventListener("touchstart", restartTimer, { passive: true });
+    window.addEventListener(KIOSK_ACTIVITY_EVENT, restartTimer);
     document.addEventListener("visibilitychange", checkAfterVisibilityChange);
 
     return () => {
@@ -166,6 +181,7 @@ export function useKioskIdleReset(
       window.removeEventListener("input", restartTimer);
       window.removeEventListener("wheel", restartTimer);
       window.removeEventListener("touchstart", restartTimer);
+      window.removeEventListener(KIOSK_ACTIVITY_EVENT, restartTimer);
       document.removeEventListener(
         "visibilitychange",
         checkAfterVisibilityChange

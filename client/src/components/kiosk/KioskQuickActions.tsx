@@ -1,6 +1,6 @@
 import { kioskGuideQrUrl } from "@/lib/kioskQuickActions";
 import { useScrollLock } from "@/lib/scrollLock";
-import { CircleHelp, Eye, Phone, QrCode, X } from "lucide-react";
+import { CircleHelp, Eye, Minimize2, Phone, QrCode, X } from "lucide-react";
 import QRCode from "qrcode";
 import { lazy, Suspense, useEffect, useState } from "react";
 import "./kioskQuickActions.css";
@@ -25,6 +25,9 @@ const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 export function KioskGuideQr() {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [host, setHost] = useState("");
+  // 사각형을 누르면 동그라미로 접히고, 동그라미를 누르면 다시 펼쳐진다
+  // (2026-09-16 현장 요청: 안내 본문을 가리지 않게).
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,19 +49,44 @@ export function KioskGuideQr() {
     };
   }, []);
 
+  if (collapsed) {
+    return (
+      <button
+        type="button"
+        className="kiosk-guide-qr-fab"
+        onClick={() => setCollapsed(false)}
+        aria-expanded={false}
+        aria-label="QR 코드 펼치기"
+      >
+        <QrCode aria-hidden="true" strokeWidth={1.6} />
+        <span>QR</span>
+      </button>
+    );
+  }
+
   return (
-    <aside className="kiosk-guide-qr" aria-label="휴대폰으로 이어서 보기">
-      <div className="kiosk-guide-qr-code">
+    <button
+      type="button"
+      className="kiosk-guide-qr"
+      onClick={() => setCollapsed(true)}
+      aria-expanded={true}
+    >
+      {/* 접을 수 있다는 표시. QR 그림을 가리지 않게 모서리 바깥에 둔다. */}
+      <span className="kiosk-guide-qr-fold" aria-hidden="true">
+        <Minimize2 strokeWidth={2} />
+      </span>
+      <span className="kiosk-guide-qr-code">
         {dataUrl ? (
-          <img src={dataUrl} alt="홈페이지로 가는 QR 코드" />
+          <img src={dataUrl} alt="홈페이지로 가는 QR 코드" draggable={false} />
         ) : (
           <QrCode aria-hidden="true" strokeWidth={1.4} />
         )}
-      </div>
-      <p className="kiosk-guide-qr-title">{KIOSK_GUIDE_QR_TITLE}</p>
-      <p className="kiosk-guide-qr-text">{KIOSK_GUIDE_QR_TEXT}</p>
-      {host && <p className="kiosk-guide-qr-url">{host}</p>}
-    </aside>
+      </span>
+      <span className="kiosk-guide-qr-title">{KIOSK_GUIDE_QR_TITLE}</span>
+      <span className="kiosk-guide-qr-text">{KIOSK_GUIDE_QR_TEXT}</span>
+      {host && <span className="kiosk-guide-qr-url">{host}</span>}
+      <span className="sr-only">누르면 작은 동그라미로 접힙니다.</span>
+    </button>
   );
 }
 

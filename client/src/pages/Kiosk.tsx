@@ -17,6 +17,7 @@ import {
 import {
   clearBrowserKioskAccessStorage,
   kioskAccessStorageKey,
+  KIOSK_IDLE_RESET_MS,
   useKioskIdleReset,
 } from "@/hooks/useKioskIdleReset";
 import { useKioskAutoReload } from "@/hooks/useKioskAutoReload";
@@ -27,7 +28,10 @@ import {
 import { kioskSampleMemorialPath } from "@/lib/kioskQuickActions";
 import KioskInquiryOverlay from "@/components/kiosk/KioskInquiryOverlay";
 import KioskBackToTop from "@/components/kiosk/KioskBackToTop";
-import { KIOSK_ATTRACT_IDLE_MS } from "@/lib/kioskAttract";
+import {
+  consumeKioskAttractOnArrival,
+  KIOSK_ATTRACT_IDLE_MS,
+} from "@/lib/kioskAttract";
 import {
   useKioskKeyboard,
   useKioskKeyboardField,
@@ -110,8 +114,7 @@ export default function Kiosk() {
   });
   const posters = (postersQuery.data ?? []) as KioskPoster[];
   // 광고(대기) 화면은 처음 켰을 때나 "처음으로"를 눌렀을 때 바로 나오지 않는다.
-  // 30초 동안 아무도 만지지 않았을 때 시작한다 (2026-09-16 저녁, 5분에서 줄임).
-  // 안내·문의 창이나 자판 위에도 뜬다. 한 번 누르면 하던 화면 그대로 돌아온다.
+  // 아래 무입력 규칙(첫 화면 30초, 그 밖의 화면 3분)에 따라 뜬다.
   const [attractRequested, setAttractRequested] = useState(false);
   const attractOpen = attractRequested && posters.length > 0;
   // 오른쪽 아래 "이용 안내" 단추로 여는 안내 창 (2026-09-16).
@@ -145,22 +148,36 @@ export default function Kiosk() {
     ? `max(0px, calc(100dvh - ${keyboardHeight}px))`
     : "100dvh";
 
-  useKioskIdleReset(resetKiosk);
-  useKioskIdleReset(() => setAttractRequested(true), KIOSK_ATTRACT_IDLE_MS);
+  // 손님이 없는 첫 화면: 아무것도 입력하지 않았고 안내·문의 창과 자판도 닫혀 있다.
+  const onFirstScreen =
+    query === "" &&
+    submittedKeyword === "" &&
+    !selectedPrivate &&
+    !selectedInterment &&
+    !guideOpen &&
+    !inquiryOpen &&
+    !searchKeyboard.keyboardOpen;
+
+  // 광고(대기) 화면 규칙 (2026-09-16 저녁 현장 결정):
+  // - 첫 화면에서 30초 동안 아무 터치가 없으면 광고를 띄운다.
+  // - 그 밖의 화면(검색 결과·이용 안내·문의 등)은 3분 동안 터치가 없으면 첫 화면으로
+  //   되돌리고 광고를 띄운다. 광고를 누르면 첫 화면이 보인다.
+  useKioskIdleReset(
+    () => {
+      resetKiosk();
+      setAttractRequested(true);
+    },
+    onFirstScreen ? KIOSK_ATTRACT_IDLE_MS : KIOSK_IDLE_RESET_MS
+  );
+
+  // 추모관 화면에서 3분 동안 아무도 만지지 않아 돌아왔으면 광고부터 보여 준다.
+  useEffect(() => {
+    if (consumeKioskAttractOnArrival()) setAttractRequested(true);
+  }, []);
 
   // 아무도 새로고침을 눌러 주지 않는 기기라, 새 배포가 있거나 새벽이면 손님이
-  // 없을 때 스스로 새로고침한다. 광고 화면이거나 아무것도 입력하지 않은 검색
-  // 화면이 "손님 없음"이다 (2026-09-15).
-  useKioskAutoReload(
-    attractOpen ||
-      (query === "" &&
-        submittedKeyword === "" &&
-        !selectedPrivate &&
-        !selectedInterment &&
-        !guideOpen &&
-        !inquiryOpen &&
-        !searchKeyboard.keyboardOpen)
-  );
+  // 없을 때 스스로 새로고침한다. 광고 화면이거나 첫 화면이 "손님 없음"이다 (2026-09-15).
+  useKioskAutoReload(attractOpen || onFirstScreen);
 
   useEffect(() => {
     clearBrowserKioskAccessStorage();
@@ -204,7 +221,7 @@ export default function Kiosk() {
     setPasswordMessage("");
     setGuideOpen(false);
     setInquiryOpen(false);
-    // 검색 화면을 비우기만 한다. 광고는 30초 무입력 타이머가 따로 띄운다.
+    // 검색 화면을 비우기만 한다. 광고는 무입력 타이머가 띄운다.
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
   }
 

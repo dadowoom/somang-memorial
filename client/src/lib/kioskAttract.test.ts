@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  consumeKioskAttractOnArrival,
+  KIOSK_ATTRACT_ON_ARRIVAL_KEY,
+  requestKioskAttractOnArrival,
   KIOSK_ATTRACT_DEFAULT_SECONDS,
   clampPosterIndex,
   nextPosterIndex,
@@ -11,6 +14,50 @@ const poster = (displaySeconds: number) => ({
   imageUrl: "/uploads/kiosk-posters/a.jpg",
   caption: null,
   displaySeconds,
+});
+
+function memoryStorage(): Storage {
+  const values = new Map<string, string>();
+  return {
+    get length() {
+      return values.size;
+    },
+    clear: () => values.clear(),
+    getItem: key => values.get(key) ?? null,
+    key: index => [...values.keys()][index] ?? null,
+    removeItem: key => {
+      values.delete(key);
+    },
+    setItem: (key, value) => {
+      values.set(key, value);
+    },
+  };
+}
+
+describe("추모관에서 3분 무입력으로 돌아올 때 광고부터", () => {
+  it("표시해 두면 첫 화면이 한 번만 광고를 띄운다", () => {
+    const storage = memoryStorage();
+    expect(consumeKioskAttractOnArrival(storage)).toBe(false);
+    requestKioskAttractOnArrival(storage);
+    expect(storage.getItem(KIOSK_ATTRACT_ON_ARRIVAL_KEY)).toBe("1");
+    expect(consumeKioskAttractOnArrival(storage)).toBe(true);
+    expect(consumeKioskAttractOnArrival(storage)).toBe(false);
+  });
+
+  it("저장소를 쓸 수 없어도 멈추지 않는다", () => {
+    expect(() => requestKioskAttractOnArrival(null)).not.toThrow();
+    expect(consumeKioskAttractOnArrival(null)).toBe(false);
+    const broken = {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+      setItem: () => {
+        throw new Error("blocked");
+      },
+    } as unknown as Storage;
+    expect(() => requestKioskAttractOnArrival(broken)).not.toThrow();
+    expect(consumeKioskAttractOnArrival(broken)).toBe(false);
+  });
 });
 
 describe("posterDurationMs", () => {
