@@ -2761,6 +2761,46 @@ export async function deleteUserAccount(input: {
   return { ok: true, handedOver: plan.transfers };
 }
 
+/**
+ * 추모관 주인을 다른 회원으로 옮긴다 (2026-09-16, server/scripts/transferMemorialOwner.ts).
+ * 새 주인이 "함께 관리하는 가족" 목록에 있었다면 거기서는 뺀다(탈퇴 때 넘기기와 같은 규칙).
+ */
+export async function transferMemorialOwner(input: {
+  memorialId: number;
+  toUserId: number;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const [current] = await db
+    .select({ createdByUserId: memorials.createdByUserId })
+    .from(memorials)
+    .where(eq(memorials.id, input.memorialId))
+    .limit(1);
+  if (!current) {
+    throw new Error("추모관을 찾을 수 없습니다.");
+  }
+
+  await db.transaction(async tx => {
+    await tx
+      .update(memorials)
+      .set({ createdByUserId: input.toUserId })
+      .where(eq(memorials.id, input.memorialId));
+    await tx
+      .delete(memorialFamilyMembers)
+      .where(
+        and(
+          eq(memorialFamilyMembers.memorialId, input.memorialId),
+          eq(memorialFamilyMembers.userId, input.toUserId)
+        )
+      );
+  });
+
+  return { fromUserId: current.createdByUserId ?? null, toUserId: input.toUserId };
+}
+
 /* ------------------------------------------------------------------ *
  * 비밀번호 재설정
  * ------------------------------------------------------------------ */
