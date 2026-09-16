@@ -582,7 +582,11 @@ function BookView({
         )}
         <button
           type="button"
-          onClick={() => setBookOpened(true)}
+          onClick={() => {
+            // 닫았다 다시 열면 책은 1쪽부터인데 번호만 전에 보던 자리로 남았다.
+            setCurrentPage(0);
+            setBookOpened(true);
+          }}
           className="memorial-book-open-button mt-10 inline-flex h-12 items-center justify-center gap-2 bg-[#171717] px-7 text-sm font-medium text-white transition-opacity hover:opacity-90"
         >
           <BookOpen className="h-4 w-4" />
@@ -603,7 +607,7 @@ function BookView({
     <>
       {cover}
       <div
-        className="memorial-book-reader fixed inset-0 z-[100] flex flex-col bg-[#101010]/95 text-white"
+        className="memorial-book-reader fixed inset-0 z-[200] flex flex-col bg-[#101010] text-white"
         role="dialog"
         aria-modal="true"
         aria-label={`${selectedBook.title} 책장`}
@@ -899,7 +903,7 @@ function PageEditModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/40 p-4">
       <div className="max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto border border-[#dedede] bg-white p-5 shadow-2xl md:p-6">
         <div className="mb-5 flex items-center justify-between">
           <h3
