@@ -1,4 +1,4 @@
-import { CircleHelp, Eye, X } from "lucide-react";
+import { CircleHelp, Eye, Phone, X } from "lucide-react";
 import { lazy, Suspense } from "react";
 import "./kioskQuickActions.css";
 
@@ -17,9 +17,11 @@ const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 export function KioskQuickActions({
   onSample,
   onGuide,
+  onInquiry,
 }: {
   onSample: () => void;
   onGuide: () => void;
+  onInquiry: () => void;
 }) {
   return (
     <div className="kiosk-quick-actions" aria-label="바로 가기">
@@ -42,6 +44,10 @@ export function KioskQuickActions({
           <br />
           안내
         </span>
+      </button>
+      <button type="button" onClick={onInquiry} className="kiosk-quick-action">
+        <Phone aria-hidden="true" strokeWidth={1.7} />
+        <span>문의</span>
       </button>
     </div>
   );

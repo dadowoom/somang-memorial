@@ -25,6 +25,7 @@ import {
   KioskQuickActions,
 } from "@/components/kiosk/KioskQuickActions";
 import { kioskSampleMemorialPath } from "@/lib/kioskQuickActions";
+import KioskInquiryOverlay from "@/components/kiosk/KioskInquiryOverlay";
 import {
   useKioskKeyboard,
   useKioskKeyboardField,
@@ -110,6 +111,8 @@ export default function Kiosk() {
   const attractOpen = !searchStarted && posters.length > 0;
   // 오른쪽 아래 "이용 안내" 단추로 여는 안내 창 (2026-09-16).
   const [guideOpen, setGuideOpen] = useState(false);
+  // "문의" 단추로 여는 창 (2026-09-16). 교회 경조부 안내 + 제작 업체 문의(전화번호).
+  const [inquiryOpen, setInquiryOpen] = useState(false);
   const results = (memorialsQuery.data ?? []) as KioskMemorial[];
   const intermentResults = (intermentQuery.data ?? []).filter(
     record =>
@@ -148,6 +151,8 @@ export default function Kiosk() {
         submittedKeyword === "" &&
         !selectedPrivate &&
         !selectedInterment &&
+        !guideOpen &&
+        !inquiryOpen &&
         !searchKeyboard.keyboardOpen)
   );
 
@@ -192,6 +197,7 @@ export default function Kiosk() {
     setPassword("");
     setPasswordMessage("");
     setGuideOpen(false);
+    setInquiryOpen(false);
     // 손을 뗀 채 시간이 지나면 광고 화면으로 돌아간다.
     setSearchStarted(false);
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
@@ -569,10 +575,23 @@ export default function Kiosk() {
             closeKeyboard();
             setGuideOpen(true);
           }}
+          onInquiry={() => {
+            closeKeyboard();
+            setInquiryOpen(true);
+          }}
         />
       )}
 
       {guideOpen && <KioskGuideOverlay onClose={() => setGuideOpen(false)} />}
+
+      {inquiryOpen && (
+        <KioskInquiryOverlay
+          onClose={() => {
+            closeKeyboard();
+            setInquiryOpen(false);
+          }}
+        />
+      )}
 
       {attractOpen && (
         <KioskAttract

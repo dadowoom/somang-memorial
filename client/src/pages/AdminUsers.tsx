@@ -470,6 +470,9 @@ function formatAuditAction(action: string) {
   if (action === "family_room.video.update") return "가족관 영상 변경";
   if (action === "family_room.photo.add") return "가족관 사진 추가";
   if (action === "family_room.photo.delete") return "가족관 사진 삭제";
+  if (action === "kiosk_inquiry.create") return "키오스크 문의 접수";
+  if (action === "kiosk_inquiry.status.update")
+    return "키오스크 문의 처리 상태";
   if (action === "letter.status.update") return "편지 숨김/게시";
   if (action === "reminder.status.update") return "문자 알림 취소/복구";
   if (action === "user.delete") return "회원 탈퇴";

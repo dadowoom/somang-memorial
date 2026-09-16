@@ -269,6 +269,30 @@ export const kioskPosters = mysqlTable(
 export type KioskPoster = typeof kioskPosters.$inferSelect;
 export type InsertKioskPoster = typeof kioskPosters.$inferInsert;
 
+/**
+ * 키오스크 문의 (2026-09-16). 관람객이 남긴 전화번호. 업체 메일로도 보내지만
+ * 메일이 실패해도 여기 남아 관리자 화면에서 볼 수 있다.
+ */
+export const kioskInquiries = mysqlTable(
+  "kiosk_inquiries",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    phone: varchar("phone", { length: 20 }).notNull(),
+    name: varchar("name", { length: 60 }),
+    source: varchar("source", { length: 20 }).default("kiosk").notNull(),
+    /** new(새 문의) → contacted(전화함) */
+    status: varchar("status", { length: 20 }).default("new").notNull(),
+    notifiedAt: timestamp("notifiedAt"),
+    notifyError: varchar("notifyError", { length: 300 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [index("kiosk_inquiries_createdAt_idx").on(table.createdAt)]
+);
+
+export type KioskInquiry = typeof kioskInquiries.$inferSelect;
+export type InsertKioskInquiry = typeof kioskInquiries.$inferInsert;
+
 export const memorialBooks = mysqlTable(
   "memorial_books",
   {

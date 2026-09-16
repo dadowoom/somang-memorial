@@ -10,6 +10,7 @@ import {
   Eye,
   EyeOff,
   Mail,
+  Phone,
   RefreshCw,
   Search,
   XCircle,
@@ -46,6 +47,17 @@ type AdminReminder = {
   memorialVisibility: string;
 };
 
+type AdminKioskInquiry = {
+  id: number;
+  phone: string;
+  name: string | null;
+  source: string;
+  status: string;
+  notifiedAt: Date | string | null;
+  notifyError: string | null;
+  createdAt: Date | string;
+};
+
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 
 export default function AdminOperations() {
@@ -77,6 +89,14 @@ export default function AdminOperations() {
   const updateReminder = trpc.reminder.updateStatus.useMutation({
     onSuccess: () => utils.reminder.adminList.invalidate(),
   });
+  // 키오스크 문의 (2026-09-16): 관람객이 남긴 전화번호. 메일과 별개로 여기서 본다.
+  const inquiriesQuery = trpc.kioskInquiry.adminList.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
+  const updateInquiry = trpc.kioskInquiry.updateStatus.useMutation({
+    onSuccess: () => utils.kioskInquiry.adminList.invalidate(),
+  });
+  const inquiries = (inquiriesQuery.data ?? []) as AdminKioskInquiry[];
   const testSend = trpc.reminder.testSend.useMutation({
     onSuccess: () => setTestMessage("테스트 문자를 발송했습니다."),
     onError: error => setTestMessage(error.message),
@@ -459,6 +479,86 @@ export default function AdminOperations() {
                 )}
               </section>
             </div>
+
+            <section className="mt-12">
+              <SectionTitle
+                icon={<Phone className="h-4 w-4" />}
+                title="키오스크 문의"
+                count={inquiries.length}
+              />
+              <p className="mb-4 text-sm leading-6 text-[#616161]">
+                키오스크 "문의"에서 관람객이 남긴 전화번호입니다. 업체 메일로도
+                보내지만, 메일이 안 갔어도 여기에는 남습니다. 전화한 뒤 "전화함"으로
+                표시해 두세요.
+              </p>
+              {inquiriesQuery.isLoading ? (
+                <Panel text="문의를 불러오고 있습니다." />
+              ) : inquiriesQuery.isError ? (
+                <Panel text="문의 목록을 불러오지 못했습니다." />
+              ) : inquiries.length === 0 ? (
+                <Panel text="아직 접수된 문의가 없습니다." />
+              ) : (
+                <div className="divide-y divide-[#b5b0a7] border-y border-[#b5b0a7]">
+                  {inquiries.map(inquiry => {
+                    const contacted = inquiry.status === "contacted";
+                    return (
+                      <article
+                        key={inquiry.id}
+                        className="grid gap-4 bg-white px-4 py-5 md:grid-cols-[minmax(0,1fr)_150px] md:items-start"
+                      >
+                        <div className="min-w-0">
+                          <div className="mb-3 flex flex-wrap items-center gap-2">
+                            <StatusBadge
+                              tone={contacted ? "muted" : "normal"}
+                              label={contacted ? "전화함" : "새 문의"}
+                            />
+                            <StatusBadge
+                              tone={inquiry.notifiedAt ? "normal" : "muted"}
+                              label={
+                                inquiry.notifiedAt
+                                  ? "메일 발송됨"
+                                  : inquiry.notifyError
+                                    ? "메일 실패"
+                                    : "메일 안 감"
+                              }
+                            />
+                            <span className="text-xs text-[#777]">
+                              {formatDate(inquiry.createdAt)}
+                            </span>
+                          </div>
+                          <h2 className="text-xl font-normal" style={serifStyle}>
+                            {formatPhone(inquiry.phone)}
+                          </h2>
+                          <p className="mt-2 text-sm text-[#616161]">
+                            {inquiry.name ? `성함 ${inquiry.name}` : "성함 입력 안 함"}
+                            {" · "}
+                            접수 번호 {inquiry.id}
+                          </p>
+                          {inquiry.notifyError && (
+                            <p className="mt-2 text-xs text-[#9f2a2a]">
+                              메일 오류: {inquiry.notifyError}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          disabled={updateInquiry.isPending}
+                          onClick={() =>
+                            updateInquiry.mutate({
+                              id: inquiry.id,
+                              status: contacted ? "new" : "contacted",
+                            })
+                          }
+                          className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 border border-[#b5b0a7] px-4 text-sm text-[#121212] transition-colors hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {contacted ? "새 문의로 되돌리기" : "전화함으로 표시"}
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           </div>
         </section>
       </main>

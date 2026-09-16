@@ -80,3 +80,30 @@ export async function sendPasswordResetEmail(input: {
     text: lines.join("\n"),
   });
 }
+
+/**
+ * 키오스크 "문의"로 남긴 전화번호를 업체에 알리는 메일 (2026-09-16).
+ * 업체가 이 메일을 보고 전화하는 것이 목적이라 번호를 가리지 않는다.
+ */
+export async function sendKioskInquiryEmail(input: {
+  to: string;
+  phone: string;
+  name: string | null;
+  inquiryId: number;
+}) {
+  const when = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+  await sendEmail({
+    to: input.to,
+    subject: `[소망 추모관 키오스크] 제작 문의 접수 ${input.phone}`,
+    text: [
+      "키오스크에서 추모관 제작 문의가 접수되었습니다.",
+      "",
+      `전화번호: ${input.phone}`,
+      `성함: ${input.name ?? "(입력 안 함)"}`,
+      `접수 시각: ${when}`,
+      `접수 번호: ${input.inquiryId}`,
+      "",
+      "이 번호로 전화해 주세요. 처리한 뒤에는 관리자 화면 → 운영 → 키오스크 문의에서 '전화함'으로 표시할 수 있습니다.",
+    ].join("\n"),
+  });
+}

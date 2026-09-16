@@ -16,6 +16,8 @@ export const ENV = {
   smtpUser: process.env.SMTP_USER ?? "",
   smtpPassword: process.env.SMTP_PASSWORD ?? "",
   smtpFrom: process.env.SMTP_FROM ?? "",
+  /** 키오스크 문의(전화번호)를 받을 업체 메일 주소. 비우면 DB 에만 남는다 (2026-09-16). */
+  inquiryNotifyEmail: process.env.INQUIRY_NOTIFY_EMAIL ?? "",
   reminderDaysBefore: Number(process.env.REMINDER_DAYS_BEFORE ?? "1"),
   reminderSchedulerEnabled: process.env.REMINDER_SCHEDULER_ENABLED !== "false",
 };
