@@ -41,6 +41,13 @@
   background: #373737;
 }
 
+/* 탭 내용이 짧거나 아직 불러오는 중이어도, 탭바를 머리글 아래까지 올릴 수 있을
+   만큼의 높이를 둔다 (머리글 104px + 탭바 84px). 모자라면 브라우저가 맨 아래로
+   붙여 버린다. */
+.kiosk-memorial-tab-panel {
+  min-height: calc(100vh - 188px);
+}
+
 .kiosk-memorial-tabs svg {
   width: 20px;
   height: 20px;

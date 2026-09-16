@@ -595,8 +595,9 @@ export default function MemorialEdit() {
                     </div>
 
                     <Field label="한 줄 소개" error={errors.summary} required>
-                      <input
-                        className={inputClass}
+                      <textarea
+                        className={`${textAreaClass} min-h-24`}
+                        rows={2}
                         value={form.summary}
                         onChange={event =>
                           updateField("summary", event.target.value)

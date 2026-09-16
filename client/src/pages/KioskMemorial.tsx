@@ -82,6 +82,7 @@ import {
   ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
@@ -275,7 +276,7 @@ export default function KioskMemorial() {
     photos.find(photo => photo.isRepresentative === 1) ?? photos[0] ?? null;
 
   return (
-    <main className="min-h-[100dvh] bg-white text-[#121212]">
+    <main className="min-h-[100dvh] bg-white text-[#121212] [overflow-anchor:none]">
       {idleWarning && <KioskIdleWarning onStay={() => setIdleWarning(false)} />}
       <div className="mx-auto min-h-[100dvh] w-full max-w-[720px] bg-white pb-24">
         <KioskMemorialHeader onBack={returnToKiosk} />
@@ -724,10 +725,16 @@ function KioskMemorialContent({
   const [activeTab, setActiveTab] = useState<KioskMemorialTab>(
     KIOSK_MEMORIAL_DEFAULT_TAB
   );
+  // 탭을 누를 때마다 1씩 늘린다. 새 탭 내용이 그려진 "뒤에" 첫머리로 올려야
+  // 사진·영상이 나중에 불러와져도 맨 아래로 밀려 내려가지 않는다 (2026-09-16).
+  const [tabScrollRequest, setTabScrollRequest] = useState(0);
   const showTab = (tab: KioskMemorialTab) => {
     setActiveTab(tab);
-    scrollToMemorialTabs();
+    setTabScrollRequest(count => count + 1);
   };
+  useLayoutEffect(() => {
+    if (tabScrollRequest > 0) scrollToMemorialTabs();
+  }, [tabScrollRequest]);
 
   return (
     <>
@@ -749,7 +756,7 @@ function KioskMemorialContent({
             {formatLifespan(memorial.birthDate, memorial.deathDate)} ·{" "}
             {memorial.church}
           </p>
-          <p className="mt-7 text-[19px] leading-9 text-[#34312d]">
+          <p className="mt-7 whitespace-pre-line text-[19px] leading-9 text-[#34312d]">
             {memorial.summary}
           </p>
         </div>
@@ -832,6 +839,7 @@ function KioskMemorialContent({
         })}
       </nav>
 
+      <div className="kiosk-memorial-tab-panel">
       {activeTab === "life" && (
         <>
       <KioskSection
@@ -842,7 +850,7 @@ function KioskMemorialContent({
       >
         {memorial.verse && (
           <article className="border border-[#dadada] p-6">
-            <p className="text-[22px] leading-10" style={serifStyle}>
+            <p className="whitespace-pre-line text-[22px] leading-10" style={serifStyle}>
               {memorial.verse}
             </p>
             {memorial.verseRef && (
@@ -885,7 +893,7 @@ function KioskMemorialContent({
             {storyParagraphs.map((paragraph, index) => (
               <p
                 key={`${index}-${paragraph.slice(0, 16)}`}
-                className="text-base leading-8 text-[#4f4c48]"
+                className="whitespace-pre-line text-base leading-8 text-[#4f4c48]"
               >
                 {paragraph}
               </p>
@@ -915,7 +923,7 @@ function KioskMemorialContent({
                     {item.title || "생애 기록"}
                   </h3>
                   {item.description && (
-                    <p className="mt-3 break-keep text-base leading-8 text-[#64615d] [overflow-wrap:anywhere]">
+                    <p className="mt-3 whitespace-pre-line break-keep text-base leading-8 text-[#64615d] [overflow-wrap:anywhere]">
                       {item.description}
                     </p>
                   )}
@@ -945,7 +953,7 @@ function KioskMemorialContent({
           >
             "
           </p>
-          <p className="text-lg leading-9" style={serifStyle}>
+          <p className="whitespace-pre-line text-balance text-lg leading-9" style={serifStyle}>
             {memorial.verse || memorial.summary}
           </p>
           {memorial.verseRef && (
@@ -1031,6 +1039,8 @@ function KioskMemorialContent({
           portraitPhoto={portraitPhoto}
         />
       )}
+
+      </div>
 
       <div aria-hidden="true" className="h-[24vh] border-t border-[#dadada]" />
     </>
@@ -1295,7 +1305,7 @@ function KioskFamilySection({
             <h3 className="break-keep text-[28px] [overflow-wrap:anywhere]" style={serifStyle}>
               {room.title}
             </h3>
-            <p className="mt-4 text-base leading-8 text-[#64615d]">
+            <p className="mt-4 whitespace-pre-line text-base leading-8 text-[#64615d]">
               {room.intro}
             </p>
           </article>
@@ -1338,7 +1348,7 @@ function KioskFamilySection({
                 <span className="block text-[22px]" style={serifStyle}>
                   {room.video.title}
                 </span>
-                <span className="mt-2 block text-base leading-8 text-[#64615d]">
+                <span className="mt-2 block whitespace-pre-line text-base leading-8 text-[#64615d]">
                   {room.video.description}
                 </span>
               </span>
@@ -1383,7 +1393,7 @@ function KioskFamilySection({
                 <h4 className="text-[22px]" style={serifStyle}>
                   {note.title}
                 </h4>
-                <p className="mt-3 text-base leading-8 text-[#64615d]">
+                <p className="mt-3 whitespace-pre-line text-base leading-8 text-[#64615d]">
                   {note.body}
                 </p>
               </article>
@@ -1761,7 +1771,7 @@ function KioskObituarySection({
           </div>
         ) : null}
         {memorial.summary.trim() ? (
-          <p className="mt-8 text-base leading-8 text-[#b8b1a0]">
+          <p className="mt-8 whitespace-pre-line text-balance text-base leading-8 text-[#b8b1a0]">
             {memorial.summary.trim()}
           </p>
         ) : null}
@@ -1797,7 +1807,7 @@ function KioskObituarySection({
                   <span className="w-12 shrink-0 text-base text-[#8a8270]">
                     {item.year}
                   </span>
-                  <span className="text-sm leading-7 text-[#b8b1a0]">
+                  <span className="whitespace-pre-line text-sm leading-7 text-[#b8b1a0]">
                     {item.title}
                     {item.title && item.description ? " · " : ""}
                     {item.description}
@@ -2110,8 +2120,8 @@ const KIOSK_MEMORIAL_HEADER_HEIGHT = 104;
 /**
  * 탭을 누르면 새 탭의 첫머리(머리글 바로 아래 탭바)로 올라간다 (2026-09-16).
  * 탭바가 화면에 붙어(sticky) 있으면 scrollIntoView 는 "이미 보인다"고 여겨 움직이지
- * 않아, 아래로 내려간 채 다른 탭을 누르면 새 탭의 끝으로 떨어졌다. 그래서 탭바의
- * 제자리(= 인적 사항 구역의 끝)를 직접 계산해 올린다.
+ * 않는다. 그래서 탭바의 제자리(= 인적 사항 구역의 끝)를 직접 계산해 바로 옮긴다.
+ * 천천히 움직이면(smooth) 움직이는 사이에 새 내용이 불러와지며 위치가 틀어진다.
  */
 function scrollToMemorialTabs() {
   const hero = document.getElementById("kiosk-memorial-hero");
@@ -2120,7 +2130,7 @@ function scrollToMemorialTabs() {
     hero.getBoundingClientRect().bottom +
     window.scrollY -
     KIOSK_MEMORIAL_HEADER_HEIGHT;
-  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  window.scrollTo({ top: Math.max(0, top), behavior: "instant" });
 }
 
 // 홈페이지(MemorialPublicDetail.tsx)와 같은 규칙: 빈 줄에서만 문단을 나눈다.

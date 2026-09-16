@@ -255,7 +255,7 @@ export default function MemorialArchivePage() {
                         "
                       </div>
                       <p
-                        className="text-lg font-light leading-9"
+                        className="whitespace-pre-line text-balance text-lg font-light leading-9"
                         style={{ ...serifStyle, color: warmText }}
                       >
                         {memorial.verse || memorial.summary}

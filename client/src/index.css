@@ -110,6 +110,22 @@
     @apply bg-background text-foreground;
     font-family: "Noto Sans KR", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     overflow-x: hidden;
+    /* 한국어 줄바꿈 (2026-09-16). 기본값은 낱자 사이에서도 줄을 바꿔
+       "창조하시니 / 라"처럼 한 글자만 다음 줄로 떨어진다. 띄어쓰기에서만 바꾸고,
+       띄어쓰기 없는 긴 글(주소 등)은 칸을 넘칠 때만 끊는다. */
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  /* 마지막 줄에 한 낱말만 외롭게 남지 않도록 앞줄과 나눠 맞춘다. */
+  p,
+  li,
+  blockquote,
+  figcaption,
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: pretty;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),

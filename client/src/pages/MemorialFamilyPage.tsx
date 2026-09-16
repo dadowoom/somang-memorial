@@ -300,7 +300,7 @@ function UnlockedRoom({ room }: { room: FamilyRoom }) {
         <h2 className="text-3xl font-light md:text-5xl" style={serifStyle}>
           {room.title}
         </h2>
-        <p className="mt-6 max-w-3xl text-base leading-8 text-[#4f4f4f]">
+        <p className="mt-6 max-w-3xl whitespace-pre-line text-base leading-8 text-[#4f4f4f]">
           {room.intro}
         </p>
       </div>
@@ -322,7 +322,7 @@ function UnlockedRoom({ room }: { room: FamilyRoom }) {
               <h3 className="text-xl font-light" style={serifStyle}>
                 {note.title}
               </h3>
-              <p className="mt-4 text-sm leading-7 text-[#666666]">{note.body}</p>
+              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-[#666666]">{note.body}</p>
             </article>
           );
         })}
@@ -388,7 +388,7 @@ function FamilyVideoCard({
         <h3 className="text-2xl font-light md:text-3xl" style={serifStyle}>
           {video.title}
         </h3>
-        <p className="mt-4 text-sm leading-7 text-[#666666]">
+        <p className="mt-4 whitespace-pre-line text-sm leading-7 text-[#666666]">
           {video.description}
         </p>
       </div>

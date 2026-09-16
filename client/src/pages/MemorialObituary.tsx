@@ -275,7 +275,7 @@ function ObituarySheet({
           <div className="px-[30px] pt-[26px]">
             <div className="h-px bg-[#3a362e]" />
             <p
-              className="pt-[22px] text-center text-sm font-light leading-[2.1] text-[#b8b1a0]"
+              className="whitespace-pre-line text-balance pt-[22px] text-center text-sm font-light leading-[2.1] text-[#b8b1a0]"
               style={serifStyle}
             >
               {memorial.verse.trim()}
@@ -293,7 +293,7 @@ function ObituarySheet({
 
         {memorial.summary.trim() ? (
           <div className="px-[30px] pt-[26px]">
-            <p className="text-center text-[13px] leading-8 text-[#b8b1a0]">
+            <p className="whitespace-pre-line text-balance text-center text-[13px] leading-8 text-[#b8b1a0]">
               {memorial.summary.trim()}
             </p>
           </div>
@@ -335,7 +335,7 @@ function ObituarySheet({
                   <span className="w-[38px] shrink-0 text-[15px] text-[#8a8270]">
                     {item.year}
                   </span>
-                  <span className="text-[13px] leading-[1.8] text-[#b8b1a0]">
+                  <span className="whitespace-pre-line text-[13px] leading-[1.8] text-[#b8b1a0]">
                     {item.title}
                     {item.title && item.description ? " · " : ""}
                     {item.description}

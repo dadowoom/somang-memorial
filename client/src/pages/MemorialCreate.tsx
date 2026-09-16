@@ -776,9 +776,10 @@ export default function MemorialCreate() {
 
                 <div className="space-y-6">
                   <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_180px]">
-                    <Field label="대표 말씀" maxLength={1000} hint="고인이 좋아하셨거나 가족에게 위로가 되는 성경 말씀입니다.">
-                      <input
-                        className={inputClass}
+                    <Field label="대표 말씀" maxLength={1000} hint="고인이 좋아하셨거나 가족에게 위로가 되는 성경 말씀입니다. 줄을 바꿔 적으면 추모관에서도 그 자리에서 줄이 바뀝니다.">
+                      <textarea
+                        className={`${textAreaClass} min-h-24`}
+                        rows={2}
                         value={form.verse}
                         onChange={event =>
                           updateField("verse", event.target.value)
@@ -799,9 +800,10 @@ export default function MemorialCreate() {
                     </Field>
                   </div>
 
-                  <Field label="한 줄 소개" error={errors.summary} required maxLength={255} count={form.summary.length} hint="고인을 떠올리면 생각나는 모습을 한 문장으로 적어 주세요.">
-                    <input
-                      className={inputClass}
+                  <Field label="한 줄 소개" error={errors.summary} required maxLength={255} count={form.summary.length} hint="고인을 떠올리면 생각나는 모습을 한 문장으로 적어 주세요. 줄을 바꿔 적으면 추모관에서도 그 자리에서 줄이 바뀝니다.">
+                    <textarea
+                      className={`${textAreaClass} min-h-24`}
+                      rows={2}
                       value={form.summary}
                       onChange={event =>
                         updateField("summary", event.target.value)
