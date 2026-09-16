@@ -62,7 +62,6 @@ type UploadResult = {
   replacedProfile: boolean;
 };
 
-const memorialPhotoFilter = "grayscale(1) contrast(1.04) brightness(1.02)";
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 
 /** 가족이 올릴 수 있는 사진 수(프로필 사진 포함). 서버 routers/gallery.ts 와 같다. */
@@ -369,7 +368,6 @@ export default function MemorialGallerySection({
                       src={toImgUrl(profilePhoto.photoUrl)}
                       alt="지금 쓰는 프로필 사진"
                       className="h-full w-full object-cover"
-                      style={{ filter: memorialPhotoFilter }}
                     />
                   ) : (
                     <UserRound
@@ -521,7 +519,6 @@ export default function MemorialGallerySection({
                     src={toImgUrl(photo.photoUrl)}
                     alt={photo.caption || "앨범 사진"}
                     className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
-                    style={{ filter: memorialPhotoFilter }}
                   />
                   <span className="absolute inset-0 bg-gradient-to-t from-[#171717]/0 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-hover:from-[#171717]/75" />
                   {(photo.caption || photo.year) && (
@@ -843,7 +840,6 @@ function Lightbox({
             alt={photo.caption || "앨범 사진"}
             draggable={false}
             className="max-h-[74vh] w-full object-contain"
-            style={{ filter: memorialPhotoFilter }}
           />
           <button
             type="button"

@@ -8,7 +8,6 @@ import { ReactNode, useMemo, useState } from "react";
 import { Link, useRoute } from "wouter";
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
-const portraitFilter = "grayscale(1) contrast(1.04)";
 
 type TimelineItem = {
   year: string;
@@ -243,7 +242,6 @@ function ObituarySheet({
                 src={toImgUrl(portrait)}
                 alt={`${memorial.name} ${memorial.role}`}
                 className="h-full w-full object-cover"
-                style={{ filter: portraitFilter }}
               />
             ) : (
               <span className="text-[10px] tracking-[0.26em] text-[#6b6555]">
@@ -368,7 +366,6 @@ function ObituarySheet({
                     src={toImgUrl(photo.photoUrl)}
                     alt=""
                     className="h-full w-full object-cover"
-                    style={{ filter: portraitFilter }}
                   />
                   {index === 2 && remainingPhotoCount > 0 ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-[#14130f]/70 text-xs text-[#e8e4dc]">

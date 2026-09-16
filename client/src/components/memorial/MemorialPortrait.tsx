@@ -19,7 +19,6 @@ export default function MemorialPortrait({
           src={toImgUrl(photo)}
           alt={`${name} 사진`}
           className="memorial-portrait__image"
-          style={{ filter: "grayscale(1) contrast(1.04) brightness(1.02)" }}
         />
       ) : (
         <div className="memorial-portrait__empty" aria-label={`${name} 추모관`}>

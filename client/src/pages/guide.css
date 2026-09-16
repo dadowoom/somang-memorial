@@ -126,7 +126,6 @@
   height: 360px;
   object-fit: cover;
   object-position: 54% center;
-  filter: saturate(0.65);
 }
 .guide-hero__photo figcaption {
   display: flex;
@@ -271,7 +270,6 @@
   width: 100%;
   aspect-ratio: 1.5;
   object-fit: cover;
-  filter: saturate(0.65);
 }
 .guide-preview__album figcaption {
   margin-top: 12px;
@@ -332,7 +330,6 @@
   height: 100%;
   object-fit: cover;
   object-position: 65% center;
-  filter: grayscale(0.8);
 }
 .guide-preview__film > div {
   position: relative;
@@ -491,7 +488,6 @@
   height: 100%;
   object-fit: cover;
   object-position: center 35%;
-  filter: saturate(0.65);
 }
 .guide-family-card__photo > div {
   position: absolute;
@@ -522,7 +518,6 @@
   height: 100%;
   object-fit: cover;
   object-position: center top;
-  filter: saturate(0.5);
 }
 .guide-family-card__video > div {
   position: relative;
