@@ -14,9 +14,10 @@ import {
   X,
 } from "lucide-react";
 import type { MutableRefObject, ReactElement } from "react";
-import { forwardRef, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import HTMLFlipBook from "react-pageflip";
 import { useIsMobile } from "@/hooks/useMobile";
+import { bookReaderFrameWidth } from "@/lib/bookReaderLayout";
 import { toast } from "sonner";
 
 type BookPage = {
@@ -75,12 +76,15 @@ function sortPages(pages: BookPage[]) {
   });
 }
 
-const ContentPage = forwardRef<HTMLDivElement, { page: BookPage }>(
-  function ContentPage({ page }, ref) {
+const ContentPage = forwardRef<
+  HTMLDivElement,
+  { page: BookPage; pageIndex?: number }
+>(function ContentPage({ page, pageIndex }, ref) {
     const date = formatDate(page.dateYear, page.dateMonth, page.dateDay);
     return (
       <div
         ref={ref}
+        data-page-index={pageIndex}
         className="relative flex h-full flex-col overflow-hidden bg-[#fdfdfd] p-6 md:p-8"
       >
         {date && (
@@ -116,10 +120,12 @@ const ContentPage = forwardRef<HTMLDivElement, { page: BookPage }>(
   }
 );
 
-const EndPage = forwardRef<HTMLDivElement>(function EndPage(_, ref) {
+const EndPage = forwardRef<HTMLDivElement, { pageIndex?: number }>(
+  function EndPage({ pageIndex }, ref) {
   return (
     <div
       ref={ref}
+      data-page-index={pageIndex}
       className="flex h-full flex-col items-center justify-center bg-[#fdfdfd] p-8 text-center"
     >
       <p className="text-xs uppercase tracking-[0.28em] text-[#666666]">
@@ -135,9 +141,17 @@ const EndPage = forwardRef<HTMLDivElement>(function EndPage(_, ref) {
   );
 });
 
-const BlankPage = forwardRef<HTMLDivElement>(function BlankPage(_, ref) {
-  return <div ref={ref} className="h-full bg-[#fdfdfd]" />;
-});
+const BlankPage = forwardRef<HTMLDivElement, { pageIndex?: number }>(
+  function BlankPage({ pageIndex }, ref) {
+    return (
+      <div
+        ref={ref}
+        data-page-index={pageIndex}
+        className="h-full bg-[#fdfdfd]"
+      />
+    );
+  }
+);
 
 export default function MemorialBookSection({
   memorialId,
@@ -216,10 +230,13 @@ export default function MemorialBookSection({
     // 표지는 책 밖에서 한 장으로 꽉 차게 보여준다. 책 안에 두면 펼침 보기에서
     // 왼쪽 절반이 빈 종이로 남아 고장난 화면처럼 보인다.
     const pages = [
-      ...sortedPages.map(page => <ContentPage key={page.id} page={page} />),
-      <EndPage key="end" />,
+      ...sortedPages.map((page, index) => (
+        <ContentPage key={page.id} page={page} pageIndex={index} />
+      )),
+      <EndPage key="end" pageIndex={sortedPages.length} />,
     ];
-    if (pages.length % 2 !== 0) pages.push(<BlankPage key="blank" />);
+    if (pages.length % 2 !== 0)
+      pages.push(<BlankPage key="blank" pageIndex={pages.length} />);
     return pages;
   }, [selectedBook, sortedPages]);
 
@@ -482,25 +499,72 @@ function BookView({
   // 화살표가 보이지 않는 쪽 책을 넘기고 눈앞의 책은 그대로였다.
   const isMobile = useIsMobile();
 
-  // 쪽 번호는 우리가 직접 센다.
+
+  // 펼침 보기는 한 번에 두 장씩 넘어간다. 마지막 칸을 (전체-1) 로 잡으면
+  // 책은 더 못 넘어가는데 숫자만 올라가 어긋난다(운영에서 4/4 로 확인).
+  // 그래서 "마지막으로 펼쳐지는 자리"까지만 센다.
+  const pageStep = isMobile ? 1 : 2;
+  const lastPageIndex = Math.max(0, pages.length - pageStep);
+
+  // 쪽 번호는 "화면에 실제로 보이는 쪽"에서 읽는다.
   //
   // 책이 알려주는 값(onFlip 의 data, getCurrentPageIndex)은 모두 한 박자 늦어서
-  // 눌러도 숫자가 그대로였다 — 운영 화면에서 두 방법 다 확인했다. 그래서 숫자의
-  // 주인을 우리가 갖고, 책은 넘기기만 시킨다. 대신 끌어서 넘기면 숫자가 어긋나므로
-  // 넘기는 길을 화살표 하나로 모았다(아래 useMouseEvents/disableFlipByClick).
-  const pageStep = isMobile ? 1 : 2;
+  // 눌러도 숫자가 그대로였다 — 운영 화면에서 두 방법 다 확인했다. 반면 눈에 보이는
+  // 것은 거짓말을 하지 않는다. 손가락이나 마우스로 끌어 넘겨도 이 방법은 맞는다.
+  const bookAreaRef = useRef<HTMLDivElement>(null);
+  const syncPageFromScreen = () => {
+    const area = bookAreaRef.current;
+    if (!area) return;
+    const shown = Array.from(
+      area.querySelectorAll<HTMLElement>("[data-page-index]")
+    )
+      .filter(node => node.getBoundingClientRect().width > 50)
+      .map(node => Number(node.dataset.pageIndex))
+      .filter(index => Number.isInteger(index));
+    if (shown.length > 0) setCurrentPage(Math.min(...shown));
+  };
+  // 넘김이 끝나는 시점이 제각각이라 몇 번에 나눠 확인한다.
+  const syncPageSoon = () => {
+    [60, 400, 900].forEach(delay =>
+      window.setTimeout(syncPageFromScreen, delay)
+    );
+  };
+
+  // 화살표는 누르는 즉시 숫자를 바꿔 눌린 것이 보이게 하고,
+  // 넘김이 끝나면 화면에서 읽은 값으로 맞춘다.
   const goToPrevPage = () => {
     setCurrentPage(Math.max(0, currentPage - pageStep));
     bookRef.current?.pageFlip?.()?.flipPrev();
+    syncPageSoon();
   };
   const goToNextPage = () => {
-    setCurrentPage(Math.min(pages.length - 1, currentPage + pageStep));
+    setCurrentPage(Math.min(lastPageIndex, currentPage + pageStep));
     bookRef.current?.pageFlip?.()?.flipNext();
+    syncPageSoon();
   };
 
-  if (!bookOpened) {
-    return (
-      <div className="mx-auto max-w-3xl border border-[#dedede] bg-[#fdfdfd] px-6 py-16 text-center md:px-12 md:py-24">
+  // 읽기 창이 떠 있는 동안: Esc 로 닫고, 좌우 화살표 키로 넘기고,
+  // 뒤 페이지는 스크롤되지 않게 잠근다.
+  useEffect(() => {
+    if (!bookOpened) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setBookOpened(false);
+      if (event.key === "ArrowLeft") goToPrevPage();
+      if (event.key === "ArrowRight") goToNextPage();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+    // goToPrevPage/goToNextPage 는 currentPage 를 닫아 두므로 함께 갱신한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookOpened, currentPage, lastPageIndex]);
+
+  const cover = (
+      <div className="memorial-book-cover mx-auto max-w-3xl border border-[#dedede] bg-[#fdfdfd] px-6 py-16 text-center md:px-12 md:py-24">
         <div className="mx-auto mb-8 h-px w-16 bg-[#666666]" />
         <p className="mb-5 text-[11px] uppercase tracking-[0.28em] text-[#666666]">
           The Book Of Faith
@@ -519,7 +583,7 @@ function BookView({
         <button
           type="button"
           onClick={() => setBookOpened(true)}
-          className="mt-10 inline-flex h-12 items-center justify-center gap-2 bg-[#171717] px-7 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          className="memorial-book-open-button mt-10 inline-flex h-12 items-center justify-center gap-2 bg-[#171717] px-7 text-sm font-medium text-white transition-opacity hover:opacity-90"
         >
           <BookOpen className="h-4 w-4" />
           책 펼쳐보기
@@ -528,133 +592,176 @@ function BookView({
           모두 {pages.length}쪽입니다.
         </p>
       </div>
-    );
-  }
+  );
 
+  if (!bookOpened) return cover;
+
+  // 책은 화면 전체를 덮는 읽기 창(팝업) 안에서 넘긴다 (2026-09-16).
+  // 전에는 본문 안에 그려져 스크롤 위치에 따라 책이 잘려 보였고,
+  // 넘기다 보면 페이지가 같이 움직였다.
   return (
-    <div>
-      {!isMobile && (
-      <div>
-        <HTMLFlipBook
-          key={`desktop-${selectedBook.id}-${sortedPages.map(page => page.id).join("-")}`}
-          ref={bookRef}
-          width={560}
-          height={720}
-          size="stretch"
-          minWidth={420}
-          maxWidth={720}
-          minHeight={520}
-          maxHeight={860}
-          showCover={false}
-          mobileScrollSupport
-          className="mx-auto"
-          startPage={0}
-          drawShadow
-          flippingTime={850}
-          usePortrait={false}
-          startZIndex={0}
-          autoSize
-          maxShadowOpacity={0.18}
-          showPageCorners
-          disableFlipByClick
-          useMouseEvents={false}
-          swipeDistance={30}
-          clickEventForward
-          style={{}}
-        >
-          {pages}
-        </HTMLFlipBook>
-      </div>
-      )}
-
-      {isMobile && (
-      <div>
-        <HTMLFlipBook
-          key={`mobile-${selectedBook.id}-${sortedPages.map(page => page.id).join("-")}`}
-          ref={bookRef}
-          width={340}
-          height={500}
-          size="stretch"
-          minWidth={280}
-          maxWidth={390}
-          minHeight={420}
-          maxHeight={560}
-          showCover={false}
-          mobileScrollSupport={false}
-          className="mx-auto"
-          startPage={0}
-          drawShadow
-          flippingTime={700}
-          usePortrait
-          startZIndex={0}
-          autoSize
-          maxShadowOpacity={0.14}
-          showPageCorners
-          disableFlipByClick
-          useMouseEvents={false}
-          swipeDistance={20}
-          clickEventForward
-          style={{}}
-        >
-          {pages}
-        </HTMLFlipBook>
-      </div>
-      )}
-
-      <div className="mt-6 flex justify-center">
-        <button
-          type="button"
-          onClick={() => setBookOpened(false)}
-          className="inline-flex h-10 items-center justify-center gap-2 border border-[#dedede] bg-white px-4 text-xs text-[#555555] transition-colors hover:bg-[#f9f9f9]"
-        >
-          <BookOpen className="h-3.5 w-3.5" />
-          표지 보기
-        </button>
-      </div>
-
-      <div className="mt-6 flex items-center justify-center gap-6">
-        <button
-          type="button"
-          onClick={goToPrevPage}
-          className="flex h-10 w-10 items-center justify-center border border-[#dedede] bg-white text-[#555555]"
-          aria-label="이전 페이지"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <span className="text-xs text-[#666666]">
-          {Math.min(currentPage + 1, pages.length)} / {pages.length}
-        </span>
-        <button
-          type="button"
-          onClick={goToNextPage}
-          className="flex h-10 w-10 items-center justify-center border border-[#dedede] bg-white text-[#555555]"
-          aria-label="다음 페이지"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
-      {isAdmin && editablePage && (
-        <div className="mt-4 flex justify-center gap-2">
+    <>
+      {cover}
+      <div
+        className="memorial-book-reader fixed inset-0 z-[100] flex flex-col bg-[#101010]/95 text-white"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${selectedBook.title} 책장`}
+      >
+        <div className="flex items-center justify-between gap-3 px-4 py-3 md:px-6">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-white/50">
+              The Book Of Faith
+            </p>
+            <p
+              className="truncate text-base font-light md:text-lg"
+              style={{ fontFamily: "'Noto Serif KR', serif" }}
+            >
+              {selectedBook.title}
+            </p>
+          </div>
           <button
             type="button"
-            onClick={() => onEditPage(editablePage)}
-            className="inline-flex h-9 items-center gap-2 border border-[#dedede] bg-white px-3 text-xs text-[#555555]"
+            onClick={() => setBookOpened(false)}
+            className="flex h-11 w-11 shrink-0 items-center justify-center border border-white/30 text-white transition-colors hover:bg-white/10"
+            aria-label="책장 닫기"
           >
-            <Pencil className="h-3.5 w-3.5" />
-            페이지 편집
-          </button>
-          <button
-            type="button"
-            onClick={() => onDeletePage(editablePage)}
-            className="inline-flex h-9 items-center gap-2 border border-red-200 bg-white px-3 text-xs text-red-500"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            삭제
+            <X className="h-5 w-5" />
           </button>
         </div>
-      )}
-    </div>
+
+        <div className="flex min-h-0 flex-1 items-center justify-center px-2">
+          <div
+            ref={bookAreaRef}
+            className="memorial-book-open"
+            style={{ width: bookReaderFrameWidth(isMobile) }}
+          >
+            {!isMobile && (
+              <HTMLFlipBook
+                key={`desktop-${selectedBook.id}-${sortedPages.map(page => page.id).join("-")}`}
+                ref={bookRef}
+                width={560}
+                height={720}
+                size="stretch"
+                minWidth={320}
+                maxWidth={900}
+                minHeight={420}
+                maxHeight={1160}
+                showCover={false}
+                onFlip={syncPageSoon}
+                onChangeState={syncPageSoon}
+                mobileScrollSupport
+                className="mx-auto"
+                startPage={0}
+                drawShadow
+                flippingTime={850}
+                usePortrait={false}
+                startZIndex={0}
+                autoSize
+                maxShadowOpacity={0.18}
+                showPageCorners
+                disableFlipByClick={false}
+                useMouseEvents
+                swipeDistance={30}
+                clickEventForward
+                style={{}}
+              >
+                {pages}
+              </HTMLFlipBook>
+            )}
+
+            {isMobile && (
+              <HTMLFlipBook
+                key={`mobile-${selectedBook.id}-${sortedPages.map(page => page.id).join("-")}`}
+                ref={bookRef}
+                width={340}
+                height={500}
+                size="stretch"
+                minWidth={240}
+                maxWidth={520}
+                minHeight={360}
+                maxHeight={760}
+                showCover={false}
+                onFlip={syncPageSoon}
+                onChangeState={syncPageSoon}
+                mobileScrollSupport={false}
+                className="mx-auto"
+                startPage={0}
+                drawShadow
+                flippingTime={700}
+                usePortrait
+                startZIndex={0}
+                autoSize
+                maxShadowOpacity={0.14}
+                showPageCorners
+                disableFlipByClick={false}
+                useMouseEvents
+                swipeDistance={20}
+                clickEventForward
+                style={{}}
+              >
+                {pages}
+              </HTMLFlipBook>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-3 px-4 py-3 md:gap-6 md:py-4">
+          <button
+            type="button"
+            onClick={goToPrevPage}
+            className="flex h-11 w-11 items-center justify-center border border-white/30 text-white transition-colors hover:bg-white/10"
+            aria-label="이전 페이지"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <span className="min-w-[5rem] text-center text-sm text-white/80">
+            {pageStep > 1 && currentPage + 1 < pages.length
+              ? `${currentPage + 1}–${Math.min(currentPage + pageStep, pages.length)}`
+              : Math.min(currentPage + 1, pages.length)}{" "}
+            / {pages.length}
+          </span>
+          <button
+            type="button"
+            onClick={goToNextPage}
+            className="flex h-11 w-11 items-center justify-center border border-white/30 text-white transition-colors hover:bg-white/10"
+            aria-label="다음 페이지"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+
+          {isAdmin && editablePage && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => onEditPage(editablePage)}
+                className="inline-flex h-9 items-center gap-2 border border-white/30 px-3 text-xs text-white hover:bg-white/10"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                페이지 편집
+              </button>
+              <button
+                type="button"
+                onClick={() => onDeletePage(editablePage)}
+                className="inline-flex h-9 items-center gap-2 border border-red-300/60 px-3 text-xs text-red-200 hover:bg-red-500/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                삭제
+              </button>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setBookOpened(false)}
+            className="inline-flex h-9 items-center gap-2 border border-white/30 px-4 text-xs text-white transition-colors hover:bg-white/10"
+          >
+            <X className="h-3.5 w-3.5" />
+            닫기
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
