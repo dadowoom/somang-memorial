@@ -115,6 +115,7 @@ import {
 import { bookRouter } from "./routers/book";
 import { galleryRouter } from "./routers/gallery";
 import { kioskPosterRouter } from "./routers/kioskPoster";
+import { kioskInquiryRouter } from "./routers/kioskInquiry";
 import { uploadRouter } from "./routers/upload";
 import { videoRouter } from "./routers/video";
 import { maskEmailForAudit, maskPhoneForAudit } from "../shared/auditNotes";
@@ -2122,6 +2123,7 @@ export const appRouter = router({
   book: bookRouter,
   upload: uploadRouter,
   kioskPoster: kioskPosterRouter,
+  kioskInquiry: kioskInquiryRouter,
 
   // TODO: add feature routers here, e.g.
   // todo: router({

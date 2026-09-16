@@ -13,6 +13,7 @@ import {
   InsertKioskPoster,
   InsertMemorialVideo,
   adminAuditLogs,
+  kioskInquiries,
   kioskPosters,
   memorialBookPages,
   memorialBooks,
@@ -2891,4 +2892,86 @@ export async function resetPasswordWithToken(input: {
   });
 
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// 키오스크 문의 (2026-09-16). 관람객이 남긴 전화번호. 메일과 별개로 여기 남는다.
+
+export async function createKioskInquiry(input: {
+  phone: string;
+  name: string | null;
+  source: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const [result] = await db.insert(kioskInquiries).values({
+    phone: input.phone,
+    name: input.name,
+    source: input.source,
+  });
+  return Number((result as { insertId?: number }).insertId ?? 0);
+}
+
+export async function markKioskInquiryNotified(
+  id: number,
+  notifyError: string | null
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db
+    .update(kioskInquiries)
+    .set({
+      notifiedAt: notifyError ? null : new Date(),
+      notifyError,
+    })
+    .where(eq(kioskInquiries.id, id));
+}
+
+export async function listKioskInquiries(limit = 300) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  return db
+    .select({
+      id: kioskInquiries.id,
+      phone: kioskInquiries.phone,
+      name: kioskInquiries.name,
+      source: kioskInquiries.source,
+      status: kioskInquiries.status,
+      notifiedAt: kioskInquiries.notifiedAt,
+      notifyError: kioskInquiries.notifyError,
+      createdAt: kioskInquiries.createdAt,
+    })
+    .from(kioskInquiries)
+    .orderBy(desc(kioskInquiries.createdAt), desc(kioskInquiries.id))
+    .limit(limit);
+}
+
+export async function updateKioskInquiryStatus(id: number, status: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const [current] = await db
+    .select({ status: kioskInquiries.status, phone: kioskInquiries.phone })
+    .from(kioskInquiries)
+    .where(eq(kioskInquiries.id, id))
+    .limit(1);
+  if (!current) return null;
+
+  await db
+    .update(kioskInquiries)
+    .set({ status })
+    .where(eq(kioskInquiries.id, id));
+
+  return { before: current.status, phone: current.phone };
 }

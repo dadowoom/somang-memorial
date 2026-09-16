@@ -26,18 +26,20 @@ function text(markup: string) {
 }
 
 describe("KioskQuickActions", () => {
-  it("예시 보기·이용 안내 동그라미 단추 두 개를 세로로 놓는다", () => {
+  it("예시 보기·이용 안내·문의 동그라미 단추 세 개를 세로로 놓는다", () => {
     const html = renderToStaticMarkup(
       createElement(KioskQuickActions, {
         onSample: () => {},
         onGuide: () => {},
+        onInquiry: () => {},
       })
     );
     const buttons = html.match(/<button\b/g) ?? [];
-    expect(buttons).toHaveLength(2);
+    expect(buttons).toHaveLength(3);
     expect(html).toContain('class="kiosk-quick-actions"');
     expect(text(html)).toContain("예시 보기");
     expect(text(html)).toContain("이용 안내");
+    expect(text(html)).toContain("문의");
   });
 
   it("견본 추모관 주소는 키오스크 안의 주소다 (일반 웹으로 새지 않는다)", () => {

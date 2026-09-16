@@ -1,0 +1,256 @@
+/* 키오스크 "문의" 창. 화면을 반반으로 나눈다: 왼쪽 교회 경조부, 오른쪽 제작 업체.
+   자판(z 70)이 올라오면 overlay 의 bottom 이 자판 높이만큼 올라간다 (KioskInquiryOverlay.tsx). */
+.kiosk-inquiry-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  color: #121212;
+}
+
+.kiosk-inquiry-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #18181b;
+  padding: 16px 20px;
+}
+
+.kiosk-inquiry-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: #777;
+}
+
+.kiosk-inquiry-title {
+  margin-top: 4px;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.kiosk-inquiry-close {
+  display: flex;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #18181b;
+  background: #fff;
+}
+
+.kiosk-inquiry-close svg {
+  width: 24px;
+  height: 24px;
+}
+
+.kiosk-inquiry-body {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: 1fr;
+  overflow-y: auto;
+}
+
+.kiosk-inquiry-half {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 24px 32px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.kiosk-inquiry-half + .kiosk-inquiry-half {
+  border-top: 1px solid #e3e0da;
+}
+
+.kiosk-inquiry-half-title {
+  margin-top: 8px;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.kiosk-inquiry-phone {
+  margin-top: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #18181b;
+  padding: 14px 20px;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  align-self: flex-start;
+}
+
+.kiosk-inquiry-phone svg {
+  width: 26px;
+  height: 26px;
+}
+
+.kiosk-inquiry-line {
+  margin-top: 14px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #555;
+}
+
+.kiosk-inquiry-form {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kiosk-inquiry-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kiosk-inquiry-field span {
+  font-size: 13px;
+  color: #616161;
+}
+
+.kiosk-inquiry-field input {
+  height: 64px;
+  border: 1px solid #18181b;
+  background: #fff;
+  padding: 0 18px;
+  font-size: 26px;
+  outline: none;
+}
+
+.kiosk-inquiry-field input::placeholder {
+  color: #b8b8b8;
+}
+
+.kiosk-inquiry-error {
+  font-size: 15px;
+  color: #9f2a2a;
+}
+
+.kiosk-inquiry-submit {
+  display: flex;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #18181b;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.kiosk-inquiry-submit:disabled {
+  opacity: 0.5;
+}
+
+.kiosk-inquiry-submit svg {
+  width: 20px;
+  height: 20px;
+}
+
+.kiosk-inquiry-consent {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #777;
+}
+
+.kiosk-inquiry-half--done {
+  align-items: flex-start;
+}
+
+.kiosk-inquiry-done-mark {
+  display: flex;
+  width: 64px;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #18181b;
+  color: #fff;
+}
+
+.kiosk-inquiry-done-mark svg {
+  width: 30px;
+  height: 30px;
+}
+
+.kiosk-inquiry-half--done .kiosk-inquiry-submit {
+  margin-top: 24px;
+  width: 100%;
+}
+
+/* 넓으면 반반 나란히. */
+@media (min-width: 900px) {
+  .kiosk-inquiry-body {
+    grid-template-columns: 1fr 1fr;
+    overflow-y: auto;
+  }
+
+  .kiosk-inquiry-half {
+    padding: 40px 36px 44px;
+  }
+
+  .kiosk-inquiry-half + .kiosk-inquiry-half {
+    border-top: 0;
+    border-left: 1px solid #e3e0da;
+  }
+}
+
+/* 세로 키오스크(큰 화면): kioskSearch.css 와 같은 조건. */
+@media (min-width: 640px) and (min-height: 900px) and (orientation: portrait) {
+  .kiosk-inquiry-head {
+    padding: 20px 32px;
+  }
+
+  .kiosk-inquiry-title {
+    font-size: 34px;
+  }
+
+  .kiosk-inquiry-close {
+    width: 64px;
+    height: 64px;
+  }
+
+  .kiosk-inquiry-half-title {
+    font-size: 36px;
+  }
+
+  .kiosk-inquiry-phone {
+    font-size: 36px;
+    padding: 18px 26px;
+  }
+
+  .kiosk-inquiry-line {
+    font-size: 20px;
+  }
+
+  .kiosk-inquiry-field span {
+    font-size: 16px;
+  }
+
+  .kiosk-inquiry-field input {
+    height: 80px;
+    font-size: 32px;
+  }
+
+  .kiosk-inquiry-submit {
+    height: 80px;
+    font-size: 22px;
+  }
+
+  .kiosk-inquiry-consent,
+  .kiosk-inquiry-error {
+    font-size: 16px;
+  }
+}
