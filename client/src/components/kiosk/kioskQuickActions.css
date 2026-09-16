@@ -1,0 +1,217 @@
+/* 검색 화면 오른쪽 아래(5시 방향)의 동그라미 단추 두 개. 광고 화면(z 60)과
+   자판(z 70)보다 아래라, 그 둘이 떠 있을 때는 자연히 가려진다. */
+.kiosk-quick-actions {
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kiosk-quick-action {
+  display: flex;
+  width: 84px;
+  height: 84px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid #18181b;
+  border-radius: 9999px;
+  background: #fff;
+  color: #18181b;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.15;
+  text-align: center;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+  transition: transform 120ms ease-out;
+}
+
+.kiosk-quick-action svg {
+  width: 24px;
+  height: 24px;
+}
+
+.kiosk-quick-action:active {
+  transform: scale(0.95);
+}
+
+.kiosk-quick-action--primary {
+  background: #18181b;
+  color: #fff;
+}
+
+/* 자판이 올라오면 자판과 겹치므로 숨긴다. */
+.kiosk-search-screen[data-search-keyboard-open="true"] .kiosk-quick-actions {
+  display: none;
+}
+
+/* 이용 안내 창 */
+.kiosk-guide-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(16, 16, 16, 0.55);
+}
+
+.kiosk-guide-panel {
+  width: 100%;
+  max-width: 720px;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  border: 1px solid #18181b;
+  background: #fff;
+  padding: 32px 28px;
+  color: #121212;
+}
+
+.kiosk-guide-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.kiosk-guide-eyebrow {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: #777;
+}
+
+.kiosk-guide-title {
+  margin-top: 8px;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.kiosk-guide-close {
+  display: flex;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #b5b0a7;
+  background: #fff;
+}
+
+.kiosk-guide-close svg {
+  width: 24px;
+  height: 24px;
+}
+
+.kiosk-guide-steps {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.kiosk-guide-step {
+  display: flex;
+  gap: 16px;
+  border-top: 1px solid #e3e0da;
+  padding-top: 20px;
+}
+
+.kiosk-guide-step-number {
+  flex-shrink: 0;
+  width: 36px;
+  font-size: 14px;
+  color: #888;
+}
+
+.kiosk-guide-step-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kiosk-guide-step-title {
+  font-size: 21px;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.kiosk-guide-step-detail {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #555;
+  word-break: keep-all;
+}
+
+.kiosk-guide-done {
+  margin-top: 32px;
+  display: flex;
+  width: 100%;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  background: #18181b;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+/* 세로 키오스크(큰 화면)에서는 전부 키운다. kioskSearch.css 와 같은 조건이다. */
+@media (min-width: 640px) and (min-height: 900px) and (orientation: portrait) {
+  .kiosk-quick-actions {
+    right: 40px;
+    bottom: 56px;
+    gap: 20px;
+  }
+
+  .kiosk-quick-action {
+    width: 128px;
+    height: 128px;
+    gap: 6px;
+    font-size: 20px;
+  }
+
+  .kiosk-quick-action svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .kiosk-guide-panel {
+    max-width: 860px;
+    padding: 48px 44px;
+  }
+
+  .kiosk-guide-title {
+    font-size: 42px;
+  }
+
+  .kiosk-guide-close {
+    width: 64px;
+    height: 64px;
+  }
+
+  .kiosk-guide-step-number {
+    width: 48px;
+    font-size: 18px;
+  }
+
+  .kiosk-guide-step-title {
+    font-size: 28px;
+  }
+
+  .kiosk-guide-step-detail {
+    font-size: 21px;
+  }
+
+  .kiosk-guide-done {
+    height: 84px;
+    font-size: 24px;
+  }
+}
