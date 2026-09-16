@@ -9,6 +9,12 @@ import { useEffect } from "react";
  * 크롬에서 듣지 않아, 화면 쪽에서 막는다. 스타일은 index.css 의 html.kiosk-mode.
  *
  * 길게 누르면 뜨는 오른쪽 클릭 메뉴(뒤로 가기·인쇄 등)도 여기서 막는다.
+ *
+ * 두 손가락 확대는 index.css 의 touch-action(pan-x pan-y)이 막는다. 여기서는
+ * 그 밖의 확대 통로를 막는다 (2026-09-16 현장 요청).
+ * - 터치 화면·터치패드의 오므리기는 윈도우에서 Ctrl + 휠로 들어오기도 한다.
+ * - 사파리 계열은 gesturestart 로 확대한다.
+ * - Ctrl + 더하기/빼기/0 키 확대.
  */
 export const KIOSK_DOCUMENT_CLASS = "kiosk-mode";
 
@@ -16,14 +22,44 @@ export function preventKioskContextMenu(event: Pick<Event, "preventDefault">) {
   event.preventDefault();
 }
 
+export function preventKioskZoomWheel(
+  event: Pick<WheelEvent, "ctrlKey" | "preventDefault">
+) {
+  if (event.ctrlKey) event.preventDefault();
+}
+
+export function preventKioskGesture(event: Pick<Event, "preventDefault">) {
+  event.preventDefault();
+}
+
+const ZOOM_KEYS = new Set(["+", "=", "-", "_", "0"]);
+
+export function preventKioskZoomKeys(
+  event: Pick<KeyboardEvent, "ctrlKey" | "metaKey" | "key" | "preventDefault">
+) {
+  if ((event.ctrlKey || event.metaKey) && ZOOM_KEYS.has(event.key)) {
+    event.preventDefault();
+  }
+}
+
 export function useKioskDocumentMode() {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.add(KIOSK_DOCUMENT_CLASS);
     document.addEventListener("contextmenu", preventKioskContextMenu);
+    document.addEventListener("wheel", preventKioskZoomWheel, {
+      passive: false,
+    });
+    document.addEventListener("gesturestart", preventKioskGesture);
+    document.addEventListener("gesturechange", preventKioskGesture);
+    document.addEventListener("keydown", preventKioskZoomKeys);
     return () => {
       root.classList.remove(KIOSK_DOCUMENT_CLASS);
       document.removeEventListener("contextmenu", preventKioskContextMenu);
+      document.removeEventListener("wheel", preventKioskZoomWheel);
+      document.removeEventListener("gesturestart", preventKioskGesture);
+      document.removeEventListener("gesturechange", preventKioskGesture);
+      document.removeEventListener("keydown", preventKioskZoomKeys);
     };
   }, []);
 }

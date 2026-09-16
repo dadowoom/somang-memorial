@@ -220,11 +220,26 @@ describe("gallery API", () => {
       }
     });
   }
-  it("allows pending owner upload and makes the first photo representative", async () => {
+  // 2026-09-16: 앨범에 올린 첫 사진이 저절로 프로필 사진이 되지 않는다.
+  it("allows pending owner upload into the album without making it the profile photo", async () => {
     const db = database([pending], []);
     await expect(
       galleryRouter.createCaller(context(owner)).upload(uploadInput)
-    ).resolves.toMatchObject({ success: true });
+    ).resolves.toMatchObject({ success: true, asProfile: false });
+    expect(db.insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ memorialId: 42, isRepresentative: 0 })
+    );
+    expect(db.tx.update).not.toHaveBeenCalled();
+  });
+  it("uploads a profile photo and keeps the previous one in the album", async () => {
+    const db = database([pending], [photo]);
+    await expect(
+      galleryRouter
+        .createCaller(context(owner))
+        .upload({ ...uploadInput, asProfile: true })
+    ).resolves.toMatchObject({ success: true, asProfile: true });
+    expect(db.set).toHaveBeenCalledWith({ isRepresentative: 0 });
+    expect(db.tx.delete).not.toHaveBeenCalled();
     expect(db.insertValues).toHaveBeenCalledWith(
       expect.objectContaining({ memorialId: 42, isRepresentative: 1 })
     );

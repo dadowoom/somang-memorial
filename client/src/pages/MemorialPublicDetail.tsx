@@ -3,6 +3,7 @@ import { formatLifespan } from "@/lib/lifespan";
 import Navbar from "@/components/Navbar";
 import MemorialPortrait from "@/components/memorial/MemorialPortrait";
 import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
+import { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "@/lib/featureFlags";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
@@ -103,9 +104,10 @@ export default function MemorialPublicDetail() {
     { enabled: Boolean(memorial?.id) }
   );
   const photos = (photosQuery.data ?? []) as MemorialPhoto[];
-  const portraitPhoto =
-    photos.find(photo => photo.isRepresentative === 1)?.photoUrl ??
-    photos[0]?.photoUrl;
+  // 맨 위 사진은 "프로필 사진"으로 정한 사진만 쓴다 (2026-09-16).
+  const portraitPhoto = photos.find(
+    photo => photo.isRepresentative === 1
+  )?.photoUrl;
 
   return (
     <div
@@ -384,10 +386,12 @@ function MemorialContent({
                   </p>
                 </div>
 
-                <MemorialReminderForm
-                  memorialSlug={memorial.slug}
-                  memorialDay={memorialDayLabel}
-                />
+                {MEMORIAL_REMINDER_SIGNUP_ENABLED && (
+                  <MemorialReminderForm
+                    memorialSlug={memorial.slug}
+                    memorialDay={memorialDayLabel}
+                  />
+                )}
               </section>
             </div>
 

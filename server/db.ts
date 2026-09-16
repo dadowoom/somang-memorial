@@ -2455,6 +2455,20 @@ export async function listMemorialVideos(memorialId: number) {
     .orderBy(asc(memorialVideos.sortOrder), asc(memorialVideos.createdAt));
 }
 
+export async function getMemorialVideoById(id: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const [video] = await db
+    .select()
+    .from(memorialVideos)
+    .where(eq(memorialVideos.id, id))
+    .limit(1);
+  return video ?? null;
+}
+
 export async function createMemorialVideo(data: InsertMemorialVideo) {
   const db = await getDb();
   if (!db) {

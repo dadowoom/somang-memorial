@@ -453,7 +453,7 @@ function PhotoSection({
       </h2>
       <p className="mt-4 text-base leading-7 text-[#616161]">
         여기에 올린 사진은 이 가족관에만 저장되어 비밀번호를 아는 가족만 볼 수
-        있습니다. 공개 추모관 사진첩에는 나오지 않습니다. ({photos.length}/
+        있습니다. 공개 추모관 앨범에는 나오지 않습니다. ({photos.length}/
         {photoLimit}장)
       </p>
 

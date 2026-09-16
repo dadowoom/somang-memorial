@@ -121,11 +121,13 @@ function ObituarySheet({
 }) {
   const [shareMessage, setShareMessage] = useState("");
 
-  const portrait =
-    photos.find(photo => photo.isRepresentative === 1)?.photoUrl ??
-    photos[0]?.photoUrl;
-  const galleryPhotos = photos.slice(0, 3);
-  const remainingPhotoCount = Math.max(0, photos.length - 3);
+  // 고인 사진은 "프로필 사진"만, 아래 작은 사진은 앨범 사진에서 고른다 (2026-09-16).
+  const portrait = photos.find(
+    photo => photo.isRepresentative === 1
+  )?.photoUrl;
+  const albumPhotos = photos.filter(photo => photo.isRepresentative !== 1);
+  const galleryPhotos = albumPhotos.slice(0, 3);
+  const remainingPhotoCount = Math.max(0, albumPhotos.length - 3);
 
   const serviceMoment = useMemo(
     () => parseServiceMoment(memorial.serviceTime),

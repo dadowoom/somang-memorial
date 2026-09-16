@@ -959,15 +959,15 @@ export default function MemorialCreate() {
                 <SectionHeader number="04" title="사진" />
                 <StepGuide>
                   <p>사진 없이도 추모관을 등록할 수 있습니다. <strong>이 작성 화면에서는 사진을 저장하지 않습니다.</strong></p>
-                  <p>{isAdmin ? "추모관을 생성한 뒤 ‘사진 추가하기’에서 등록해 주세요." : "먼저 글 등록을 요청한 뒤, 완료 화면의 ‘사진 추가하기’에서 사진을 올려 주세요. 게시된 뒤에도 직접 추가하고 고칠 수 있습니다."}</p>
+                  <p>추모관을 만든 뒤 완료 화면의 ‘프로필·앨범 사진 올리기’에서 올려 주세요. 휴대폰이면 그 자리에서 바로 찍어 올릴 수도 있고, 나중에 언제든 바꿀 수 있습니다.</p>
                 </StepGuide>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="border border-[#d5cfc5] p-5">
-                    <h3 className="text-lg font-medium">대표 사진 준비하기</h3>
-                    <p className="mt-3 text-base leading-7 text-[#616161]">고인의 얼굴이 잘 보이는 세로 사진을 준비해 주세요. 화면에 맞게 가장자리가 잘릴 수 있으니 얼굴 주변에 여유가 있으면 좋습니다.</p>
+                    <h3 className="text-lg font-medium">프로필 사진 준비하기</h3>
+                    <p className="mt-3 text-base leading-7 text-[#616161]">추모관 맨 위와 부고장에 크게 보이는 한 장입니다. 고인의 얼굴이 잘 보이는 세로 사진을 준비해 주세요. 화면에 맞게 가장자리가 잘릴 수 있으니 얼굴 주변에 여유가 있으면 좋습니다.</p>
                   </div>
                   <div className="border border-[#d5cfc5] p-5">
-                    <h3 className="text-lg font-medium">추억 사진 준비하기</h3>
+                    <h3 className="text-lg font-medium">앨범 사진 준비하기</h3>
                     <p className="mt-3 text-base leading-7 text-[#616161]">가족, 교회, 일상에서 함께했던 사진을 준비해 주세요. 함께 찍힌 분들이 공개에 동의하는 사진을 골라주세요.</p>
                   </div>
                 </div>
@@ -1069,7 +1069,7 @@ export default function MemorialCreate() {
                   </ReviewGroup>
                   <div className="border-t border-[#d5cfc5] pt-5">
                     <dl className="grid gap-4 sm:grid-cols-2">
-                      <ReviewValue label="사진" value="완성 후 사진 추가하기 · 언제든 수정 가능" />
+                      <ReviewValue label="사진" value="만든 뒤 프로필 사진·앨범 사진 올리기 · 언제든 수정 가능" />
                       <ReviewValue label="공개 범위" value={form.visibility === "private" ? "비공개 · 본문에 입장 비밀번호 필요" : "전체 공개"} />
                       {form.visibility === "private" && <ReviewValue label="입장 비밀번호" value={form.accessPassword.trim() ? "입력됨 (임시저장되지 않음)" : "입력이 필요합니다"} />}
                       <ReviewValue label="등록 후 상태" value={form.visibility === "private" ? "바로 완성 · 비공개" : "바로 완성 · 전체 공개"} />
@@ -1185,7 +1185,7 @@ export default function MemorialCreate() {
                       </dl>
                       <div className="mt-6 flex flex-wrap gap-3">
                         <Link href={`/memorial/${createdMemorial?.slug}/archive#gallery`}>
-                          <button type="button" className="inline-flex min-h-12 items-center justify-center border border-[#18181b] bg-[#f8f6f2] px-4 text-base font-medium">사진 추가하기</button>
+                          <button type="button" className="inline-flex min-h-12 items-center justify-center border border-[#18181b] bg-[#f8f6f2] px-4 text-base font-medium">프로필·앨범 사진 올리기</button>
                         </Link>
                         <Link href={createdMemorial?.href || "/"}>
                           <button type="button" className="inline-flex h-10 items-center justify-center gap-2 bg-[#18181b] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90">
