@@ -54,6 +54,25 @@ describe("field-specific kiosk keyboard", () => {
     expect(markup).toContain('data-keyboard-variant="korean-name"');
   });
 
+  it.each(["ko", "en", "number", "symbol"] as const)(
+    "renders only digits for number-only fields such as the family room password (%s)",
+    defaultMode => {
+      const markup = renderKeyboard({
+        variant: "digits",
+        defaultMode,
+        submitLabel: "비밀번호 확인",
+      });
+      const allowed = [
+        ..."0123456789",
+        "한 글자 지우기",
+        "비밀번호 확인",
+        "화면 키보드 닫기",
+      ];
+      expect(labels(markup).sort()).toEqual(allowed.sort());
+      expect(markup).toContain('data-keyboard-variant="digits"');
+    }
+  );
+
   it.each(["en", "number", "symbol"] as const)(
     "does not leak %s mode into the Korean name keyboard",
     defaultMode => {

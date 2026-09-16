@@ -121,6 +121,10 @@ import { videoRouter } from "./routers/video";
 import { maskEmailForAudit, maskPhoneForAudit } from "../shared/auditNotes";
 import { credentialFingerprint } from "./_core/sessionCredential";
 import { describeBlockedMemorials } from "../shared/accountDeletion";
+import {
+  FAMILY_ROOM_PASSWORD_MIN,
+  familyRoomPasswordProblem,
+} from "../shared/familyRoomPassword";
 
 const passwordAttemptLimiter = createPasswordAttemptLimiter();
 const parentFinderSearchLimiter = createPasswordAttemptLimiter({
@@ -290,18 +294,16 @@ const familyRoomVerifyInput = z.object({
   password: z.string().trim().min(1).max(100),
 });
 
-// 가족관 비밀번호는 가족 여러 분이 나눠 쓰고 외워야 한다. 회원 비밀번호(8자)보다
-// 짧게 잡되, 들어가는 화면에는 시도 횟수 제한이 걸려 있어 무작정 찍어볼 수는 없다.
-const FAMILY_ROOM_PASSWORD_MIN = 6;
-
+// 가족관 비밀번호는 숫자 4~6자리로만 새로 정한다 (2026-09-16 결정,
+// shared/familyRoomPassword.ts). 들어갈 때(familyRoomVerifyInput)는 예전에
+// 정해 둔 비밀번호도 계속 받는다.
 const familyRoomPasswordField = z
   .string()
   .trim()
-  .min(
-    FAMILY_ROOM_PASSWORD_MIN,
-    `비밀번호는 ${FAMILY_ROOM_PASSWORD_MIN}자 이상 입력해 주세요.`
-  )
-  .max(100);
+  .superRefine((value, ctx) => {
+    const problem = familyRoomPasswordProblem(value);
+    if (problem) ctx.addIssue({ code: "custom", message: problem });
+  });
 
 const familyRoomSlugField = z.string().trim().min(1).max(120);
 

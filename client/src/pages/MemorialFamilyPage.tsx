@@ -268,7 +268,9 @@ function PasswordGate({
           onChange={event => onPasswordChange(event.target.value)}
           id="family-password"
           type="password"
-          placeholder="비밀번호를 입력해 주세요"
+          inputMode="numeric"
+          enterKeyHint="go"
+          placeholder="숫자 비밀번호를 입력해 주세요"
           autoComplete="off"
           className="h-12 w-full border border-[#dedede] bg-white px-4 text-base outline-none transition-colors focus:border-[#171717]"
         />

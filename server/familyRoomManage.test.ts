@@ -57,7 +57,7 @@ const newRoom = {
   ...slug,
   title: "가족관",
   intro: "가족끼리 기억을 나눕니다.",
-  password: "somang2026",
+  password: "482915",
 };
 
 beforeEach(() => {
@@ -103,7 +103,7 @@ describe("가족관 관리 권한", () => {
     await expect(
       caller(owner).familyRoom.updatePassword({
         ...slug,
-        password: "새로운비밀번호",
+        password: "7351",
       })
     ).resolves.toEqual({ success: true });
   });
@@ -156,7 +156,7 @@ describe("familyRoom.create", () => {
       memorialId: 42,
       title: "가족관",
       intro: "가족끼리 기억을 나눕니다.",
-      password: "somang2026",
+      password: "482915",
     });
     // 유가족이 한 일은 adminUserId 없이 본인을 targetUserId 로 남긴다.
     expect(mocks.createAdminAuditLog).toHaveBeenCalledWith({
@@ -190,8 +190,18 @@ describe("familyRoom.create", () => {
     mocks.getMemorialFamilyRoomManageInfo.mockResolvedValue(withoutRoom);
 
     await expect(
-      caller(owner).familyRoom.create({ ...newRoom, password: "1234" })
-    ).rejects.toThrow(/6자 이상/);
+      caller(owner).familyRoom.create({ ...newRoom, password: "123" })
+    ).rejects.toThrow(/숫자 4자리 이상/);
+    expect(mocks.createMemorialFamilyRoom).not.toHaveBeenCalled();
+  });
+
+  // 2026-09-16 결정: 가족관 비밀번호는 숫자 4~6자리로만 정한다.
+  it("글자가 섞인 비밀번호로는 만들 수 없다", async () => {
+    mocks.getMemorialFamilyRoomManageInfo.mockResolvedValue(withoutRoom);
+
+    await expect(
+      caller(owner).familyRoom.create({ ...newRoom, password: "somang2026" })
+    ).rejects.toThrow(/숫자만/);
     expect(mocks.createMemorialFamilyRoom).not.toHaveBeenCalled();
   });
 
@@ -212,12 +222,12 @@ describe("familyRoom.updatePassword", () => {
     await expect(
       caller(owner).familyRoom.updatePassword({
         ...slug,
-        password: "새로운비밀번호",
+        password: "7351",
       })
     ).resolves.toEqual({ success: true });
     expect(mocks.updateMemorialFamilyRoomPassword).toHaveBeenCalledWith({
       memorialId: 42,
-      password: "새로운비밀번호",
+      password: "7351",
     });
     // 기록에는 비밀번호가 어떤 형태로도 들어가지 않는다.
     const [entry] = mocks.createAdminAuditLog.mock.calls[0];
@@ -227,7 +237,7 @@ describe("familyRoom.updatePassword", () => {
       action: "family_room.password.update",
       note: "김소망 (kim-somang-kwonsa)",
     });
-    expect(JSON.stringify(entry)).not.toContain("새로운비밀번호");
+    expect(JSON.stringify(entry)).not.toContain("7351");
   });
 
   it("가족관이 아직 없으면 먼저 만들라고 알린다", async () => {
@@ -236,7 +246,7 @@ describe("familyRoom.updatePassword", () => {
     await expect(
       caller(owner).familyRoom.updatePassword({
         ...slug,
-        password: "새로운비밀번호",
+        password: "7351",
       })
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(mocks.updateMemorialFamilyRoomPassword).not.toHaveBeenCalled();
@@ -248,7 +258,7 @@ describe("familyRoom.updatePassword", () => {
     await expect(
       caller(other).familyRoom.updatePassword({
         ...slug,
-        password: "새로운비밀번호",
+        password: "7351",
       })
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(mocks.updateMemorialFamilyRoomPassword).not.toHaveBeenCalled();
@@ -258,8 +268,17 @@ describe("familyRoom.updatePassword", () => {
     mocks.getMemorialFamilyRoomManageInfo.mockResolvedValue(withRoom);
 
     await expect(
-      caller(owner).familyRoom.updatePassword({ ...slug, password: "1234" })
-    ).rejects.toThrow(/6자 이상/);
+      caller(owner).familyRoom.updatePassword({ ...slug, password: "123" })
+    ).rejects.toThrow(/숫자 4자리 이상/);
+    expect(mocks.updateMemorialFamilyRoomPassword).not.toHaveBeenCalled();
+  });
+
+  it("7자리 이상 숫자로는 못 바꾼다", async () => {
+    mocks.getMemorialFamilyRoomManageInfo.mockResolvedValue(withRoom);
+
+    await expect(
+      caller(owner).familyRoom.updatePassword({ ...slug, password: "1234567" })
+    ).rejects.toThrow(/6자리까지/);
     expect(mocks.updateMemorialFamilyRoomPassword).not.toHaveBeenCalled();
   });
 });
