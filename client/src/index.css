@@ -285,6 +285,20 @@ html.kiosk-mode img {
 html.kiosk-mode .memorial-book-open {
   touch-action: none;
 }
+/* 앨범 크게 보기의 좌우 화살표·닫기를 키오스크에서 더 크게 (2026-09-16). */
+html.kiosk-mode .memorial-lightbox-arrow {
+  width: 96px;
+  height: 96px;
+}
+html.kiosk-mode .memorial-lightbox-arrow svg {
+  width: 52px;
+  height: 52px;
+}
+html.kiosk-mode .memorial-lightbox-close {
+  min-height: 64px;
+  padding-inline: 24px;
+  font-size: 22px;
+}
 /* 책장 창의 단추(이전·다음·닫기)를 손가락으로 누르기 쉽게 키운다. */
 html.kiosk-mode .memorial-book-reader button {
   min-width: 64px;

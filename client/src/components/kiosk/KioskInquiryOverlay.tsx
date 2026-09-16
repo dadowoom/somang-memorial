@@ -1,3 +1,4 @@
+import { useScrollLock } from "@/lib/scrollLock";
 import {
   useKioskKeyboard,
   useKioskKeyboardField,
@@ -31,6 +32,8 @@ export default function KioskInquiryOverlay({
   onClose: () => void;
 }) {
   const { isOpen, keyboardHeight } = useKioskKeyboard();
+  // 문의 창이 떠 있는 동안 뒤 화면을 잠근다.
+  useScrollLock();
 
   return (
     <div

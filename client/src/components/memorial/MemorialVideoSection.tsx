@@ -1,6 +1,7 @@
 import InlineEditText from "@/components/InlineEditText";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toImgUrl } from "@/lib/imageUrl";
+import { useScrollLock } from "@/lib/scrollLock";
 import { trpc } from "@/lib/trpc";
 import { extractYoutubeVideoId } from "@shared/youtubeId";
 import {
@@ -11,10 +12,11 @@ import {
   EyeOff,
   Play,
   Trash2,
+  X,
   Youtube,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type MemorialVideo = {
@@ -74,8 +76,14 @@ export default function MemorialVideoSection({
     memorialId > 0 &&
     (isAdmin || permissions.data?.canManage === true);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
-  // 방문자 화면: 표지를 누르기 전에는 유튜브를 불러오지 않는다(무거움·자동재생 방지).
-  const [isPlaying, setIsPlaying] = useState(false);
+  // 영상은 가족관 영상처럼 팝업으로 튼다 (2026-09-16 요청). 키오스크는 onPlay 로
+  // 키오스크 영상 창을 쓰고, 홈페이지는 아래 VideoPopup 을 쓴다.
+  const [popupVideo, setPopupVideo] = useState<MemorialVideo | null>(null);
+  const playVideo = (video: MemorialVideo | undefined) => {
+    if (!video) return;
+    if (onPlay) onPlay(video);
+    else setPopupVideo(video);
+  };
   // 방문자가 볼 영상: 고른 것이 있으면 그것, 없으면 첫 번째
   const visitorVideo =
     visibleVideos.find(video => video.youtubeVideoId === selectedVideoId) ??
@@ -284,26 +292,10 @@ export default function MemorialVideoSection({
           </div>
         ) : !canEdit && visibleVideos.length > 0 ? (
           <div className="mx-auto grid max-w-5xl overflow-hidden border border-[#dedede] bg-[#ffffff] md:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.72fr)]">
-            {isPlaying && visitorVideo ? (
-              <div className="aspect-video bg-black md:aspect-auto md:min-h-[420px]">
-                <iframe
-                  src={`https://www.youtube.com/embed/${visitorVideo.youtubeVideoId}?autoplay=1&rel=0`}
-                  title={visitorVideo.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="h-full w-full"
-                />
-              </div>
-            ) : (
+            {(
               <button
                 type="button"
-                onClick={() => {
-                  if (onPlay) {
-                    if (visitorVideo) onPlay(visitorVideo);
-                  } else {
-                    setIsPlaying(true);
-                  }
-                }}
+                onClick={() => playVideo(visitorVideo)}
                 aria-label="영상 재생"
                 className="group relative block min-h-[260px] w-full overflow-hidden bg-[#171717] text-left md:min-h-[420px]"
               >
@@ -364,8 +356,7 @@ export default function MemorialVideoSection({
                           type="button"
                           onClick={() => {
                             setSelectedVideoId(video.youtubeVideoId);
-                            if (onPlay) onPlay(video);
-                            else setIsPlaying(true);
+                            playVideo(video);
                           }}
                           className={`flex w-full items-center gap-3 border p-2 text-left text-sm transition-colors ${
                             visitorVideo?.id === video.id
@@ -391,15 +382,23 @@ export default function MemorialVideoSection({
           <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
             <div className="overflow-hidden border border-[#dedede] bg-black">
               {currentVideo ? (
-                <div className="aspect-video">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${currentVideo.youtubeVideoId}`}
-                    title={currentVideo.title}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="h-full w-full"
+                <button
+                  type="button"
+                  onClick={() => playVideo(currentVideo)}
+                  aria-label={`${currentVideo.title} 영상 재생`}
+                  className="group relative block aspect-video w-full overflow-hidden"
+                >
+                  <img
+                    src={youtubeThumb(currentVideo.youtubeVideoId)}
+                    alt=""
+                    className="h-full w-full object-cover opacity-80"
                   />
-                </div>
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-[#171717] shadow-lg">
+                      <Play className="ml-1 h-7 w-7 fill-current" />
+                    </span>
+                  </span>
+                </button>
               ) : (
                 <div className="flex aspect-video items-center justify-center bg-[#ffffff]">
                   <Youtube className="h-10 w-10 text-[#666666]" />
@@ -426,7 +425,10 @@ export default function MemorialVideoSection({
                     <button
                       type="button"
                       className="flex min-w-0 flex-1 gap-3 text-left"
-                      onClick={() => setSelectedVideoId(video.youtubeVideoId)}
+                      onClick={() => {
+                        setSelectedVideoId(video.youtubeVideoId);
+                        playVideo(video);
+                      }}
                     >
                       <span className="relative h-16 w-24 shrink-0 overflow-hidden bg-[#ffffff]">
                         <img
@@ -518,7 +520,74 @@ export default function MemorialVideoSection({
           </div>
         )}
       </div>
+      {popupVideo && (
+        <VideoPopup video={popupVideo} onClose={() => setPopupVideo(null)} />
+      )}
     </section>
+  );
+}
+
+/** 홈페이지 영상 팝업. 뒤 화면은 잠그고, 바깥을 누르거나 Esc·닫기로 닫는다. */
+function VideoPopup({
+  video,
+  onClose,
+}: {
+  video: MemorialVideo;
+  onClose: () => void;
+}) {
+  useScrollLock();
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${video.title} 영상`}
+      className="fixed inset-0 z-[120] flex items-center justify-center overscroll-contain bg-black/85 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-5xl"
+        onClick={event => event.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p
+            className="min-w-0 truncate text-lg font-light text-white"
+            style={{ fontFamily: "'Noto Serif KR', serif" }}
+          >
+            {video.title}
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full border-2 border-[#171717] bg-white px-4 text-base font-medium text-[#171717]"
+          >
+            <X className="h-5 w-5" strokeWidth={2.5} />
+            닫기
+          </button>
+        </div>
+        <div className="aspect-video w-full bg-black">
+          <iframe
+            src={`https://www.youtube.com/embed/${video.youtubeVideoId}?autoplay=1&rel=0&playsinline=1`}
+            title={video.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="h-full w-full"
+          />
+        </div>
+        {video.description && (
+          <p className="mt-3 whitespace-pre-line text-sm leading-7 text-white/80">
+            {video.description}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 

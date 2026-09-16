@@ -21,6 +21,7 @@ import {
   bookReaderFrameWidth,
   bookReaderTopOffset,
 } from "@/lib/bookReaderLayout";
+import { lockPageScroll } from "@/lib/scrollLock";
 import { toast } from "sonner";
 
 type BookPage = {
@@ -556,11 +557,10 @@ function BookView({
       if (event.key === "ArrowRight") goToNextPage();
     };
     window.addEventListener("keydown", onKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const releaseScroll = lockPageScroll();
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
+      releaseScroll();
     };
     // goToPrevPage/goToNextPage 는 currentPage 를 닫아 두므로 함께 갱신한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -720,7 +720,7 @@ function BookView({
           <button
             type="button"
             onClick={goToPrevPage}
-            className="flex h-11 w-11 items-center justify-center border border-white/30 text-white transition-colors hover:bg-white/10"
+            className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-white text-[#171717] transition-transform active:scale-95"
             aria-label="이전 페이지"
           >
             <ChevronLeft className="h-5 w-5" />
@@ -734,7 +734,7 @@ function BookView({
           <button
             type="button"
             onClick={goToNextPage}
-            className="flex h-11 w-11 items-center justify-center border border-white/30 text-white transition-colors hover:bg-white/10"
+            className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-white text-[#171717] transition-transform active:scale-95"
             aria-label="다음 페이지"
           >
             <ChevronRight className="h-5 w-5" />
