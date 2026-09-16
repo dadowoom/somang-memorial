@@ -53,3 +53,14 @@ export function formatPhoneWhileTyping(input: string) {
 export const KIOSK_INQUIRY_NAME_MAX = 40;
 export const KIOSK_INQUIRY_STATUSES = ["new", "contacted"] as const;
 export type KioskInquiryStatus = (typeof KIOSK_INQUIRY_STATUSES)[number];
+
+/**
+ * 문의가 들어온 곳 (2026-09-17). 표의 source 칸에 적는다. 홈페이지 "문의하기"(이용 안내
+ * 인생화원 칸·예시 추모관의 동그라미)는 web 이고, 값이 없으면 키오스크로 본다.
+ */
+export const KIOSK_INQUIRY_SOURCES = ["kiosk", "web"] as const;
+export type KioskInquirySource = (typeof KIOSK_INQUIRY_SOURCES)[number];
+
+export function inquirySourceLabel(source: string | null | undefined) {
+  return source === "web" ? "홈페이지" : "키오스크";
+}

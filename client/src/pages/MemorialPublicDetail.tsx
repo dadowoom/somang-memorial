@@ -5,7 +5,9 @@ import MemorialDraftNotice from "@/components/memorial/MemorialDraftNotice";
 import { getLoginUrl } from "@/const";
 import MemorialPortrait from "@/components/memorial/MemorialPortrait";
 import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
+import SampleInquiryFab from "@/components/inquiry/SampleInquiryFab";
 import { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "@/lib/featureFlags";
+import { isSampleMemorialSlug } from "@/lib/kioskQuickActions";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
@@ -148,6 +150,8 @@ export default function MemorialPublicDetail() {
 
       <Footer />
       <MemorialBackToTop />
+      {/* 예시 추모관에만 "문의하기" 동그라미 (2026-09-17). */}
+      {isSampleMemorialSlug(slug) && <SampleInquiryFab />}
     </div>
   );
 }

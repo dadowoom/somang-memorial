@@ -17,7 +17,9 @@ import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 import { maskPhoneForAudit } from "../../shared/auditNotes";
 import {
   KIOSK_INQUIRY_NAME_MAX,
+  KIOSK_INQUIRY_SOURCES,
   KIOSK_INQUIRY_STATUSES,
+  inquirySourceLabel,
   normalizeKoreanPhone,
 } from "../../shared/kioskInquiry";
 
@@ -25,6 +27,7 @@ import {
  * 키오스크 "문의" (2026-09-16).
  * 관람객이 전화번호를 남기면 (1) 표에 적고 (2) 업체 메일로 보낸다. 메일이 실패해도
  * 표에는 남아 관리자 화면에서 볼 수 있다. 한 기기에서 10분에 5번까지만 받는다.
+ * 홈페이지 "문의하기"도 같은 통로를 쓰고 source 를 web 으로 보낸다 (2026-09-17).
  */
 const inquiryLimiter = createPasswordAttemptLimiter({
   failureLimit: 5,
@@ -38,6 +41,7 @@ export const kioskInquiryRouter = router({
       z.object({
         phone: z.string().trim().min(1).max(30),
         name: z.string().trim().max(KIOSK_INQUIRY_NAME_MAX).optional(),
+        source: z.enum(KIOSK_INQUIRY_SOURCES).optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -62,13 +66,20 @@ export const kioskInquiryRouter = router({
       // 접수 자체를 횟수로 센다 (비밀번호 재설정 요청과 같은 방식).
       inquiryLimiter.recordFailure(key);
 
-      const id = await createKioskInquiry({ phone, name, source: "kiosk" });
+      const source = input.source ?? "kiosk";
+      const id = await createKioskInquiry({ phone, name, source });
 
       let notified = false;
       const to = ENV.inquiryNotifyEmail.trim();
       if (to && getEmailConfigStatus().enabled) {
         try {
-          await sendKioskInquiryEmail({ to, phone, name, inquiryId: id });
+          await sendKioskInquiryEmail({
+            to,
+            phone,
+            name,
+            inquiryId: id,
+            source,
+          });
           await markKioskInquiryNotified(id, null);
           notified = true;
         } catch (error) {
@@ -87,7 +98,7 @@ export const kioskInquiryRouter = router({
         adminUserId: null,
         targetUserId: null,
         action: "kiosk_inquiry.create",
-        note: `키오스크 문의 ${id} · ${maskPhoneForAudit(phone)}${notified ? " · 메일 발송" : " · 메일 미발송"}`,
+        note: `${inquirySourceLabel(source)} 문의 ${id} · ${maskPhoneForAudit(phone)}${notified ? " · 메일 발송" : " · 메일 미발송"}`,
       });
 
       return { success: true, notified } as const;

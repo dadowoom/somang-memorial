@@ -715,6 +715,16 @@
   font-size: 12px;
   color: #666;
 }
+/* 인생화원 칸의 "문의하기" (2026-09-17). 검은 "예시 보기" 단추 옆의 흰 단추. */
+.guide-button--outline {
+  background: #fff;
+  color: #171717;
+  cursor: pointer;
+}
+.guide-button--outline:hover {
+  background: #171717;
+  color: #fff;
+}
 .guide-faq__grid {
   display: grid;
   grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);

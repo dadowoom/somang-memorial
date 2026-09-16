@@ -1,4 +1,6 @@
 import GuideFamilyExamples from "@/components/guide/GuideFamilyExamples";
+import InquiryDialog from "@/components/inquiry/InquiryDialog";
+import { sampleMemorialPath } from "@/lib/kioskQuickActions";
 import {
   ArrowDown,
   ArrowRight,
@@ -7,6 +9,7 @@ import {
   Flower2,
   Images,
   LockKeyhole,
+  Phone,
   Plus,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -105,7 +108,7 @@ const questions = [
   {
     title: "인생화원은 지금 신청할 수 있나요?",
     answer:
-      "인생화원은 신앙의 유산을 더 아름답게 남기기 위해 준비하고 있는 서비스입니다. 현재는 서비스 준비 중이며, 서비스 페이지에서 안내를 확인하실 수 있습니다.",
+      "인생화원은 신앙의 유산을 더 아름답게 남기기 위해 준비하고 있는 서비스입니다. 김소망 권사님 예시 추모관에서 어떻게 남겨지는지 보실 수 있고, 문의에 전화번호를 남겨 주시면 담당자가 안내해 드립니다.",
   },
 ];
 
@@ -122,6 +125,8 @@ export default function GuideContent({
   const kiosk = variant === "kiosk";
   const [exampleIndex, setExampleIndex] = useState(0);
   const [activeSection, setActiveSection] = useState("");
+  // 인생화원 칸의 "문의하기" 창 (2026-09-17). 웹에서만 연다.
+  const [inquiryOpen, setInquiryOpen] = useState(false);
   const indexRef = useRef<HTMLDivElement>(null);
   const selected = examples[exampleIndex];
 
@@ -541,13 +546,26 @@ export default function GuideContent({
               준비하고 있습니다.
             </p>
             <div className="guide-garden__action">
-              {!kiosk && (
-                <Link className="guide-button" href="/services/life-garden">
-                  인생화원 서비스 알아보기{" "}
-                  <ArrowRight size={18} aria-hidden="true" />
-                </Link>
+              {/* 웹: 예시 추모관 보기 + 문의하기 (2026-09-17 요청). 키오스크는 다른 화면으로
+                  가는 단추를 두지 않으므로 안내 글만 남긴다. */}
+              {kiosk ? (
+                <span>서비스 준비 중</span>
+              ) : (
+                <>
+                  <Link className="guide-button" href={sampleMemorialPath()}>
+                    인생화원 예시 보기{" "}
+                    <ArrowRight size={18} aria-hidden="true" />
+                  </Link>
+                  <button
+                    type="button"
+                    className="guide-button guide-button--outline"
+                    onClick={() => setInquiryOpen(true)}
+                    aria-haspopup="dialog"
+                  >
+                    문의하기 <Phone size={18} aria-hidden="true" />
+                  </button>
+                </>
               )}
-              <span>서비스 준비 중</span>
             </div>
           </div>
         </div>
@@ -603,6 +621,8 @@ export default function GuideContent({
           )}
         </div>
       </section>
+
+      {inquiryOpen && <InquiryDialog onClose={() => setInquiryOpen(false)} />}
     </main>
   );
 }
