@@ -6,6 +6,8 @@
 /* ── 표지 (책을 펼치기 전) ───────────────────────────────── */
 .memorial-book-hardcover {
   position: relative;
+  /* 안의 사진 크기를 표지 크기에 맞춰 정한다(cqw·cqh). */
+  container-type: size;
   display: flex;
   width: min(100%, 380px);
   aspect-ratio: 3 / 4.15;
@@ -66,19 +68,20 @@
 }
 
 .memorial-book-hardcover__photo {
-  width: 44%;
-  aspect-ratio: 3 / 4;
+  display: block;
+  flex-shrink: 0;
   margin-top: 18px;
-  overflow: hidden;
+  line-height: 0;
   border: 3px solid rgba(243, 233, 216, 0.85);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
 }
 
 .memorial-book-hardcover__photo img {
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: auto;
+  height: auto;
+  max-width: 50cqw;
+  max-height: 36cqh;
 }
 
 .memorial-book-hardcover__title {
@@ -116,12 +119,30 @@
 .memorial-book-open {
   position: relative;
   padding: 12px 14px;
+  /* 옆으로 미는 손가락은 책 넘기기로 쓰고, 위아래는 화면에 맡긴다 (키오스크는 index.css 에서 none). */
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   border-radius: 6px;
   background: #3b2a1f;
   box-shadow:
     4px 4px 0 -1px #e8dfcf,
     8px 8px 0 -2px #d6cbb6,
     0 40px 70px -30px rgba(0, 0, 0, 0.8);
+}
+
+/* 한 쪽씩 보는 휴대폰에서는 넘어가는 종이가 책 틀 밖으로 나가지 않게 자른다.
+   나가면 읽기 창에 스크롤 막대가 번쩍이고 화면이 흔들렸다 (2026-09-16 확인). */
+.memorial-book-open:not(.memorial-book-open--spread) {
+  overflow: hidden;
+}
+
+.memorial-book-preparing {
+  padding: 64px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: rgba(243, 233, 216, 0.75);
 }
 
 /* 두 쪽 펼침에서 가운데 접힌 그늘. 종이 위에 얹히므로 넘기는 장은 잠깐 그 밑을 지난다. */
@@ -151,6 +172,7 @@
   position: relative;
   display: flex;
   height: 100%;
+  container-type: size;
   flex-direction: column;
   overflow: hidden;
   padding: 26px 28px 34px;
@@ -188,19 +210,22 @@
 }
 
 .memorial-book-page__photo {
-  height: 36%;
+  align-self: center;
   flex-shrink: 0;
   margin: 14px 0 4px;
   padding: 5px;
   background: #fff;
+  line-height: 0;
   box-shadow: 0 6px 16px rgba(60, 40, 20, 0.18);
 }
 
+/* 사진은 자르지 않는다 (2026-09-16 "사진 잘리게 하지 마라"). 가로·세로 비율 그대로 줄인다. */
 .memorial-book-page__photo img {
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: auto;
+  height: auto;
+  max-width: calc(100cqw - 90px);
+  max-height: 36cqh;
 }
 
 .memorial-book-page__title {
@@ -246,11 +271,79 @@
   color: #8a7d6b;
 }
 
+/* 세로 사진 한 쪽 가득. 맞은쪽에 글이 온다. */
+.memorial-book-page--photo {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.memorial-book-page--photo .memorial-book-page__photo {
+  margin: 0;
+  padding: 7px;
+}
+
+.memorial-book-page--photo .memorial-book-page__photo img {
+  max-width: calc(100cqw - 80px);
+  max-height: calc(100cqh - 130px);
+}
+
+.memorial-book-page__caption {
+  margin-top: 16px;
+  font-family: "Noto Serif KR", serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #6d6252;
+  word-break: keep-all;
+}
+
+/* 세로 사진 옆 글 쪽은 사진이 없어 글을 조금 여유 있게 */
+.memorial-book-page--text .memorial-book-page__title {
+  margin-top: 20px;
+}
+
+/* 세로 사진이 왼쪽에 오도록 넣은 여백 쪽 */
+.memorial-book-page--rest {
+  align-items: center;
+  justify-content: center;
+}
+
+.memorial-book-page__ornament {
+  font-size: 18px;
+  color: #c2b196;
+}
+
 /* 마지막 쪽(오직 하나님께 영광)과 빈 쪽 */
 .memorial-book-page--end {
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+/* ── 휴대폰: 쪽이 작아 여백과 글자를 조금 줄인다 ───────── */
+@media (max-width: 767px) {
+  .memorial-book-page {
+    padding: 22px 22px 32px;
+  }
+
+  .memorial-book-page__title {
+    font-size: 19px;
+  }
+
+  .memorial-book-page__body {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .memorial-book-page__photo img {
+    max-width: calc(100cqw - 56px);
+    max-height: 34cqh;
+  }
+
+  .memorial-book-page--photo .memorial-book-page__photo img {
+    max-width: calc(100cqw - 56px);
+    max-height: calc(100cqh - 110px);
+  }
 }
 
 /* ── 세로 키오스크: 서서 읽는 거리라 글자를 키운다 ───────── */
