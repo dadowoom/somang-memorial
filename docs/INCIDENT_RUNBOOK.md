@@ -131,6 +131,10 @@ tail -30 /var/log/somang-memorial-backup.log
   ```bash
   ssh -t dadowoom "cd /var/www/somang-memorial/current && node_modules/.bin/tsx server/scripts/resetAdminPassword.ts"
   ```
+- **추모관 주인을 다른 회원으로 옮기려면** (관리자 화면에는 아직 없음) 서버 터미널에서 아래를 실행한다. 현재 주인과 새 주인을 보여 준 뒤 `y` 를 받아야만 바꾸고, 감사기록 `memorial.owner.transfer` 로 남는다. 새 회원은 미리 가입·승인돼 있어야 한다.
+  ```bash
+  ssh -t dadowoom "cd /var/www/somang-memorial/current && node_modules/.bin/tsx server/scripts/transferMemorialOwner.ts <추모관주소이름> <새주인이메일>"
+  ```
 
 ## 11. 절대 하지 않는 것
 
