@@ -273,8 +273,9 @@ export default function KioskMemorial() {
     }
   );
   const photos = (photosQuery.data ?? []) as MemorialPhoto[];
+  // 맨 위 사진은 "프로필 사진"으로 정한 사진만 쓴다 (2026-09-16).
   const portraitPhoto =
-    photos.find(photo => photo.isRepresentative === 1) ?? photos[0] ?? null;
+    photos.find(photo => photo.isRepresentative === 1) ?? null;
 
   return (
     <main className="min-h-[100dvh] bg-white text-[#121212] [overflow-anchor:none]">
@@ -769,7 +770,7 @@ function KioskMemorialContent({
               role="status"
             >
               <RefreshCw className="h-5 w-5 animate-spin" />
-              <span>대표 사진을 불러오는 중입니다.</span>
+              <span>사진을 불러오는 중입니다.</span>
             </div>
           ) : portraitPhoto ? (
             <KioskLoadableImage
@@ -777,7 +778,7 @@ function KioskMemorialContent({
               src={toImgUrl(portraitPhoto.photoUrl)}
               alt={`${memorial.name} 사진`}
               loading="eager"
-              loadingText="대표 사진을 불러오는 중입니다."
+              loadingText="사진을 불러오는 중입니다."
               containerClassName="h-[360px] w-full"
               imageClassName="grayscale"
               preserveRatio
@@ -790,7 +791,7 @@ function KioskMemorialContent({
                     {memorial.name.slice(0, 1)}
                   </span>
                   <span className="text-sm">
-                    대표 사진을 표시할 수 없습니다.
+                    사진을 표시할 수 없습니다.
                   </span>
                 </div>
               }
@@ -1709,8 +1710,12 @@ function KioskObituarySection({
   const timeline = memorial.timeline.filter(
     item => item.year || item.title || item.description
   );
-  const stripPhotos = photos.slice(0, 3);
-  const remainingPhotoCount = Math.max(0, photos.length - stripPhotos.length);
+  const albumPhotos = photos.filter(photo => photo.isRepresentative !== 1);
+  const stripPhotos = albumPhotos.slice(0, 3);
+  const remainingPhotoCount = Math.max(
+    0,
+    albumPhotos.length - stripPhotos.length
+  );
 
   // 홈페이지 부고장과 같은 내용. 키오스크에는 전화·길찾기·일정 저장·부고 전하기 단추만 없다
   // (키오스크에서는 전화를 걸거나 파일을 내려받을 수 없다).

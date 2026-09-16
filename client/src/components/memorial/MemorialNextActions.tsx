@@ -56,7 +56,7 @@ export default function MemorialNextActions({
         )}
         {action.canAddPhotos && (
           <Link href={`/memorial/${memorial.slug}/archive#gallery`}>
-            <span className={buttonClass}>사진 추가</span>
+            <span className={buttonClass}>프로필·앨범 사진 올리기</span>
           </Link>
         )}
         {/* 가족관은 공개 화면에 나오지 않으므로 게시 상태와 상관없이 유가족이 관리한다. */}

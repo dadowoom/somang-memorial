@@ -103,9 +103,10 @@ export default function MemorialPublicDetail() {
     { enabled: Boolean(memorial?.id) }
   );
   const photos = (photosQuery.data ?? []) as MemorialPhoto[];
-  const portraitPhoto =
-    photos.find(photo => photo.isRepresentative === 1)?.photoUrl ??
-    photos[0]?.photoUrl;
+  // 맨 위 사진은 "프로필 사진"으로 정한 사진만 쓴다 (2026-09-16).
+  const portraitPhoto = photos.find(
+    photo => photo.isRepresentative === 1
+  )?.photoUrl;
 
   return (
     <div

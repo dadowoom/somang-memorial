@@ -1,16 +1,16 @@
 import InlineEditText from "@/components/InlineEditText";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { toImgUrl } from "@/lib/imageUrl";
 import { trpc } from "@/lib/trpc";
+import { extractYoutubeVideoId } from "@shared/youtubeId";
 import {
-  Check,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Eye,
   EyeOff,
   Play,
-  Plus,
   Trash2,
-  X,
   Youtube,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -36,22 +36,6 @@ type MemorialVideoSectionProps = {
   accessToken?: string;
 };
 
-export function extractYoutubeId(input: string) {
-  const trimmed = input.trim();
-  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-  const patterns = [
-    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-    /[?&]v=([a-zA-Z0-9_-]{11})/,
-    /embed\/([a-zA-Z0-9_-]{11})/,
-    /shorts\/([a-zA-Z0-9_-]{11})/,
-  ];
-  for (const pattern of patterns) {
-    const match = trimmed.match(pattern);
-    if (match?.[1]) return match[1];
-  }
-  return trimmed;
-}
-
 function youtubeThumb(id: string) {
   return `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
 }
@@ -72,7 +56,17 @@ export default function MemorialVideoSection({
     () => videos.filter(video => video.isVisible !== 0),
     [videos]
   );
-  const canEdit = isAdmin && memorialId > 0;
+  // 2026-09-16: 관리자뿐 아니라 추모관 주인과 초대받은 가족도 유튜브 영상을 넣는다.
+  // 권한 판단은 사진첩과 같다(gallery.permissions).
+  const { user } = useAuth();
+  const permissions = trpc.gallery.permissions.useQuery(
+    { memorialId },
+    { enabled: Boolean(user) && memorialId > 0, retry: false }
+  );
+  const canEdit =
+    Boolean(user) &&
+    memorialId > 0 &&
+    (isAdmin || permissions.data?.canManage === true);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   // 방문자 화면: 표지를 누르기 전에는 유튜브를 불러오지 않는다(무거움·자동재생 방지).
   const [isPlaying, setIsPlaying] = useState(false);
@@ -80,10 +74,12 @@ export default function MemorialVideoSection({
   const visitorVideo =
     visibleVideos.find(video => video.youtubeVideoId === selectedVideoId) ??
     visibleVideos[0];
-  const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [addedMessage, setAddedMessage] = useState("");
+  const pastedVideoId = extractYoutubeVideoId(newUrl);
 
   const currentVideo = useMemo(
     () =>
@@ -94,13 +90,21 @@ export default function MemorialVideoSection({
 
   const createVideo = trpc.video.create.useMutation({
     onSuccess: () => {
-      toast.success("영상이 추가되었습니다.");
-      setShowAddForm(false);
+      toast.success("영상을 넣었습니다.");
       setNewTitle("");
       setNewUrl("");
+      setFormError("");
+      setAddedMessage("영상을 넣었습니다. 아래 목록에서 확인해 주세요.");
       utils.video.listByMemorial.invalidate(listInput);
     },
-    onError: error => toast.error(error.message),
+    onError: error => {
+      const message =
+        error.message && !error.message.trim().startsWith("[")
+          ? error.message
+          : "영상을 넣지 못했습니다. 주소와 인터넷 연결을 확인해 주세요.";
+      setFormError(message);
+      toast.error(message);
+    },
   });
   const updateVideo = trpc.video.update.useMutation({
     onSuccess: () => utils.video.listByMemorial.invalidate(listInput),
@@ -117,24 +121,30 @@ export default function MemorialVideoSection({
 
   const addVideo = async () => {
     if (saving) return;
-    const youtubeVideoId = extractYoutubeId(newUrl);
-    if (!newTitle.trim()) {
-      toast.error("영상 제목을 입력해 주세요.");
+    setAddedMessage("");
+    if (!newUrl.trim()) {
+      setFormError("유튜브 주소를 붙여 넣어 주세요.");
       return;
     }
-    if (!/^[a-zA-Z0-9_-]{11}$/.test(youtubeVideoId)) {
-      toast.error("유효한 유튜브 주소 또는 영상 ID를 입력해 주세요.");
+    const youtubeVideoId = extractYoutubeVideoId(newUrl);
+    if (!youtubeVideoId) {
+      setFormError(
+        "유튜브 주소를 확인해 주세요. 유튜브에서 '공유' → '복사'로 얻은 주소를 붙여 넣으면 됩니다."
+      );
       return;
     }
 
+    setFormError("");
     setSaving(true);
     try {
       await createVideo.mutateAsync({
         memorialId,
-        title: newTitle.trim(),
+        title: newTitle.trim() || `${memorialName} 추모 영상`,
         youtubeVideoId,
         sortOrder: videos.length,
       });
+    } catch {
+      // onError 에서 안내한다.
     } finally {
       setSaving(false);
     }
@@ -177,6 +187,90 @@ export default function MemorialVideoSection({
             {churchName} · {memorialName}
           </p>
         </div>
+
+        {canEdit && (
+          <form
+            onSubmit={event => {
+              event.preventDefault();
+              void addVideo();
+            }}
+            className="mx-auto mb-8 max-w-2xl border border-[#dedede] bg-white p-5 text-left"
+          >
+            <p className="flex items-center gap-2 text-lg font-medium text-[#171717]">
+              <Youtube className="h-5 w-5" aria-hidden="true" />
+              유튜브 영상 넣기
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[#555555]">
+              유튜브 영상 아래 &lsquo;공유&rsquo;를 누르고 &lsquo;복사&rsquo;한
+              주소를 붙여 넣으세요. &lsquo;비공개&rsquo; 영상은 재생되지 않으니
+              &lsquo;공개&rsquo;나 &lsquo;일부 공개&rsquo;로 올려 주세요.
+            </p>
+            <label className="mt-4 block">
+              <span className="mb-2 block text-sm font-medium text-[#3f3b36]">
+                유튜브 주소
+              </span>
+              <input
+                type="url"
+                inputMode="url"
+                autoComplete="off"
+                value={newUrl}
+                onChange={event => {
+                  setNewUrl(event.target.value);
+                  setFormError("");
+                  setAddedMessage("");
+                }}
+                placeholder="https://youtu.be/..."
+                className="h-12 w-full border border-[#b5b0a7] bg-[#fafafa] px-4 text-base text-[#121212] outline-none focus:border-[#18181b] focus:bg-white"
+              />
+            </label>
+            {pastedVideoId && (
+              <div className="mt-3 flex items-center gap-3">
+                <img
+                  src={youtubeThumb(pastedVideoId)}
+                  alt="붙여 넣은 영상 미리보기"
+                  className="h-16 w-28 shrink-0 object-cover"
+                />
+                <p className="text-sm text-[#2f6f4f]">
+                  영상을 찾았습니다. 맞으면 아래 &lsquo;영상 넣기&rsquo;를 눌러
+                  주세요.
+                </p>
+              </div>
+            )}
+            <label className="mt-4 block">
+              <span className="mb-2 block text-sm font-medium text-[#3f3b36]">
+                영상 제목 (적지 않아도 됩니다)
+              </span>
+              <input
+                value={newTitle}
+                onChange={event => setNewTitle(event.target.value)}
+                placeholder={`${memorialName} 추모 영상`}
+                maxLength={300}
+                className="h-12 w-full border border-[#b5b0a7] bg-[#fafafa] px-4 text-base text-[#121212] outline-none focus:border-[#18181b] focus:bg-white"
+              />
+            </label>
+            {formError && (
+              <p role="alert" className="mt-3 text-sm leading-6 text-[#9f2a2a]">
+                {formError}
+              </p>
+            )}
+            {addedMessage && (
+              <p
+                role="status"
+                className="mt-3 flex items-center gap-2 text-sm font-medium text-[#2f6f4f]"
+              >
+                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                {addedMessage}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={saving}
+              className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 bg-[#171717] px-4 text-base font-medium text-white disabled:opacity-50"
+            >
+              {saving ? "넣는 중" : "영상 넣기"}
+            </button>
+          </form>
+        )}
 
         {videosQuery.isLoading ? (
           <div className="border border-[#dedede] bg-white py-16 text-center text-sm text-[#666666]">
@@ -405,74 +499,9 @@ export default function MemorialVideoSection({
             </div>
           </div>
         ) : (
-          <button
-            type="button"
-            className="mx-auto flex aspect-video w-full max-w-4xl flex-col items-center justify-center border border-dashed border-[#dedede] bg-white text-[#666666]"
-            onClick={() => setShowAddForm(true)}
-          >
-            <Youtube className="mb-3 h-10 w-10" />
-            영상 추가
-          </button>
-        )}
-
-        {canEdit && (
-          <div className="mx-auto mt-6 max-w-xl">
-            {showAddForm ? (
-              <div className="border border-[#dedede] bg-white p-4">
-                <p className="mb-3 flex items-center gap-2 text-sm font-medium text-[#555555]">
-                  <Youtube className="h-4 w-4" />새 영상 추가
-                </p>
-                <input
-                  value={newTitle}
-                  onChange={event => setNewTitle(event.target.value)}
-                  placeholder="영상 제목"
-                  className="mb-2 h-10 w-full border border-[#dedede] bg-white px-3 text-sm outline-none"
-                />
-                <input
-                  value={newUrl}
-                  onChange={event => setNewUrl(event.target.value)}
-                  onKeyDown={event => {
-                    if (event.key === "Enter") addVideo();
-                    if (event.key === "Escape") setShowAddForm(false);
-                  }}
-                  placeholder="유튜브 주소 또는 영상 ID"
-                  className="h-10 w-full border border-[#dedede] bg-white px-3 text-sm outline-none"
-                />
-                <p className="mt-2 text-xs text-[#666666]">
-                  유튜브 주소를 붙여 넣으면 영상 ID를 자동으로 추출합니다.
-                </p>
-                <div className="mt-4 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddForm(false)}
-                    className="inline-flex h-9 items-center gap-1 border border-[#dedede] px-3 text-xs text-[#555555]"
-                  >
-                    <X className="h-3 w-3" />
-                    취소
-                  </button>
-                  <button
-                    type="button"
-                    onClick={addVideo}
-                    disabled={saving}
-                    className="inline-flex h-9 items-center gap-1 bg-[#171717] px-3 text-xs text-white disabled:opacity-50"
-                  >
-                    <Check className="h-3 w-3" />
-                    {saving ? "저장 중" : "추가"}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(true)}
-                  className="inline-flex h-10 items-center gap-2 border border-dashed border-[#bcbcbc] bg-white px-4 text-sm text-[#555555]"
-                >
-                  <Plus className="h-4 w-4" />
-                  영상 추가
-                </button>
-              </div>
-            )}
+          <div className="mx-auto flex max-w-4xl flex-col items-center justify-center border border-dashed border-[#dedede] bg-white px-4 py-12 text-center text-sm leading-6 text-[#666666]">
+            <Youtube className="mb-3 h-10 w-10" aria-hidden="true" />
+            아직 넣은 영상이 없습니다. 위 칸에 유튜브 주소를 붙여 넣어 주세요.
           </div>
         )}
       </div>

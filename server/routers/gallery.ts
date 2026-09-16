@@ -55,6 +55,11 @@ export const galleryRouter = router({
         caption: z.string().max(500).optional(),
         year: z.string().max(20).optional(),
         sortOrder: z.number().optional(),
+        /**
+         * "프로필 사진" 칸에서 올린 사진이면 true (2026-09-16). 전에 쓰던 프로필
+         * 사진은 지우지 않고 앨범에 남긴다.
+         */
+        asProfile: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) =>
@@ -77,17 +82,31 @@ export const galleryRouter = router({
           const key = `gallery/${memorialId}/${nanoid()}.${ext}`;
           const { url } = await storagePut(key, buffer, mimeType);
 
-          await tx.insert(memorialGalleryPhotos).values({
+          const asProfile = input.asProfile === true;
+          if (asProfile) {
+            await tx
+              .update(memorialGalleryPhotos)
+              .set({ isRepresentative: 0 })
+              .where(eq(memorialGalleryPhotos.memorialId, memorialId));
+          }
+
+          // 프로필 사진은 "프로필 사진" 칸에서 올린 사진만 된다 (2026-09-16).
+          // 전에는 첫 사진이 저절로 대표 사진이 되어, 앨범에 올린 사진이 말없이
+          // 추모관 맨 위 사진으로 쓰였다.
+          const [inserted] = await tx.insert(memorialGalleryPhotos).values({
             memorialId,
             photoUrl: url,
             photoKey: key,
             caption: input.caption || null,
             year: input.year || null,
             sortOrder: input.sortOrder ?? 0,
-            isRepresentative: existing.length === 0 ? 1 : 0,
+            isRepresentative: asProfile ? 1 : 0,
           });
+          const id = Number(
+            (inserted as { insertId?: number } | undefined)?.insertId ?? 0
+          );
 
-          return { success: true, url, key };
+          return { success: true, url, key, id, asProfile };
         }
       )
     ),

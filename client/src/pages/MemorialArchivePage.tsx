@@ -92,10 +92,42 @@ export default function MemorialArchivePage() {
   // 사진이 없으면 성함 첫 글자를 보여 준다. 전에는 외부 사이트의 낯선 사람
   // 얼굴 사진을 대신 넣었는데, 고인이 아닌 사람 사진이 영정 자리에 나오면
   // 안 된다 (2026-09-14 제거).
+  // 맨 위 사진은 "프로필 사진"으로 정한 사진만 쓴다 (2026-09-16). 앨범의 첫
+  // 사진을 대신 쓰면 어디서 바꾸는지 알 수 없다.
   const heroPhoto =
-    photos.find(photo => photo.isRepresentative === 1)?.photoUrl ??
-    photos[0]?.photoUrl ??
-    null;
+    photos.find(photo => photo.isRepresentative === 1)?.photoUrl ?? null;
+  const albumPhotoCount = photos.filter(
+    photo => photo.isRepresentative !== 1
+  ).length;
+
+  // 방문자에게 비어 있는 칸은 메뉴에서도 뺀다. 전에는 영상이 없는 추모관에서
+  // "영상"을 누르면 빈자리를 지나 바로 아래 편지로 내려갔다 (2026-09-16).
+  const mediaPermissionsQuery = trpc.gallery.permissions.useQuery(
+    { memorialId: memorial?.id ?? 0 },
+    { enabled: Boolean(user) && Boolean(memorial?.id), retry: false }
+  );
+  const canManageMedia =
+    isAdmin || mediaPermissionsQuery.data?.canManage === true;
+  const videosQuery = trpc.video.listByMemorial.useQuery(
+    {
+      memorialId: memorial?.id ?? 0,
+      accessToken: accessToken || undefined,
+    },
+    { enabled: Boolean(memorial?.id) }
+  );
+  const booksQuery = trpc.book.listByMemorial.useQuery(
+    {
+      memorialId: memorial?.id ?? 0,
+      accessToken: accessToken || undefined,
+    },
+    { enabled: Boolean(memorial?.id) }
+  );
+  const visibleVideoCount = (
+    (videosQuery.data ?? []) as Array<{ isVisible: number }>
+  ).filter(video => video.isVisible !== 0).length;
+  const showAlbumNav = canManageMedia || albumPhotoCount > 0;
+  const showVideoNav = canManageMedia || visibleVideoCount > 0;
+  const showBookNav = isAdmin || (booksQuery.data?.length ?? 0) > 0;
 
   const updateMemorial = trpc.memorial.update.useMutation({
     onSuccess: () => utils.memorial.bySlug.invalidate({ slug }),
@@ -198,29 +230,45 @@ export default function MemorialArchivePage() {
                       />
                     </div>
                   </div>
-                  <MemorialPortrait
-                    name={memorial.name}
-                    birthDate={memorial.birthDate}
-                    deathDate={memorial.deathDate}
-                    photo={heroPhoto}
-                  />
+                  <div>
+                    <MemorialPortrait
+                      name={memorial.name}
+                      birthDate={memorial.birthDate}
+                      deathDate={memorial.deathDate}
+                      photo={heroPhoto}
+                    />
+                    {canManageMedia && (
+                      <a
+                        href="#profile-photo"
+                        className="mt-3 inline-flex min-h-11 items-center border border-[#bcbcbc] bg-white px-4 text-sm font-medium text-[#171717]"
+                      >
+                        {heroPhoto ? "프로필 사진 바꾸기" : "프로필 사진 올리기"}
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             </section>
             <nav className="memorial-record-nav" aria-label="사진과 기록 메뉴">
               <div className="container memorial-record-nav__inner">
-                <a href="#gallery">
-                  <Images />
-                  사진첩
-                </a>
-                <a href="#video">
-                  <Video />
-                  영상
-                </a>
-                <a href="#book">
-                  <BookOpenText />
-                  책장과 연표
-                </a>
+                {showAlbumNav && (
+                  <a href="#gallery">
+                    <Images />
+                    앨범
+                  </a>
+                )}
+                {showVideoNav && (
+                  <a href="#video">
+                    <Video />
+                    영상
+                  </a>
+                )}
+                {showBookNav && (
+                  <a href="#book">
+                    <BookOpenText />
+                    책장과 연표
+                  </a>
+                )}
                 <a href="#letters">
                   <Mail />
                   편지
@@ -323,7 +371,7 @@ export default function MemorialArchivePage() {
                 memorialId={memorial.id}
                 memorialName={memorial.name}
                 churchName={memorial.church}
-                coverImageUrl={heroPhoto}
+                coverImageUrl={heroPhoto ?? undefined}
                 isAdmin={isAdmin}
                 accessToken={accessToken || undefined}
               />
