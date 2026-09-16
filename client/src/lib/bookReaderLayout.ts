@@ -24,10 +24,11 @@ export function bookReaderFrameWidth(isMobile: boolean) {
 export const BOOK_READER_HEADER_PX = 68;
 
 /**
- * 책 윗부분이 오는 자리: 화면 위에서 이만큼(%) 내려온 곳. 세로로 긴 키오스크
- * 첫 화면의 이름 검색칸 높이와 맞춘다 (2026-09-16 현장 요청).
+ * 책 윗부분이 오는 자리: 화면 위에서 이만큼(%) 내려온 곳. 세로로 긴 키오스크에서
+ * 서서 보는 눈높이에 맞춘다 (2026-09-16 현장 요청 "더 올려야 한다" — 25 에서 12 로).
+ * 앨범 크게 보기의 사진 위치(index.css 의 .memorial-lightbox, 12dvh)와 같은 높이다.
  */
-export const BOOK_READER_TOP_TARGET_VH = 25;
+export const BOOK_READER_TOP_TARGET_VH = 12;
 
 /**
  * 책과 넘김 단추 묶음을 위에서 얼마나 띄울지.

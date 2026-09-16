@@ -799,7 +799,7 @@ function Lightbox({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#3d2b1b]/90 p-4 backdrop-blur-md"
+      className="memorial-lightbox fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#3d2b1b]/90 p-4 backdrop-blur-md"
       onClick={onClose}
     >
       <button

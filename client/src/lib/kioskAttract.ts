@@ -9,10 +9,13 @@ export type KioskPoster = {
 };
 
 /**
- * 광고(대기) 화면은 이만큼 아무도 만지지 않았을 때 시작한다 (2026-09-16 결정).
+ * 광고(대기) 화면은 이만큼 아무도 만지지 않았을 때 시작한다.
  * 처음 켰을 때나 "처음으로"를 눌렀을 때 바로 광고가 나오면 안 된다.
+ *
+ * 2026-09-16 저녁 현장 결정: 5분에서 30초로 줄였다. 검색 화면에서 30초 동안
+ * 아무 터치가 없으면 바로 광고를 띄우고, 어디든 한 번 누르면 하던 화면으로 돌아간다.
  */
-export const KIOSK_ATTRACT_IDLE_MS = 5 * 60_000;
+export const KIOSK_ATTRACT_IDLE_MS = 30_000;
 
 export const KIOSK_ATTRACT_MIN_SECONDS = 3;
 export const KIOSK_ATTRACT_MAX_SECONDS = 120;

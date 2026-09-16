@@ -25,9 +25,9 @@ describe("bookReaderFrameWidth", () => {
 });
 
 describe("bookReaderTopOffset", () => {
-  it("세로로 긴 화면에서는 책을 이름 검색칸 높이(화면 25%)까지만 내린다", () => {
+  it("세로로 긴 화면에서는 책을 서서 보는 눈높이(화면 12%)까지만 내린다", () => {
     const offset = bookReaderTopOffset(false);
-    expect(BOOK_READER_TOP_TARGET_VH).toBe(25);
+    expect(BOOK_READER_TOP_TARGET_VH).toBe(12);
     expect(offset).toContain(
       `calc(${BOOK_READER_TOP_TARGET_VH}dvh - ${BOOK_READER_HEADER_PX}px)`
     );
