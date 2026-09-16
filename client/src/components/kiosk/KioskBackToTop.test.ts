@@ -23,8 +23,9 @@ describe("shouldShowKioskBackToTop", () => {
 });
 
 describe("광고(대기) 화면 시작 시점", () => {
-  it("5분 동안 아무도 만지지 않을 때 시작한다 (검색 초기화 90초보다 길다)", () => {
-    expect(KIOSK_ATTRACT_IDLE_MS).toBe(5 * 60_000);
-    expect(KIOSK_ATTRACT_IDLE_MS).toBeGreaterThan(KIOSK_IDLE_RESET_MS);
+  it("30초 동안 아무도 만지지 않으면 시작한다 (2026-09-16 저녁 현장 결정)", () => {
+    expect(KIOSK_ATTRACT_IDLE_MS).toBe(30_000);
+    // 검색 초기화(90초)보다 먼저 온다. 광고가 떠 있어도 초기화는 그대로 된다.
+    expect(KIOSK_ATTRACT_IDLE_MS).toBeLessThan(KIOSK_IDLE_RESET_MS);
   });
 });

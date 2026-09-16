@@ -4,11 +4,14 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { Router } from "wouter";
 import {
   KIOSK_SAMPLE_MEMORIAL_SLUG,
+  kioskGuideQrUrl,
   kioskSampleMemorialPath,
 } from "@/lib/kioskQuickActions";
 import GuideContent from "@/components/guide/GuideContent";
 import {
   KIOSK_GUIDE_LOADING_TEXT,
+  KIOSK_GUIDE_QR_TEXT,
+  KIOSK_GUIDE_QR_TITLE,
   KioskGuideOverlay,
   KioskQuickActions,
 } from "./KioskQuickActions";
@@ -61,6 +64,27 @@ describe("KioskGuideOverlay", () => {
     // 아직 내려받기 전이라 자리 표시 문구가 보인다.
     expect(text(html)).toContain(KIOSK_GUIDE_LOADING_TEXT);
     expect(html).toContain("guide-page--kiosk");
+  });
+
+  it("오른쪽 아래에 붙어 다니는 QR 안내가 있다 (2026-09-16 현장 요청)", () => {
+    const html = renderToStaticMarkup(
+      createElement(KioskGuideOverlay, { onClose: () => {} })
+    );
+    expect(html).toContain('class="kiosk-guide-qr"');
+    expect(text(html)).toContain(KIOSK_GUIDE_QR_TITLE);
+    expect(text(html)).toContain(KIOSK_GUIDE_QR_TEXT);
+    // 본문 스크롤 상자와 QR 안내가 같은 부모 안에 있어야 자리가 고정된다.
+    expect(html).toContain('class="kiosk-guide-main"');
+  });
+
+  it("QR 은 키오스크 화면이 아니라 홈페이지 첫 화면으로 보낸다", () => {
+    expect(kioskGuideQrUrl("https://somangmemorial.co.kr")).toBe(
+      "https://somangmemorial.co.kr/?from=kiosk"
+    );
+    expect(kioskGuideQrUrl("https://somangmemorial.co.kr/")).toBe(
+      "https://somangmemorial.co.kr/?from=kiosk"
+    );
+    expect(kioskGuideQrUrl("http://localhost:3050")).not.toContain("/kiosk");
   });
 });
 

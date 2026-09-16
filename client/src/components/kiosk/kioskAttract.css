@@ -3,7 +3,8 @@
 .kiosk-attract {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  /* 30초 무입력이면 안내·문의 창(65)이나 자판(70) 위에도 떠야 한다 (2026-09-16). */
+  z-index: 80;
   background: #000000;
   cursor: pointer;
   overflow: hidden;

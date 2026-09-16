@@ -285,6 +285,12 @@ html.kiosk-mode img {
 html.kiosk-mode .memorial-book-open {
   touch-action: none;
 }
+/* 세로 키오스크에서는 사진을 화면 한가운데가 아니라 위쪽, 서서 보는 눈높이에 둔다
+   (2026-09-16 현장 요청). 책장 창의 책 위치(bookReaderLayout.ts, 12%)와 같은 높이다. */
+html.kiosk-mode .memorial-lightbox {
+  justify-content: flex-start;
+  padding-top: 12dvh;
+}
 /* 앨범 크게 보기의 좌우 화살표·닫기를 키오스크에서 더 크게 (2026-09-16). */
 html.kiosk-mode .memorial-lightbox-arrow {
   width: 96px;

@@ -110,7 +110,8 @@ export default function Kiosk() {
   });
   const posters = (postersQuery.data ?? []) as KioskPoster[];
   // 광고(대기) 화면은 처음 켰을 때나 "처음으로"를 눌렀을 때 바로 나오지 않는다.
-  // 5분 동안 아무도 만지지 않았을 때만 시작한다 (2026-09-16 결정).
+  // 30초 동안 아무도 만지지 않았을 때 시작한다 (2026-09-16 저녁, 5분에서 줄임).
+  // 안내·문의 창이나 자판 위에도 뜬다. 한 번 누르면 하던 화면 그대로 돌아온다.
   const [attractRequested, setAttractRequested] = useState(false);
   const attractOpen = attractRequested && posters.length > 0;
   // 오른쪽 아래 "이용 안내" 단추로 여는 안내 창 (2026-09-16).
@@ -203,7 +204,7 @@ export default function Kiosk() {
     setPasswordMessage("");
     setGuideOpen(false);
     setInquiryOpen(false);
-    // 검색 화면을 비우기만 한다. 광고는 5분 무입력 타이머가 따로 띄운다.
+    // 검색 화면을 비우기만 한다. 광고는 30초 무입력 타이머가 따로 띄운다.
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
   }
 
