@@ -32,6 +32,14 @@ type GalleryPhoto = {
   isRepresentative: number;
 };
 
+/** 앨범 한 칸에 필요한 것. 추모관 앨범과 가족관 사진이 같이 쓴다 (2026-09-16). */
+export type AlbumPhoto = {
+  id: number;
+  photoUrl: string;
+  caption: string | null;
+  year?: string | null;
+};
+
 type MemorialGallerySectionProps = {
   memorialId: number;
   isAdmin: boolean;
@@ -46,15 +54,15 @@ type MemorialGallerySectionProps = {
  * 전에는 이름이 "사진첩/대표사진"이었고, 앨범에 올린 첫 사진이 말없이 대표
  * 사진이 되어 맨 위 사진을 어디서 올리는지 알 수 없었다.
  */
-type UploadTarget = "profile" | "album";
+export type UploadTarget = "profile" | "album";
 
-type UploadProgress = {
+export type UploadProgress = {
   target: UploadTarget;
   done: number;
   total: number;
 };
 
-type UploadResult = {
+export type UploadResult = {
   target: UploadTarget;
   success: number;
   failures: string[];
@@ -68,7 +76,7 @@ const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 export const MEMBER_PHOTO_LIMIT = 30;
 
 /** 휴대폰·태블릿처럼 손가락으로 쓰는 기기인지. "지금 사진 찍기"는 여기서만 보인다. */
-function useCoarsePointer() {
+export function useCoarsePointer() {
   const [coarse, setCoarse] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
@@ -105,7 +113,7 @@ export function uploadFailureReason(error: unknown) {
   return "사진을 올리지 못했습니다. 인터넷 연결을 확인해 주세요.";
 }
 
-function isImageFile(file: File) {
+export function isImageFile(file: File) {
   return file.type.startsWith("image/") || /\.(heic|heif)$/i.test(file.name);
 }
 
@@ -492,115 +500,35 @@ export default function MemorialGallerySection({
         {photosQuery.isLoading ? (
           <EmptyState text="사진을 불러오고 있습니다." />
         ) : albumPhotos.length > 0 ? (
-          <div
-            className={`grid gap-3 md:auto-rows-[220px] md:grid-cols-3 md:gap-4 lg:grid-cols-4 ${canEdit ? "auto-rows-[240px] grid-cols-1 sm:grid-cols-2" : "auto-rows-[170px] grid-cols-2"}`}
-          >
-            {albumPhotos.map((photo, index) => (
-              <article
-                key={photo.id}
-                id={`gallery-photo-${photo.id}`}
-                data-album-photo
-                className={`group relative overflow-hidden bg-white shadow-[0_10px_30px_rgba(31,29,26,0.05)] ${
-                  highlightId === photo.id
-                    ? "outline outline-4 outline-offset-2 outline-[#2f6f4f]"
-                    : ""
-                }`}
-                style={{
-                  gridRow: index % 5 === 0 ? "span 2" : "span 1",
-                  border: "1px solid #dedede",
-                }}
+          <AlbumPhotoGrid
+            photos={albumPhotos}
+            canEdit={canEdit}
+            highlightId={highlightId}
+            photoElementId={photo => `gallery-photo-${photo.id}`}
+            onOpen={setLightboxIndex}
+            onMove={movePhoto}
+            onDelete={photo => {
+              if (confirm("이 사진을 지울까요?")) {
+                deletePhoto.mutate({ id: photo.id });
+              }
+            }}
+            onSaveCaption={(photo, caption) =>
+              updatePhoto.mutateAsync({ id: photo.id, caption })
+            }
+            onSaveYear={(photo, year) =>
+              updatePhoto.mutateAsync({ id: photo.id, year })
+            }
+            renderExtraActions={photo => (
+              <IconButton
+                label="프로필 사진으로 정하기"
+                onClick={() =>
+                  setRepresentative.mutate({ memorialId, id: photo.id })
+                }
               >
-                <button
-                  type="button"
-                  className="h-full w-full text-left"
-                  onClick={() => setLightboxIndex(index)}
-                >
-                  <img
-                    src={toImgUrl(photo.photoUrl)}
-                    alt={photo.caption || "앨범 사진"}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
-                  />
-                  <span className="absolute inset-0 bg-gradient-to-t from-[#171717]/0 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-hover:from-[#171717]/75" />
-                  {(photo.caption || photo.year) && (
-                    <span className="absolute bottom-0 left-0 right-0 translate-y-0 bg-gradient-to-t from-[#171717]/80 to-transparent p-4 text-white transition-transform duration-500 ">
-                      {photo.caption && (
-                        <span className="block text-sm">{photo.caption}</span>
-                      )}
-                      {photo.year && (
-                        <span className="mt-1 block text-xs text-white/75">
-                          {photo.year}
-                        </span>
-                      )}
-                    </span>
-                  )}
-                </button>
-
-                {canEdit && (
-                  <>
-                    <div className="absolute right-2 top-2 z-10 flex gap-1">
-                      <IconButton
-                        label="프로필 사진으로 정하기"
-                        onClick={() =>
-                          setRepresentative.mutate({ memorialId, id: photo.id })
-                        }
-                      >
-                        <Star className="h-3.5 w-3.5" />
-                      </IconButton>
-                      <IconButton
-                        label="앞으로"
-                        disabled={index === 0}
-                        onClick={() => movePhoto(index, -1)}
-                      >
-                        <ChevronLeft className="h-3.5 w-3.5" />
-                      </IconButton>
-                      <IconButton
-                        label="뒤로"
-                        disabled={index === albumPhotos.length - 1}
-                        onClick={() => movePhoto(index, 1)}
-                      >
-                        <ChevronRight className="h-3.5 w-3.5" />
-                      </IconButton>
-                      <IconButton
-                        label="삭제"
-                        danger
-                        onClick={() => {
-                          if (confirm("이 사진을 지울까요?")) {
-                            deletePhoto.mutate({ id: photo.id });
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </IconButton>
-                    </div>
-
-                    <div
-                      className="absolute bottom-2 left-2 right-2 z-10 border border-[#dedede] bg-white/95 p-2 text-xs shadow-sm"
-                      onClick={event => event.stopPropagation()}
-                    >
-                      <InlineEditText
-                        value={photo.caption || ""}
-                        isAdmin
-                        placeholder="사진 설명"
-                        onSave={caption =>
-                          updatePhoto.mutateAsync({ id: photo.id, caption })
-                        }
-                      />
-                      <div className="mt-1 text-[#666666]">
-                        <InlineEditText
-                          value={photo.year || ""}
-                          isAdmin
-                          placeholder="연도"
-                          onSave={year =>
-                            updatePhoto.mutateAsync({ id: photo.id, year })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-              </article>
-            ))}
-          </div>
+                <Star className="h-3.5 w-3.5" />
+              </IconButton>
+            )}
+          />
         ) : (
           <button
             type="button"
@@ -614,35 +542,10 @@ export default function MemorialGallerySection({
         )}
       </div>
 
-      {progress && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed inset-x-0 bottom-0 z-[90] border-t border-[#dedede] bg-white px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.12)]"
-        >
-          <div className="mx-auto max-w-xl">
-            <p className="text-base font-medium text-[#171717]">
-              {progress.target === "profile"
-                ? "프로필 사진을 올리는 중입니다"
-                : `사진을 올리는 중입니다 · ${Math.min(progress.done + 1, progress.total)} / ${progress.total}장`}
-            </p>
-            <div className="mt-2 h-2 bg-[#eeeeee]">
-              <div
-                className="h-full bg-[#171717] transition-all"
-                style={{
-                  width: `${Math.max(8, Math.round((progress.done / progress.total) * 100))}%`,
-                }}
-              />
-            </div>
-            <p className="mt-1 text-xs text-[#666666]">
-              다 올라갈 때까지 화면을 닫지 말고 잠시 기다려 주세요.
-            </p>
-          </div>
-        </div>
-      )}
+      {progress && <UploadProgressBar progress={progress} />}
 
       {lightboxIndex !== null && albumPhotos[lightboxIndex] && (
-        <Lightbox
+        <PhotoLightbox
           photos={albumPhotos}
           index={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
@@ -660,7 +563,7 @@ export default function MemorialGallerySection({
   );
 }
 
-function UploadButton({
+export function UploadButton({
   children,
   disabled,
   icon,
@@ -690,12 +593,15 @@ function UploadButton({
   );
 }
 
-function UploadResultBox({
+export function UploadResultBox({
   result,
   onShowPhoto,
+  albumLabel = "앨범",
 }: {
   result: UploadResult;
   onShowPhoto?: () => void;
+  /** "사진 3장을 ○○에 올렸습니다." 의 ○○. 가족관은 "가족관". */
+  albumLabel?: string;
 }) {
   const hasFailures = result.failures.length > 0;
   return (
@@ -717,7 +623,7 @@ function UploadResultBox({
                     ? " 전에 쓰던 사진은 앨범에 남겨 두었습니다."
                     : ""
                 }`
-              : `사진 ${result.success}장을 앨범에 올렸습니다.`}
+              : `사진 ${result.success}장을 ${albumLabel}에 올렸습니다.`}
           </span>
         </p>
       )}
@@ -759,18 +665,20 @@ export function lightboxSwipeDirection(dx: number, dy: number): -1 | 0 | 1 {
   return dx < 0 ? 1 : -1;
 }
 
-function Lightbox({
+export function PhotoLightbox({
   photos,
   index,
   onClose,
   onPrev,
   onNext,
+  altFallback = "앨범 사진",
 }: {
-  photos: GalleryPhoto[];
+  photos: AlbumPhoto[];
   index: number;
   onClose: () => void;
   onPrev: () => void;
   onNext: () => void;
+  altFallback?: string;
 }) {
   const photo = photos[index];
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
@@ -837,7 +745,7 @@ function Lightbox({
         >
           <img
             src={toImgUrl(photo.photoUrl)}
-            alt={photo.caption || "앨범 사진"}
+            alt={photo.caption || altFallback}
             draggable={false}
             className="max-h-[74vh] w-full object-contain"
           />
@@ -917,7 +825,7 @@ function EmptyState({ text }: { text: string }) {
   );
 }
 
-function IconButton({
+export function IconButton({
   label,
   onClick,
   disabled,
@@ -948,5 +856,171 @@ function IconButton({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * 앨범 사진 격자 (2026-09-16 가족관과 같이 쓰려고 떼어 냄). 다섯 장마다 한 장을
+ * 크게 두고, 설명·연도는 사진 위에 얹는다. canEdit 이면 순서·삭제 단추와
+ * 설명·연도 고치기 칸이 붙는다. layout="narrow" 는 폭이 좁은 관리 화면용으로
+ * 한 줄에 놓는 칸 수만 줄인다.
+ */
+export function AlbumPhotoGrid<Photo extends AlbumPhoto>({
+  photos,
+  canEdit,
+  onOpen,
+  onMove,
+  onDelete,
+  onSaveCaption,
+  onSaveYear,
+  renderExtraActions,
+  photoElementId,
+  highlightId = null,
+  altFallback = "앨범 사진",
+  layout = "wide",
+}: {
+  photos: Photo[];
+  canEdit: boolean;
+  onOpen: (index: number) => void;
+  onMove?: (index: number, direction: -1 | 1) => void;
+  onDelete?: (photo: Photo) => void;
+  onSaveCaption?: (photo: Photo, caption: string) => Promise<unknown> | void;
+  onSaveYear?: (photo: Photo, year: string) => Promise<unknown> | void;
+  renderExtraActions?: (photo: Photo, index: number) => ReactNode;
+  photoElementId?: (photo: Photo) => string;
+  highlightId?: number | null;
+  altFallback?: string;
+  layout?: "wide" | "narrow";
+}) {
+  const gridClass =
+    layout === "narrow"
+      ? canEdit
+        ? "grid auto-rows-[240px] grid-cols-1 gap-3 sm:grid-cols-2"
+        : "grid auto-rows-[170px] grid-cols-2 gap-3"
+      : `grid gap-3 md:auto-rows-[220px] md:grid-cols-3 md:gap-4 lg:grid-cols-4 ${canEdit ? "auto-rows-[240px] grid-cols-1 sm:grid-cols-2" : "auto-rows-[170px] grid-cols-2"}`;
+
+  return (
+    <div className={gridClass}>
+      {photos.map((photo, index) => (
+        <article
+          key={photo.id}
+          id={photoElementId?.(photo)}
+          data-album-photo
+          className={`group relative overflow-hidden bg-white shadow-[0_10px_30px_rgba(31,29,26,0.05)] ${
+            highlightId === photo.id
+              ? "outline outline-4 outline-offset-2 outline-[#2f6f4f]"
+              : ""
+          }`}
+          style={{
+            gridRow: index % 5 === 0 ? "span 2" : "span 1",
+            border: "1px solid #dedede",
+          }}
+        >
+          <button
+            type="button"
+            className="h-full w-full text-left"
+            onClick={() => onOpen(index)}
+          >
+            <img
+              src={toImgUrl(photo.photoUrl)}
+              alt={photo.caption || altFallback}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
+            />
+            <span className="absolute inset-0 bg-gradient-to-t from-[#171717]/0 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 group-hover:from-[#171717]/75" />
+            {(photo.caption || photo.year) && (
+              <span className="absolute bottom-0 left-0 right-0 translate-y-0 bg-gradient-to-t from-[#171717]/80 to-transparent p-4 text-white transition-transform duration-500 ">
+                {photo.caption && (
+                  <span className="block text-sm">{photo.caption}</span>
+                )}
+                {photo.year && (
+                  <span className="mt-1 block text-xs text-white/75">
+                    {photo.year}
+                  </span>
+                )}
+              </span>
+            )}
+          </button>
+
+          {canEdit && (
+            <>
+              <div className="absolute right-2 top-2 z-10 flex gap-1">
+                {renderExtraActions?.(photo, index)}
+                <IconButton
+                  label="앞으로"
+                  disabled={index === 0}
+                  onClick={() => onMove?.(index, -1)}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </IconButton>
+                <IconButton
+                  label="뒤로"
+                  disabled={index === photos.length - 1}
+                  onClick={() => onMove?.(index, 1)}
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </IconButton>
+                <IconButton
+                  label="삭제"
+                  danger
+                  onClick={() => onDelete?.(photo)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </IconButton>
+              </div>
+
+              <div
+                className="absolute bottom-2 left-2 right-2 z-10 border border-[#dedede] bg-white/95 p-2 text-xs shadow-sm"
+                onClick={event => event.stopPropagation()}
+              >
+                <InlineEditText
+                  value={photo.caption || ""}
+                  isAdmin
+                  placeholder="사진 설명"
+                  onSave={caption => onSaveCaption?.(photo, caption)}
+                />
+                <div className="mt-1 text-[#666666]">
+                  <InlineEditText
+                    value={photo.year || ""}
+                    isAdmin
+                    placeholder="연도"
+                    onSave={year => onSaveYear?.(photo, year)}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+/** 사진을 올리는 동안 화면 아래에 붙는 진행 막대. */
+export function UploadProgressBar({ progress }: { progress: UploadProgress }) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed inset-x-0 bottom-0 z-[90] border-t border-[#dedede] bg-white px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.12)]"
+    >
+      <div className="mx-auto max-w-xl">
+        <p className="text-base font-medium text-[#171717]">
+          {progress.target === "profile"
+            ? "프로필 사진을 올리는 중입니다"
+            : `사진을 올리는 중입니다 · ${Math.min(progress.done + 1, progress.total)} / ${progress.total}장`}
+        </p>
+        <div className="mt-2 h-2 bg-[#eeeeee]">
+          <div
+            className="h-full bg-[#171717] transition-all"
+            style={{
+              width: `${Math.max(8, Math.round((progress.done / progress.total) * 100))}%`,
+            }}
+          />
+        </div>
+        <p className="mt-1 text-xs text-[#666666]">
+          다 올라갈 때까지 화면을 닫지 말고 잠시 기다려 주세요.
+        </p>
+      </div>
+    </div>
   );
 }

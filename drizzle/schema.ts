@@ -385,6 +385,8 @@ export const memorialFamilyRoomPhotos = mysqlTable(
     photoUrl: text("photoUrl").notNull(),
     photoKey: varchar("photoKey", { length: 500 }).notNull(),
     caption: varchar("caption", { length: 500 }),
+    // 추모관 앨범의 year 와 같은 칸 (2026-09-16, 0027 마이그레이션).
+    year: varchar("year", { length: 20 }),
     sortOrder: int("sortOrder").default(0).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

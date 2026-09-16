@@ -471,6 +471,9 @@ function formatAuditAction(action: string) {
   if (action === "family_room.video.update") return "가족관 영상 변경";
   if (action === "family_room.photo.add") return "가족관 사진 추가";
   if (action === "family_room.photo.delete") return "가족관 사진 삭제";
+  if (action === "family_room.photo.update")
+    return "가족관 사진 설명·연도 수정";
+  if (action === "family_room.photo.reorder") return "가족관 사진 순서 변경";
   if (action === "kiosk_inquiry.create") return "키오스크 문의 접수";
   if (action === "kiosk_inquiry.status.update")
     return "키오스크 문의 처리 상태";

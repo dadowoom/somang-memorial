@@ -1,10 +1,9 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "wouter";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { compressImageFile } from "@/lib/imageCompression";
-import { toImgUrl } from "@/lib/imageUrl";
+import { FamilyPhotoManager } from "@/components/memorial/FamilyPhotoAlbum";
 import { trpc } from "@/lib/trpc";
 import {
   errorClass,
@@ -239,7 +238,7 @@ function ExistingRoom({
         onSaved={onSaved}
       />
       <VideoSection slug={slug} video={info.video} onSaved={onSaved} />
-      <PhotoSection
+      <FamilyPhotoManager
         slug={slug}
         photos={info.photos}
         photoLimit={info.photoLimit}
@@ -259,6 +258,7 @@ type FamilyPhoto = {
   id: number;
   photoUrl: string;
   caption: string | null;
+  year?: string | null;
 };
 
 /** 가족관 영상 (2026-09-16). 유튜브 주소를 붙여 넣으면 서버가 번호만 골라 저장한다. */
@@ -390,133 +390,6 @@ function VideoSection({
           )}
         </div>
       </form>
-    </section>
-  );
-}
-
-/** 가족관 사진 (2026-09-16). 이 가족관에만 저장되고, 비밀번호를 아는 가족만 본다. */
-function PhotoSection({
-  slug,
-  photos,
-  photoLimit,
-  onSaved,
-}: {
-  slug: string;
-  photos: FamilyPhoto[];
-  photoLimit: number;
-  onSaved: () => void;
-}) {
-  const [caption, setCaption] = useState("");
-  const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const addPhoto = trpc.familyRoom.addPhoto.useMutation();
-  const deletePhoto = trpc.familyRoom.deletePhoto.useMutation();
-
-  async function upload(file: File) {
-    setMessage("");
-    setBusy(true);
-    try {
-      const compressed = await compressImageFile(file);
-      await addPhoto.mutateAsync({
-        memorialSlug: slug,
-        dataUrl: compressed.dataUrl,
-        fileName: compressed.fileName,
-        caption: caption.trim() || undefined,
-      });
-      setCaption("");
-      onSaved();
-    } catch (error) {
-      setMessage(errorText(error));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function remove(photo: FamilyPhoto) {
-    if (!confirm("이 사진을 가족관에서 지울까요?")) return;
-    setMessage("");
-    try {
-      await deletePhoto.mutateAsync({ memorialSlug: slug, photoId: photo.id });
-      onSaved();
-    } catch (error) {
-      setMessage(errorText(error));
-    }
-  }
-
-  const full = photos.length >= photoLimit;
-
-  return (
-    <section className="mt-12">
-      <h2 className="border-b border-[#e2e2e2] pb-3 text-lg font-medium text-[#121212]">
-        가족 사진
-      </h2>
-      <p className="mt-4 text-base leading-7 text-[#616161]">
-        여기에 올린 사진은 이 가족관에만 저장되어 비밀번호를 아는 가족만 볼 수
-        있습니다. 공개 추모관 앨범에는 나오지 않습니다. ({photos.length}/
-        {photoLimit}장)
-      </p>
-
-      <div className="mt-6 space-y-4">
-        <label className="block">
-          <span className={labelClass}>사진 설명 (선택)</span>
-          <input
-            className={inputClass}
-            value={caption}
-            onChange={event => setCaption(event.target.value)}
-            maxLength={500}
-            placeholder="예: 할머니 생신날, 우리 집에서"
-          />
-        </label>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={event => {
-            const file = event.target.files?.[0];
-            event.target.value = "";
-            if (file) void upload(file);
-          }}
-        />
-        <button
-          type="button"
-          className={buttonClass}
-          disabled={busy || full}
-          onClick={() => inputRef.current?.click()}
-        >
-          {busy ? "올리는 중" : full ? "사진이 가득 찼습니다" : "사진 올리기"}
-        </button>
-        {message && <p className={errorClass}>{message}</p>}
-      </div>
-
-      {photos.length > 0 && (
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-          {photos.map(photo => (
-            <li key={photo.id} className="border border-[#e2e2e2] bg-white">
-              <img
-                src={toImgUrl(photo.photoUrl)}
-                alt={photo.caption || "가족관 사진"}
-                loading="lazy"
-                className="aspect-[4/3] w-full object-cover"
-              />
-              <div className="flex items-start justify-between gap-3 p-3">
-                <p className="min-w-0 break-keep text-sm leading-6 text-[#4f4f4f] [overflow-wrap:anywhere]">
-                  {photo.caption || "설명 없음"}
-                </p>
-                <button
-                  type="button"
-                  className="shrink-0 border border-red-200 px-3 py-1 text-xs text-red-500"
-                  disabled={deletePhoto.isPending}
-                  onClick={() => void remove(photo)}
-                >
-                  지우기
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
     </section>
   );
 }

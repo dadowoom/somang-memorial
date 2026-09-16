@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
   updateMemorialFamilyRoomVideo: vi.fn(),
   addFamilyRoomPhoto: vi.fn(),
   deleteFamilyRoomPhoto: vi.fn(),
+  updateFamilyRoomPhoto: vi.fn(),
+  reorderFamilyRoomPhotos: vi.fn(),
   isMemorialFamilyMember: vi.fn(),
   createAdminAuditLog: vi.fn(),
   storagePut: vi.fn(),
@@ -63,6 +65,7 @@ beforeEach(() => {
     url: "/uploads/family-rooms/500/abc.jpg",
   });
   mocks.deleteFamilyRoomPhoto.mockResolvedValue({ deleted: true });
+  mocks.updateFamilyRoomPhoto.mockResolvedValue({ updated: true });
 });
 
 describe("familyRoom.updateVideo", () => {
@@ -195,5 +198,126 @@ describe("familyRoom.deletePhoto", () => {
       caller(other).familyRoom.deletePhoto({ ...slug, photoId: 1 })
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(mocks.deleteFamilyRoomPhoto).not.toHaveBeenCalled();
+  });
+});
+
+// 가족관 사진도 추모관 앨범처럼 설명·연도를 고치고 순서를 바꾼다 (2026-09-16).
+describe("familyRoom.updatePhoto", () => {
+  it("설명과 연도를 이 가족관의 사진에만 저장하고 기록을 남긴다", async () => {
+    await expect(
+      caller(owner).familyRoom.updatePhoto({
+        ...slug,
+        photoId: 1,
+        caption: " 할머니 생신 ",
+        year: "1998",
+      })
+    ).resolves.toEqual({ success: true });
+    expect(mocks.updateFamilyRoomPhoto).toHaveBeenCalledWith(1, 500, {
+      caption: "할머니 생신",
+      year: "1998",
+    });
+    expect(mocks.createAdminAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "family_room.photo.update",
+        beforeValue: "1",
+        afterValue: "할머니 생신 · 1998",
+        targetUserId: 7,
+      })
+    );
+  });
+
+  it("보낸 칸만 고치고, 빈칸은 지운 것으로 저장한다", async () => {
+    await caller(owner).familyRoom.updatePhoto({
+      ...slug,
+      photoId: 1,
+      year: "",
+    });
+    expect(mocks.updateFamilyRoomPhoto).toHaveBeenCalledWith(1, 500, {
+      year: null,
+    });
+  });
+
+  it("고칠 내용이 없으면 저장하지 않는다", async () => {
+    await expect(
+      caller(owner).familyRoom.updatePhoto({ ...slug, photoId: 1 })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(mocks.updateFamilyRoomPhoto).not.toHaveBeenCalled();
+  });
+
+  it("다른 가족관의 사진 번호는 없음으로 끝나고 기록도 남기지 않는다", async () => {
+    mocks.updateFamilyRoomPhoto.mockResolvedValue({ updated: false });
+    await expect(
+      caller(owner).familyRoom.updatePhoto({
+        ...slug,
+        photoId: 999,
+        caption: "남의 사진",
+      })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(mocks.createAdminAuditLog).not.toHaveBeenCalled();
+  });
+
+  it("남의 추모관에는 못 한다", async () => {
+    await expect(
+      caller(other).familyRoom.updatePhoto({
+        ...slug,
+        photoId: 1,
+        caption: "x",
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mocks.updateFamilyRoomPhoto).not.toHaveBeenCalled();
+  });
+});
+
+describe("familyRoom.reorderPhotos", () => {
+  const twoPhotos = {
+    ...room,
+    photos: [
+      {
+        id: 1,
+        photoUrl: "/uploads/a.jpg",
+        caption: null,
+        year: null,
+        sortOrder: 1,
+      },
+      {
+        id: 2,
+        photoUrl: "/uploads/b.jpg",
+        caption: null,
+        year: null,
+        sortOrder: 2,
+      },
+    ],
+  };
+
+  it("보낸 순서대로 이 가족관의 사진 순서를 저장한다", async () => {
+    mocks.getMemorialFamilyRoomManageInfo.mockResolvedValue(twoPhotos);
+    await expect(
+      caller(owner).familyRoom.reorderPhotos({ ...slug, photoIds: [2, 1] })
+    ).resolves.toEqual({ success: true });
+    expect(mocks.reorderFamilyRoomPhotos).toHaveBeenCalledWith(500, [2, 1]);
+    expect(mocks.createAdminAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "family_room.photo.reorder",
+        afterValue: "2,1",
+      })
+    );
+  });
+
+  it("그사이 사진이 늘거나 줄었으면 순서를 저장하지 않는다", async () => {
+    mocks.getMemorialFamilyRoomManageInfo.mockResolvedValue(twoPhotos);
+    for (const photoIds of [[1], [1, 2, 3], [1, 1], [2, 999]]) {
+      await expect(
+        caller(owner).familyRoom.reorderPhotos({ ...slug, photoIds })
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    expect(mocks.reorderFamilyRoomPhotos).not.toHaveBeenCalled();
+    expect(mocks.createAdminAuditLog).not.toHaveBeenCalled();
+  });
+
+  it("남의 추모관에는 못 한다", async () => {
+    await expect(
+      caller(other).familyRoom.reorderPhotos({ ...slug, photoIds: [1] })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mocks.reorderFamilyRoomPhotos).not.toHaveBeenCalled();
   });
 });
