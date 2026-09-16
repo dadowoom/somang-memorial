@@ -26,6 +26,8 @@ import {
 } from "@/components/kiosk/KioskQuickActions";
 import { kioskSampleMemorialPath } from "@/lib/kioskQuickActions";
 import KioskInquiryOverlay from "@/components/kiosk/KioskInquiryOverlay";
+import KioskBackToTop from "@/components/kiosk/KioskBackToTop";
+import { KIOSK_ATTRACT_IDLE_MS } from "@/lib/kioskAttract";
 import {
   useKioskKeyboard,
   useKioskKeyboardField,
@@ -107,8 +109,10 @@ export default function Kiosk() {
     refetchInterval: 60 * 1000,
   });
   const posters = (postersQuery.data ?? []) as KioskPoster[];
-  const [searchStarted, setSearchStarted] = useState(false);
-  const attractOpen = !searchStarted && posters.length > 0;
+  // 광고(대기) 화면은 처음 켰을 때나 "처음으로"를 눌렀을 때 바로 나오지 않는다.
+  // 5분 동안 아무도 만지지 않았을 때만 시작한다 (2026-09-16 결정).
+  const [attractRequested, setAttractRequested] = useState(false);
+  const attractOpen = attractRequested && posters.length > 0;
   // 오른쪽 아래 "이용 안내" 단추로 여는 안내 창 (2026-09-16).
   const [guideOpen, setGuideOpen] = useState(false);
   // "문의" 단추로 여는 창 (2026-09-16). 교회 경조부 안내 + 제작 업체 문의(전화번호).
@@ -141,6 +145,7 @@ export default function Kiosk() {
     : "100dvh";
 
   useKioskIdleReset(resetKiosk);
+  useKioskIdleReset(() => setAttractRequested(true), KIOSK_ATTRACT_IDLE_MS);
 
   // 아무도 새로고침을 눌러 주지 않는 기기라, 새 배포가 있거나 새벽이면 손님이
   // 없을 때 스스로 새로고침한다. 광고 화면이거나 아무것도 입력하지 않은 검색
@@ -198,8 +203,7 @@ export default function Kiosk() {
     setPasswordMessage("");
     setGuideOpen(false);
     setInquiryOpen(false);
-    // 손을 뗀 채 시간이 지나면 광고 화면으로 돌아간다.
-    setSearchStarted(false);
+    // 검색 화면을 비우기만 한다. 광고는 5분 무입력 타이머가 따로 띄운다.
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
   }
 
@@ -593,10 +597,12 @@ export default function Kiosk() {
         />
       )}
 
+      <KioskBackToTop />
+
       {attractOpen && (
         <KioskAttract
           posters={posters}
-          onActivate={() => setSearchStarted(true)}
+          onActivate={() => setAttractRequested(false)}
         />
       )}
     </main>

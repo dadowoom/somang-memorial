@@ -1,0 +1,50 @@
+/* 키오스크 "맨 위로" 단추. 왼쪽 아래(7시 방향). 광고(z 60)·자판(z 70)·창(z 65)보다 아래. */
+.kiosk-back-to-top {
+  position: fixed;
+  left: 20px;
+  bottom: 24px;
+  z-index: 40;
+  display: flex;
+  width: 84px;
+  height: 84px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid #18181b;
+  border-radius: 9999px;
+  background: #fff;
+  color: #18181b;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.15;
+  text-align: center;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+  transition: transform 120ms ease-out;
+}
+
+.kiosk-back-to-top svg {
+  width: 24px;
+  height: 24px;
+}
+
+.kiosk-back-to-top:active {
+  transform: scale(0.95);
+}
+
+/* 세로 키오스크(큰 화면): 오른쪽 아래 단추들과 같은 크기. */
+@media (min-width: 640px) and (min-height: 900px) and (orientation: portrait) {
+  .kiosk-back-to-top {
+    left: 40px;
+    bottom: 56px;
+    width: 128px;
+    height: 128px;
+    gap: 6px;
+    font-size: 20px;
+  }
+
+  .kiosk-back-to-top svg {
+    width: 36px;
+    height: 36px;
+  }
+}

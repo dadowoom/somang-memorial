@@ -8,6 +8,12 @@ export type KioskPoster = {
   displaySeconds: number;
 };
 
+/**
+ * 광고(대기) 화면은 이만큼 아무도 만지지 않았을 때 시작한다 (2026-09-16 결정).
+ * 처음 켰을 때나 "처음으로"를 눌렀을 때 바로 광고가 나오면 안 된다.
+ */
+export const KIOSK_ATTRACT_IDLE_MS = 5 * 60_000;
+
 export const KIOSK_ATTRACT_MIN_SECONDS = 3;
 export const KIOSK_ATTRACT_MAX_SECONDS = 120;
 export const KIOSK_ATTRACT_DEFAULT_SECONDS = 8;
