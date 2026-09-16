@@ -103,7 +103,9 @@ export function backspaceKioskKeyboardValue(
   const prefixTokens = Array.from(disassemble(value.slice(0, selection.start)));
   prefixTokens.pop();
 
-  const nextPrefix = assemble(prefixTokens);
+  // es-hangul의 assemble([])은 오류를 낸다 ("Reduce of empty array"). 마지막 한
+  // 글자를 지울 때가 바로 그 경우라, 빈 목록이면 빈 글자로 처리한다 (2026-09-16).
+  const nextPrefix = prefixTokens.length > 0 ? assemble(prefixTokens) : "";
   return {
     value: nextPrefix + value.slice(selection.end),
     cursor: nextPrefix.length,

@@ -1,4 +1,5 @@
 import { toImgUrl } from "@/lib/imageUrl";
+import "./kioskMemorialTabs.css";
 import { formatLifespan } from "@/lib/lifespan";
 import KioskBackToTop from "@/components/kiosk/KioskBackToTop";
 import {
@@ -46,13 +47,26 @@ import {
   CalendarDays,
   House,
   Image as ImageIcon,
+  Images,
   LockKeyhole,
+  Mail,
   Play,
   RefreshCw,
+  Scroll,
   Send,
   Video,
   X,
+  type LucideIcon,
 } from "lucide-react";
+
+// 홈페이지 추모관 탭바(MemorialPublicDetail.tsx)와 같은 그림.
+const KIOSK_TAB_ICONS: Record<KioskMemorialTab, LucideIcon> = {
+  life: BookOpenText,
+  records: Images,
+  letters: Mail,
+  family: LockKeyhole,
+  obituary: Scroll,
+};
 import {
   FormEvent,
   ReactNode,
@@ -435,8 +449,8 @@ function KioskIdleWarning({ onStay }: { onStay: () => void }) {
 
 function KioskMemorialHeader({ onBack }: { onBack: () => void }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-[#e4e4e4] bg-white/96 px-8 py-6 backdrop-blur">
-      <div className="flex items-center justify-between gap-5">
+    <header className="sticky top-0 z-30 flex h-[104px] items-center border-b border-[#e4e4e4] bg-white/96 px-8 backdrop-blur">
+      <div className="flex w-full items-center justify-between gap-5">
         <button type="button" onClick={onBack} className="text-left">
           <span className="block text-[24px] leading-tight" style={serifStyle}>
             소망이 있는 곳
@@ -976,24 +990,22 @@ function KioskMemorialContent({
       <nav
         id="kiosk-memorial-tabs"
         aria-label="추모관 기록 메뉴"
-        className="grid scroll-mt-[104px] border-y border-[#dadada] bg-white"
-        style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+        className="kiosk-memorial-tabs"
       >
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => showTab(tab.id)}
-            aria-current={activeTab === tab.id ? "page" : undefined}
-            className={`h-16 break-keep border-r border-[#dadada] px-2 text-base font-medium last:border-r-0 ${
-              activeTab === tab.id
-                ? "bg-[#18181b] text-white"
-                : "text-[#34312d] active:bg-[#f1f1f1]"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+        {tabs.map(tab => {
+          const Icon = KIOSK_TAB_ICONS[tab.id];
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => showTab(tab.id)}
+              aria-current={activeTab === tab.id ? "page" : undefined}
+            >
+              <Icon aria-hidden="true" />
+              {tab.label}
+            </button>
+          );
+        })}
       </nav>
 
       {activeTab === "life" && (
