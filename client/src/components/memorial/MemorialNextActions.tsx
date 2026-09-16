@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { memorialNextAction } from "@/lib/memorialNextAction";
+import CompleteRegistrationButton from "./CompleteRegistrationButton";
 
 type MemorialActionItem = {
   name: string;
@@ -58,6 +59,9 @@ export default function MemorialNextActions({
           <Link href={`/memorial/${memorial.slug}/archive#gallery`}>
             <span className={buttonClass}>프로필·앨범 사진 올리기</span>
           </Link>
+        )}
+        {action.canComplete && (
+          <CompleteRegistrationButton slug={memorial.slug} />
         )}
         {/* 가족관은 공개 화면에 나오지 않으므로 게시 상태와 상관없이 유가족이 관리한다. */}
         <Link href={`/my/memorials/${memorial.slug}/family`}>

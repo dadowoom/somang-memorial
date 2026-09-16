@@ -16,6 +16,8 @@ export type MemorialAccessStatusRow = {
   summary: string;
   visibility: string;
   accessPasswordHash: string | null;
+  /** 없으면 등록 완료(published)로 본다. */
+  status?: string;
 };
 
 export type MemorialAccessStatus = {
@@ -29,6 +31,11 @@ export type MemorialAccessStatus = {
   visibility: string;
   isPrivate: boolean;
   requiresPassword: boolean;
+  /**
+   * 작성 중(등록 완료 전)이면 true (2026-09-16). 입장 화면은 비밀번호 칸 대신
+   * "가족이 등록을 마치면 볼 수 있다"고 안내한다. 인적 사항도 내주지 않는다.
+   */
+  isPreparing: boolean;
   href: string;
 };
 
@@ -45,15 +52,18 @@ export function toMemorialAccessStatus(
   row: MemorialAccessStatusRow
 ): MemorialAccessStatus {
   const isPrivate = isPrivateMemorialVisibility(row.visibility);
+  const isPreparing = row.status === "pending";
   const base = {
     slug: row.slug,
     visibility: row.visibility,
     isPrivate,
-    requiresPassword: isPrivate && Boolean(row.accessPasswordHash),
+    requiresPassword:
+      !isPreparing && isPrivate && Boolean(row.accessPasswordHash),
+    isPreparing,
     href: `/memorial/${row.slug}`,
   };
 
-  if (isPrivate) {
+  if (isPrivate || isPreparing) {
     return {
       ...base,
       name: null,

@@ -238,9 +238,9 @@ function VisibilityBadge({ visibility }: { visibility: string }) {
 function StatusBadge({ status }: { status: string }) {
   const label =
     status === "published"
-      ? "게시 중"
+      ? "등록 완료"
       : status === "pending"
-        ? "미게시"
+        ? "작성 중"
       : status === "private"
         ? "비공개"
         : status || "상태 확인";

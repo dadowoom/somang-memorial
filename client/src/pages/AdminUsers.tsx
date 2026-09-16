@@ -467,6 +467,7 @@ function formatAuditAction(action: string) {
   if (action === "family_room.create") return "가족관 만듦";
   if (action === "family_room.info.update") return "가족관 제목·소개 수정";
   if (action === "family_room.password.update") return "가족관 비밀번호 변경";
+  if (action === "memorial.registration.complete") return "추모관 등록 완료";
   if (action === "family_room.video.update") return "가족관 영상 변경";
   if (action === "family_room.photo.add") return "가족관 사진 추가";
   if (action === "family_room.photo.delete") return "가족관 사진 삭제";

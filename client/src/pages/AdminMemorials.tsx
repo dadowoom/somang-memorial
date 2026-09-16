@@ -42,8 +42,8 @@ type MemorialStatus = "pending" | "published" | "private";
 type MemorialStatusFilter = "all" | MemorialStatus;
 
 const statusLabels: Record<MemorialStatus, string> = {
-  pending: "검토 대기",
-  published: "게시 중",
+  pending: "작성 중",
+  published: "등록 완료",
   private: "비공개 보관",
 };
 

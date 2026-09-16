@@ -57,6 +57,34 @@ describe("toMemorialAccessStatus", () => {
   });
 });
 
+describe("작성 중인 추모관 (2026-09-16)", () => {
+  it("전체 공개여도 인적 사항을 내주지 않고 비밀번호 칸도 띄우지 않는다", () => {
+    const status = toMemorialAccessStatus({ ...row, status: "pending" });
+    expect(status.isPreparing).toBe(true);
+    expect(status.requiresPassword).toBe(false);
+    expect(status.name).toBeNull();
+    expect(status.summary).toBeNull();
+  });
+
+  it("비공개·비밀번호가 있어도 작성 중이면 비밀번호 칸을 띄우지 않는다", () => {
+    const status = toMemorialAccessStatus({
+      ...row,
+      visibility: "private",
+      accessPasswordHash: "hash",
+      status: "pending",
+    });
+    expect(status.isPreparing).toBe(true);
+    expect(status.requiresPassword).toBe(false);
+  });
+
+  it("등록을 마친 추모관은 준비 중이 아니다", () => {
+    expect(
+      toMemorialAccessStatus({ ...row, status: "published" }).isPreparing
+    ).toBe(false);
+    expect(toMemorialAccessStatus(row).isPreparing).toBe(false);
+  });
+});
+
 describe("publicMemorialName", () => {
   it("비공개일 때만 이름을 감춘다", () => {
     expect(publicMemorialName("public", "김소망")).toBe("김소망");

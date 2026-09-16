@@ -1102,14 +1102,19 @@ export function createMemorialAccessToken(
 /**
  * 가족이 비밀번호로 들어올 수 있는 상태.
  *
- * - published : 정상 공개
- * - pending   : 관리자 확인을 기다리는 중. 공개 검색에는 나오지 않지만,
- *               유가족이 정한 비밀번호로는 들어올 수 있어야 한다.
- *               그러지 않으면 가족에게 비밀번호를 알려주고도 아무도 못 들어간다.
+ * - published : 등록 완료. 공개 범위(전체 공개·비공개)대로 보인다.
+ * - pending   : 작성 중 (2026-09-16 결정). 추모관을 만들면 이 상태로 시작하고,
+ *               가족이 사진과 글을 준비한 뒤 "등록 완료"를 눌러야 published 가
+ *               된다. 그 전에는 주인·초대받은 가족·관리자만 볼 수 있고, 입장
+ *               비밀번호를 알아도 들어올 수 없으며, 편지도 받지 않는다.
  *
- * private 은 관리자가 내린 상태이므로 뺀다. 비밀번호를 아는 사람이라도
- * 들어오지 못해야 관리자의 조치가 의미를 가진다. 소유자와 관리자는
- * canUserReadMemorial 에서 따로 통과시킨다.
+ * private 은 관리자가 내린 상태다. 비밀번호를 아는 사람이라도 들어오지 못해야
+ * 관리자의 조치가 의미를 가진다. 소유자와 관리자는 canUserReadMemorial 에서
+ * 따로 통과시킨다.
+ *
+ * 아래 목록은 "가족관"과 입장 안내 화면이 추모관을 찾을 때 쓰는 상태다. 작성 중인
+ * 추모관도 가족관은 가족끼리 쓸 수 있어야 하고, 입장 안내 화면은 "준비 중"이라고
+ * 알려 줘야 하므로 pending 을 포함한다.
  */
 export const FAMILY_READABLE_STATUSES = ["published", "pending"] as const;
 
@@ -1136,13 +1141,8 @@ export function canReadMemorial(
     return hasValidToken();
   }
 
-  // 관리자 확인을 기다리는 중에는 공개하지 않는다. 다만 유가족이 정한
-  // 비밀번호를 가진 분은 들어올 수 있어야 한다. 그러지 않으면 가족에게
-  // 비밀번호를 알려주고도 아무도 못 들어간다.
-  if (memorial.status === "pending") {
-    if (memorial.visibility !== "private") return false;
-    return hasValidToken();
-  }
+  // 작성 중(pending)은 등록 완료 전이라 방문자에게 보이지 않는다. 입장 비밀번호를
+  // 알아도 마찬가지다 (2026-09-16 결정). 주인·초대받은 가족·관리자는 위쪽에서 통과한다.
 
   // private 은 관리자가 내린 상태다. 비밀번호를 알아도 들어올 수 없어야
   // 관리자의 조치가 의미를 가진다. 소유자와 관리자는 위쪽에서 통과시킨다.
@@ -1204,6 +1204,7 @@ export async function getMemorialAccessStatus(slug: string) {
       summary: memorials.summary,
       visibility: memorials.visibility,
       accessPasswordHash: memorials.accessPasswordHash,
+      status: memorials.status,
     })
     .from(memorials)
     .where(
@@ -1239,7 +1240,8 @@ export async function verifyMemorialAccessPassword(input: {
     .where(
       and(
         eq(memorials.slug, input.slug),
-        inArray(memorials.status, [...FAMILY_READABLE_STATUSES])
+        // 작성 중인 추모관은 비밀번호로 열리지 않는다 (2026-09-16).
+        eq(memorials.status, "published")
       )
     )
     .limit(1);
@@ -1983,13 +1985,15 @@ export async function createMemorialReminderSubscription(input: {
       slug: memorials.slug,
       name: memorials.name,
       memorialDay: memorials.memorialDay,
+      status: memorials.status,
     })
     .from(memorials)
     .where(eq(memorials.slug, input.memorialSlug))
     .limit(1);
 
   const target = memorial[0];
-  if (!target) return null;
+  // 작성 중인 추모관에는 추도일 알림을 받지 않는다 (2026-09-16).
+  if (!target || target.status !== "published") return null;
 
   await db
     .insert(memorialReminderSubscriptions)
@@ -2070,7 +2074,11 @@ export async function listRecentMemorialLetters(limit = 100) {
       and(
         eq(memorialLetters.status, "published"),
         or(
-          eq(memorials.visibility, "public"),
+          // 등록을 마친 전체 공개 추모관의 편지만 모아 보인다 (2026-09-16).
+          and(
+            eq(memorials.visibility, "public"),
+            eq(memorials.status, "published")
+          ),
           isNull(memorialLetters.memorialId)
         )
       )

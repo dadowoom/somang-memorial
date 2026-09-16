@@ -112,6 +112,8 @@ type KioskMemorialRecord = {
   story: string;
   memorialDay: string | null;
   visibility: string;
+  /** pending = 작성 중(등록 완료 전) */
+  status?: string;
   timeline: TimelineItem[];
   servicePlace?: string | null;
   serviceTime?: string | null;
@@ -156,6 +158,7 @@ type AccessStatus = {
   church: string | null;
   summary: string | null;
   isPrivate: boolean;
+  isPreparing?: boolean;
 };
 
 type FamilyRoom = {
@@ -287,6 +290,16 @@ export default function KioskMemorial() {
 
         {memorialQuery.isLoading ? (
           <KioskState>추모관을 불러오고 있습니다.</KioskState>
+        ) : isLocked &&
+          (accessStatusQuery.data as AccessStatus | undefined)?.isPreparing ? (
+          <KioskState
+            description="가족이 사진과 이야기를 준비하고 있습니다. 등록을 마치면 볼 수 있습니다."
+            actionLabel="처음으로"
+            actionKind="back"
+            onAction={returnToKiosk}
+          >
+            등록 준비 중인 추모관입니다.
+          </KioskState>
         ) : isLocked ? (
           <KioskMemorialGate
             slug={slug}

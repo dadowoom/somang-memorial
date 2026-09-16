@@ -10,6 +10,7 @@ describe("member actions match the publication state", () => {
         canEdit: true,
         canAddPhotos: true,
         canShare: false,
+        canComplete: true,
       });
     }
   );
@@ -18,6 +19,7 @@ describe("member actions match the publication state", () => {
       canEdit: true,
       canAddPhotos: true,
       canShare: true,
+      canComplete: false,
     });
   });
   it("keeps direct editing but no public sharing for a privately visible published memorial", () => {
