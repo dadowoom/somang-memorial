@@ -161,10 +161,6 @@ export default function GuideFamilyExamples() {
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         {labels[selected]}, {selected + 1} / {labels.length}
       </p>
-      <p className="guide-family-examples__notice">
-        가족관에는 글과 사진, 유튜브 영상을 남길 수 있습니다. 위 화면은 구성
-        예시입니다.
-      </p>
     </Carousel>
   );
 }
