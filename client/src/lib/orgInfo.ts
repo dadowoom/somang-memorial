@@ -15,7 +15,11 @@ export const ORG_INFO = {
   // 개인정보 관련 문의를 받는 주소.
   contactEmail: "contact@dadowoom.com",
 
-  contactPhone: "031-764-6052",
+  // 대표 전화 = 소망교회 경조부 사무실 (2026-09-17 사용자 결정). 소망동산 번호는
+  // 쓰지 않는다. 키오스크 문의 창·이용약관·개인정보처리방침·비밀번호 찾기·
+  // 사이트 하단·소망동산 방문 안내에 함께 나온다.
+  contactPhone: "02-541-3726",
+  contactPhoneLabel: "경조부",
 
   // 개인정보 보호책임자 (개인정보보호법 제31조).
   privacyOfficer: {
