@@ -726,12 +726,12 @@ function KioskMemorialContent({
   );
   const showTab = (tab: KioskMemorialTab) => {
     setActiveTab(tab);
-    scrollToSection("kiosk-memorial-tabs");
+    scrollToMemorialTabs();
   };
 
   return (
     <>
-      <section className="px-8 pb-10 pt-8">
+      <section id="kiosk-memorial-hero" className="px-8 pb-10 pt-8">
         <div>
           <p className="mb-4 text-[12px] font-medium tracking-[0.26em] text-[#777]">
             SOMANG MEMORIAL
@@ -2104,10 +2104,23 @@ function KioskState({
   );
 }
 
-function scrollToSection(id: string) {
-  document
-    .getElementById(id)
-    ?.scrollIntoView({ block: "start", behavior: "smooth" });
+/** KioskMemorialHeader 높이(px). 탭바가 이 아래에 붙는다 (kioskMemorialTabs.css top 과 같은 값). */
+const KIOSK_MEMORIAL_HEADER_HEIGHT = 104;
+
+/**
+ * 탭을 누르면 새 탭의 첫머리(머리글 바로 아래 탭바)로 올라간다 (2026-09-16).
+ * 탭바가 화면에 붙어(sticky) 있으면 scrollIntoView 는 "이미 보인다"고 여겨 움직이지
+ * 않아, 아래로 내려간 채 다른 탭을 누르면 새 탭의 끝으로 떨어졌다. 그래서 탭바의
+ * 제자리(= 인적 사항 구역의 끝)를 직접 계산해 올린다.
+ */
+function scrollToMemorialTabs() {
+  const hero = document.getElementById("kiosk-memorial-hero");
+  if (!hero) return;
+  const top =
+    hero.getBoundingClientRect().bottom +
+    window.scrollY -
+    KIOSK_MEMORIAL_HEADER_HEIGHT;
+  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
 }
 
 // 홈페이지(MemorialPublicDetail.tsx)와 같은 규칙: 빈 줄에서만 문단을 나눈다.
