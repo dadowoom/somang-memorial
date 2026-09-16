@@ -181,3 +181,18 @@ INSERT INTO `memorial_family_room_photos` (`familyRoomId`, `photoUrl`, `photoKey
 SELECT r.`id`, '/sample/kim-somang/2021-garden.jpg', 'sample/kim-somang/family-2021-garden', '뜰에서 온 가족이 함께한 봄날', 2
 FROM `memorial_family_rooms` r JOIN `memorials` m ON m.`id` = r.`memorialId`
 WHERE m.`slug` = 'kim-somang-kwonsa' AND NOT EXISTS (SELECT 1 FROM `memorial_family_room_photos` p WHERE p.`photoKey` = 'sample/kim-somang/family-2021-garden');
+--> statement-breakpoint
+UPDATE `memorial_family_rooms` r
+JOIN `memorials` m ON m.`id` = r.`memorialId`
+SET r.`intro` = '엄마, 어머니, 할머니. 우리끼리만 부르던 이름으로 이곳에 모입니다.\n\n공개 추모관에 다 담지 못한 이야기들, 새벽 부엌에서 들리던 기도 소리와 반찬 가게 골목의 새벽, 무릎에 앉혀 들려주시던 옛이야기를 이 방에 천천히 모아 둡니다.\n\n사진 한 장, 짧은 안부 한 줄이면 충분합니다. 권사님이 늘 하시던 말씀처럼, 다 은혜였습니다.'
+WHERE m.`slug` = 'kim-somang-kwonsa' AND r.`intro` LIKE '가족들이 서로에게만%';
+--> statement-breakpoint
+INSERT INTO `memorial_family_room_photos` (`familyRoomId`, `photoUrl`, `photoKey`, `caption`, `sortOrder`)
+SELECT r.`id`, '/sample/kim-somang/2023-interview.jpg', 'sample/kim-somang/family-2023-interview', '인터뷰 찍던 날, 두 시간 넘게 이야기하셨다', 3
+FROM `memorial_family_rooms` r JOIN `memorials` m ON m.`id` = r.`memorialId`
+WHERE m.`slug` = 'kim-somang-kwonsa' AND NOT EXISTS (SELECT 1 FROM `memorial_family_room_photos` p WHERE p.`photoKey` = 'sample/kim-somang/family-2023-interview');
+--> statement-breakpoint
+INSERT INTO `memorial_family_room_photos` (`familyRoomId`, `photoUrl`, `photoKey`, `caption`, `sortOrder`)
+SELECT r.`id`, '/sample/kim-somang/2025-spring.jpg', 'sample/kim-somang/family-2025-spring', '"웃는 얼굴로 기억해 달라" 하시던 마지막 봄', 4
+FROM `memorial_family_rooms` r JOIN `memorials` m ON m.`id` = r.`memorialId`
+WHERE m.`slug` = 'kim-somang-kwonsa' AND NOT EXISTS (SELECT 1 FROM `memorial_family_room_photos` p WHERE p.`photoKey` = 'sample/kim-somang/family-2025-spring');
