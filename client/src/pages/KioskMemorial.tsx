@@ -1,6 +1,12 @@
 import { toImgUrl } from "@/lib/imageUrl";
 import { formatLifespan } from "@/lib/lifespan";
 import {
+  formatPassingDate,
+  KIOSK_MEMORIAL_DEFAULT_TAB,
+  kioskMemorialTabs,
+  type KioskMemorialTab,
+} from "@/lib/kioskMemorialTabs";
+import {
   createKioskVideoFrameState,
   KIOSK_VIDEO_IFRAME_SANDBOX,
   KIOSK_VIDEO_LOAD_TIMEOUT_MS,
@@ -79,6 +85,10 @@ type KioskMemorialRecord = {
   memorialDay: string | null;
   visibility: string;
   timeline: TimelineItem[];
+  servicePlace?: string | null;
+  serviceTime?: string | null;
+  familyContact?: string | null;
+  familyPhone?: string | null;
 };
 
 type MemorialPhoto = {
@@ -869,14 +879,15 @@ function KioskMemorialContent({
   );
   const featuredVideo = playableVideos[0] ?? null;
 
-  const navItems = [
-    { id: "story", label: "삶" },
-    { id: "gallery", label: "사진" },
-    { id: "video", label: "영상" },
-    { id: "book", label: "기록" },
-    { id: "family", label: "가족관" },
-    { id: "letters", label: "편지" },
-  ];
+  // 홈페이지 추모관과 같은 탭·같은 순서. 홈페이지처럼 누른 탭의 내용만 보여 준다 (2026-09-16).
+  const tabs = kioskMemorialTabs(memorial);
+  const [activeTab, setActiveTab] = useState<KioskMemorialTab>(
+    KIOSK_MEMORIAL_DEFAULT_TAB
+  );
+  const showTab = (tab: KioskMemorialTab) => {
+    setActiveTab(tab);
+    scrollToSection("kiosk-memorial-tabs");
+  };
 
   return (
     <>
@@ -958,20 +969,33 @@ function KioskMemorialContent({
           <Fact label="교회" value={memorial.church} />
         </div>
 
-        <div className="mt-7 grid grid-cols-3 gap-2">
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => scrollToSection(item.id)}
-              className="h-14 border border-[#d5d5d5] text-base font-medium active:bg-[#f1f1f1]"
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
       </section>
 
+      <nav
+        id="kiosk-memorial-tabs"
+        aria-label="추모관 기록 메뉴"
+        className="grid scroll-mt-[104px] border-y border-[#dadada] bg-white"
+        style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+      >
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => showTab(tab.id)}
+            aria-current={activeTab === tab.id ? "page" : undefined}
+            className={`h-16 break-keep border-r border-[#dadada] px-2 text-base font-medium last:border-r-0 ${
+              activeTab === tab.id
+                ? "bg-[#18181b] text-white"
+                : "text-[#34312d] active:bg-[#f1f1f1]"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      {activeTab === "life" && (
+        <>
       <KioskSection id="story" eyebrow="Story" title="삶과 신앙">
         {memorial.verse && (
           <article className="border border-[#dadada] p-6">
@@ -1011,6 +1035,11 @@ function KioskMemorialContent({
         </article>
       </KioskSection>
 
+        </>
+      )}
+
+      {activeTab === "records" && (
+        <>
       <KioskSection id="gallery" eyebrow="Gallery" title="사진첩">
         {photosStatus.loading ? (
           <EmptyBox
@@ -1221,12 +1250,22 @@ function KioskMemorialContent({
         ) : null}
       </KioskSection>
 
+        </>
+      )}
+
+      {activeTab === "family" && (
+        <>
       <KioskFamilySection
         key={memorial.slug}
         slug={memorial.slug}
         onVideo={onVideo}
       />
 
+        </>
+      )}
+
+      {activeTab === "letters" && (
+        <>
       <KioskLettersSection
         memorialSlug={memorial.slug}
         memorialName={memorial.name}
@@ -1234,7 +1273,12 @@ function KioskMemorialContent({
         isPrivate={memorial.visibility === "private"}
       />
 
-      <div aria-hidden="true" className="h-[52vh] border-t border-[#dadada]" />
+        </>
+      )}
+
+      {activeTab === "obituary" && <KioskObituarySection memorial={memorial} />}
+
+      <div aria-hidden="true" className="h-[24vh] border-t border-[#dadada]" />
     </>
   );
 }
@@ -1789,6 +1833,81 @@ function KioskLettersSection({
           </p>
         )}
       </div>
+    </KioskSection>
+  );
+}
+
+/** 홈페이지 부고장(/memorial/:slug/obituary)과 같은 내용을 키오스크 안에서 보여 준다 (2026-09-16). */
+function KioskObituarySection({ memorial }: { memorial: KioskMemorialRecord }) {
+  const rows: Array<{ label: string; value: string }> = [];
+  if (memorial.servicePlace?.trim())
+    rows.push({ label: "빈소", value: memorial.servicePlace.trim() });
+  if (memorial.serviceTime?.trim())
+    rows.push({ label: "예배", value: memorial.serviceTime.trim().replace("T", " ") });
+  if (memorial.memorialDay?.trim())
+    rows.push({ label: "추도일", value: memorial.memorialDay.trim() });
+  const family = [memorial.familyContact?.trim(), memorial.familyPhone?.trim()]
+    .filter(Boolean)
+    .join(" · ");
+  if (family) rows.push({ label: "상주", value: family });
+
+  return (
+    <KioskSection id="obituary" eyebrow="Obituary" title="부고장">
+      <article className="border border-[#dadada] bg-[#1f1d1a] px-8 py-10 text-center text-[#e8e4dc]">
+        <p className="text-sm tracking-[0.26em] text-[#a49c88]">
+          {memorial.church} {memorial.role}
+        </p>
+        <h3
+          className="mt-4 text-[44px] font-light tracking-[0.08em] text-white"
+          style={serifStyle}
+        >
+          {memorial.name}
+        </h3>
+        <p className="mt-3 text-base tracking-[0.2em] text-[#a49c88]">
+          {formatLifespan(memorial.birthDate, memorial.deathDate)}
+        </p>
+        <p className="mt-8 text-lg leading-9 text-[#cfc9bb]" style={serifStyle}>
+          {memorial.church} {memorial.name} {memorial.role}께서
+          <br />
+          {formatPassingDate(memorial.deathDate)} 소천하셨기에
+          <br />
+          삼가 알려 드립니다.
+        </p>
+        {memorial.verse?.trim() ? (
+          <div className="mt-8 border-t border-[#3a362e] pt-6">
+            <p className="text-base leading-8 text-[#b8b1a0]" style={serifStyle}>
+              {memorial.verse.trim()}
+            </p>
+            {memorial.verseRef?.trim() ? (
+              <p className="mt-3 text-xs tracking-[0.2em] text-[#7d7666]">
+                {memorial.verseRef.trim()}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {memorial.summary.trim() ? (
+          <p className="mt-8 text-base leading-8 text-[#b8b1a0]">
+            {memorial.summary.trim()}
+          </p>
+        ) : null}
+      </article>
+      {rows.length ? (
+        <div className="mt-4 border border-[#dadada]">
+          {rows.map(row => (
+            <div
+              key={row.label}
+              className="grid grid-cols-[96px_minmax(0,1fr)] border-b border-[#dadada] last:border-b-0"
+            >
+              <p className="bg-[#f7f7f7] px-5 py-4 text-sm font-medium text-[#7a643e]">
+                {row.label}
+              </p>
+              <p className="px-5 py-4 text-base leading-7 text-[#34312d]">
+                {row.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </KioskSection>
   );
 }
