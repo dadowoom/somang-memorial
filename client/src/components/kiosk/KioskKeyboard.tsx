@@ -2,6 +2,7 @@ import {
   backspaceKioskKeyboardValue,
   insertKioskKeyboardToken,
 } from "@/lib/kioskKeyboardInput";
+import { useScrollLock } from "@/lib/scrollLock";
 import { cn } from "@/lib/utils";
 import {
   shouldActivateOnClick,
@@ -264,6 +265,9 @@ export function KioskKeyboard({
   onHeightChange: (height: number) => void;
 }) {
   const [mode, setMode] = useState<KioskKeyboardMode>(field.defaultMode);
+  // 자판이 떠 있는 동안 뒤 화면이 손가락에 밀려 움직이지 않게 한다 (2026-09-16).
+  // 입력칸을 자판 위로 올리는 스크롤은 코드로 하므로 그대로 된다.
+  useScrollLock();
   const nameOnly = field.variant === "korean-name";
   const digitsOnly = field.variant === "digits";
   // Do not expose the previous field's mode while the field-change effect runs.

@@ -2,6 +2,7 @@ import InlineEditText from "@/components/InlineEditText";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { compressImageFile } from "@/lib/imageCompression";
 import { toImgUrl } from "@/lib/imageUrl";
+import { useScrollLock } from "@/lib/scrollLock";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import {
@@ -776,6 +777,8 @@ function Lightbox({
 }) {
   const photo = photos[index];
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  // 사진 창이 떠 있는 동안 뒤 화면이 손가락에 밀려 움직이지 않게 한다.
+  useScrollLock();
   const hasPrev = index > 0;
   const hasNext = index < photos.length - 1;
 
@@ -790,8 +793,9 @@ function Lightbox({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose, onNext, onPrev]);
 
+  // 사진 위에서도 잘 보이게 흰 바탕·검은 테두리·그림자 (2026-09-16 "화살표가 안 보인다").
   const arrowClass =
-    "absolute top-1/2 z-10 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-black/45 text-white shadow-lg transition-colors hover:bg-black/60 disabled:opacity-0";
+    "memorial-lightbox-arrow absolute top-1/2 z-10 flex h-16 w-16 -translate-y-1/2 items-center justify-center rounded-full border-2 border-[#171717] bg-white text-[#171717] shadow-[0_6px_20px_rgba(0,0,0,0.45)] transition-transform active:scale-95 disabled:opacity-0";
 
   return (
     <div
@@ -800,11 +804,12 @@ function Lightbox({
     >
       <button
         type="button"
-        className="absolute right-4 top-4 rounded-full border border-white/15 bg-white/10 p-3 text-white transition-colors hover:bg-white/20"
+        className="memorial-lightbox-close absolute right-4 top-4 z-10 inline-flex min-h-12 items-center gap-2 rounded-full border-2 border-[#171717] bg-white px-4 text-base font-medium text-[#171717] shadow-[0_6px_20px_rgba(0,0,0,0.45)]"
         onClick={onClose}
         aria-label="닫기"
       >
-        <X className="h-5 w-5" />
+        <X className="h-5 w-5" strokeWidth={2.5} />
+        닫기
       </button>
 
       <div
@@ -850,7 +855,7 @@ function Lightbox({
             disabled={!hasPrev}
             aria-label="이전 사진"
           >
-            <ChevronLeft className="h-7 w-7" />
+            <ChevronLeft className="h-9 w-9" strokeWidth={2.75} />
           </button>
           <button
             type="button"
@@ -862,7 +867,7 @@ function Lightbox({
             disabled={!hasNext}
             aria-label="다음 사진"
           >
-            <ChevronRight className="h-7 w-7" />
+            <ChevronRight className="h-9 w-9" strokeWidth={2.75} />
           </button>
         </div>
         <div className="border-t border-[#dedede] bg-white px-5 py-4 text-center">

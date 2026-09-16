@@ -28,6 +28,7 @@ import {
   releaseKioskSubmissionLock,
 } from "@/lib/kioskSubmissionLock";
 import { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "@/lib/featureFlags";
+import { lockPageScroll } from "@/lib/scrollLock";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
@@ -531,12 +532,12 @@ function useKioskDialog({
   initialFocusRef: { current: HTMLButtonElement | null };
 }) {
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
     const previousFocus =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
-    document.body.style.overflow = "hidden";
+    // html·body 를 함께 잠가 뒤 화면이 손가락에 밀리지 않게 한다 (lib/scrollLock.ts).
+    const releaseScroll = lockPageScroll();
     initialFocusRef.current?.focus();
 
     const handleDialogKey = (event: KeyboardEvent) => {
@@ -570,7 +571,7 @@ function useKioskDialog({
 
     window.addEventListener("keydown", handleDialogKey);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      releaseScroll();
       window.removeEventListener("keydown", handleDialogKey);
       previousFocus?.focus();
     };

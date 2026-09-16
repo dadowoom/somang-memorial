@@ -1,3 +1,4 @@
+import { useScrollLock } from "@/lib/scrollLock";
 import { CircleHelp, Eye, Phone, X } from "lucide-react";
 import { lazy, Suspense } from "react";
 import "./kioskQuickActions.css";
@@ -58,6 +59,8 @@ export function KioskQuickActions({
  * 그대로 보여 주되, 메뉴·바닥글과 다른 화면으로 가는 단추는 없다 (2026-09-16).
  */
 export function KioskGuideOverlay({ onClose }: { onClose: () => void }) {
+  // 안내 창이 떠 있는 동안 뒤 화면을 잠근다. 안내 본문은 창 안에서 스크롤된다.
+  useScrollLock();
   return (
     <div
       className="kiosk-guide-overlay"
