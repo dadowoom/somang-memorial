@@ -49,46 +49,38 @@
   display: none;
 }
 
-/* 이용 안내 창 */
+/* 이용 안내 창: 홈페이지 이용 안내 본문을 화면 가득 보여 준다.
+   위 제목줄과 아래 단추줄은 고정, 가운데 본문만 스크롤된다. */
 .kiosk-guide-overlay {
   position: fixed;
   inset: 0;
   z-index: 65;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(16, 16, 16, 0.55);
-}
-
-.kiosk-guide-panel {
-  width: 100%;
-  max-width: 720px;
-  max-height: calc(100dvh - 48px);
-  overflow-y: auto;
-  border: 1px solid #18181b;
+  flex-direction: column;
   background: #fff;
-  padding: 32px 28px;
   color: #121212;
 }
 
 .kiosk-guide-head {
   display: flex;
-  align-items: flex-start;
+  flex-shrink: 0;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
+  border-bottom: 1px solid #18181b;
+  padding: 16px 20px;
 }
 
 .kiosk-guide-eyebrow {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.2em;
   color: #777;
 }
 
 .kiosk-guide-title {
-  margin-top: 8px;
-  font-size: 30px;
+  margin-top: 4px;
+  font-size: 24px;
   font-weight: 400;
   line-height: 1.2;
 }
@@ -100,7 +92,7 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border: 1px solid #b5b0a7;
+  border: 1px solid #18181b;
   background: #fff;
 }
 
@@ -109,49 +101,41 @@
   height: 24px;
 }
 
-.kiosk-guide-steps {
-  margin-top: 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.kiosk-guide-body {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.kiosk-guide-step {
-  display: flex;
-  gap: 16px;
-  border-top: 1px solid #e3e0da;
-  padding-top: 20px;
+/* 홈페이지 머리글이 없으니 위 여백을 없애고, 목차는 창 맨 위에 붙인다. */
+.guide-page--kiosk main {
+  padding-top: 0;
 }
 
-.kiosk-guide-step-number {
+.guide-page--kiosk .guide-index {
+  top: 0;
+}
+
+.guide-page--kiosk main [id] {
+  scroll-margin-top: 96px;
+}
+
+.kiosk-guide-loading {
+  padding: 48px 24px;
+  text-align: center;
+  font-size: 18px;
+  color: #616161;
+}
+
+.kiosk-guide-foot {
   flex-shrink: 0;
-  width: 36px;
-  font-size: 14px;
-  color: #888;
-}
-
-.kiosk-guide-step-body {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.kiosk-guide-step-title {
-  font-size: 21px;
-  line-height: 1.3;
-  word-break: keep-all;
-}
-
-.kiosk-guide-step-detail {
-  font-size: 16px;
-  line-height: 1.6;
-  color: #555;
-  word-break: keep-all;
+  border-top: 1px solid #e3e0da;
+  padding: 12px 20px;
+  background: #fff;
 }
 
 .kiosk-guide-done {
-  margin-top: 32px;
   display: flex;
   width: 100%;
   height: 64px;
@@ -183,13 +167,12 @@
     height: 36px;
   }
 
-  .kiosk-guide-panel {
-    max-width: 860px;
-    padding: 48px 44px;
+  .kiosk-guide-head {
+    padding: 20px 32px;
   }
 
   .kiosk-guide-title {
-    font-size: 42px;
+    font-size: 34px;
   }
 
   .kiosk-guide-close {
@@ -197,17 +180,8 @@
     height: 64px;
   }
 
-  .kiosk-guide-step-number {
-    width: 48px;
-    font-size: 18px;
-  }
-
-  .kiosk-guide-step-title {
-    font-size: 28px;
-  }
-
-  .kiosk-guide-step-detail {
-    font-size: 21px;
+  .kiosk-guide-foot {
+    padding: 16px 32px;
   }
 
   .kiosk-guide-done {
