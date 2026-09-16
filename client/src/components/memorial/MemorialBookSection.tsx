@@ -56,8 +56,6 @@ type MemorialBookSectionProps = {
 
 type ViewMode = "book" | "timeline";
 
-const memorialPhotoFilter = "grayscale(1) contrast(1.04) brightness(1.02)";
-
 function formatDate(
   year?: number | null,
   month?: number | null,
@@ -878,7 +876,6 @@ function TimelineView({
                   src={toImgUrl(page.photoUrl)}
                   alt={page.title || date || "기록 사진"}
                   className="mt-5 max-h-[420px] w-full border border-[#dedede] object-contain"
-                  style={{ filter: memorialPhotoFilter }}
                 />
               )}
               {page.content && (
@@ -1018,7 +1015,6 @@ function PageEditModal({
                   src={toImgUrl(photoUrl)}
                   alt="페이지 사진"
                   className="h-44 w-full object-cover"
-                  style={{ filter: memorialPhotoFilter }}
                 />
                 <div className="flex gap-2 border-t border-[#dedede] p-2">
                   <button

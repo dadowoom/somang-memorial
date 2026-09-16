@@ -493,7 +493,7 @@ function KioskLoadableImage({
             src={src}
             alt=""
             aria-hidden="true"
-            className="absolute inset-0 h-full w-full object-cover opacity-[0.16] grayscale"
+            className="absolute inset-0 h-full w-full object-cover opacity-[0.16]"
           />
           <span
             className="absolute inset-0 bg-[#f0f0f0]/70"
@@ -795,7 +795,6 @@ function KioskMemorialContent({
               loading="eager"
               loadingText="사진을 불러오는 중입니다."
               containerClassName="h-[360px] w-full"
-              imageClassName="grayscale"
               preserveRatio
               fallback={
                 <div
@@ -1770,7 +1769,6 @@ function KioskObituarySection({
               src={toImgUrl(portraitPhoto.photoUrl)}
               alt={`${memorial.name} ${memorial.role}`}
               className="h-full w-full object-cover"
-              style={{ filter: "grayscale(1) contrast(1.04)" }}
             />
           ) : (
             <span className="text-xs tracking-[0.26em] text-[#6b6555]">
@@ -1869,7 +1867,6 @@ function KioskObituarySection({
                   src={toImgUrl(photo.photoUrl)}
                   alt=""
                   className="h-full w-full object-cover"
-                  style={{ filter: "grayscale(1) contrast(1.04)" }}
                 />
                 {index === 2 && remainingPhotoCount > 0 ? (
                   <div className="absolute inset-0 flex items-center justify-center bg-[#14130f]/70 text-sm text-[#e8e4dc]">

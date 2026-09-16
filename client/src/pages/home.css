@@ -32,7 +32,7 @@
   height: 100%;
   object-fit: cover;
   object-position: center 46%;
-  filter: grayscale(1) contrast(0.86);
+  filter: contrast(0.86);
   opacity: 0.18;
 }
 .somang-home .home-hero-visual::after {

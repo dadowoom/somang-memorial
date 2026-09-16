@@ -303,7 +303,7 @@ export default function MemorialVideoSection({
                 <img
                   src={toImgUrl(coverImageUrl)}
                   alt={`${memorialName} 영상 기록`}
-                  className="absolute inset-0 h-full w-full object-cover grayscale"
+                  className="absolute inset-0 h-full w-full object-cover"
                 />
               ) : (
                 <div className="absolute inset-0 bg-[#171717]" />
