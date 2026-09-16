@@ -93,6 +93,17 @@
     font-size: clamp(36px, 5.6vw, 72px);
   }
 
+  /* 숫자판은 세 칸뿐이라 가로 460px 에 묶어 두면 큰 화면에서 단추가 작다
+     (2026-09-16 "숫자 자판이 잘 안 눌린다"). 화면에 맞춰 넓고 높게 키운다. */
+  .kiosk-keyboard .kiosk-keyboard-numbers {
+    max-width: min(760px, 100%);
+  }
+
+  .kiosk-keyboard .kiosk-keyboard-numbers .kiosk-keyboard-key {
+    height: clamp(72px, 10.5vw, 150px);
+    font-size: clamp(34px, 5vw, 64px);
+  }
+
   .kiosk-keyboard[data-keyboard-variant="korean-name"]
     .kiosk-keyboard-actions
     .kiosk-keyboard-key {
@@ -112,4 +123,11 @@
   .kiosk-keyboard {
     padding-bottom: max(20dvh, env(safe-area-inset-bottom));
   }
+}
+
+/* 자판 위에서 손가락을 좌우·위아래로 밀어도 뒤 화면이 움직이지 않게 한다
+   (2026-09-16 현장 요청). 누르기(클릭)는 그대로 된다. */
+.kiosk-keyboard,
+.kiosk-keyboard * {
+  touch-action: none;
 }

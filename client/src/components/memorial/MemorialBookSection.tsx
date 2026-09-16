@@ -17,7 +17,10 @@ import type { MutableRefObject, ReactElement } from "react";
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import HTMLFlipBook from "react-pageflip";
 import { useIsMobile } from "@/hooks/useMobile";
-import { bookReaderFrameWidth } from "@/lib/bookReaderLayout";
+import {
+  bookReaderFrameWidth,
+  bookReaderTopOffset,
+} from "@/lib/bookReaderLayout";
 import { toast } from "sonner";
 
 type BookPage = {
@@ -634,7 +637,11 @@ function BookView({
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 items-center justify-center px-2">
+        {/* 책은 위쪽(키오스크 이름 검색칸 높이)에, 넘김 단추는 책 바로 밑에 (2026-09-16). */}
+        <div
+          className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-2 pb-4"
+          style={{ paddingTop: bookReaderTopOffset(isMobile) }}
+        >
           <div
             ref={bookAreaRef}
             className="memorial-book-open"
@@ -708,9 +715,8 @@ function BookView({
               </HTMLFlipBook>
             )}
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-3 px-4 py-3 md:gap-6 md:py-4">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3 px-2 md:gap-6">
           <button
             type="button"
             onClick={goToPrevPage}
@@ -763,6 +769,7 @@ function BookView({
             <X className="h-3.5 w-3.5" />
             닫기
           </button>
+        </div>
         </div>
       </div>
     </>

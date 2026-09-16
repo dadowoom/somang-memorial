@@ -3,6 +3,11 @@ import {
   insertKioskKeyboardToken,
 } from "@/lib/kioskKeyboardInput";
 import { cn } from "@/lib/utils";
+import {
+  shouldActivateOnClick,
+  shouldActivateOnPointerDown,
+  type KioskKeyActivation,
+} from "@/lib/kioskKeyPress";
 import { getKioskKeyboardScrollOffset } from "@/lib/kioskKeyboardLayout";
 import { commitKioskKeyboardEdit } from "@/lib/kioskKeyboardCommit";
 import "./kioskKeyboard.css";
@@ -354,7 +359,7 @@ export function KioskKeyboard({
       role="region"
       aria-label="화면 키보드"
       data-keyboard-variant={field.variant}
-      className="kiosk-keyboard fixed inset-x-0 bottom-0 z-[70] border-t border-[#33333a] bg-[#1b1b1e] shadow-[0_-18px_44px_rgba(0,0,0,0.4)]"
+      className="kiosk-keyboard fixed inset-x-0 bottom-0 z-[70] touch-none overscroll-none border-t border-[#33333a] bg-[#1b1b1e] shadow-[0_-18px_44px_rgba(0,0,0,0.4)]"
       onPointerDown={keepInputFocused}
     >
       <div className="kiosk-keyboard-inner mx-auto w-full max-w-[760px] px-2 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 sm:px-3 sm:pt-3">
@@ -440,6 +445,7 @@ export function KioskKeyboard({
             />
           )}
           <KeyboardKey
+            activation="click"
             label={field.submitLabel ?? "완료"}
             onClick={submit}
             disabled={field.submitDisabled}
@@ -645,6 +651,7 @@ function ModeKey({
 
 function KeyboardKey({
   active = false,
+  activation = "press",
   ariaLabel,
   className,
   compact = false,
@@ -654,6 +661,8 @@ function KeyboardKey({
   onClick,
 }: {
   active?: boolean;
+  /** press: 닿는 순간 / click: 손을 뗄 때. lib/kioskKeyPress.ts 참고. */
+  activation?: KioskKeyActivation;
   ariaLabel?: string;
   className?: string;
   compact?: boolean;
@@ -668,9 +677,14 @@ function KeyboardKey({
       aria-label={ariaLabel ?? label}
       aria-pressed={active || undefined}
       disabled={disabled}
-      onClick={onClick}
+      onPointerDown={event => {
+        if (shouldActivateOnPointerDown(activation, event, disabled)) onClick();
+      }}
+      onClick={event => {
+        if (shouldActivateOnClick(activation, event, disabled)) onClick();
+      }}
       className={cn(
-        "kiosk-keyboard-key flex min-w-0 flex-1 touch-manipulation select-none items-center justify-center rounded-[10px] border border-[#4d4d55] bg-[linear-gradient(180deg,#46464d,#36363c)] text-xl font-medium text-[#f3f3f0] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_3px_0_#111113,0_6px_14px_rgba(0,0,0,0.4)] transition-[transform,box-shadow] duration-75 active:translate-y-[2px] active:bg-[linear-gradient(180deg,#2d2d33,#27272c)] active:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1px_0_#111113] sm:text-2xl",
+        "kiosk-keyboard-key flex min-w-0 flex-1 touch-none select-none items-center justify-center rounded-[10px] border border-[#4d4d55] bg-[linear-gradient(180deg,#46464d,#36363c)] text-xl font-medium text-[#f3f3f0] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_3px_0_#111113,0_6px_14px_rgba(0,0,0,0.4)] transition-[transform,box-shadow] duration-75 active:translate-y-[2px] active:bg-[linear-gradient(180deg,#2d2d33,#27272c)] active:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_1px_0_#111113] sm:text-2xl",
         compact ? "h-[clamp(30px,4.3dvh,36px)]" : "h-[clamp(36px,5.6dvh,48px)]",
         active &&
           "border-[#f4f4f1] bg-[linear-gradient(180deg,#f7f7f4,#e5e5e1)] text-[#1b1b1e] shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_3px_0_#9d9d98,0_6px_14px_rgba(0,0,0,0.4)]",
