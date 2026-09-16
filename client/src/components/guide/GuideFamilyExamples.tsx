@@ -162,7 +162,8 @@ export default function GuideFamilyExamples() {
         {labels[selected]}, {selected + 1} / {labels.length}
       </p>
       <p className="guide-family-examples__notice">
-        현재 가족관은 글 작성만 지원합니다. 사진·영상은 구성 예시입니다.
+        가족관에는 글과 사진, 유튜브 영상을 남길 수 있습니다. 위 화면은 구성
+        예시입니다.
       </p>
     </Carousel>
   );

@@ -1,3 +1,4 @@
+import { toImgUrl } from "@/lib/imageUrl";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
@@ -34,6 +35,12 @@ type FamilyRoom = {
   notes: Array<{
     title: string;
     body: string;
+  }>;
+  // 가족관 사진 (2026-09-16). 이 가족관 것만 내려온다.
+  photos?: Array<{
+    id: number;
+    photoUrl: string;
+    caption: string | null;
   }>;
 };
 
@@ -302,6 +309,8 @@ function UnlockedRoom({ room }: { room: FamilyRoom }) {
         <FamilyVideoCard key={room.video.youtubeVideoId} video={room.video} />
       )}
 
+      <FamilyPhotoGrid photos={room.photos ?? []} />
+
       <div className="mt-6 grid gap-px bg-[#dedede] md:grid-cols-3">
         {room.notes.map((note, index) => {
           const Icon = icons[index] ?? BookOpenText;
@@ -319,6 +328,43 @@ function UnlockedRoom({ room }: { room: FamilyRoom }) {
         })}
       </div>
     </div>
+  );
+}
+
+/** 가족관 사진 (2026-09-16). 가족이 관리 화면에서 올린 사진을 이 가족관에서만 보여 준다. */
+function FamilyPhotoGrid({
+  photos,
+}: {
+  photos: NonNullable<FamilyRoom["photos"]>;
+}) {
+  if (photos.length === 0) return null;
+
+  return (
+    <section className="mt-6 border border-[#dedede] bg-white p-6 md:p-10">
+      <p className="mb-5 text-[11px] font-medium uppercase tracking-[0.28em] text-[#666666]">
+        Family Photos
+      </p>
+      <h2 className="text-2xl font-light md:text-3xl" style={serifStyle}>
+        가족끼리 간직하는 사진
+      </h2>
+      <ul className="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+        {photos.map(photo => (
+          <li key={photo.id} className="border border-[#dedede] bg-[#fdfdfd]">
+            <img
+              src={toImgUrl(photo.photoUrl)}
+              alt={photo.caption || "가족관 사진"}
+              loading="lazy"
+              className="aspect-[4/3] w-full object-cover"
+            />
+            {photo.caption && (
+              <p className="break-keep px-4 py-3 text-sm leading-6 text-[#4f4f4f] [overflow-wrap:anywhere]">
+                {photo.caption}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

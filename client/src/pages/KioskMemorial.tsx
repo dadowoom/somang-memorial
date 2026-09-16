@@ -151,6 +151,11 @@ type FamilyRoom = {
     title: string;
     body: string;
   }>;
+  photos?: Array<{
+    id: number;
+    photoUrl: string;
+    caption: string | null;
+  }>;
 };
 
 type FamilyRoomStatus = {
@@ -1508,6 +1513,32 @@ function KioskFamilySection({
                 </span>
               </span>
             </button>
+          )}
+          {(room.photos ?? []).length > 0 && (
+            <article className="border border-[#dadada] p-5">
+              <h4 className="text-[22px]" style={serifStyle}>
+                가족끼리 간직하는 사진
+              </h4>
+              <ul className="mt-4 grid grid-cols-2 gap-3">
+                {(room.photos ?? []).map(photo => (
+                  <li key={photo.id} className="border border-[#dadada] bg-white">
+                    <KioskLoadableImage
+                      src={toImgUrl(photo.photoUrl)}
+                      alt={photo.caption || "가족관 사진"}
+                      loadingText="사진을 불러오고 있습니다."
+                      containerClassName="relative aspect-[4/3] w-full overflow-hidden bg-[#f4f4f4]"
+                      imageClassName="h-full w-full object-cover"
+                      fallback={<span aria-hidden="true" />}
+                    />
+                    {photo.caption && (
+                      <p className="break-keep px-3 py-2 text-sm leading-6 text-[#64615d] [overflow-wrap:anywhere]">
+                        {photo.caption}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </article>
           )}
           {room.notes.map(note => (
             <article key={note.title} className="border border-[#dadada] p-5">

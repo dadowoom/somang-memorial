@@ -18,6 +18,7 @@ import {
   memorialBooks,
   memorialFamilyInvitations,
   memorialFamilyMembers,
+  memorialFamilyRoomPhotos,
   memorialFamilyRooms,
   memorialGalleryPhotos,
   memorialLetters,
@@ -1036,6 +1037,33 @@ export function verifyFamilyRoomPassword(password: string, stored: string) {
 
 const YOUTUBE_VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 
+export type FamilyRoomVideo = {
+  title: string;
+  description: string;
+  youtubeVideoId: string;
+};
+
+/**
+ * 가족관 영상 (2026-09-16). 가족이 관리 화면에서 넣은 유튜브 번호를 쓴다.
+ * 없으면 옛 방식(김소망 견본만 env 로 박아 둔 것)으로 내려간다.
+ */
+export function resolveFamilyRoomVideo(row: {
+  memorialSlug: string;
+  youtubeVideoId: string | null;
+  videoTitle: string | null;
+  videoDescription: string | null;
+}): FamilyRoomVideo | null {
+  const id = row.youtubeVideoId?.trim() ?? "";
+  if (YOUTUBE_VIDEO_ID_PATTERN.test(id)) {
+    return {
+      title: row.videoTitle?.trim() || "가족에게 남기는 영상",
+      description: row.videoDescription?.trim() || "",
+      youtubeVideoId: id,
+    };
+  }
+  return getMemorialFamilyRoomVideo(row.memorialSlug);
+}
+
 export function getMemorialFamilyRoomVideo(slug: string) {
   if (slug !== "kim-somang-kwonsa") return null;
 
@@ -1310,8 +1338,12 @@ export async function verifyMemorialFamilyRoomPassword(
       memorialName: memorials.name,
       memorialRole: memorials.role,
       church: memorials.church,
+      roomId: memorialFamilyRooms.id,
       title: memorialFamilyRooms.title,
       intro: memorialFamilyRooms.intro,
+      youtubeVideoId: memorialFamilyRooms.youtubeVideoId,
+      videoTitle: memorialFamilyRooms.videoTitle,
+      videoDescription: memorialFamilyRooms.videoDescription,
       passwordHash: memorialFamilyRooms.passwordHash,
     })
     .from(memorials)
@@ -1346,7 +1378,9 @@ export async function verifyMemorialFamilyRoomPassword(
     church: room.church,
     title: room.title,
     intro: room.intro,
-    video: getMemorialFamilyRoomVideo(room.memorialSlug),
+    video: resolveFamilyRoomVideo(room),
+    // 이 가족관(roomId)의 사진만. 다른 가족관 사진은 조회 조건상 나올 수 없다.
+    photos: await listFamilyRoomPhotos(room.roomId),
     notes: [
       {
         title: "가족의 기억",
@@ -1386,6 +1420,9 @@ export async function getMemorialFamilyRoomManageInfo(slug: string) {
       roomId: memorialFamilyRooms.id,
       title: memorialFamilyRooms.title,
       intro: memorialFamilyRooms.intro,
+      youtubeVideoId: memorialFamilyRooms.youtubeVideoId,
+      videoTitle: memorialFamilyRooms.videoTitle,
+      videoDescription: memorialFamilyRooms.videoDescription,
       updatedAt: memorialFamilyRooms.updatedAt,
     })
     .from(memorials)
@@ -1406,9 +1443,19 @@ export async function getMemorialFamilyRoomManageInfo(slug: string) {
     memorialStatus: row.memorialStatus,
     createdByUserId: row.createdByUserId,
     exists: Boolean(row.roomId),
+    roomId: row.roomId ?? null,
     title: row.title ?? "",
     intro: row.intro ?? "",
     updatedAt: row.updatedAt ?? null,
+    video: row.roomId
+      ? resolveFamilyRoomVideo({
+          memorialSlug: row.memorialSlug,
+          youtubeVideoId: row.youtubeVideoId ?? null,
+          videoTitle: row.videoTitle ?? null,
+          videoDescription: row.videoDescription ?? null,
+        })
+      : null,
+    photos: row.roomId ? await listFamilyRoomPhotos(row.roomId) : [],
     href: `/memorial/${row.memorialSlug}/family`,
   };
 }
@@ -1472,6 +1519,112 @@ export async function updateMemorialFamilyRoomPassword(input: {
     .update(memorialFamilyRooms)
     .set({ passwordHash: hashFamilyRoomPassword(input.password) })
     .where(eq(memorialFamilyRooms.memorialId, input.memorialId));
+}
+
+// ---------------------------------------------------------------------------
+// 가족관 영상·사진 (2026-09-16). 사진은 가족관 번호(familyRoomId)로만 읽고 지운다.
+
+export async function updateMemorialFamilyRoomVideo(input: {
+  memorialId: number;
+  youtubeVideoId: string | null;
+  videoTitle: string | null;
+  videoDescription: string | null;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db
+    .update(memorialFamilyRooms)
+    .set({
+      youtubeVideoId: input.youtubeVideoId,
+      videoTitle: input.videoTitle,
+      videoDescription: input.videoDescription,
+    })
+    .where(eq(memorialFamilyRooms.memorialId, input.memorialId));
+}
+
+export type FamilyRoomPhotoView = {
+  id: number;
+  photoUrl: string;
+  caption: string | null;
+  sortOrder: number;
+};
+
+export async function listFamilyRoomPhotos(
+  familyRoomId: number
+): Promise<FamilyRoomPhotoView[]> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  return db
+    .select({
+      id: memorialFamilyRoomPhotos.id,
+      photoUrl: memorialFamilyRoomPhotos.photoUrl,
+      caption: memorialFamilyRoomPhotos.caption,
+      sortOrder: memorialFamilyRoomPhotos.sortOrder,
+    })
+    .from(memorialFamilyRoomPhotos)
+    .where(eq(memorialFamilyRoomPhotos.familyRoomId, familyRoomId))
+    .orderBy(
+      asc(memorialFamilyRoomPhotos.sortOrder),
+      asc(memorialFamilyRoomPhotos.id)
+    );
+}
+
+export async function addFamilyRoomPhoto(input: {
+  familyRoomId: number;
+  photoUrl: string;
+  photoKey: string;
+  caption: string | null;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const [last] = await db
+    .select({ sortOrder: memorialFamilyRoomPhotos.sortOrder })
+    .from(memorialFamilyRoomPhotos)
+    .where(eq(memorialFamilyRoomPhotos.familyRoomId, input.familyRoomId))
+    .orderBy(desc(memorialFamilyRoomPhotos.sortOrder))
+    .limit(1);
+
+  await db.insert(memorialFamilyRoomPhotos).values({
+    familyRoomId: input.familyRoomId,
+    photoUrl: input.photoUrl,
+    photoKey: input.photoKey,
+    caption: input.caption,
+    sortOrder: (last?.sortOrder ?? 0) + 1,
+  });
+}
+
+/**
+ * 사진 번호와 가족관 번호가 둘 다 맞을 때만 지운다. 다른 가족관의 사진 번호를
+ * 넣어도 아무것도 지워지지 않는다.
+ */
+export async function deleteFamilyRoomPhoto(
+  photoId: number,
+  familyRoomId: number
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const [result] = await db
+    .delete(memorialFamilyRoomPhotos)
+    .where(
+      and(
+        eq(memorialFamilyRoomPhotos.id, photoId),
+        eq(memorialFamilyRoomPhotos.familyRoomId, familyRoomId)
+      )
+    );
+
+  return { deleted: (result as { affectedRows?: number }).affectedRows === 1 };
 }
 
 
