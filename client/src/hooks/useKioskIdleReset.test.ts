@@ -10,11 +10,10 @@ import {
 } from "./useKioskIdleReset";
 
 describe("kiosk idle timing", () => {
-  // 검색 화면은 다음 사람을 위해 빨리, 추모관 화면은 읽는 사람을 위해 길게.
-  it("추모관 화면은 검색 화면보다 오래 두고, 안내는 그 안에서 뜬다", () => {
-    expect(KIOSK_IDLE_RESET_MS).toBe(90_000);
+  // 2026-09-16 저녁 현장 결정: 첫 화면이 아닌 화면은 모두 "최소 3분".
+  it("첫 화면이 아닌 화면과 추모관 화면은 3분 두고, 안내는 그 안에서 뜬다", () => {
+    expect(KIOSK_IDLE_RESET_MS).toBe(3 * 60_000);
     expect(KIOSK_MEMORIAL_IDLE_RESET_MS).toBe(3 * 60_000);
-    expect(KIOSK_MEMORIAL_IDLE_RESET_MS).toBeGreaterThan(KIOSK_IDLE_RESET_MS);
     expect(KIOSK_IDLE_WARNING_MS).toBeGreaterThan(0);
     expect(KIOSK_IDLE_WARNING_MS).toBeLessThan(KIOSK_MEMORIAL_IDLE_RESET_MS);
   });

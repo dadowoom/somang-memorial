@@ -21,6 +21,42 @@ export const KIOSK_ATTRACT_MIN_SECONDS = 3;
 export const KIOSK_ATTRACT_MAX_SECONDS = 120;
 export const KIOSK_ATTRACT_DEFAULT_SECONDS = 8;
 
+/** 추모관 화면에서 3분 무입력으로 돌아올 때 첫 화면이 광고부터 띄우라는 표시. */
+export const KIOSK_ATTRACT_ON_ARRIVAL_KEY = "somang.kiosk.attractOnArrival";
+
+function kioskSessionStorage(): Storage | null {
+  try {
+    return typeof window === "undefined" ? null : window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** 다음에 첫 화면이 뜰 때 광고부터 띄우도록 표시해 둔다. */
+export function requestKioskAttractOnArrival(
+  storage: Storage | null = kioskSessionStorage()
+) {
+  try {
+    storage?.setItem(KIOSK_ATTRACT_ON_ARRIVAL_KEY, "1");
+  } catch {
+    // 저장이 막혀 있으면 광고 없이 첫 화면만 보인다.
+  }
+}
+
+/** 표시가 있으면 true 를 돌려주고 지운다. 한 번만 광고를 띄운다. */
+export function consumeKioskAttractOnArrival(
+  storage: Storage | null = kioskSessionStorage()
+): boolean {
+  try {
+    if (!storage) return false;
+    const requested = storage.getItem(KIOSK_ATTRACT_ON_ARRIVAL_KEY) === "1";
+    storage.removeItem(KIOSK_ATTRACT_ON_ARRIVAL_KEY);
+    return requested;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * 한 장을 보여 줄 시간(밀리초). 서버에서 이상한 값이 와도 화면이 멈추거나
  * 깜빡이지 않도록 사이 값으로 자른다.

@@ -35,12 +35,22 @@ import {
   getYouTubeEmbedUrl,
   getYouTubeThumbnailUrl,
   isValidYouTubeVideoId,
+  YOUTUBE_EMBED_ORIGIN,
 } from "@/lib/youtube";
+import {
+  isYouTubeWatching,
+  readYouTubePlayerState,
+  YOUTUBE_LISTEN_MAX_TRIES,
+  YOUTUBE_LISTEN_RETRY_MS,
+  youTubeListeningMessages,
+} from "@/lib/youtubePlayerState";
+import { requestKioskAttractOnArrival } from "@/lib/kioskAttract";
 import {
   clearBrowserKioskAccessStorage,
   kioskAccessStorageKey,
   KIOSK_IDLE_WARNING_MS,
   KIOSK_MEMORIAL_IDLE_RESET_MS,
+  markKioskActivity,
   useKioskIdleReset,
 } from "@/hooks/useKioskIdleReset";
 import {
@@ -198,7 +208,11 @@ type KioskResourceStatus = {
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 const muted = "#64615d";
 const line = "#dadada";
-const KIOSK_VIDEO_IDLE_RESET_MS = 15 * 60_000;
+// 영상 창이 떠 있고 재생 중이거나 재생 상태를 아직 모를 때 기다리는 시간.
+// 재생 중에는 영상 창이 15초마다 "쓰는 중"을 알리므로 이 시간이 되어도 돌아가지 않는다.
+// 재생 상태를 알 수 없을 때(유튜브가 답을 안 줄 때)만 60분 뒤 돌아간다 (2026-09-16).
+const KIOSK_VIDEO_IDLE_RESET_MS = 60 * 60_000;
+const KIOSK_VIDEO_ACTIVITY_INTERVAL_MS = 15_000;
 
 function readAccessToken(slug: string) {
   if (!slug || typeof window === "undefined") return "";
@@ -215,17 +229,28 @@ export default function KioskMemorial() {
   const [selectedVideo, setSelectedVideo] = useState<KioskPlayableVideo | null>(
     null
   );
+  // 영상 창의 재생 상태. true 재생 중, false 멈춤·끝남·시작 전, null 아직 모름.
+  const [videoWatching, setVideoWatching] = useState<boolean | null>(null);
   const [idleWarning, setIdleWarning] = useState(false);
-  const closeVideo = useCallback(() => setSelectedVideo(null), []);
+  const closeVideo = useCallback(() => {
+    setSelectedVideo(null);
+    setVideoWatching(null);
+  }, []);
   const returnToKiosk = useCallback(() => {
     kioskSessionActiveRef.current = false;
     closeKeyboard();
     clearBrowserKioskAccessStorage();
     setLocation("/kiosk", { replace: true });
   }, [closeKeyboard, setLocation]);
+  // 아무도 만지지 않아 돌아갈 때는 첫 화면에 광고를 띄워 둔다 (2026-09-16).
+  // "처음으로" 단추로 돌아갈 때는 광고 없이 첫 화면만 보인다.
+  const returnToKioskWithAttract = useCallback(() => {
+    requestKioskAttractOnArrival();
+    returnToKiosk();
+  }, [returnToKiosk]);
 
   // 글을 읽는 화면이라 3분을 두고, 끝나기 30초 전에 "곧 돌아갑니다"를 띄운다.
-  // 영상을 보는 중에는 15분이다 (2026-09-14).
+  // 영상은 보는 중에는 돌아가지 않고, 멈추거나 끝나면 그때부터 3분이다 (2026-09-16).
   const idleOptions = useMemo(
     () => ({
       warnBeforeMs: KIOSK_IDLE_WARNING_MS,
@@ -235,8 +260,10 @@ export default function KioskMemorial() {
     []
   );
   useKioskIdleReset(
-    returnToKiosk,
-    selectedVideo ? KIOSK_VIDEO_IDLE_RESET_MS : KIOSK_MEMORIAL_IDLE_RESET_MS,
+    returnToKioskWithAttract,
+    selectedVideo && videoWatching !== false
+      ? KIOSK_VIDEO_IDLE_RESET_MS
+      : KIOSK_MEMORIAL_IDLE_RESET_MS,
     idleOptions
   );
 
@@ -245,6 +272,7 @@ export default function KioskMemorial() {
     closeKeyboard();
     setAccessToken(readAccessToken(slug));
     setSelectedVideo(null);
+    setVideoWatching(null);
     setIdleWarning(false);
     window.scrollTo({ top: 0, left: 0 });
 
@@ -373,6 +401,7 @@ export default function KioskMemorial() {
           key={selectedVideo.id}
           video={selectedVideo}
           onClose={closeVideo}
+          onWatchingChange={setVideoWatching}
         />
       )}
     </main>
@@ -388,7 +417,7 @@ function KioskIdleWarning({ onStay }: { onStay: () => void }) {
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-6 border-t border-[#e0c98a] bg-[#fff8e6] px-8 py-6 text-[#4a3b12]"
+      className="fixed inset-x-0 bottom-0 z-[60] flex items-center justify-between gap-6 border-t border-[#e0c98a] bg-[#fff8e6] px-8 py-6 text-[#4a3b12]"
     >
       <p className="text-xl leading-8">
         잠시 뒤 처음 화면으로 돌아갑니다.
@@ -581,13 +610,78 @@ function useKioskDialog({
 function KioskVideoDialog({
   video,
   onClose,
+  onWatchingChange,
 }: {
   video: KioskPlayableVideo;
   onClose: () => void;
+  /** 재생 중이면 true, 멈춤·끝남·시작 전이면 false, 아직 모르면 null. */
+  onWatchingChange?: (watching: boolean | null) => void;
 }) {
-  const embedUrl = getYouTubeEmbedUrl(video.youtubeVideoId, true);
+  const embedUrl = getYouTubeEmbedUrl(video.youtubeVideoId, true, {
+    jsApiOrigin:
+      typeof window === "undefined" ? undefined : window.location.origin,
+  });
   const dialogRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const listenTimerRef = useRef(0);
+  const stateKnownRef = useRef(false);
+  const [watching, setWatching] = useState<boolean | null>(null);
+
+  // 영상을 보는 중에는 첫 화면으로 돌아가지 않는다 (2026-09-16 현장 요청).
+  // 영상 안을 누르는 손가락은 이 화면의 터치로 잡히지 않아, 유튜브가 알려 주는
+  // 재생 상태로 "보는 중"인지 판단한다 (youtubePlayerState.ts).
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const frame = iframeRef.current;
+      if (!frame || event.source !== frame.contentWindow) return;
+      const state = readYouTubePlayerState(event.data);
+      if (state === null) return;
+      stateKnownRef.current = true;
+      setWatching(isYouTubeWatching(state));
+    };
+    window.addEventListener("message", onMessage);
+    return () => {
+      window.removeEventListener("message", onMessage);
+      window.clearInterval(listenTimerRef.current);
+    };
+  }, []);
+
+  // 유튜브 창이 뜨면 "재생 상태를 알려 달라"고 부탁한다. 준비가 늦으면 몇 번 더 부탁한다.
+  const listenToPlayer = useCallback(() => {
+    window.clearInterval(listenTimerRef.current);
+    stateKnownRef.current = false;
+    let tries = 0;
+    const ask = () => {
+      const target = iframeRef.current?.contentWindow;
+      if (
+        !target ||
+        stateKnownRef.current ||
+        tries >= YOUTUBE_LISTEN_MAX_TRIES
+      ) {
+        window.clearInterval(listenTimerRef.current);
+        return;
+      }
+      tries += 1;
+      for (const message of youTubeListeningMessages()) {
+        target.postMessage(message, YOUTUBE_EMBED_ORIGIN);
+      }
+    };
+    ask();
+    listenTimerRef.current = window.setInterval(ask, YOUTUBE_LISTEN_RETRY_MS);
+  }, []);
+
+  // 재생 중에는 15초마다 "쓰는 중"이라고 알리고, 멈추거나 끝나면 그때부터 3분을 센다.
+  useEffect(() => {
+    onWatchingChange?.(watching);
+    markKioskActivity();
+    if (!watching) return;
+    const timer = window.setInterval(
+      markKioskActivity,
+      KIOSK_VIDEO_ACTIVITY_INTERVAL_MS
+    );
+    return () => window.clearInterval(timer);
+  }, [watching, onWatchingChange]);
   const [frameState, dispatchFrame] = useReducer(
     reduceKioskVideoFrameState,
     undefined,
@@ -650,6 +744,7 @@ function KioskVideoDialog({
           {embedUrl ? (
             <iframe
               key={`${video.id}-${frameState.attempt}`}
+              ref={iframeRef}
               src={embedUrl}
               title={`${video.title} 영상`}
               className="h-full w-full border-0"
@@ -657,12 +752,13 @@ function KioskVideoDialog({
               allow="autoplay; encrypted-media"
               referrerPolicy="strict-origin-when-cross-origin"
               loading="eager"
-              onLoad={() =>
+              onLoad={() => {
                 dispatchFrame({
                   type: "responded",
                   attempt: frameState.attempt,
-                })
-              }
+                });
+                listenToPlayer();
+              }}
             />
           ) : (
             <div className="flex h-full items-center justify-center px-5 text-center text-white/75">
@@ -1442,8 +1538,9 @@ function KioskFamilySection({
             {status.memorialName || memorialName} {memorialRole}님 가족관
           </h3>
           <p className="kiosk-family-gate__text">
-            유족과 가족만 들어갈 수 있는 공간입니다. 가족에게 전달받은 숫자
-            비밀번호를 누르고 들어와 주세요.
+            유족과 가족만 들어갈 수 있는 공간입니다.
+            <br />
+            가족에게 전달받은 숫자 비밀번호를 누르고 들어와 주세요.
           </p>
           <label
             htmlFor={`kiosk-family-password-${slug}`}
