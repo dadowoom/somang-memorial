@@ -1,6 +1,8 @@
 import Footer from "@/components/Footer";
 import { formatLifespan } from "@/lib/lifespan";
 import Navbar from "@/components/Navbar";
+import MemorialDraftNotice from "@/components/memorial/MemorialDraftNotice";
+import { getLoginUrl } from "@/const";
 import MemorialPortrait from "@/components/memorial/MemorialPortrait";
 import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
 import { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "@/lib/featureFlags";
@@ -47,6 +49,8 @@ type MemorialRecord = {
   serviceTime: string | null;
   memorialDay: string | null;
   visibility: string;
+  /** pending = 작성 중(등록 완료 전), published = 등록 완료 */
+  status?: string;
   timeline: TimelineItem[];
 };
 
@@ -65,6 +69,7 @@ type AccessStatus = {
   church: string | null;
   summary: string | null;
   isPrivate: boolean;
+  isPreparing?: boolean;
 };
 
 const getMemorialAccessStorageKey = (slug: string) =>
@@ -119,6 +124,8 @@ export default function MemorialPublicDetail() {
       <main className="pt-16">
         {memorialQuery.isLoading ? (
           <CenteredState>추모관을 불러오고 있습니다.</CenteredState>
+        ) : isLocked && accessStatusQuery.data?.isPreparing ? (
+          <PreparingMemorialState />
         ) : isLocked ? (
           <PrivateMemorialGate
             slug={slug}
@@ -142,6 +149,50 @@ export default function MemorialPublicDetail() {
       <Footer />
       <MemorialBackToTop />
     </div>
+  );
+}
+
+/**
+ * 작성 중(등록 완료 전) 추모관을 가족이 아닌 분이 열었을 때 (2026-09-16).
+ * 비밀번호 칸을 띄우지 않는다. 등록 전에는 비밀번호로도 열리지 않는다.
+ */
+function PreparingMemorialState() {
+  return (
+    <section className="bg-white">
+      <div className="container py-16 md:py-24">
+        <div className="mx-auto max-w-2xl border border-[#b5b0a7] p-6 text-center md:p-10">
+          <p className="text-[11px] font-medium uppercase tracking-[0.28em] text-[#616161]">
+            Preparing
+          </p>
+          <h1
+            className="mt-4 text-3xl font-normal leading-tight md:text-5xl"
+            style={serifStyle}
+          >
+            등록 준비 중인 추모관입니다
+          </h1>
+          <p className="mt-6 text-base leading-8 text-[#333333]">
+            가족이 사진과 이야기를 준비하고 있습니다. 등록을 마치면 이 주소에서
+            볼 수 있습니다.
+          </p>
+          <p className="mt-3 text-sm leading-7 text-[#616161]">
+            이 추모관의 가족이시면 로그인한 뒤 다시 열어 주세요.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <a
+              href={getLoginUrl()}
+              className="inline-flex min-h-12 items-center bg-[#18181b] px-5 text-base font-medium text-white"
+            >
+              로그인
+            </a>
+            <Link href="/memorial/search">
+              <span className="inline-flex min-h-12 items-center border border-[#b5b0a7] px-5 text-base text-[#121212]">
+                추모관 찾기
+              </span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -261,9 +312,17 @@ function MemorialContent({
   );
   const serviceTime = memorial.serviceTime || "추후 안내";
   const memorialDayLabel = formatMemorialDay(memorial.memorialDay);
+  // 작성 중(등록 완료 전)에는 편지 칸을 숨긴다 (2026-09-16).
+  const isDraft = memorial.status === "pending";
 
   return (
     <>
+      {isDraft && (
+        <MemorialDraftNotice
+          slug={memorial.slug}
+          photoHref={`/memorial/${memorial.slug}/archive#gallery`}
+        />
+      )}
       <section className="memorial-hero">
         <div className="container">
           <Link href="/memorial/search" className="memorial-back">
@@ -309,10 +368,12 @@ function MemorialContent({
             <Images />
             사진과 기록
           </Link>
-          <a href="#letters">
-            <Mail />
-            편지 남기기
-          </a>
+          {!isDraft && (
+            <a href="#letters">
+              <Mail />
+              편지 남기기
+            </a>
+          )}
           <Link href={`/memorial/${memorial.slug}/family`}>
             <LockKeyhole />
             가족관
@@ -470,12 +531,14 @@ function MemorialContent({
         </section>
       )}
 
-      <MemorialLetters
-        memorialSlug={memorial.slug}
-        memorialName={memorial.name}
-        accessToken={accessToken}
-        isPrivate={memorial.visibility === "private"}
-      />
+      {!isDraft && (
+        <MemorialLetters
+          memorialSlug={memorial.slug}
+          memorialName={memorial.name}
+          accessToken={accessToken}
+          isPrivate={memorial.visibility === "private"}
+        />
+      )}
     </>
   );
 }

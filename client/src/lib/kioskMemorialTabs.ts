@@ -13,13 +13,19 @@ export type KioskMemorialTab =
 
 export const KIOSK_MEMORIAL_DEFAULT_TAB: KioskMemorialTab = "life";
 
-export function kioskMemorialTabs(memorial: { deathDate: string }) {
+export function kioskMemorialTabs(memorial: {
+  deathDate: string;
+  status?: string;
+}) {
   const tabs: Array<{ id: KioskMemorialTab; label: string }> = [
     { id: "life", label: "삶과 신앙" },
     { id: "records", label: "사진과 기록" },
-    { id: "letters", label: "편지 남기기" },
-    { id: "family", label: "가족관" },
   ];
+  // 작성 중(등록 완료 전)에는 편지를 받지 않는다 (2026-09-16).
+  if (memorial.status !== "pending") {
+    tabs.push({ id: "letters", label: "편지 남기기" });
+  }
+  tabs.push({ id: "family", label: "가족관" });
   if (memorial.deathDate.trim()) tabs.push({ id: "obituary", label: "부고장" });
   return tabs;
 }

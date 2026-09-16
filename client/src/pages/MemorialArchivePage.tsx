@@ -2,6 +2,7 @@ import InlineEditText from "@/components/InlineEditText";
 import Footer from "@/components/Footer";
 import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
 import MemorialBookSection from "@/components/memorial/MemorialBookSection";
+import MemorialDraftNotice from "@/components/memorial/MemorialDraftNotice";
 import MemorialGallerySection from "@/components/memorial/MemorialGallerySection";
 import MemorialLettersSection from "@/components/memorial/MemorialLettersSection";
 import MemorialVideoSection from "@/components/memorial/MemorialVideoSection";
@@ -41,6 +42,8 @@ type ArchiveMemorial = {
   verse: string | null;
   verseRef: string | null;
   visibility: string;
+  /** pending = 작성 중(등록 완료 전) */
+  status?: string;
 };
 
 type ArchivePhoto = {
@@ -163,6 +166,9 @@ export default function MemorialArchivePage() {
           <StateBlock text="기념관을 찾을 수 없습니다." />
         ) : (
           <>
+            {memorial.status === "pending" && (
+              <MemorialDraftNotice slug={memorial.slug} photoHref="#gallery" />
+            )}
             <section className="memorial-hero">
               <div className="container">
                 <Link href={`/memorial/${memorial.slug}`} className="memorial-back">
@@ -269,10 +275,12 @@ export default function MemorialArchivePage() {
                     책장과 연표
                   </a>
                 )}
-                <a href="#letters">
-                  <Mail />
-                  편지
-                </a>
+                {memorial.status !== "pending" && (
+                  <a href="#letters">
+                    <Mail />
+                    편지
+                  </a>
+                )}
                 <Link href={`/memorial/${memorial.slug}/family`}>
                   <LockKeyhole />
                   가족관
@@ -383,14 +391,17 @@ export default function MemorialArchivePage() {
                 accessToken={accessToken || undefined}
               />
             </div>
-            <div id="letters">
-              <MemorialLettersSection
-                memorialSlug={memorial.slug}
-                memorialName={memorial.name}
-                accessToken={accessToken || undefined}
-                isPrivate={memorial.visibility === "private"}
-              />
-            </div>
+            {/* 작성 중(등록 완료 전)에는 편지 칸을 숨긴다 (2026-09-16). */}
+            {memorial.status !== "pending" && (
+              <div id="letters">
+                <MemorialLettersSection
+                  memorialSlug={memorial.slug}
+                  memorialName={memorial.name}
+                  accessToken={accessToken || undefined}
+                  isPrivate={memorial.visibility === "private"}
+                />
+              </div>
+            )}
           </>
         )}
       </main>

@@ -33,6 +33,8 @@ type MemorialRecord = {
   serviceTime: string | null;
   memorialDay: string | null;
   timeline: TimelineItem[];
+  /** pending = 작성 중(등록 완료 전) */
+  status?: string;
 };
 
 type MemorialPhoto = {
@@ -216,6 +218,12 @@ function ObituarySheet({
         <ArrowLeft size={16} strokeWidth={1.6} />
         추모관으로 돌아가기
       </Link>
+      {memorial.status === "pending" && (
+        <p className="mb-4 border border-[#6b5a2e] bg-[#2a2415] px-4 py-3 text-xs leading-6 text-[#e8d9a8]">
+          작성 중인 추모관이라 이 부고장은 아직 가족만 볼 수 있습니다. 추모관
+          화면에서 &lsquo;등록 완료하기&rsquo;를 누른 뒤 부고를 전해 주세요.
+        </p>
+      )}
       <div className="border border-[#4a463c] pb-[30px]">
         <div className="flex flex-col items-center gap-4 px-6 pt-[34px]">
           <div className="h-px w-[34px] bg-[#8a8270]" />
@@ -402,12 +410,14 @@ function ObituarySheet({
                 label="일정 저장"
               />
             ) : null}
-            <ObituaryAction
-              as="button"
-              onClick={handleShare}
-              icon={<Share2 size={16} strokeWidth={1.6} />}
-              label="부고 전하기"
-            />
+            {memorial.status !== "pending" && (
+              <ObituaryAction
+                as="button"
+                onClick={handleShare}
+                icon={<Share2 size={16} strokeWidth={1.6} />}
+                label="부고 전하기"
+              />
+            )}
           </div>
           {shareMessage ? (
             <p
@@ -426,12 +436,14 @@ function ObituarySheet({
           >
             추모관에서 더 보기
           </Link>
-          <Link
-            href={`/memorial/${memorial.slug}#letters`}
-            className="flex h-[52px] items-center justify-center border border-[#6b6555] text-sm font-medium text-[#e8e4dc]"
-          >
-            하늘로 편지 남기기
-          </Link>
+          {memorial.status !== "pending" && (
+            <Link
+              href={`/memorial/${memorial.slug}#letters`}
+              className="flex h-[52px] items-center justify-center border border-[#6b6555] text-sm font-medium text-[#e8e4dc]"
+            >
+              하늘로 편지 남기기
+            </Link>
+          )}
         </div>
 
         <div className="px-[30px] pt-6">

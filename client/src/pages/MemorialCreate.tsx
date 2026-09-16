@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { errorClass, inputClass, labelClass, selectClass, textAreaClass } from "@/lib/formStyles";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
+import CompleteRegistrationButton from "@/components/memorial/CompleteRegistrationButton";
 import { trpc } from "@/lib/trpc";
 import { ReviewGroup, ReviewValue, StepGuide, WritingExample } from "@/components/memorial/MemorialCreateGuidance";
 import { draftKeyForUser, legacyDraftKey, readMemorialDraft, serializeOwnedDraft, writingFingerprint, type DraftWriting } from "@/lib/memorialCreateDraft";
@@ -431,7 +432,7 @@ export default function MemorialCreate() {
       try { usedDraftKeys.current.forEach(key => localStorage.removeItem(key)); } catch { /* Registration already succeeded. */ }
       forgetWriting();
       setCreatedMemorial(created);
-      setNotice("추모관이 완성되었습니다. 사진과 이야기를 계속 더해 주세요.");
+      setNotice("추모관을 만들었습니다. 지금은 작성 중이라 가족만 볼 수 있습니다. 프로필 사진과 앨범을 올린 뒤 ‘등록 완료하기’를 눌러 주세요.");
       setSubmitted(true);
     } catch (error) {
       console.error("[Memorial Create] Failed to save", error);
@@ -982,7 +983,7 @@ export default function MemorialCreate() {
                 <SectionHeader number="05" title="공개 설정 · 최종 확인" />
                 <StepGuide>
                   <p>누가 추모관을 볼 수 있을지 선택하고, 아래에 모아둔 입력 내용을 확인해 주세요.</p>
-                  <p>관리자 확인 없이 선택한 공개 범위로 추모관이 완성됩니다. 완성한 뒤에도 글과 사진을 직접 고칠 수 있습니다.</p>
+                  <p>추모관을 만들면 먼저 ‘작성 중’으로 저장되어 가족만 볼 수 있습니다. 사진까지 준비한 뒤 ‘등록 완료하기’를 누르면 선택한 공개 범위대로 다른 분들이 보고 편지를 남길 수 있습니다. 관리자 확인은 없으며, 등록을 마친 뒤에도 직접 고칠 수 있습니다.</p>
                 </StepGuide>
 
                 <div className="grid gap-6 md:grid-cols-2">
@@ -1072,7 +1073,7 @@ export default function MemorialCreate() {
                       <ReviewValue label="사진" value="만든 뒤 프로필 사진·앨범 사진 올리기 · 언제든 수정 가능" />
                       <ReviewValue label="공개 범위" value={form.visibility === "private" ? "비공개 · 본문에 입장 비밀번호 필요" : "전체 공개"} />
                       {form.visibility === "private" && <ReviewValue label="입장 비밀번호" value={form.accessPassword.trim() ? "입력됨 (임시저장되지 않음)" : "입력이 필요합니다"} />}
-                      <ReviewValue label="등록 후 상태" value={form.visibility === "private" ? "바로 완성 · 비공개" : "바로 완성 · 전체 공개"} />
+                      <ReviewValue label="등록 후 상태" value={form.visibility === "private" ? "작성 중 → ‘등록 완료하기’ 뒤 비공개" : "작성 중 → ‘등록 완료하기’ 뒤 전체 공개"} />
                     </dl>
                   </div>
                 </div>
@@ -1178,7 +1179,7 @@ export default function MemorialCreate() {
                             createdMemorial?.status === "published"
                               ? "등록 완료"
                               : createdMemorial?.status === "pending"
-                                ? "미게시"
+                                ? "작성 중 (가족만 보기)"
                               : createdMemorial?.status || "등록 완료"
                           }
                         />
@@ -1187,6 +1188,9 @@ export default function MemorialCreate() {
                         <Link href={`/memorial/${createdMemorial?.slug}/archive#gallery`}>
                           <button type="button" className="inline-flex min-h-12 items-center justify-center border border-[#18181b] bg-[#f8f6f2] px-4 text-base font-medium">프로필·앨범 사진 올리기</button>
                         </Link>
+                        {createdMemorial?.status === "pending" && createdMemorial.slug && (
+                          <CompleteRegistrationButton slug={createdMemorial.slug} />
+                        )}
                         <Link href={createdMemorial?.href || "/"}>
                           <button type="button" className="inline-flex h-10 items-center justify-center gap-2 bg-[#18181b] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90">
                             추모관 보기

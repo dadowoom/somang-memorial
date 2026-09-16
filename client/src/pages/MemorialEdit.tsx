@@ -811,12 +811,13 @@ export default function MemorialEdit() {
                             )
                           }
                         >
-                          <option value="pending">검토 대기</option>
-                          <option value="published">게시하기</option>
+                          <option value="pending">작성 중 (가족만 보기)</option>
+                          <option value="published">등록 완료 (공개)</option>
                           <option value="private">비공개로 보관</option>
                         </select>
                         <p className="mt-2 text-xs leading-5 text-[#616161]">
-                          검토 대기는 검색과 키오스크에 노출되지 않습니다.
+                          작성 중에는 가족과 관리자만 볼 수 있고, 검색·키오스크에
+                          나오지 않으며 편지도 받지 않습니다.
                         </p>
                       </Field>
                     )}

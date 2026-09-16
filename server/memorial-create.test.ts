@@ -68,11 +68,13 @@ function savedMemorial() {
   };
 }
 
-describe("회원 추모관 즉시 완성", () => {
-  it("공개를 선택한 회원의 추모관은 관리자 확인 없이 방문자가 읽을 수 있다", async () => {
+// 2026-09-16 결정: 만들면 "작성 중"으로 시작하고, 가족이 "등록 완료"를 눌러야
+// 다른 분들이 볼 수 있다. 관리자 확인은 여전히 없다.
+describe("회원 추모관은 작성 중으로 시작한다", () => {
+  it("전체 공개를 골라도 등록 완료 전에는 방문자가 읽을 수 없고, 만든 사람은 읽는다", async () => {
     const result = await caller().memorial.create(input);
     expect(result).toMatchObject({
-      status: "published",
+      status: "pending",
       href: "/memorial/family-memory",
       editHref: "/my/memorials/family-memory/edit",
     });
@@ -80,10 +82,15 @@ describe("회원 추모관 즉시 완성", () => {
       visibility: "public",
       createdByUserId: 7,
     });
-    expect(canUserReadMemorial(savedMemorial())).toBe(true);
+    expect(canUserReadMemorial(savedMemorial())).toBe(false);
+    expect(canUserReadMemorial(savedMemorial(), null, member)).toBe(true);
+    // 등록을 마치면 방문자도 읽는다.
+    expect(
+      canUserReadMemorial({ ...savedMemorial(), status: "published" })
+    ).toBe(true);
   });
 
-  it("비공개도 바로 완성하지만 소유자 또는 올바른 비밀번호 없이는 읽을 수 없다", async () => {
+  it("비공개는 비밀번호를 저장하지만, 작성 중에는 맞는 비밀번호로도 들어올 수 없다", async () => {
     const password = "family-only-example";
     const result = await caller().memorial.create({
       ...input,
@@ -91,23 +98,26 @@ describe("회원 추모관 즉시 완성", () => {
       accessPassword: password,
     });
     const saved = savedMemorial();
-    expect(result.status).toBe("published");
+    expect(result.status).toBe("pending");
     expect(saved.visibility).toBe("private");
     expect(saved.accessPasswordHash).not.toBe(password);
     expect(
       verifyMemorialAccessPasswordHash(password, saved.accessPasswordHash!)
     ).toBe(true);
     expect(result).not.toHaveProperty("accessPasswordHash");
-    expect(canUserReadMemorial(saved)).toBe(false);
-    expect(canUserReadMemorial(saved, null, { id: 8, role: "user" })).toBe(
-      false
-    );
-    expect(canUserReadMemorial(saved, null, member)).toBe(true);
     const token = createMemorialAccessToken(
       saved.slug,
       saved.accessPasswordHash!
     );
-    expect(canUserReadMemorial(saved, token)).toBe(true);
+    expect(canUserReadMemorial(saved, token)).toBe(false);
+    expect(canUserReadMemorial(saved, null, { id: 8, role: "user" })).toBe(
+      false
+    );
+    expect(canUserReadMemorial(saved, null, member)).toBe(true);
+    // 등록을 마치면 비밀번호를 아는 분이 들어온다.
+    expect(canUserReadMemorial({ ...saved, status: "published" }, token)).toBe(
+      true
+    );
   });
 
   it("비공개 비밀번호를 생략하면 저장하지 않는다", async () => {
@@ -136,35 +146,35 @@ describe("회원 추모관 즉시 완성", () => {
       ...member,
       approvalStatus: "pending",
     }).memorial.create(input);
-    expect(result.status).toBe("published");
+    expect(result.status).toBe("pending");
   });
 
-  it("관리자도 선택한 공개 범위로 바로 완성한다", async () => {
+  it("관리자가 만들어도 작성 중으로 시작한다", async () => {
     const result = await caller({ ...member, role: "admin" }).memorial.create(
       input
     );
-    expect(result.status).toBe("published");
+    expect(result.status).toBe("pending");
     expect(savedMemorial().visibility).toBe("public");
   });
 
-  it("요청에 소유자와 게시 상태를 끼워 넣어도 로그인한 회원의 새 추모관으로 만든다", async () => {
+  it("요청에 소유자와 게시 상태를 끼워 넣어도 로그인한 회원의 작성 중 추모관으로 만든다", async () => {
     const result = await caller().memorial.create({
       ...input,
-      ...{ createdByUserId: 99, status: "private" },
+      ...{ createdByUserId: 99, status: "published" },
     });
-    expect(result.status).toBe("published");
+    expect(result.status).toBe("pending");
     expect(savedMemorial().createdByUserId).toBe(member.id);
   });
 });
 
 describe("부모님 찾기로 만드는 추모관", () => {
-  it("관리자 확인 없이 완성하고 공개 범위는 비공개로 시작한다", async () => {
+  it("작성 중·비공개로 시작한다", async () => {
     expect(await caller().parentFinder.createMemorial(claim)).toMatchObject({
       kind: "created",
     });
     const saved = savedMemorial();
     expect(saved).toMatchObject({
-      status: "published",
+      status: "pending",
       visibility: "private",
       createdByUserId: 7,
     });

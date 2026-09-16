@@ -85,9 +85,9 @@ describe("getMemorialFamilyRoomVideo", () => {
   });
 });
 
-describe("관리자 확인을 기다리는 추모관", () => {
-  // 기존 pending 추모관도 계속 지원한다. 유가족이 정한 비밀번호를
-  // 가족에게 알려줬는데 아무도 못 들어가면 서비스가 성립하지 않는다.
+describe("작성 중인 추모관 (등록 완료 전)", () => {
+  // 2026-09-16 결정: 등록 완료 전에는 입장 비밀번호를 알아도 들어올 수 없다.
+  // 주인·초대받은 가족·관리자만 본다.
   const pendingMemorial = {
     slug: "pending-memorial",
     visibility: "private",
@@ -96,12 +96,12 @@ describe("관리자 확인을 기다리는 추모관", () => {
     createdByUserId: 7,
   };
 
-  it("맞는 비밀번호로 들어올 수 있다", () => {
+  it("맞는 비밀번호로도 들어올 수 없다", () => {
     const token = createMemorialAccessToken(
       pendingMemorial.slug,
       pendingMemorial.accessPasswordHash
     );
-    expect(canUserReadMemorial(pendingMemorial, token, null)).toBe(true);
+    expect(canUserReadMemorial(pendingMemorial, token, null)).toBe(false);
   });
 
   it("비밀번호 없이는 못 들어온다", () => {

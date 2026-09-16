@@ -1036,8 +1036,9 @@ export const appRouter = router({
             story: copy.story,
             memorialDay: copy.memorialDay,
             visibility: "private",
-            // 바로 완성하되, 가족이 공개 범위를 정하기 전에는 비공개로 유지한다.
-            status: "published",
+            // 작성 중으로 시작한다. 가족이 공개 범위·사진을 정하고 "등록 완료"를
+            // 눌러야 다른 분들에게 보인다 (2026-09-16 결정).
+            status: "pending",
           });
 
           return {
@@ -1280,8 +1281,9 @@ export const appRouter = router({
             visibility === "private" && input.accessPassword
               ? hashMemorialAccessPassword(input.accessPassword)
               : null,
-          // 회원은 관리자 확인 없이 완성하며, 공개 범위는 본인의 선택을 따른다.
-          status: "published",
+          // 작성 중으로 시작한다 (2026-09-16 결정). 관리자 확인은 없고, 가족이
+          // 사진과 글을 준비한 뒤 "등록 완료"를 누르면 고른 공개 범위대로 보인다.
+          status: "pending",
           timelineJson: JSON.stringify(timeline),
           managerMemo: input.managerMemo || null,
         });
@@ -1293,6 +1295,63 @@ export const appRouter = router({
           href: `/memorial/${created.slug}`,
           editHref: `/my/memorials/${created.slug}/edit`,
         };
+      }),
+
+    // 등록 완료 (2026-09-16 결정). 추모관은 "작성 중"(pending)으로 시작하고, 가족이
+    // 사진과 글을 다 준비한 뒤 이것을 눌러야 다른 분들이 보고 편지를 남길 수 있다.
+    // 주인·초대받은 가족·관리자가 누를 수 있다.
+    completeRegistration: protectedProcedure
+      .input(z.object({ slug: z.string().trim().min(1).max(120) }))
+      .mutation(async ({ ctx, input }) => {
+        const existing = await getPublicMemorialBySlug(input.slug);
+        if (!existing) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "추모관을 찾을 수 없습니다.",
+          });
+        }
+
+        const isFamilyMember =
+          ctx.user.role !== "admin" &&
+          existing.createdByUserId !== ctx.user.id &&
+          (await isMemorialFamilyMember(existing.id, ctx.user.id));
+        if (!canManageMemorialAsFamily(existing, ctx.user, isFamilyMember)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "등록을 마칠 권한이 없습니다. 추모관을 만든 가족, 초대받은 가족, 관리자만 할 수 있습니다.",
+          });
+        }
+
+        if (existing.status === "published") {
+          return { success: true, status: "published" as const, alreadyComplete: true };
+        }
+        if (existing.status !== "pending") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "관리자가 비공개로 돌려 둔 추모관입니다. 다시 공개하려면 관리자에게 문의해 주세요.",
+          });
+        }
+        if (existing.visibility === "private" && !existing.accessPasswordHash) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "비공개 추모관은 입장 비밀번호를 먼저 정해 주세요. ‘이어서 수정’의 공개 설정에서 정할 수 있습니다.",
+          });
+        }
+
+        await updateMemorial(existing.id, { status: "published" });
+        await createAdminAuditLog({
+          adminUserId: ctx.user.role === "admin" ? ctx.user.id : null,
+          targetUserId: existing.createdByUserId ?? ctx.user.id,
+          action: "memorial.registration.complete",
+          beforeValue: "pending",
+          afterValue: "published",
+          note: `${existing.name} (${existing.slug})`,
+        });
+
+        return { success: true, status: "published" as const, alreadyComplete: false };
       }),
 
     update: adminProcedure
@@ -1456,6 +1515,9 @@ export const appRouter = router({
           });
         }
 
+        // 작성 중(등록 완료 전)인 추모관은 편지를 보여 주지도 받지도 않는다 (2026-09-16).
+        if (memorial.status !== "published") return [];
+
         const letters = await listMemorialLetters(input.memorialSlug);
         return letters.map(withLetterLinks);
       }),
@@ -1486,6 +1548,12 @@ export const appRouter = router({
             throw new TRPCError({
               code: "FORBIDDEN",
               message: "비공개 추모관입니다.",
+            });
+          }
+          if (memorial.status !== "published") {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "추모관 등록이 끝난 뒤에 편지를 남길 수 있습니다.",
             });
           }
         }
