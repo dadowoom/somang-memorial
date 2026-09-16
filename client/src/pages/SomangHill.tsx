@@ -1,5 +1,6 @@
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
+import { ORG_INFO } from "@/lib/orgInfo";
 import {
   ArrowRight,
   ExternalLink,
@@ -41,10 +42,14 @@ const HILL_NOTES = [
   },
 ];
 
+// 문의는 소망교회 경조부 번호 하나로 안내한다 (2026-09-17 사용자 결정: 소망동산
+// 전화·팩스 번호는 쓰지 않는다).
 const CONTACTS = [
   { label: "위치", value: "경기도 광주시 곤지암읍 건업길 122-83" },
-  { label: "전화", value: "031-764-6052" },
-  { label: "팩스", value: "031-764-6058" },
+  {
+    label: "문의 전화",
+    value: `${ORG_INFO.contactPhone} (소망교회 ${ORG_INFO.contactPhoneLabel})`,
+  },
 ];
 
 const HILL_VIDEO_URL = "https://vimeo.com/99429761?fl=pl&fe=cm";

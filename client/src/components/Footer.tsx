@@ -74,6 +74,11 @@ export default function Footer() {
             <ul className="text-sm">
               <li>{ORG_INFO.address}</li>
               <li>온라인 추모관</li>
+              <li>
+                <a href={`tel:${ORG_INFO.contactPhone}`}>
+                  {ORG_INFO.contactPhoneLabel} {ORG_INFO.contactPhone}
+                </a>
+              </li>
             </ul>
           </div>
         </div>
