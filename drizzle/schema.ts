@@ -336,11 +336,44 @@ export const memorialFamilyRooms = mysqlTable(
     passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
     title: varchar("title", { length: 160 }).notNull(),
     intro: text("intro").notNull(),
+    // 가족관마다 하나씩 두는 유튜브 영상 (2026-09-16). 없으면 null.
+    youtubeVideoId: varchar("youtubeVideoId", { length: 11 }),
+    videoTitle: varchar("videoTitle", { length: 160 }),
+    videoDescription: varchar("videoDescription", { length: 500 }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
   table => [index("memorial_family_rooms_memorialId_idx").on(table.memorialId)]
 );
+
+/**
+ * 가족관 사진 (2026-09-16). 가족관(familyRoomId) 하나에만 속하고, 가족관이
+ * 지워지면 같이 지워진다. 조회·삭제는 항상 familyRoomId 로 묶어서 하므로
+ * 다른 가족관의 사진이 섞여 나올 수 없다.
+ */
+export const memorialFamilyRoomPhotos = mysqlTable(
+  "memorial_family_room_photos",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    familyRoomId: int("familyRoomId")
+      .notNull()
+      .references(() => memorialFamilyRooms.id, { onDelete: "cascade" }),
+    photoUrl: text("photoUrl").notNull(),
+    photoKey: varchar("photoKey", { length: 500 }).notNull(),
+    caption: varchar("caption", { length: 500 }),
+    sortOrder: int("sortOrder").default(0).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("memorial_family_room_photos_familyRoomId_idx").on(
+      table.familyRoomId
+    ),
+  ]
+);
+
+export type MemorialFamilyRoomPhoto =
+  typeof memorialFamilyRoomPhotos.$inferSelect;
 
 export type MemorialFamilyRoom = typeof memorialFamilyRooms.$inferSelect;
 export type InsertMemorialFamilyRoom = typeof memorialFamilyRooms.$inferInsert;

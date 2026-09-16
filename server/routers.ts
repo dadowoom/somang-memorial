@@ -24,7 +24,10 @@ import {
   getMemorialFamilyRoomStatus,
   getAdminMemorialLetterById,
   getReminderSubscriptionById,
+  addFamilyRoomPhoto,
+  deleteFamilyRoomPhoto,
   getMemorialFamilyRoomManageInfo,
+  updateMemorialFamilyRoomVideo,
   createMemorialFamilyRoom,
   updateMemorialFamilyRoomInfo,
   updateMemorialFamilyRoomPassword,
@@ -73,6 +76,10 @@ import {
   verifyMemorialAccessPassword,
   verifyMemorialFamilyRoomPassword,
 } from "./db";
+import { nanoid } from "nanoid";
+import { decodeImageDataUrl } from "./_core/imageUpload";
+import { storagePut } from "./storage";
+import { extractYoutubeVideoId } from "../shared/youtubeId";
 import {
   createIntermentMemorialCopy,
   isSearchableIntermentBirthDate,
@@ -317,6 +324,30 @@ const familyRoomUpdatePasswordInput = z.object({
   memorialSlug: familyRoomSlugField,
   password: familyRoomPasswordField,
 });
+
+// 가족관 영상·사진 (2026-09-16)
+const familyRoomUpdateVideoInput = z.object({
+  memorialSlug: familyRoomSlugField,
+  /** 유튜브 주소 또는 영상 번호. 빈칸이면 영상을 뺀다. */
+  youtube: z.string().trim().max(500),
+  title: z.string().trim().max(160).optional(),
+  description: z.string().trim().max(500).optional(),
+});
+
+const familyRoomAddPhotoInput = z.object({
+  memorialSlug: familyRoomSlugField,
+  dataUrl: z.string(),
+  fileName: z.string().max(260),
+  caption: z.string().trim().max(500).optional(),
+});
+
+const familyRoomDeletePhotoInput = z.object({
+  memorialSlug: familyRoomSlugField,
+  photoId: z.number().int().positive(),
+});
+
+/** 가족관 하나에 둘 수 있는 사진 수. */
+export const FAMILY_ROOM_PHOTO_LIMIT = 100;
 
 /**
  * 유가족이 직접 하는 일(가족관·초대)의 감사기록에 "누가"를 남기는 방법.
@@ -1537,6 +1568,9 @@ export const appRouter = router({
           updatedAt: info.updatedAt,
           href: info.href,
           passwordMinLength: FAMILY_ROOM_PASSWORD_MIN,
+          video: info.video,
+          photos: info.photos,
+          photoLimit: FAMILY_ROOM_PHOTO_LIMIT,
         };
       }),
 
@@ -1617,6 +1651,115 @@ export const appRouter = router({
         await createAdminAuditLog({
           ...familyAuditActor(ctx.user),
           action: "family_room.password.update",
+          note: `${info.memorialName} (${info.memorialSlug})`,
+        });
+
+        return { success: true };
+      }),
+
+    // 가족관 영상 (2026-09-16). 유튜브 주소를 붙여 넣으면 번호만 저장한다.
+    updateVideo: protectedProcedure
+      .input(familyRoomUpdateVideoInput)
+      .mutation(async ({ ctx, input }) => {
+        const info = await requireExistingFamilyRoom(
+          ctx.user,
+          input.memorialSlug
+        );
+
+        const youtubeVideoId = input.youtube
+          ? extractYoutubeVideoId(input.youtube)
+          : null;
+        if (input.youtube && !youtubeVideoId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "유튜브 주소를 알아볼 수 없습니다. 주소를 다시 확인해 주세요.",
+          });
+        }
+
+        await updateMemorialFamilyRoomVideo({
+          memorialId: info.memorialId,
+          youtubeVideoId,
+          videoTitle: youtubeVideoId ? input.title || null : null,
+          videoDescription: youtubeVideoId ? input.description || null : null,
+        });
+        await createAdminAuditLog({
+          ...familyAuditActor(ctx.user),
+          action: "family_room.video.update",
+          afterValue: youtubeVideoId ?? "(없음)",
+          note: `${info.memorialName} (${info.memorialSlug})`,
+        });
+
+        return { success: true, youtubeVideoId };
+      }),
+
+    // 가족관 사진 (2026-09-16). 파일은 family-rooms/<가족관번호>/ 아래에 저장한다.
+    addPhoto: protectedProcedure
+      .input(familyRoomAddPhotoInput)
+      .mutation(async ({ ctx, input }) => {
+        const info = await requireExistingFamilyRoom(
+          ctx.user,
+          input.memorialSlug
+        );
+        if (!info.roomId) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "아직 가족관이 없습니다. 먼저 가족관을 만들어 주세요.",
+          });
+        }
+        if (info.photos.length >= FAMILY_ROOM_PHOTO_LIMIT) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `가족관 사진은 ${FAMILY_ROOM_PHOTO_LIMIT}장까지 둘 수 있습니다.`,
+          });
+        }
+
+        // 추모관 사진과 같은 통로다. 형식을 확인하고 위치·기기 정보를 지운다.
+        const { buffer, mimeType, ext } = decodeImageDataUrl(input.dataUrl);
+        const key = `family-rooms/${info.roomId}/${nanoid()}.${ext}`;
+        const { url } = await storagePut(key, buffer, mimeType);
+
+        await addFamilyRoomPhoto({
+          familyRoomId: info.roomId,
+          photoUrl: url,
+          photoKey: key,
+          caption: input.caption || null,
+        });
+        await createAdminAuditLog({
+          ...familyAuditActor(ctx.user),
+          action: "family_room.photo.add",
+          afterValue: key.slice(0, 120),
+          note: `${info.memorialName} (${info.memorialSlug})`,
+        });
+
+        return { success: true, url };
+      }),
+
+    deletePhoto: protectedProcedure
+      .input(familyRoomDeletePhotoInput)
+      .mutation(async ({ ctx, input }) => {
+        const info = await requireExistingFamilyRoom(
+          ctx.user,
+          input.memorialSlug
+        );
+        if (!info.roomId) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "아직 가족관이 없습니다.",
+          });
+        }
+
+        // 이 가족관의 사진일 때만 지워진다. 다른 가족관 사진 번호는 "없음"이다.
+        const result = await deleteFamilyRoomPhoto(input.photoId, info.roomId);
+        if (!result.deleted) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "사진을 찾을 수 없습니다.",
+          });
+        }
+        await createAdminAuditLog({
+          ...familyAuditActor(ctx.user),
+          action: "family_room.photo.delete",
+          beforeValue: String(input.photoId),
           note: `${info.memorialName} (${info.memorialSlug})`,
         });
 
