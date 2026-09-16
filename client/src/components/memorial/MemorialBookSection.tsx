@@ -13,7 +13,11 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import type { MutableRefObject, ReactElement } from "react";
+import type {
+  MutableRefObject,
+  PointerEvent as ReactPointerEvent,
+  ReactElement,
+} from "react";
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import HTMLFlipBook from "react-pageflip";
 import { useIsMobile } from "@/hooks/useMobile";
@@ -21,6 +25,14 @@ import {
   bookReaderFrameWidth,
   bookReaderTopOffset,
 } from "@/lib/bookReaderLayout";
+import {
+  BOOK_PHOTO_SHAPE_TIMEOUT_MS,
+  bookGestureAction,
+  layoutBookLeaves,
+  photoShape,
+  type BookLeaf,
+  type PhotoShape,
+} from "@/lib/bookLayout";
 import { lockPageScroll } from "@/lib/scrollLock";
 import { toast } from "sonner";
 import "./memorialBook.css";
@@ -84,24 +96,26 @@ type PageSide = "left" | "right" | "single";
 
 // 종이책처럼 보이게 그린다 (2026-09-16 "책이라는 느낌이 더 들게"): 크림색 종이,
 // 장 번호·날짜, 흰 테를 두른 사진, 제목 밑 짧은 선, 아래 가운데 쪽 번호.
-const ContentPage = forwardRef<
+//
+// 바깥 칸(memorial-book-sheet)은 책 부품(page-flip)이 넘길 때마다 위치·크기·보이기를
+// 직접 바꾸는 칸이라 우리 모양을 주지 않는다. 바깥 칸에 display·position 을 주면
+// 부품 설정과 부딪혀 글이 종이 밖으로 넘치고(휴대폰에서 쪽 번호와 겹침) 넘기는
+// 종이가 튄다 (2026-09-16 확인). 모양은 모두 안쪽 칸(memorial-book-page)에 준다.
+const BookLeafPage = forwardRef<
   HTMLDivElement,
-  { page: BookPage; pageIndex?: number; side?: PageSide }
->(function ContentPage({ page, pageIndex, side = "single" }, ref) {
+  { leaf: BookLeaf<BookPage>; leafIndex: number; side: PageSide }
+>(function BookLeafPage({ leaf, leafIndex, side }, ref) {
+  const folio = <p className="memorial-book-page__folio">{leafIndex + 1}</p>;
+
+  let content: ReactElement | null = null;
+  if (leaf.kind === "page" || leaf.kind === "text") {
+    const page = leaf.record;
     const date = formatDate(page.dateYear, page.dateMonth, page.dateDay);
-    const chapter = typeof pageIndex === "number" ? pageIndex + 1 : null;
-    return (
-      <div
-        ref={ref}
-        data-page-index={pageIndex}
-        data-side={side}
-        className="memorial-book-page"
-      >
-        {chapter !== null && (
-          <p className="memorial-book-page__chapter">제{chapter}장</p>
-        )}
+    content = (
+      <>
+        <p className="memorial-book-page__chapter">제{leaf.chapter}장</p>
         {date && <p className="memorial-book-page__date">{date}</p>}
-        {page.photoUrl && (
+        {leaf.kind === "page" && page.photoUrl && (
           <div className="memorial-book-page__photo">
             <img
               src={toImgUrl(page.photoUrl)}
@@ -117,46 +131,116 @@ const ContentPage = forwardRef<
         {page.content && (
           <p className="memorial-book-page__body">{page.content}</p>
         )}
-        {chapter !== null && (
-          <p className="memorial-book-page__folio">{chapter}</p>
-        )}
-      </div>
+        {folio}
+      </>
+    );
+  } else if (leaf.kind === "photo") {
+    const page = leaf.record;
+    const date = formatDate(page.dateYear, page.dateMonth, page.dateDay);
+    content = (
+      <>
+        <div className="memorial-book-page__photo">
+          <img
+            src={toImgUrl(page.photoUrl)}
+            alt={page.title || date || "기록 사진"}
+            draggable={false}
+          />
+        </div>
+        <p className="memorial-book-page__caption">
+          {[date, page.title].filter(Boolean).join(" · ")}
+        </p>
+        {folio}
+      </>
+    );
+  } else if (leaf.kind === "rest") {
+    content = (
+      <span className="memorial-book-page__ornament" aria-hidden="true">
+        ✦
+      </span>
+    );
+  } else if (leaf.kind === "end") {
+    content = (
+      <>
+        <p className="text-xs uppercase tracking-[0.28em] text-[#8a7d6b]">
+          Soli Deo Gloria
+        </p>
+        <p
+          className="mt-5 text-2xl font-light text-[#2b2620]"
+          style={{ fontFamily: "'Noto Serif KR', serif" }}
+        >
+          오직 하나님께 영광
+        </p>
+      </>
     );
   }
-);
 
-const EndPage = forwardRef<HTMLDivElement, { pageIndex?: number }>(
-  function EndPage({ pageIndex }, ref) {
   return (
-    <div
-      ref={ref}
-      data-page-index={pageIndex}
-      className="memorial-book-page memorial-book-page--end"
-    >
-      <p className="text-xs uppercase tracking-[0.28em] text-[#8a7d6b]">
-        Soli Deo Gloria
-      </p>
-      <p
-        className="mt-5 text-2xl font-light text-[#2b2620]"
-        style={{ fontFamily: "'Noto Serif KR', serif" }}
+    <div ref={ref} data-page-index={leafIndex} className="memorial-book-sheet">
+      <div
+        className={`memorial-book-page memorial-book-page--${leaf.kind}`}
+        data-side={side}
       >
-        오직 하나님께 영광
-      </p>
+        {content}
+      </div>
     </div>
   );
 });
 
-const BlankPage = forwardRef<HTMLDivElement, { pageIndex?: number }>(
-  function BlankPage({ pageIndex }, ref) {
-    return (
-      <div
-        ref={ref}
-        data-page-index={pageIndex}
-        className="memorial-book-page"
-      />
-    );
-  }
-);
+/**
+ * 책에 들어간 사진이 세로인지 가로인지 알아본다. 앨범에서 이미 받은 사진이라 대개 바로
+ * 끝난다. 정해진 시간이 지나도 모르는 사진은 한 쪽에 사진과 글을 함께 둔다. 다 알아본 뒤에만
+ * 책을 그려, 도중에 쪽 수가 바뀌어 책이 다시 만들어지는 일이 없게 한다.
+ */
+function usePhotoShapes(urls: string[]) {
+  const signature = urls.join("\n");
+  const [state, setState] = useState<{
+    signature: string;
+    shapes: Record<string, PhotoShape>;
+  } | null>(null);
+
+  useEffect(() => {
+    const list = signature ? signature.split("\n") : [];
+    if (list.length === 0) {
+      setState({ signature, shapes: {} });
+      return;
+    }
+    let done = false;
+    const shapes: Record<string, PhotoShape> = {};
+    let pending = list.length;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      setState({ signature, shapes: { ...shapes } });
+    };
+    const timer = window.setTimeout(finish, BOOK_PHOTO_SHAPE_TIMEOUT_MS);
+    const images = list.map(url => {
+      const image = new Image();
+      const settle = (shape: PhotoShape) => {
+        shapes[url] = shape;
+        pending -= 1;
+        if (pending === 0) {
+          window.clearTimeout(timer);
+          finish();
+        }
+      };
+      image.onload = () => settle(photoShape(image.naturalWidth, image.naturalHeight));
+      image.onerror = () => settle("unknown");
+      image.src = url;
+      return image;
+    });
+    return () => {
+      done = true;
+      window.clearTimeout(timer);
+      images.forEach(image => {
+        image.onload = null;
+        image.onerror = null;
+      });
+    };
+  }, [signature]);
+
+  const ready = state !== null && state.signature === signature;
+  return { shapes: ready ? state.shapes : {}, ready };
+}
 
 export default function MemorialBookSection({
   memorialId,
@@ -232,25 +316,46 @@ export default function MemorialBookSection({
     onError: error => toast.error(error.message),
   });
 
+  const photoUrls = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          sortedPages
+            .map(page => (page.photoUrl ? toImgUrl(page.photoUrl) : ""))
+            .filter(Boolean)
+        )
+      ),
+    [sortedPages]
+  );
+  const { shapes: photoShapes, ready: photoShapesReady } =
+    usePhotoShapes(photoUrls);
+
+  // 표지는 책 밖에서 한 장으로 꽉 차게 보여준다. 책 안에 두면 펼침 보기에서
+  // 왼쪽 절반이 빈 종이로 남아 고장난 화면처럼 보인다.
+  const leaves = useMemo(
+    () =>
+      layoutBookLeaves(
+        sortedPages.map(page => ({
+          ...page,
+          photoUrl: page.photoUrl ? toImgUrl(page.photoUrl) : null,
+        })),
+        photoShapes,
+        !isMobile
+      ),
+    [sortedPages, photoShapes, isMobile]
+  );
+
   const flipPages = useMemo(() => {
     if (!selectedBook) return [];
-    // 표지는 책 밖에서 한 장으로 꽉 차게 보여준다. 책 안에 두면 펼침 보기에서
-    // 왼쪽 절반이 빈 종이로 남아 고장난 화면처럼 보인다.
-    const pages = [
-      ...sortedPages.map((page, index) => (
-        <ContentPage
-          key={page.id}
-          page={page}
-          pageIndex={index}
-          side={isMobile ? "single" : index % 2 === 0 ? "left" : "right"}
-        />
-      )),
-      <EndPage key="end" pageIndex={sortedPages.length} />,
-    ];
-    if (pages.length % 2 !== 0)
-      pages.push(<BlankPage key="blank" pageIndex={pages.length} />);
-    return pages;
-  }, [selectedBook, sortedPages, isMobile]);
+    return leaves.map((leaf, index) => (
+      <BookLeafPage
+        key={"record" in leaf ? `${leaf.kind}-${leaf.record.id}` : `${leaf.kind}-${index}`}
+        leaf={leaf}
+        leafIndex={index}
+        side={isMobile ? "single" : index % 2 === 0 ? "left" : "right"}
+      />
+    ));
+  }, [selectedBook, leaves, isMobile]);
 
   if (!booksQuery.isLoading && books.length === 0 && !isAdmin) return null;
 
@@ -416,13 +521,14 @@ export default function MemorialBookSection({
             <BookView
               bookRef={bookRef}
               pages={flipPages}
+              leaves={leaves}
+              pagesReady={photoShapesReady}
               bookOpened={bookOpened}
               setBookOpened={setBookOpened}
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}
               isAdmin={isAdmin}
               selectedBook={selectedBook}
-              sortedPages={sortedPages}
               onEditPage={page =>
                 setEditingPage({ ...page, bookId: selectedBook.id })
               }
@@ -484,29 +590,35 @@ export default function MemorialBookSection({
 function BookView({
   bookRef,
   pages,
+  leaves,
+  pagesReady,
   currentPage,
   setCurrentPage,
   bookOpened,
   setBookOpened,
   isAdmin,
   selectedBook,
-  sortedPages,
   onEditPage,
   onDeletePage,
 }: {
   bookRef: MutableRefObject<any>;
   pages: ReactElement[];
+  leaves: BookLeaf<BookPage>[];
+  /** 사진 모양을 다 알아봐서 쪽 배치가 정해졌는지 */
+  pagesReady: boolean;
   currentPage: number;
   setCurrentPage: (page: number) => void;
   bookOpened: boolean;
   setBookOpened: (opened: boolean) => void;
   isAdmin: boolean;
   selectedBook: MemorialBook;
-  sortedPages: BookPage[];
   onEditPage: (page: BookPage) => void;
   onDeletePage: (page: BookPage) => void;
 }) {
-  const editablePage = sortedPages[currentPage - 1];
+  // 지금 펼쳐진 쪽(펼침에서는 왼쪽 쪽)의 이야기를 편집한다.
+  const currentLeaf = leaves[currentPage];
+  const editablePage =
+    currentLeaf && "record" in currentLeaf ? currentLeaf.record : undefined;
   // 책은 한 벌만 그린다. 두 벌을 CSS 로 숨겨 두면 둘 다 같은 bookRef 를 잡아,
   // 화살표가 보이지 않는 쪽 책을 넘기고 눈앞의 책은 그대로였다.
   const isMobile = useIsMobile();
@@ -553,6 +665,43 @@ function BookView({
     setCurrentPage(Math.min(lastPageIndex, currentPage + pageStep));
     bookRef.current?.pageFlip?.()?.flipNext();
     syncPageSoon();
+  };
+
+  // 손가락·마우스로 넘기기 (2026-09-16 "모바일에서 책 넘기는 게 이상하다").
+  // 책 부품의 기본 처리는 끄고(useMouseEvents=false), 밀기·누르기를 여기서 알아본 뒤
+  // 부품의 넘김 애니메이션(flipNext/flipPrev)만 쓴다. 규칙은 lib/bookLayout.ts.
+  const gestureRef = useRef<{ pointerId: number; x: number; y: number } | null>(
+    null
+  );
+  const onBookPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!event.isPrimary || event.button > 0) return;
+    gestureRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // 잡지 못해도 손을 뗀 자리가 책 위면 그대로 넘어간다.
+    }
+  };
+  const onBookPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = gestureRef.current;
+    gestureRef.current = null;
+    if (!start || start.pointerId !== event.pointerId) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const action = bookGestureAction({
+      dx: event.clientX - start.x,
+      dy: event.clientY - start.y,
+      startX: start.x - rect.left,
+      width: rect.width,
+    });
+    if (action === "next") goToNextPage();
+    if (action === "prev") goToPrevPage();
+  };
+  const onBookPointerCancel = () => {
+    gestureRef.current = null;
   };
 
   // 읽기 창이 떠 있는 동안: Esc 로 닫고, 좌우 화살표 키로 넘기고,
@@ -667,7 +816,7 @@ function BookView({
 
         {/* 책은 위쪽(키오스크 이름 검색칸 높이)에, 넘김 단추는 책 바로 밑에 (2026-09-16). */}
         <div
-          className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-2 pb-4"
+          className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto overflow-x-hidden px-2 pb-4"
           style={{ paddingTop: bookReaderTopOffset(isMobile) }}
         >
           <div
@@ -678,10 +827,16 @@ function BookView({
                 : "memorial-book-open memorial-book-open--spread"
             }
             style={{ width: bookReaderFrameWidth(isMobile) }}
+            onPointerDown={onBookPointerDown}
+            onPointerUp={onBookPointerUp}
+            onPointerCancel={onBookPointerCancel}
           >
-            {!isMobile && (
+            {!pagesReady && (
+              <p className="memorial-book-preparing">책을 펼치고 있습니다.</p>
+            )}
+            {pagesReady && !isMobile && (
               <HTMLFlipBook
-                key={`desktop-${selectedBook.id}-${sortedPages.map(page => page.id).join("-")}`}
+                key={`desktop-${selectedBook.id}-${leaves.map(leaf => ("record" in leaf ? `${leaf.kind}${leaf.record.id}` : leaf.kind)).join("-")}`}
                 ref={bookRef}
                 width={560}
                 height={720}
@@ -702,20 +857,21 @@ function BookView({
                 startZIndex={0}
                 autoSize
                 maxShadowOpacity={0.18}
-                showPageCorners
+                showPageCorners={false}
+                // true 로 두면 한 쪽 보기에서 부품의 "이전 쪽" 넘기기가 모서리가 아니라며 막힌다.
                 disableFlipByClick={false}
-                useMouseEvents
+                useMouseEvents={false}
                 swipeDistance={30}
-                clickEventForward
+                clickEventForward={false}
                 style={{}}
               >
                 {pages}
               </HTMLFlipBook>
             )}
 
-            {isMobile && (
+            {pagesReady && isMobile && (
               <HTMLFlipBook
-                key={`mobile-${selectedBook.id}-${sortedPages.map(page => page.id).join("-")}`}
+                key={`mobile-${selectedBook.id}-${leaves.map(leaf => ("record" in leaf ? `${leaf.kind}${leaf.record.id}` : leaf.kind)).join("-")}`}
                 ref={bookRef}
                 width={340}
                 height={500}
@@ -736,11 +892,12 @@ function BookView({
                 startZIndex={0}
                 autoSize
                 maxShadowOpacity={0.14}
-                showPageCorners
+                showPageCorners={false}
+                // true 로 두면 한 쪽 보기에서 부품의 "이전 쪽" 넘기기가 모서리가 아니라며 막힌다.
                 disableFlipByClick={false}
-                useMouseEvents
+                useMouseEvents={false}
                 swipeDistance={20}
-                clickEventForward
+                clickEventForward={false}
                 style={{}}
               >
                 {pages}
@@ -748,7 +905,10 @@ function BookView({
             )}
           </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-3 px-2 md:gap-6">
+        <p className="mt-3 text-center text-xs text-white/60">
+          책을 옆으로 밀거나, 오른쪽·왼쪽을 눌러도 넘어갑니다.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-3 px-2 md:gap-6">
           <button
             type="button"
             onClick={goToPrevPage}
