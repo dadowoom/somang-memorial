@@ -337,7 +337,7 @@ function MemorialContent({
               {memorial.verse && (
                 <section className="memorial-verse border border-[#dedede] bg-white p-6 md:p-8">
                   <p
-                    className="text-[17px] font-light leading-relaxed md:text-[21px]"
+                    className="whitespace-pre-line text-[17px] font-light leading-relaxed md:text-[21px]"
                     style={{ ...serifStyle, color: warmText }}
                   >
                     {memorial.verse}
@@ -408,7 +408,7 @@ function MemorialContent({
                 {storyParagraphs.map((paragraph, index) => (
                   <p
                     key={`${paragraph.slice(0, 20)}-${index}`}
-                    className="text-sm leading-8 md:text-base"
+                    className="whitespace-pre-line text-sm leading-8 md:text-base"
                     style={{ color: mutedText }}
                   >
                     {paragraph}
@@ -452,7 +452,7 @@ function MemorialContent({
                     </h3>
                     {item.description && (
                       <p
-                        className="mt-3 text-sm leading-7"
+                        className="mt-3 whitespace-pre-line text-sm leading-7"
                         style={{ color: mutedText }}
                       >
                         {item.description}
