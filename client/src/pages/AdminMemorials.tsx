@@ -350,7 +350,7 @@ export default function AdminMemorials() {
               <Panel text="조건에 맞는 추모관이 없습니다." />
             ) : (
               <div className="overflow-hidden border-y border-[#b5b0a7]">
-                <div className="hidden grid-cols-[150px_1.1fr_0.9fr_0.8fr_0.8fr_300px] border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
+                <div className="hidden grid-cols-[210px_1.1fr_0.9fr_0.8fr_0.8fr_300px] gap-4 border-b border-[#b5b0a7] bg-[#f7f7f7] px-5 py-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#777] lg:grid">
                   <span>Year</span>
                   <span>Name</span>
                   <span>Church</span>
@@ -363,7 +363,7 @@ export default function AdminMemorials() {
                   {filteredMemorials.map(memorial => (
                     <article
                       key={memorial.id}
-                      className="grid gap-4 bg-white px-4 py-5 transition-colors hover:bg-[#fafafa] lg:grid-cols-[150px_1.1fr_0.9fr_0.8fr_0.8fr_300px] lg:items-center lg:px-5"
+                      className="grid gap-4 bg-white px-4 py-5 transition-colors hover:bg-[#fafafa] lg:grid-cols-[210px_1.1fr_0.9fr_0.8fr_0.8fr_300px] lg:items-center lg:px-5"
                     >
                       <p className="text-xs tracking-[0.1em] text-[#616161] md:text-sm">
                         {formatLifespan(memorial.birthDate, memorial.deathDate)}
