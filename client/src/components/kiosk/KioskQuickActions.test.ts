@@ -121,11 +121,17 @@ describe("GuideContent (키오스크 변형)", () => {
       'href="/memorial/create"',
       'href="/memorial/search"',
       'href="/letters"',
-      'href="/services/life-garden"',
+      // 인생화원 칸은 예시 추모관으로 간다 (2026-09-17).
+      'href="/memorial/kim-somang-kwonsa"',
     ]) {
       expect(kiosk).not.toContain(href);
       expect(web).toContain(href);
     }
+    // 인생화원 칸: 웹은 "문의하기" 단추, 키오스크는 안내 글만.
+    expect(text(web)).toContain("인생화원 예시 보기");
+    expect(text(web)).toContain("문의하기");
+    expect(text(kiosk)).not.toContain("인생화원 예시 보기");
+    expect(text(kiosk)).toContain("서비스 준비 중");
     // "회원가입 · 로그인"은 만드는 순서를 설명하는 글이라 남아도 되지만, 로그인 화면으로 가는 링크는 없어야 한다.
     expect(kiosk).not.toContain('href="/login"');
     expect(kiosk).not.toContain('href="/signup"');

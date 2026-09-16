@@ -1,4 +1,5 @@
 import nodemailer, { type Transporter } from "nodemailer";
+import { inquirySourceLabel } from "../../shared/kioskInquiry";
 import { ENV } from "./env";
 
 type SendEmailInput = {
@@ -90,20 +91,23 @@ export async function sendKioskInquiryEmail(input: {
   phone: string;
   name: string | null;
   inquiryId: number;
+  /** 들어온 곳 (kiosk·web). 없으면 키오스크 (2026-09-17). */
+  source?: string;
 }) {
   const when = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+  const place = inquirySourceLabel(input.source);
   await sendEmail({
     to: input.to,
-    subject: `[소망 추모관 키오스크] 제작 문의 접수 ${input.phone}`,
+    subject: `[소망 추모관 ${place}] 제작 문의 접수 ${input.phone}`,
     text: [
-      "키오스크에서 추모관 제작 문의가 접수되었습니다.",
+      `${place}에서 추모관 제작 문의가 접수되었습니다.`,
       "",
       `전화번호: ${input.phone}`,
       `성함: ${input.name ?? "(입력 안 함)"}`,
       `접수 시각: ${when}`,
       `접수 번호: ${input.inquiryId}`,
       "",
-      "이 번호로 전화해 주세요. 처리한 뒤에는 관리자 화면 → 운영 → 키오스크 문의에서 '전화함'으로 표시할 수 있습니다.",
+      "이 번호로 전화해 주세요. 처리한 뒤에는 관리자 화면 → 운영 → 문의에서 '전화함'으로 표시할 수 있습니다.",
     ].join("\n"),
   });
 }

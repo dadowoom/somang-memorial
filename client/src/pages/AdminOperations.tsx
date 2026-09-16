@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { downloadCsv } from "@/lib/csvExport";
 import { trpc } from "@/lib/trpc";
+import { inquirySourceLabel } from "@shared/kioskInquiry";
 import {
   Bell,
   Download,
@@ -483,13 +484,13 @@ export default function AdminOperations() {
             <section className="mt-12">
               <SectionTitle
                 icon={<Phone className="h-4 w-4" />}
-                title="키오스크 문의"
+                title="문의"
                 count={inquiries.length}
               />
               <p className="mb-4 text-sm leading-6 text-[#616161]">
-                키오스크 "문의"에서 관람객이 남긴 전화번호입니다. 업체 메일로도
-                보내지만, 메일이 안 갔어도 여기에는 남습니다. 전화한 뒤 "전화함"으로
-                표시해 두세요.
+                키오스크 "문의"와 홈페이지 "문의하기"에서 남긴 전화번호입니다. 업체
+                메일로도 보내지만, 메일이 안 갔어도 여기에는 남습니다. 전화한 뒤
+                "전화함"으로 표시해 두세요.
               </p>
               {inquiriesQuery.isLoading ? (
                 <Panel text="문의를 불러오고 있습니다." />
@@ -511,6 +512,10 @@ export default function AdminOperations() {
                             <StatusBadge
                               tone={contacted ? "muted" : "normal"}
                               label={contacted ? "전화함" : "새 문의"}
+                            />
+                            <StatusBadge
+                              tone="normal"
+                              label={inquirySourceLabel(inquiry.source)}
                             />
                             <StatusBadge
                               tone={inquiry.notifiedAt ? "normal" : "muted"}

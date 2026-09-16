@@ -74,12 +74,42 @@ describe("kioskInquiry.submit", () => {
       phone: "010-1234-5678",
       name: "김소망",
       inquiryId: 77,
+      source: "kiosk",
     });
     expect(mocks.markKioskInquiryNotified).toHaveBeenCalledWith(77, null);
     const audit = mocks.createAdminAuditLog.mock.calls[0][0];
     expect(audit.action).toBe("kiosk_inquiry.create");
+    expect(audit.note).toContain("키오스크 문의 77");
     expect(audit.note).toContain("010-****-5678");
     expect(audit.note).not.toContain("1234-5678");
+  });
+
+  // 홈페이지 "문의하기" (2026-09-17): 같은 통로, 들어온 곳만 web.
+  it("홈페이지에서 온 문의는 web 으로 적고 메일·기록에 홈페이지라고 남긴다", async () => {
+    await expect(
+      caller(null).kioskInquiry.submit({ phone: "02-541-3726", source: "web" })
+    ).resolves.toEqual({ success: true, notified: true });
+
+    expect(mocks.createKioskInquiry).toHaveBeenCalledWith({
+      phone: "02-541-3726",
+      name: null,
+      source: "web",
+    });
+    expect(mocks.sendKioskInquiryEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ inquiryId: 77, source: "web" })
+    );
+    const audit = mocks.createAdminAuditLog.mock.calls[0][0];
+    expect(audit.note).toContain("홈페이지 문의 77");
+  });
+
+  it("정해진 곳이 아니면 받지 않는다", async () => {
+    await expect(
+      caller(null).kioskInquiry.submit({
+        phone: "01012345678",
+        source: "elsewhere" as "web",
+      })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(mocks.createKioskInquiry).not.toHaveBeenCalled();
   });
 
   it("메일 주소가 없으면 표에만 남기고 성공으로 답한다", async () => {

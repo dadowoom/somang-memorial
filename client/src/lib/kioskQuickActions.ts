@@ -12,6 +12,16 @@ export function kioskSampleMemorialPath() {
   return `/kiosk/memorial/${KIOSK_SAMPLE_MEMORIAL_SLUG}`;
 }
 
+/** 같은 견본 추모관의 홈페이지 주소. 이용 안내 인생화원 칸의 "인생화원 예시 보기"가 연다. */
+export function sampleMemorialPath() {
+  return `/memorial/${KIOSK_SAMPLE_MEMORIAL_SLUG}`;
+}
+
+/** 견본 추모관인지. 예시 추모관 화면에만 "문의하기" 동그라미를 띄울 때 쓴다 (2026-09-17). */
+export function isSampleMemorialSlug(slug: string) {
+  return slug === KIOSK_SAMPLE_MEMORIAL_SLUG;
+}
+
 /**
  * 이용 안내 창의 QR 코드가 여는 주소 (2026-09-16 현장 요청). 조문객이 휴대폰으로
  * 찍으면 홈페이지 첫 화면이 열리고, 거기서 로그인해 추모관을 직접 만들 수 있다.

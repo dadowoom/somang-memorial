@@ -1,6 +1,8 @@
 import InlineEditText from "@/components/InlineEditText";
 import Footer from "@/components/Footer";
 import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
+import SampleInquiryFab from "@/components/inquiry/SampleInquiryFab";
+import { isSampleMemorialSlug } from "@/lib/kioskQuickActions";
 import MemorialBookSection from "@/components/memorial/MemorialBookSection";
 import MemorialDraftNotice from "@/components/memorial/MemorialDraftNotice";
 import MemorialGallerySection from "@/components/memorial/MemorialGallerySection";
@@ -408,6 +410,8 @@ export default function MemorialArchivePage() {
 
       <Footer />
       <MemorialBackToTop />
+      {/* 예시 추모관에만 "문의하기" 동그라미 (2026-09-17). */}
+      {isSampleMemorialSlug(slug) && <SampleInquiryFab />}
     </div>
   );
 }
