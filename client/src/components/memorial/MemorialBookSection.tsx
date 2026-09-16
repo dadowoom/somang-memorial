@@ -23,6 +23,7 @@ import {
 } from "@/lib/bookReaderLayout";
 import { lockPageScroll } from "@/lib/scrollLock";
 import { toast } from "sonner";
+import "./memorialBook.css";
 
 type BookPage = {
   id: number;
@@ -80,44 +81,46 @@ function sortPages(pages: BookPage[]) {
   });
 }
 
+/** 펼침 보기에서 왼쪽/오른쪽 쪽인지. 가운데 접힌 그늘을 어느 쪽에 줄지 정한다. */
+type PageSide = "left" | "right" | "single";
+
+// 종이책처럼 보이게 그린다 (2026-09-16 "책이라는 느낌이 더 들게"): 크림색 종이,
+// 장 번호·날짜, 흰 테를 두른 사진, 제목 밑 짧은 선, 아래 가운데 쪽 번호.
 const ContentPage = forwardRef<
   HTMLDivElement,
-  { page: BookPage; pageIndex?: number }
->(function ContentPage({ page, pageIndex }, ref) {
+  { page: BookPage; pageIndex?: number; side?: PageSide }
+>(function ContentPage({ page, pageIndex, side = "single" }, ref) {
     const date = formatDate(page.dateYear, page.dateMonth, page.dateDay);
+    const chapter = typeof pageIndex === "number" ? pageIndex + 1 : null;
     return (
       <div
         ref={ref}
         data-page-index={pageIndex}
-        className="relative flex h-full flex-col overflow-hidden bg-[#fdfdfd] p-6 md:p-8"
+        data-side={side}
+        className="memorial-book-page"
       >
-        {date && (
-          <p className="mb-3 text-xs uppercase tracking-[0.18em] text-[#666666]">
-            {date}
-          </p>
+        {chapter !== null && (
+          <p className="memorial-book-page__chapter">제{chapter}장</p>
         )}
+        {date && <p className="memorial-book-page__date">{date}</p>}
         {page.photoUrl && (
-          <div className="mb-4 h-[38%] shrink-0 overflow-hidden border border-[#dedede]">
+          <div className="memorial-book-page__photo">
             <img
               src={toImgUrl(page.photoUrl)}
               alt={page.title || date || "기록 사진"}
-              className="h-full w-full object-cover"
-              style={{ filter: memorialPhotoFilter }}
+              draggable={false}
             />
           </div>
         )}
         {page.title && (
-          <h4
-            className="mb-3 text-xl font-light leading-snug text-[#171717]"
-            style={{ fontFamily: "'Noto Serif KR', serif" }}
-          >
-            {page.title}
-          </h4>
+          <h4 className="memorial-book-page__title">{page.title}</h4>
         )}
+        <div className="memorial-book-page__rule" aria-hidden="true" />
         {page.content && (
-          <p className="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap text-sm leading-8 text-[#555555]">
-            {page.content}
-          </p>
+          <p className="memorial-book-page__body">{page.content}</p>
+        )}
+        {chapter !== null && (
+          <p className="memorial-book-page__folio">{chapter}</p>
         )}
       </div>
     );
@@ -130,13 +133,13 @@ const EndPage = forwardRef<HTMLDivElement, { pageIndex?: number }>(
     <div
       ref={ref}
       data-page-index={pageIndex}
-      className="flex h-full flex-col items-center justify-center bg-[#fdfdfd] p-8 text-center"
+      className="memorial-book-page memorial-book-page--end"
     >
-      <p className="text-xs uppercase tracking-[0.28em] text-[#666666]">
+      <p className="text-xs uppercase tracking-[0.28em] text-[#8a7d6b]">
         Soli Deo Gloria
       </p>
       <p
-        className="mt-5 text-2xl font-light text-[#171717]"
+        className="mt-5 text-2xl font-light text-[#2b2620]"
         style={{ fontFamily: "'Noto Serif KR', serif" }}
       >
         오직 하나님께 영광
@@ -151,7 +154,7 @@ const BlankPage = forwardRef<HTMLDivElement, { pageIndex?: number }>(
       <div
         ref={ref}
         data-page-index={pageIndex}
-        className="h-full bg-[#fdfdfd]"
+        className="memorial-book-page"
       />
     );
   }
@@ -164,6 +167,8 @@ export default function MemorialBookSection({
 }: MemorialBookSectionProps) {
   const utils = trpc.useUtils();
   const bookRef = useRef<any>(null);
+  // 펼침(PC·키오스크)에서는 짝수 번째 쪽이 왼쪽, 홀수 번째가 오른쪽이다.
+  const isMobile = useIsMobile();
   const listInput = { memorialId, accessToken: accessToken || undefined };
   const booksQuery = trpc.book.listByMemorial.useQuery(listInput);
   const [selectedBookIndex, setSelectedBookIndex] = useState(0);
@@ -235,14 +240,19 @@ export default function MemorialBookSection({
     // 왼쪽 절반이 빈 종이로 남아 고장난 화면처럼 보인다.
     const pages = [
       ...sortedPages.map((page, index) => (
-        <ContentPage key={page.id} page={page} pageIndex={index} />
+        <ContentPage
+          key={page.id}
+          page={page}
+          pageIndex={index}
+          side={isMobile ? "single" : index % 2 === 0 ? "left" : "right"}
+        />
       )),
       <EndPage key="end" pageIndex={sortedPages.length} />,
     ];
     if (pages.length % 2 !== 0)
       pages.push(<BlankPage key="blank" pageIndex={pages.length} />);
     return pages;
-  }, [selectedBook, sortedPages]);
+  }, [selectedBook, sortedPages, isMobile]);
 
   if (!booksQuery.isLoading && books.length === 0 && !isAdmin) return null;
 
@@ -566,37 +576,57 @@ function BookView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bookOpened, currentPage, lastPageIndex]);
 
+  const openBook = () => {
+    // 닫았다 다시 열면 책은 1쪽부터인데 번호만 전에 보던 자리로 남았다.
+    setCurrentPage(0);
+    setBookOpened(true);
+  };
+
+  // 양장 표지처럼 보이는 책 (2026-09-16 "책이라는 느낌이 더 들게"). 표지를 눌러도 펼쳐진다.
   const cover = (
-      <div className="memorial-book-cover mx-auto max-w-3xl border border-[#dedede] bg-[#fdfdfd] px-6 py-16 text-center md:px-12 md:py-24">
-        <div className="mx-auto mb-8 h-px w-16 bg-[#666666]" />
-        <p className="mb-5 text-[11px] uppercase tracking-[0.28em] text-[#666666]">
-          The Book Of Faith
-        </p>
-        <h3
-          className="text-balance break-keep text-3xl font-light leading-tight text-[#171717] [overflow-wrap:anywhere] md:text-4xl"
-          style={{ fontFamily: "'Noto Serif KR', serif" }}
-        >
-          {selectedBook.title}
-        </h3>
-        {selectedBook.subtitle && (
-          <p className="mx-auto mt-5 max-w-xl break-keep text-sm leading-7 text-[#666666] [overflow-wrap:anywhere]">
-            {selectedBook.subtitle}
-          </p>
-        )}
+      <div className="memorial-book-cover mx-auto max-w-3xl px-4 py-6 text-center md:px-12 md:py-10">
         <button
           type="button"
-          onClick={() => {
-            // 닫았다 다시 열면 책은 1쪽부터인데 번호만 전에 보던 자리로 남았다.
-            setCurrentPage(0);
-            setBookOpened(true);
-          }}
-          className="memorial-book-open-button mt-10 inline-flex h-12 items-center justify-center gap-2 bg-[#171717] px-7 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          onClick={openBook}
+          className="memorial-book-hardcover memorial-book-open-button"
+          aria-label={`${selectedBook.title} 책 펼쳐보기`}
+        >
+          <span className="memorial-book-hardcover__eyebrow">
+            The Book Of Faith
+          </span>
+          {selectedBook.coverPhotoUrl && (
+            <span className="memorial-book-hardcover__photo">
+              <img
+                src={toImgUrl(selectedBook.coverPhotoUrl)}
+                alt=""
+                draggable={false}
+              />
+            </span>
+          )}
+          <span className="memorial-book-hardcover__title">
+            {selectedBook.title}
+          </span>
+          {selectedBook.subtitle && (
+            <span className="memorial-book-hardcover__subtitle">
+              {selectedBook.subtitle}
+            </span>
+          )}
+          <span className="memorial-book-hardcover__year">
+            {selectedBook.publishedYear
+              ? `${selectedBook.publishedYear} · ${pages.length}쪽`
+              : `${pages.length}쪽`}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={openBook}
+          className="memorial-book-open-button mt-8 inline-flex h-12 items-center justify-center gap-2 bg-[#171717] px-7 text-sm font-medium text-white transition-opacity hover:opacity-90"
         >
           <BookOpen className="h-4 w-4" />
           책 펼쳐보기
         </button>
         <p className="mt-4 text-xs text-[#666666]">
-          모두 {pages.length}쪽입니다.
+          표지를 눌러도 펼쳐집니다. 모두 {pages.length}쪽입니다.
         </p>
       </div>
   );
@@ -610,7 +640,7 @@ function BookView({
     <>
       {cover}
       <div
-        className="memorial-book-reader fixed inset-0 z-[200] flex flex-col bg-[#101010] text-white"
+        className="memorial-book-reader fixed inset-0 z-[200] flex flex-col bg-[#171310] text-white"
         role="dialog"
         aria-modal="true"
         aria-label={`${selectedBook.title} 책장`}
@@ -644,7 +674,11 @@ function BookView({
         >
           <div
             ref={bookAreaRef}
-            className="memorial-book-open"
+            className={
+              isMobile
+                ? "memorial-book-open"
+                : "memorial-book-open memorial-book-open--spread"
+            }
             style={{ width: bookReaderFrameWidth(isMobile) }}
           >
             {!isMobile && (
