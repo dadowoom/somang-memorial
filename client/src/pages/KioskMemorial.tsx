@@ -1,5 +1,9 @@
 import { toImgUrl } from "@/lib/imageUrl";
 import "./kioskMemorialTabs.css";
+import MemorialBookSection from "@/components/memorial/MemorialBookSection";
+import MemorialGallerySection from "@/components/memorial/MemorialGallerySection";
+import MemorialVideoSection from "@/components/memorial/MemorialVideoSection";
+import { ORG_INFO } from "@/lib/orgInfo";
 import { formatLifespan } from "@/lib/lifespan";
 import KioskBackToTop from "@/components/kiosk/KioskBackToTop";
 import {
@@ -43,17 +47,23 @@ import {
 } from "@/components/kiosk/KioskKeyboard";
 import {
   ArrowLeft,
+  Bell,
   BookOpenText,
   CalendarDays,
+  Church,
+  HeartHandshake,
   House,
   Image as ImageIcon,
   Images,
   LockKeyhole,
   Mail,
+  Phone,
   Play,
   RefreshCw,
   Scroll,
   Send,
+  ShieldCheck,
+  Users,
   Video,
   X,
   type LucideIcon,
@@ -126,23 +136,6 @@ type KioskPlayableVideo = Omit<MemorialVideo, "id" | "isVisible"> & {
   id: number | string;
 };
 
-type MemorialBook = {
-  id: number;
-  title: string;
-  subtitle: string | null;
-  publishedYear: string | null;
-  coverPhotoUrl: string | null;
-  pages: Array<{
-    id: number;
-    title: string | null;
-    content: string | null;
-    photoUrl: string | null;
-    dateYear: number | null;
-    dateMonth: number | null;
-    dateDay: number | null;
-  }>;
-};
-
 type MemorialLetter = {
   id: number;
   author: string;
@@ -212,14 +205,10 @@ export default function KioskMemorial() {
   const { closeKeyboard, isOpen: isKeyboardOpen } = useKioskKeyboard();
   const kioskSessionActiveRef = useRef(true);
   const [accessToken, setAccessToken] = useState(() => readAccessToken(slug));
-  const [selectedPhoto, setSelectedPhoto] = useState<MemorialPhoto | null>(
-    null
-  );
   const [selectedVideo, setSelectedVideo] = useState<KioskPlayableVideo | null>(
     null
   );
   const [idleWarning, setIdleWarning] = useState(false);
-  const closePhoto = useCallback(() => setSelectedPhoto(null), []);
   const closeVideo = useCallback(() => setSelectedVideo(null), []);
   const returnToKiosk = useCallback(() => {
     kioskSessionActiveRef.current = false;
@@ -248,7 +237,6 @@ export default function KioskMemorial() {
     kioskSessionActiveRef.current = true;
     closeKeyboard();
     setAccessToken(readAccessToken(slug));
-    setSelectedPhoto(null);
     setSelectedVideo(null);
     setIdleWarning(false);
     window.scrollTo({ top: 0, left: 0 });
@@ -282,32 +270,7 @@ export default function KioskMemorial() {
       networkMode: "always",
     }
   );
-  const videosQuery = trpc.video.listByMemorial.useQuery(
-    {
-      memorialId: memorial?.id ?? 0,
-      accessToken: accessToken || undefined,
-    },
-    {
-      enabled: Boolean(memorial?.id),
-      retry: false,
-      networkMode: "always",
-    }
-  );
-  const booksQuery = trpc.book.listByMemorial.useQuery(
-    {
-      memorialId: memorial?.id ?? 0,
-      accessToken: accessToken || undefined,
-    },
-    {
-      enabled: Boolean(memorial?.id),
-      retry: false,
-      networkMode: "always",
-    }
-  );
-
   const photos = (photosQuery.data ?? []) as MemorialPhoto[];
-  const videos = (videosQuery.data ?? []) as MemorialVideo[];
-  const books = (booksQuery.data ?? []) as MemorialBook[];
   const portraitPhoto =
     photos.find(photo => photo.isRepresentative === 1) ?? photos[0] ?? null;
 
@@ -356,8 +319,6 @@ export default function KioskMemorial() {
             <KioskMemorialContent
               memorial={memorial}
               photos={photos}
-              videos={videos}
-              books={books}
               portraitPhoto={portraitPhoto}
               accessToken={accessToken || undefined}
               photosStatus={{
@@ -365,22 +326,6 @@ export default function KioskMemorial() {
                 unavailable: photosQuery.isError || photosQuery.isPaused,
                 retrying: photosQuery.isFetching,
                 onRetry: () => void photosQuery.refetch(),
-              }}
-              videosStatus={{
-                loading: videosQuery.isLoading,
-                unavailable: videosQuery.isError || videosQuery.isPaused,
-                retrying: videosQuery.isFetching,
-                onRetry: () => void videosQuery.refetch(),
-              }}
-              booksStatus={{
-                loading: booksQuery.isLoading,
-                unavailable: booksQuery.isError || booksQuery.isPaused,
-                retrying: booksQuery.isFetching,
-                onRetry: () => void booksQuery.refetch(),
-              }}
-              onPhoto={photo => {
-                closeKeyboard();
-                setSelectedPhoto(photo);
               }}
               onVideo={video => {
                 closeKeyboard();
@@ -391,7 +336,7 @@ export default function KioskMemorial() {
         )}
       </div>
 
-      {memorial && !selectedPhoto && !selectedVideo && !isKeyboardOpen && (
+      {memorial && !selectedVideo && !isKeyboardOpen && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 z-40 mx-auto flex w-full max-w-[720px] justify-end px-6">
           <button
             type="button"
@@ -403,10 +348,6 @@ export default function KioskMemorial() {
             처음으로
           </button>
         </div>
-      )}
-
-      {selectedPhoto && (
-        <KioskPhotoDialog photo={selectedPhoto} onClose={closePhoto} />
       )}
 
       {selectedVideo && (
@@ -619,103 +560,6 @@ function useKioskDialog({
   }, [dialogRef, initialFocusRef, onClose]);
 }
 
-function KioskPhotoDialog({
-  photo,
-  onClose,
-}: {
-  photo: MemorialPhoto;
-  onClose: () => void;
-}) {
-  const [attempt, setAttempt] = useState(0);
-  const dialogRef = useRef<HTMLElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const photoUrl = toImgUrl(photo.photoUrl);
-  const photoTitle = photo.caption || "추억 사진";
-
-  useKioskDialog({ onClose, dialogRef, initialFocusRef: closeButtonRef });
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-5"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="kiosk-photo-title"
-    >
-      <button
-        type="button"
-        className="absolute inset-0 h-full w-full cursor-default"
-        onClick={onClose}
-        aria-label="사진 바깥쪽을 눌러 닫기"
-      />
-
-      <section
-        ref={dialogRef}
-        className="relative z-10 flex h-[calc(100vh-2.5rem)] w-full max-w-[1200px] flex-col bg-[#111] text-white shadow-2xl"
-      >
-        <div className="flex items-center justify-between gap-5 border-b border-white/20 px-5 py-4">
-          <div className="min-w-0">
-            <p className="text-xs tracking-[0.18em] text-white/60">PHOTO</p>
-            <h2
-              id="kiosk-photo-title"
-              className="mt-1 truncate text-xl font-medium"
-            >
-              {photoTitle}
-            </h2>
-          </div>
-          <button
-            ref={closeButtonRef}
-            type="button"
-            onClick={onClose}
-            className="flex h-12 shrink-0 items-center gap-2 border border-white/40 px-4 text-sm font-medium"
-          >
-            <X className="h-5 w-5" />
-            사진 닫기
-          </button>
-        </div>
-
-        <KioskLoadableImage
-          key={`${photo.id}-${attempt}`}
-          src={photoUrl}
-          alt={photoTitle}
-          loading="eager"
-          loadingText="큰 사진을 불러오는 중입니다."
-          containerClassName="min-h-0 flex-1 bg-black"
-          imageClassName="object-contain"
-          fallback={
-            <div
-              className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center"
-              role="alert"
-            >
-              <ImageIcon className="h-10 w-10 text-white/65" />
-              <p className="text-lg">사진을 표시할 수 없습니다.</p>
-              <p className="text-sm leading-6 text-white/65">
-                인터넷 연결을 확인한 뒤 다시 시도해 주세요.
-              </p>
-              <div className="mt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setAttempt(current => current + 1)}
-                  className="flex h-12 items-center gap-2 border border-white/50 px-5 text-sm font-medium"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  다시 시도
-                </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="h-12 border border-white/30 px-5 text-sm font-medium text-white/80"
-                >
-                  닫기
-                </button>
-              </div>
-            </div>
-          }
-        />
-      </section>
-    </div>
-  );
-}
-
 function KioskVideoDialog({
   video,
   onClose,
@@ -857,43 +701,23 @@ function KioskVideoDialog({
 function KioskMemorialContent({
   memorial,
   photos,
-  videos,
-  books,
   portraitPhoto,
   accessToken,
   photosStatus,
-  videosStatus,
-  booksStatus,
-  onPhoto,
   onVideo,
 }: {
   memorial: KioskMemorialRecord;
   photos: MemorialPhoto[];
-  videos: MemorialVideo[];
-  books: MemorialBook[];
   portraitPhoto: MemorialPhoto | null;
   accessToken?: string;
   photosStatus: KioskResourceStatus;
-  videosStatus: KioskResourceStatus;
-  booksStatus: KioskResourceStatus;
-  onPhoto: (photo: MemorialPhoto) => void;
   onVideo: (video: KioskPlayableVideo) => void;
 }) {
   const storyParagraphs = useMemo(
     () => splitParagraphs(memorial.story),
     [memorial.story]
   );
-  const playableVideos = useMemo(
-    () =>
-      videos
-        .filter(
-          video =>
-            video.isVisible === 1 && isValidYouTubeVideoId(video.youtubeVideoId)
-        )
-        .slice(0, 4),
-    [videos]
-  );
-  const featuredVideo = playableVideos[0] ?? null;
+  const memorialDayLabel = formatMemorialDay(memorial.memorialDay);
 
   // 홈페이지 추모관과 같은 탭·같은 순서. 홈페이지처럼 누른 탭의 내용만 보여 준다 (2026-09-16).
   const tabs = kioskMemorialTabs(memorial);
@@ -1010,7 +834,12 @@ function KioskMemorialContent({
 
       {activeTab === "life" && (
         <>
-      <KioskSection id="story" eyebrow="Story" title="삶과 신앙">
+      <KioskSection
+        id="life"
+        eyebrow="Life And Faith"
+        title="삶과 신앙의 기록"
+        description="가족과 교회가 기억하는 따뜻한 여정을 조용히 담았습니다."
+      >
         {memorial.verse && (
           <article className="border border-[#dadada] p-6">
             <p className="text-[22px] leading-10" style={serifStyle}>
@@ -1023,10 +852,36 @@ function KioskMemorialContent({
         )}
 
         <article className="mt-4 border border-[#dadada] p-6">
-          <p className="mb-4 text-sm font-medium tracking-[0.22em] text-[#777]">
-            기억으로 남은 삶
+          <div className="mb-5 flex items-center gap-3">
+            <Church className="h-5 w-5 text-[#7a643e]" strokeWidth={1.6} />
+            <h3 className="text-2xl" style={serifStyle}>
+              예배 안내
+            </h3>
+          </div>
+          <div className="space-y-4 text-base leading-8 text-[#64615d]">
+            <p className="flex items-start gap-3">
+              <CalendarDays className="mt-2 h-4 w-4 shrink-0" strokeWidth={1.6} />
+              <span>{memorial.serviceTime?.trim() || "추후 안내"}</span>
+            </p>
+            <p className="flex items-start gap-3">
+              <Bell className="mt-2 h-4 w-4 shrink-0" strokeWidth={1.6} />
+              <span>추도일 {memorialDayLabel}</span>
+            </p>
+          </div>
+          <KioskReminderForm
+            memorialSlug={memorial.slug}
+            memorialDay={memorialDayLabel}
+          />
+        </article>
+
+        <article className="mt-4 border border-[#dadada] p-6">
+          <p className="mb-3 text-[12px] font-medium tracking-[0.26em] text-[#777]">
+            Story
           </p>
-          <div className="space-y-5">
+          <h3 className="break-keep text-[28px] [overflow-wrap:anywhere]" style={serifStyle}>
+            기억으로 남은 삶
+          </h3>
+          <div className="mt-6 space-y-5">
             {storyParagraphs.map((paragraph, index) => (
               <p
                 key={`${index}-${paragraph.slice(0, 16)}`}
@@ -1037,232 +892,109 @@ function KioskMemorialContent({
             ))}
           </div>
         </article>
-
-        <article className="mt-4 border border-[#dadada] p-6">
-          <div className="flex items-center gap-3">
-            <CalendarDays className="h-5 w-5" />
-            <p className="text-lg font-medium">추도일</p>
-          </div>
-          <p className="mt-4 text-base text-[#64615d]">
-            {formatMemorialDay(memorial.memorialDay)}
-          </p>
-        </article>
       </KioskSection>
+
+      {memorial.timeline.length > 0 && (
+        <KioskSection
+          id="journey"
+          eyebrow="Life Journey"
+          title="생애의 여정"
+          description="하나님과 함께 걸어온 삶의 발자취를 돌아봅니다."
+        >
+          <div className="border-t border-[#dadada]">
+            {memorial.timeline.map((item, index) => (
+              <article
+                key={`${item.year}-${item.title}-${index}`}
+                className="grid grid-cols-[120px_minmax(0,1fr)] gap-5 border-b border-[#dadada] py-6"
+              >
+                <p className="text-lg text-[#7a643e]" style={serifStyle}>
+                  {item.year || "기록"}
+                </p>
+                <div>
+                  <h3 className="break-keep text-xl [overflow-wrap:anywhere]" style={serifStyle}>
+                    {item.title || "생애 기록"}
+                  </h3>
+                  {item.description && (
+                    <p className="mt-3 break-keep text-base leading-8 text-[#64615d] [overflow-wrap:anywhere]">
+                      {item.description}
+                    </p>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        </KioskSection>
+      )}
 
         </>
       )}
 
       {activeTab === "records" && (
         <>
-      <KioskSection id="gallery" eyebrow="Gallery" title="사진첩">
-        {photosStatus.loading ? (
-          <EmptyBox
-            icon={<ImageIcon className="h-5 w-5" />}
-            text="사진을 불러오고 있습니다."
-          />
-        ) : photosStatus.unavailable ? (
-          <RetryBox
-            text="사진을 불러오지 못했습니다."
-            pending={photosStatus.retrying}
-            onRetry={photosStatus.onRetry}
-          />
-        ) : photos.length ? (
-          <div className="grid grid-cols-2 gap-3">
-            {photos.slice(0, 8).map(photo => (
-              <button
-                key={photo.id}
-                type="button"
-                onClick={() => onPhoto(photo)}
-                className="overflow-hidden border border-[#dadada] bg-white text-left"
-                aria-label={`${photo.caption || "추억 사진"} 크게 보기`}
-              >
-                <KioskLoadableImage
-                  key={`${photo.id}-${photo.photoUrl}`}
-                  src={toImgUrl(photo.photoUrl)}
-                  alt={photo.caption || "추억 사진"}
-                  containerClassName="aspect-square w-full"
-                  imageClassName="grayscale"
-                  preserveRatio
-                />
-                {(photo.caption || photo.year) && (
-                  <span className="block px-3 py-3 text-sm leading-6 text-[#64615d]">
-                    {photo.year ? `${photo.year} · ` : ""}
-                    {photo.caption || "추억 사진"}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <EmptyBox
-            icon={<ImageIcon className="h-5 w-5" />}
-            text="등록된 사진이 없습니다."
-          />
-        )}
+      <KioskSection
+        id="faith-story"
+        eyebrow="Faith Story"
+        title="신앙의 이야기"
+        description="가족이 남긴 기억과 신앙의 고백을 함께 돌아봅니다."
+      >
+        <article className="border border-[#dadada] p-8 text-center">
+          <p
+            aria-hidden="true"
+            className="mb-4 text-5xl leading-none text-[#7a643e] opacity-65"
+            style={{ fontFamily: "Georgia, serif" }}
+          >
+            "
+          </p>
+          <p className="text-lg leading-9" style={serifStyle}>
+            {memorial.verse || memorial.summary}
+          </p>
+          {memorial.verseRef && (
+            <p className="mt-6 text-xs uppercase tracking-[0.22em] text-[#7a643e]">
+              {memorial.verseRef}
+            </p>
+          )}
+        </article>
+        <article className="mt-4 border border-[#dadada] p-6">
+          <div className="mb-6 h-px w-10 bg-[#7a643e]" />
+          <h3 className="break-keep text-2xl [overflow-wrap:anywhere]" style={serifStyle}>
+            기억으로 남은 삶
+          </h3>
+          <p className="mt-6 whitespace-pre-wrap break-words text-base leading-8 text-[#4f4c48]">
+            {memorial.story}
+          </p>
+        </article>
       </KioskSection>
 
-      <KioskSection id="video" eyebrow="Video" title="영상 기록">
-        {videosStatus.loading ? (
-          <EmptyBox
-            icon={<Video className="h-5 w-5" />}
-            text="영상을 불러오고 있습니다."
-          />
-        ) : videosStatus.unavailable ? (
-          <RetryBox
-            text="영상을 불러오지 못했습니다."
-            pending={videosStatus.retrying}
-            onRetry={videosStatus.onRetry}
-          />
-        ) : (
-          <div className="overflow-hidden border border-[#dadada]">
-            {featuredVideo ? (
-              <button
-                type="button"
-                onClick={() => onVideo(featuredVideo)}
-                className="group relative block aspect-video w-full bg-[#1f1d1a] text-left"
-                aria-label={`${featuredVideo.title} 영상 재생`}
-              >
-                <KioskLoadableImage
-                  key={`${featuredVideo.id}-${featuredVideo.youtubeVideoId}`}
-                  src={
-                    getYouTubeThumbnailUrl(featuredVideo.youtubeVideoId) ?? ""
-                  }
-                  alt=""
-                  loadingText="영상 미리보기를 불러오는 중입니다."
-                  containerClassName="absolute inset-0 h-full w-full bg-[#1f1d1a]"
-                  imageClassName="object-cover opacity-80 transition group-active:opacity-60"
-                  fallback={
-                    <div
-                      className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/60"
-                      aria-hidden="true"
-                    >
-                      <Video className="h-8 w-8" />
-                      <span className="text-sm">미리보기 없음</span>
-                    </div>
-                  }
-                />
-                <span className="absolute inset-0 bg-black/30" />
-                <span className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white">
-                  <span className="flex h-20 w-20 items-center justify-center border border-white/70 bg-white/90 text-[#1f1d1a]">
-                    <Play className="ml-1 h-9 w-9 fill-current" />
-                  </span>
-                  <span className="bg-black/60 px-4 py-2 text-base font-medium">
-                    눌러서 영상 재생
-                  </span>
-                </span>
-              </button>
-            ) : (
-              <div className="relative aspect-video bg-[#1f1d1a]">
-                {portraitPhoto ? (
-                  <KioskLoadableImage
-                    key={`${portraitPhoto.id}-${portraitPhoto.photoUrl}-video`}
-                    src={toImgUrl(portraitPhoto.photoUrl)}
-                    alt={`${memorial.name} 영상 이미지`}
-                    containerClassName="absolute inset-0 h-full w-full bg-[#1f1d1a]"
-                    imageClassName="object-cover grayscale opacity-60"
-                    fallback={<span aria-hidden="true" />}
-                  />
-                ) : null}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
-                  <span className="flex items-center gap-3 break-keep px-5 text-base [overflow-wrap:anywhere]">
-                    <Video className="h-5 w-5" />
-                    현재 볼 수 있는 영상이 없습니다.
-                  </span>
-                </div>
-              </div>
-            )}
-            <div className="p-6">
-              <div className="mb-4 flex items-center gap-3">
-                <Video className="h-5 w-5" />
-                <p className="text-lg font-medium">영상으로 남은 기억</p>
-              </div>
-              {playableVideos.length ? (
-                <div className="space-y-3">
-                  {playableVideos.map(video => (
-                    <button
-                      key={video.id}
-                      type="button"
-                      onClick={() => onVideo(video)}
-                      className="flex min-h-14 w-full items-center justify-between gap-4 border-t border-[#dadada] py-3 text-left text-base text-[#4f4c48]"
-                    >
-                      <span>{video.title}</span>
-                      <Play className="h-4 w-4 shrink-0 fill-current" />
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="break-keep text-base leading-8 text-[#64615d] [overflow-wrap:anywhere]">
-                  현재 볼 수 있는 영상이 없습니다.
-                </p>
-              )}
-            </div>
+      {/* 사진첩·영상·책장과 연표는 홈페이지 "사진과 기록"과 같은 부품을 그대로 쓴다 (2026-09-16).
+          방문자 화면이므로 관리 기능은 꺼 둔다. */}
+      <div className="border-t border-[#dadada]">
+        <div className="memorial-gallery">
+          <div id="gallery">
+            <MemorialGallerySection
+              memorialId={memorial.id}
+              isAdmin={false}
+              accessToken={accessToken}
+            />
           </div>
-        )}
-      </KioskSection>
-
-      <KioskSection id="book" eyebrow="Archive" title="책장과 연표">
-        {memorial.timeline.length ? (
-          <div className="border-t border-[#dadada]">
-            {memorial.timeline.slice(0, 6).map((item, index) => (
-              <article
-                key={`${item.year}-${item.title}-${index}`}
-                className="border-b border-[#dadada] py-5"
-              >
-                <p className="text-sm text-[#7a643e]">{item.year || "기록"}</p>
-                <h3 className="mt-2 text-[24px]" style={serifStyle}>
-                  {item.title || "생애 기록"}
-                </h3>
-                {item.description && (
-                  <p className="mt-3 text-base leading-8 text-[#64615d]">
-                    {item.description}
-                  </p>
-                )}
-              </article>
-            ))}
-          </div>
-        ) : null}
-
-        {booksStatus.loading ? (
-          <EmptyBox
-            icon={<BookOpenText className="h-5 w-5" />}
-            text="책 기록을 불러오고 있습니다."
+        </div>
+        <div id="video">
+          <MemorialVideoSection
+            memorialId={memorial.id}
+            memorialName={memorial.name}
+            churchName={memorial.church}
+            coverImageUrl={portraitPhoto?.photoUrl ?? undefined}
+            isAdmin={false}
+            accessToken={accessToken}
           />
-        ) : booksStatus.unavailable ? (
-          <RetryBox
-            text="책 기록을 불러오지 못했습니다."
-            pending={booksStatus.retrying}
-            onRetry={booksStatus.onRetry}
+        </div>
+        <div id="book">
+          <MemorialBookSection
+            memorialId={memorial.id}
+            isAdmin={false}
+            accessToken={accessToken}
           />
-        ) : books.length ? (
-          <div className="mt-5 space-y-3">
-            {books.slice(0, 3).map(book => (
-              <article key={book.id} className="border border-[#dadada] p-5">
-                <p className="text-sm text-[#7a643e]">
-                  {book.publishedYear || "기록"}
-                </p>
-                <h3 className="mt-2 text-[24px]" style={serifStyle}>
-                  {book.title}
-                </h3>
-                {book.subtitle && (
-                  <p className="mt-2 text-base text-[#64615d]">
-                    {book.subtitle}
-                  </p>
-                )}
-                {book.pages[0]?.content && (
-                  <p className="mt-4 line-clamp-3 text-base leading-8 text-[#64615d]">
-                    {book.pages[0].content}
-                  </p>
-                )}
-              </article>
-            ))}
-          </div>
-        ) : !memorial.timeline.length ? (
-          <EmptyBox
-            icon={<BookOpenText className="h-5 w-5" />}
-            text="등록된 기록이 없습니다."
-          />
-        ) : null}
-      </KioskSection>
+        </div>
+      </div>
 
         </>
       )}
@@ -1272,6 +1004,8 @@ function KioskMemorialContent({
       <KioskFamilySection
         key={memorial.slug}
         slug={memorial.slug}
+        memorialName={memorial.name}
+        memorialRole={memorial.role}
         onVideo={onVideo}
       />
 
@@ -1290,7 +1024,13 @@ function KioskMemorialContent({
         </>
       )}
 
-      {activeTab === "obituary" && <KioskObituarySection memorial={memorial} />}
+      {activeTab === "obituary" && (
+        <KioskObituarySection
+          memorial={memorial}
+          photos={photos}
+          portraitPhoto={portraitPhoto}
+        />
+      )}
 
       <div aria-hidden="true" className="h-[24vh] border-t border-[#dadada]" />
     </>
@@ -1420,9 +1160,13 @@ function KioskMemorialGate({
 
 function KioskFamilySection({
   slug,
+  memorialName,
+  memorialRole,
   onVideo,
 }: {
   slug: string;
+  memorialName: string;
+  memorialRole: string;
   onVideo: (video: KioskPlayableVideo) => void;
 }) {
   const [password, setPassword] = useState("");
@@ -1456,7 +1200,7 @@ function KioskFamilySection({
     },
     maxLength: 100,
     defaultMode: "number",
-    submitLabel: "입장",
+    submitLabel: "비밀번호 확인",
     submitDisabled: verifyFamily.isPending,
     onSubmit: () => {
       submitPassword();
@@ -1500,7 +1244,16 @@ function KioskFamilySection({
   }
 
   return (
-    <KioskSection id="family" eyebrow="Family" title="가족관">
+    <KioskSection
+      id="family"
+      eyebrow={room ? "Family Room" : "Private Family Room"}
+      title="가족관"
+      description={
+        room
+          ? "가족에게만 전하는 사랑과 믿음의 이야기. 함께 간직할 기억을 이곳에서 이어갑니다."
+          : undefined
+      }
+    >
       {statusQuery.isLoading ? (
         <EmptyBox
           icon={<LockKeyhole className="h-5 w-5" />}
@@ -1519,11 +1272,27 @@ function KioskFamilySection({
         />
       ) : room ? (
         <div className="space-y-4">
-          <article className="border border-[#dadada] p-6">
-            <p className="break-keep text-sm text-[#7a643e] [overflow-wrap:anywhere]">
-              가족관에 입장했습니다
+          <div className="flex items-start justify-between gap-5 border border-[#dadada] p-6">
+            <p className="text-xl text-[#64615d]" style={serifStyle}>
+              {room.memorialName || memorialName} {room.memorialRole || memorialRole}
             </p>
-            <h3 className="mt-3 text-[28px]" style={serifStyle}>
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#18181b] text-white">
+                <ShieldCheck className="h-5 w-5" strokeWidth={1.7} />
+              </span>
+              <span>
+                <span className="block text-sm font-medium">가족 전용 공간</span>
+                <span className="mt-1 block text-sm leading-6 text-[#64615d]">
+                  공개 추모관과 분리된 비공개 기록 공간입니다.
+                </span>
+              </span>
+            </div>
+          </div>
+          <article className="border border-[#dadada] p-6">
+            <p className="mb-4 text-[12px] font-medium uppercase tracking-[0.26em] text-[#777]">
+              가족에게 남기는 마음
+            </p>
+            <h3 className="break-keep text-[28px] [overflow-wrap:anywhere]" style={serifStyle}>
               {room.title}
             </h3>
             <p className="mt-4 text-base leading-8 text-[#64615d]">
@@ -1563,6 +1332,9 @@ function KioskFamilySection({
                 </span>
               </span>
               <span className="block p-5">
+                <span className="mb-2 block text-[12px] font-medium uppercase tracking-[0.24em] text-[#777]">
+                  Family Video
+                </span>
                 <span className="block text-[22px]" style={serifStyle}>
                   {room.video.title}
                 </span>
@@ -1574,6 +1346,9 @@ function KioskFamilySection({
           )}
           {(room.photos ?? []).length > 0 && (
             <article className="border border-[#dadada] p-5">
+              <p className="mb-2 text-[12px] font-medium uppercase tracking-[0.24em] text-[#777]">
+                Family Photos
+              </p>
               <h4 className="text-[22px]" style={serifStyle}>
                 가족끼리 간직하는 사진
               </h4>
@@ -1598,23 +1373,45 @@ function KioskFamilySection({
               </ul>
             </article>
           )}
-          {room.notes.map(note => (
-            <article key={note.title} className="border border-[#dadada] p-5">
-              <h4 className="text-[22px]" style={serifStyle}>
-                {note.title}
-              </h4>
-              <p className="mt-3 text-base leading-8 text-[#64615d]">
-                {note.body}
-              </p>
-            </article>
-          ))}
+          {room.notes.map((note, index) => {
+            const NoteIcon = FAMILY_NOTE_ICONS[index] ?? BookOpenText;
+            return (
+              <article key={note.title} className="border border-[#dadada] p-5">
+                <div className="mb-5 flex h-10 w-10 items-center justify-center border border-[#dadada]">
+                  <NoteIcon className="h-5 w-5" strokeWidth={1.6} />
+                </div>
+                <h4 className="text-[22px]" style={serifStyle}>
+                  {note.title}
+                </h4>
+                <p className="mt-3 text-base leading-8 text-[#64615d]">
+                  {note.body}
+                </p>
+              </article>
+            );
+          })}
         </div>
       ) : (
         <form onSubmit={submit} className="border border-[#dadada] p-6">
-          <p className="break-keep text-base leading-8 text-[#64615d] [overflow-wrap:anywhere]">
-            가족에게만 열린 공간입니다. 전달받은 비밀번호를 입력해 주세요.
-          </p>
+          <div className="mb-6 border-b border-[#dadada] pb-6 text-center">
+            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center bg-[#18181b] text-white">
+              <LockKeyhole className="h-5 w-5" strokeWidth={1.7} />
+            </div>
+            <p className="text-xl text-[#64615d]" style={serifStyle}>
+              {status.memorialName || memorialName} {memorialRole}
+            </p>
+            <p className="mx-auto mt-4 max-w-xl break-keep text-base leading-8 text-[#64615d] [overflow-wrap:anywhere]">
+              이 공간은 유족과 가족을 위한 비공개 공간입니다. 전달받은
+              비밀번호를 입력한 뒤 들어갈 수 있습니다.
+            </p>
+          </div>
+          <label
+            htmlFor={`kiosk-family-password-${slug}`}
+            className="block text-sm font-medium text-[#555]"
+          >
+            가족관 비밀번호
+          </label>
           <input
+            id={`kiosk-family-password-${slug}`}
             ref={passwordKeyboard.ref}
             type="password"
             value={password}
@@ -1622,8 +1419,8 @@ function KioskFamilySection({
               setPassword(event.target.value);
               setMessage("");
             }}
-            placeholder="가족관 비밀번호"
-            className="mt-6 h-16 w-full border border-[#18181b] px-5 text-2xl outline-none placeholder:text-[#aaa]"
+            placeholder="비밀번호를 입력해 주세요"
+            className="mt-3 h-16 w-full border border-[#18181b] px-5 text-2xl outline-none placeholder:text-[#aaa]"
             autoComplete="off"
             maxLength={100}
             inputMode={passwordKeyboard.inputMode}
@@ -1636,7 +1433,7 @@ function KioskFamilySection({
             disabled={verifyFamily.isPending}
             className="mt-5 h-16 w-full bg-[#18181b] text-lg font-medium text-white disabled:opacity-50"
           >
-            {verifyFamily.isPending ? "확인 중" : "가족관 입장"}
+            {verifyFamily.isPending ? "확인 중" : "비밀번호 확인"}
           </button>
         </form>
       )}
@@ -1719,7 +1516,7 @@ function KioskLettersSection({
     if (createLetter.isPending) return false;
 
     if (!author.trim() || !content.trim()) {
-      setMessage("보내는 분과 편지 내용을 입력해 주세요.");
+      setMessage("보내는 분의 이름과 편지 내용을 모두 입력해 주세요.");
       return false;
     }
     if (typeof navigator !== "undefined" && navigator.onLine === false) {
@@ -1760,11 +1557,15 @@ function KioskLettersSection({
       id="letters"
       eyebrow="Letters"
       title="하늘로 보내는 편지"
+      description={`${memorialName}님께 전하고 싶은 마음을 남겨 주세요.`}
       keyboardOpen={authorKeyboard.keyboardOpen || contentKeyboard.keyboardOpen}
     >
       <form onSubmit={submit} className="border border-[#dadada]">
         <div className="border-b border-[#dadada] p-5">
-          <p className="text-sm text-[#7a643e]">받는 분: {memorialName}</p>
+          <label className="block">
+          <span className="text-xs font-medium uppercase tracking-[0.16em] text-[#7a643e]">
+            보내는 분
+          </span>
           <input
             ref={authorKeyboard.ref}
             value={author}
@@ -1772,14 +1573,19 @@ function KioskLettersSection({
               setAuthor(event.target.value);
               setMessage("");
             }}
-            placeholder="보내는 분"
-            className="mt-4 h-12 w-full border-b border-[#dadada] bg-transparent text-xl outline-none placeholder:text-[#aaa]"
+            placeholder="보내는 분의 이름"
+            className="mt-3 h-12 w-full border-b border-[#dadada] bg-transparent text-xl outline-none placeholder:text-[#aaa]"
             autoComplete="off"
             maxLength={80}
             inputMode={authorKeyboard.inputMode}
             onFocus={authorKeyboard.onFocus}
             onClick={authorKeyboard.onClick}
           />
+          </label>
+          <label className="mt-5 block">
+          <span className="text-xs font-medium uppercase tracking-[0.16em] text-[#7a643e]">
+            편지 내용
+          </span>
           <textarea
             ref={contentKeyboard.ref}
             value={content}
@@ -1788,19 +1594,20 @@ function KioskLettersSection({
               setMessage("");
             }}
             placeholder="전하고 싶은 마음을 남겨 주세요."
-            rows={4}
-            className="mt-5 w-full resize-none bg-transparent text-lg leading-8 outline-none placeholder:text-[#aaa]"
+            rows={5}
+            className="mt-3 w-full resize-none bg-transparent text-lg leading-8 outline-none placeholder:text-[#aaa]"
             maxLength={2000}
             inputMode={contentKeyboard.inputMode}
             onFocus={contentKeyboard.onFocus}
             onClick={contentKeyboard.onClick}
           />
+          </label>
         </div>
         <div className="p-5">
           <p className="mb-4 break-keep text-sm leading-6 text-[#64615d] [overflow-wrap:anywhere]">
             {message ||
               (isPrivate
-                ? "비공개 추모관 안에서만 보관됩니다."
+                ? "비공개 추모관에만 보관되며 전체 편지 목록에는 표시되지 않습니다."
                 : "남겨진 편지는 하늘로 보내는 편지에 함께 모입니다.")}
           </p>
           <button
@@ -1826,11 +1633,11 @@ function KioskLettersSection({
             onRetry={() => void lettersQuery.refetch()}
           />
         ) : letters.length ? (
-          letters.slice(0, 4).map(letter => (
+          letters.map(letter => (
             <article key={letter.id} className="border-b border-[#dadada] py-5">
               <div className="flex items-center justify-between gap-4">
                 <p className="text-base font-medium">
-                  보내는 분: {letter.author}
+                  보내는 분 · {letter.author}
                 </p>
                 <p className="text-sm text-[#777]">
                   {formatDate(letter.createdAt)}
@@ -1852,23 +1659,77 @@ function KioskLettersSection({
 }
 
 /** 홈페이지 부고장(/memorial/:slug/obituary)과 같은 내용을 키오스크 안에서 보여 준다 (2026-09-16). */
-function KioskObituarySection({ memorial }: { memorial: KioskMemorialRecord }) {
-  const rows: Array<{ label: string; value: string }> = [];
+function KioskObituarySection({
+  memorial,
+  photos,
+  portraitPhoto,
+}: {
+  memorial: KioskMemorialRecord;
+  photos: MemorialPhoto[];
+  portraitPhoto: MemorialPhoto | null;
+}) {
+  const rows: Array<{ label: string; value: ReactNode }> = [];
   if (memorial.servicePlace?.trim())
     rows.push({ label: "빈소", value: memorial.servicePlace.trim() });
   if (memorial.serviceTime?.trim())
     rows.push({ label: "예배", value: memorial.serviceTime.trim().replace("T", " ") });
   if (memorial.memorialDay?.trim())
     rows.push({ label: "추도일", value: memorial.memorialDay.trim() });
-  const family = [memorial.familyContact?.trim(), memorial.familyPhone?.trim()]
-    .filter(Boolean)
-    .join(" · ");
-  if (family) rows.push({ label: "상주", value: family });
+  if (memorial.familyContact?.trim() || memorial.familyPhone?.trim())
+    rows.push({
+      label: "상주",
+      value: (
+        <>
+          {memorial.familyContact?.trim()}
+          {memorial.familyPhone?.trim() ? (
+            <>
+              {memorial.familyContact?.trim() ? <br /> : null}
+              <span className="text-sm text-[#7d7666]">
+                {memorial.familyPhone.trim()}
+              </span>
+            </>
+          ) : null}
+        </>
+      ),
+    });
+  const timeline = memorial.timeline.filter(
+    item => item.year || item.title || item.description
+  );
+  const stripPhotos = photos.slice(0, 3);
+  const remainingPhotoCount = Math.max(0, photos.length - stripPhotos.length);
 
+  // 홈페이지 부고장과 같은 내용. 키오스크에는 전화·길찾기·일정 저장·부고 전하기 단추만 없다
+  // (키오스크에서는 전화를 걸거나 파일을 내려받을 수 없다).
   return (
     <KioskSection id="obituary" eyebrow="Obituary" title="부고장">
-      <article className="border border-[#dadada] bg-[#1f1d1a] px-8 py-10 text-center text-[#e8e4dc]">
-        <p className="text-sm tracking-[0.26em] text-[#a49c88]">
+      <article className="mx-auto max-w-[560px] border border-[#4a463c] bg-[#1f1d1a] px-8 pb-10 pt-8 text-center text-[#e8e4dc]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-px w-[34px] bg-[#8a8270]" />
+          <span
+            className="text-[17px] tracking-[0.7em] [text-indent:0.7em]"
+            style={serifStyle}
+          >
+            訃 告
+          </span>
+          <div className="h-px w-[34px] bg-[#8a8270]" />
+        </div>
+
+        <div className="mx-auto mt-8 flex aspect-[4/5] w-full max-w-[360px] items-center justify-center overflow-hidden border border-[#3a362e] bg-[#1e1c17]">
+          {portraitPhoto ? (
+            <img
+              src={toImgUrl(portraitPhoto.photoUrl)}
+              alt={`${memorial.name} ${memorial.role}`}
+              className="h-full w-full object-cover"
+              style={{ filter: "grayscale(1) contrast(1.04)" }}
+            />
+          ) : (
+            <span className="text-xs tracking-[0.26em] text-[#6b6555]">
+              고인 사진
+            </span>
+          )}
+        </div>
+
+        <p className="mt-8 text-sm tracking-[0.26em] text-[#a49c88]">
           {memorial.church} {memorial.role}
         </p>
         <h3
@@ -1888,7 +1749,7 @@ function KioskObituarySection({ memorial }: { memorial: KioskMemorialRecord }) {
           삼가 알려 드립니다.
         </p>
         {memorial.verse?.trim() ? (
-          <div className="mt-8 border-t border-[#3a362e] pt-6">
+          <div className="mt-8 border-y border-[#3a362e] py-6">
             <p className="text-base leading-8 text-[#b8b1a0]" style={serifStyle}>
               {memorial.verse.trim()}
             </p>
@@ -1904,24 +1765,76 @@ function KioskObituarySection({ memorial }: { memorial: KioskMemorialRecord }) {
             {memorial.summary.trim()}
           </p>
         ) : null}
-      </article>
-      {rows.length ? (
-        <div className="mt-4 border border-[#dadada]">
-          {rows.map(row => (
-            <div
-              key={row.label}
-              className="grid grid-cols-[96px_minmax(0,1fr)] border-b border-[#dadada] last:border-b-0"
-            >
-              <p className="bg-[#f7f7f7] px-5 py-4 text-sm font-medium text-[#7a643e]">
-                {row.label}
-              </p>
-              <p className="px-5 py-4 text-base leading-7 text-[#34312d]">
-                {row.value}
-              </p>
+
+        {rows.length > 0 ? (
+          <div className="mt-6 text-left">
+            {rows.map((row, index) => (
+              <div
+                key={row.label}
+                className={`flex items-start gap-4 py-4 ${
+                  index === rows.length - 1 ? "" : "border-b border-[#2a2721]"
+                }`}
+              >
+                <span className="w-16 shrink-0 pt-1 text-xs tracking-[0.16em] text-[#7d7666]">
+                  {row.label}
+                </span>
+                <span className="text-base leading-7 text-[#e8e4dc]">
+                  {row.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {timeline.length > 0 ? (
+          <div className="mt-6 text-left">
+            <p className="mb-4 text-xs uppercase tracking-[0.28em] text-[#7d7666]">
+              Life
+            </p>
+            <div className="flex flex-col gap-3">
+              {timeline.map((item, index) => (
+                <div key={`${item.year}-${index}`} className="flex items-baseline gap-4">
+                  <span className="w-12 shrink-0 text-base text-[#8a8270]">
+                    {item.year}
+                  </span>
+                  <span className="text-sm leading-7 text-[#b8b1a0]">
+                    {item.title}
+                    {item.title && item.description ? " · " : ""}
+                    {item.description}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ) : null}
+          </div>
+        ) : null}
+
+        {stripPhotos.length > 0 ? (
+          <div className="mt-6 grid grid-cols-3 gap-2">
+            {stripPhotos.map((photo, index) => (
+              <div
+                key={photo.id}
+                className="relative aspect-square overflow-hidden bg-[#232019]"
+              >
+                <img
+                  src={toImgUrl(photo.photoUrl)}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  style={{ filter: "grayscale(1) contrast(1.04)" }}
+                />
+                {index === 2 && remainingPhotoCount > 0 ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-[#14130f]/70 text-sm text-[#e8e4dc]">
+                    +{remainingPhotoCount}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        <p className="mt-8 text-xs leading-6 text-[#6b6555]">
+          {ORG_INFO.name} 온라인 추모관
+        </p>
+      </article>
     </KioskSection>
   );
 }
@@ -1930,12 +1843,14 @@ function KioskSection({
   id,
   eyebrow,
   title,
+  description,
   children,
   keyboardOpen = false,
 }: {
   id: string;
   eyebrow: string;
   title: string;
+  description?: string;
   children: ReactNode;
   keyboardOpen?: boolean;
 }) {
@@ -1949,13 +1864,148 @@ function KioskSection({
         {eyebrow}
       </p>
       <h2
-        className="mb-7 break-keep text-[36px] font-normal leading-tight [overflow-wrap:anywhere]"
+        className={`${description ? "mb-3" : "mb-7"} break-keep text-[36px] font-normal leading-tight [overflow-wrap:anywhere]`}
         style={serifStyle}
       >
         {title}
       </h2>
+      {description && (
+        <p className="mb-7 break-keep text-base leading-8 text-[#64615d] [overflow-wrap:anywhere]">
+          {description}
+        </p>
+      )}
       {children}
     </section>
+  );
+}
+
+// 홈페이지 가족관의 안내 세 칸과 같은 그림 (MemorialFamilyPage.tsx).
+const FAMILY_NOTE_ICONS: LucideIcon[] = [Users, BookOpenText, HeartHandshake];
+
+/**
+ * 홈페이지 "예배 안내"의 추도일 알림 신청과 같다 (MemorialReminderForm). 키오스크라
+ * 번호는 화면 자판(숫자)으로 넣는다.
+ */
+function KioskReminderForm({
+  memorialSlug,
+  memorialDay,
+}: {
+  memorialSlug: string;
+  memorialDay: string;
+}) {
+  const [phone, setPhone] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [message, setMessage] = useState("");
+  const { closeKeyboard } = useKioskKeyboard();
+  const subscribe = trpc.reminder.subscribe.useMutation({
+    networkMode: "always",
+    onSuccess: data => {
+      closeKeyboard();
+      setPhone("");
+      setConsent(false);
+      setMessage(
+        data.confirmationSent
+          ? `${data.memorialDay} 추도일 알림 신청이 저장되었고 확인 문자를 보냈습니다.`
+          : `${data.memorialDay} 추도일 알림 신청이 저장되었습니다. ${data.confirmationMessage}`
+      );
+    },
+    onError: error => {
+      setMessage(error.message || "알림 신청 중 문제가 생겼습니다.");
+    },
+  });
+  const phoneKeyboard = useKioskKeyboardField<HTMLInputElement>({
+    id: `kiosk-reminder-phone-${memorialSlug}`,
+    label: "휴대폰 번호",
+    alignToTop: true,
+    value: phone,
+    onChange: value => {
+      setPhone(value);
+      setMessage("");
+    },
+    maxLength: 20,
+    defaultMode: "number",
+    submitLabel: "알림 신청",
+    submitDisabled: subscribe.isPending,
+    onSubmit: () => submitReminder(),
+  });
+
+  function submitReminder() {
+    if (subscribe.isPending) return false;
+    const trimmedPhone = phone.trim();
+    if (!trimmedPhone) {
+      setMessage("휴대폰 번호를 입력해 주세요.");
+      return false;
+    }
+    if (!consent) {
+      setMessage("추도일 알림을 위한 번호 저장에 동의해 주세요.");
+      return false;
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setMessage(KIOSK_CONNECTION_ERROR_MESSAGE);
+      return false;
+    }
+    setMessage("");
+    subscribe.mutate({ memorialSlug, phone: trimmedPhone, consent: true });
+    return true;
+  }
+
+  return (
+    <form
+      onSubmit={event => {
+        event.preventDefault();
+        if (submitReminder()) closeKeyboard();
+      }}
+      className="mt-6 border-t border-[#dadada] pt-5"
+    >
+      <div className="mb-4 flex items-start gap-3">
+        <Phone className="mt-1 h-4 w-4 shrink-0 text-[#7a643e]" strokeWidth={1.6} />
+        <div>
+          <p className="text-base font-medium">추도일 알림 받기</p>
+          <p className="mt-1 break-keep text-sm leading-6 text-[#64615d] [overflow-wrap:anywhere]">
+            휴대폰 번호를 남기면 {memorialDay} 추도일 안내를 받을 수 있습니다.
+          </p>
+        </div>
+      </div>
+      <input
+        ref={phoneKeyboard.ref}
+        value={phone}
+        onChange={event => {
+          setPhone(event.target.value);
+          setMessage("");
+        }}
+        placeholder="010-0000-0000"
+        inputMode={phoneKeyboard.inputMode}
+        onFocus={phoneKeyboard.onFocus}
+        onClick={phoneKeyboard.onClick}
+        autoComplete="off"
+        maxLength={20}
+        className="h-14 w-full border border-[#dadada] bg-white px-4 text-xl outline-none placeholder:text-[#aaa]"
+      />
+      <label className="mt-3 flex items-start gap-3 py-2 text-sm leading-6 text-[#64615d]">
+        <input
+          type="checkbox"
+          checked={consent}
+          onChange={event => setConsent(event.target.checked)}
+          className="mt-0.5 h-6 w-6 shrink-0"
+        />
+        <span className="break-keep [overflow-wrap:anywhere]">
+          추도일 알림 신청을 위해 휴대폰 번호를 저장하는 데 동의합니다.
+        </span>
+      </label>
+      <button
+        type="submit"
+        disabled={subscribe.isPending}
+        className="mt-3 inline-flex h-14 w-full items-center justify-center gap-2 bg-[#18181b] text-base font-medium text-white disabled:opacity-50"
+      >
+        {subscribe.isPending ? "신청 중" : "알림 신청"}
+        <Bell className="h-4 w-4" strokeWidth={1.7} />
+      </button>
+      {message && (
+        <p className="mt-3 break-keep text-sm leading-6 text-[#64615d] [overflow-wrap:anywhere]">
+          {message}
+        </p>
+      )}
+    </form>
   );
 }
 
@@ -2060,22 +2110,28 @@ function scrollToSection(id: string) {
     ?.scrollIntoView({ block: "start", behavior: "smooth" });
 }
 
+// 홈페이지(MemorialPublicDetail.tsx)와 같은 규칙: 빈 줄에서만 문단을 나눈다.
 function splitParagraphs(value: string) {
-  return value
-    .split(/\n{2,}|\r?\n/)
-    .map(line => line.trim())
+  const paragraphs = value
+    .split(/\n{2,}/)
+    .map(paragraph => paragraph.trim())
     .filter(Boolean);
+
+  return paragraphs.length > 0 ? paragraphs : [value];
 }
 
-function formatMemorialDay(value: string | null) {
-  if (!value) return "추도일이 등록되지 않았습니다.";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+// 홈페이지와 같은 표기: "매년 3월 1일", 없으면 "추후 안내".
+function formatMemorialDay(value?: string | null) {
+  if (!value) return "추후 안내";
+
+  const dateMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateMatch) {
+    const month = Number(dateMatch[2]);
+    const day = Number(dateMatch[3]);
+    return `매년 ${month}월 ${day}일`;
+  }
+
+  return value;
 }
 
 function formatDate(value: string | Date) {
