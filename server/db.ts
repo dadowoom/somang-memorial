@@ -1552,6 +1552,7 @@ export type FamilyRoomPhotoView = {
   id: number;
   photoUrl: string;
   caption: string | null;
+  year: string | null;
   sortOrder: number;
 };
 
@@ -1568,6 +1569,7 @@ export async function listFamilyRoomPhotos(
       id: memorialFamilyRoomPhotos.id,
       photoUrl: memorialFamilyRoomPhotos.photoUrl,
       caption: memorialFamilyRoomPhotos.caption,
+      year: memorialFamilyRoomPhotos.year,
       sortOrder: memorialFamilyRoomPhotos.sortOrder,
     })
     .from(memorialFamilyRoomPhotos)
@@ -1628,6 +1630,65 @@ export async function deleteFamilyRoomPhoto(
     );
 
   return { deleted: (result as { affectedRows?: number }).affectedRows === 1 };
+}
+
+/**
+ * 가족관 사진의 설명·연도를 고친다 (2026-09-16, 추모관 앨범과 같은 방식).
+ * 사진 번호와 가족관 번호가 둘 다 맞는 사진만 고친다. 다른 가족관의 사진이면
+ * 아무것도 바꾸지 않고 updated: false 를 돌려준다.
+ */
+export async function updateFamilyRoomPhoto(
+  photoId: number,
+  familyRoomId: number,
+  data: { caption?: string | null; year?: string | null }
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const where = and(
+    eq(memorialFamilyRoomPhotos.id, photoId),
+    eq(memorialFamilyRoomPhotos.familyRoomId, familyRoomId)
+  );
+  const [found] = await db
+    .select({ id: memorialFamilyRoomPhotos.id })
+    .from(memorialFamilyRoomPhotos)
+    .where(where)
+    .limit(1);
+  if (!found) return { updated: false };
+
+  await db.update(memorialFamilyRoomPhotos).set(data).where(where);
+  return { updated: true };
+}
+
+/**
+ * 가족관 사진 순서를 한 번에 저장한다. photoIds 에 적힌 순서대로 1, 2, 3… 이 된다.
+ * 이 가족관의 사진인지는 부르는 쪽(routers)이 먼저 확인하고, 여기서도 가족관
+ * 번호로 묶어서만 고친다.
+ */
+export async function reorderFamilyRoomPhotos(
+  familyRoomId: number,
+  photoIds: number[]
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  await db.transaction(async tx => {
+    for (let index = 0; index < photoIds.length; index += 1) {
+      await tx
+        .update(memorialFamilyRoomPhotos)
+        .set({ sortOrder: index + 1 })
+        .where(
+          and(
+            eq(memorialFamilyRoomPhotos.id, photoIds[index]),
+            eq(memorialFamilyRoomPhotos.familyRoomId, familyRoomId)
+          )
+        );
+    }
+  });
 }
 
 

@@ -26,6 +26,8 @@ import {
   getReminderSubscriptionById,
   addFamilyRoomPhoto,
   deleteFamilyRoomPhoto,
+  reorderFamilyRoomPhotos,
+  updateFamilyRoomPhoto,
   getMemorialFamilyRoomManageInfo,
   updateMemorialFamilyRoomVideo,
   createMemorialFamilyRoom,
@@ -351,6 +353,23 @@ const familyRoomDeletePhotoInput = z.object({
 
 /** 가족관 하나에 둘 수 있는 사진 수. */
 export const FAMILY_ROOM_PHOTO_LIMIT = 100;
+
+// 가족관 사진의 설명·연도 고치기와 순서 바꾸기 (2026-09-16, 추모관 앨범과 같은 방식).
+// 빈칸으로 저장하면 설명·연도를 지운다.
+const familyRoomUpdatePhotoInput = z.object({
+  memorialSlug: familyRoomSlugField,
+  photoId: z.number().int().positive(),
+  caption: z.string().trim().max(500).nullable().optional(),
+  year: z.string().trim().max(20).nullable().optional(),
+});
+
+const familyRoomReorderPhotosInput = z.object({
+  memorialSlug: familyRoomSlugField,
+  photoIds: z
+    .array(z.number().int().positive())
+    .min(1)
+    .max(FAMILY_ROOM_PHOTO_LIMIT),
+});
 
 /**
  * 유가족이 직접 하는 일(가족관·초대)의 감사기록에 "누가"를 남기는 방법.
@@ -1831,6 +1850,98 @@ export const appRouter = router({
           ...familyAuditActor(ctx.user),
           action: "family_room.photo.delete",
           beforeValue: String(input.photoId),
+          note: `${info.memorialName} (${info.memorialSlug})`,
+        });
+
+        return { success: true };
+      }),
+
+    updatePhoto: protectedProcedure
+      .input(familyRoomUpdatePhotoInput)
+      .mutation(async ({ ctx, input }) => {
+        const info = await requireExistingFamilyRoom(
+          ctx.user,
+          input.memorialSlug
+        );
+        if (!info.roomId) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "아직 가족관이 없습니다.",
+          });
+        }
+
+        const data: { caption?: string | null; year?: string | null } = {};
+        if (input.caption !== undefined) data.caption = input.caption || null;
+        if (input.year !== undefined) data.year = input.year || null;
+        if (Object.keys(data).length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "고칠 내용이 없습니다.",
+          });
+        }
+
+        // 이 가족관의 사진일 때만 고쳐진다. 다른 가족관 사진 번호는 "없음"이다.
+        const result = await updateFamilyRoomPhoto(
+          input.photoId,
+          info.roomId,
+          data
+        );
+        if (!result.updated) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "사진을 찾을 수 없습니다.",
+          });
+        }
+        await createAdminAuditLog({
+          ...familyAuditActor(ctx.user),
+          action: "family_room.photo.update",
+          beforeValue: String(input.photoId),
+          afterValue: [data.caption, data.year]
+            .filter(value => value !== undefined)
+            .map(value => value ?? "(비움)")
+            .join(" · ")
+            .slice(0, 120),
+          note: `${info.memorialName} (${info.memorialSlug})`,
+        });
+
+        return { success: true };
+      }),
+
+    reorderPhotos: protectedProcedure
+      .input(familyRoomReorderPhotosInput)
+      .mutation(async ({ ctx, input }) => {
+        const info = await requireExistingFamilyRoom(
+          ctx.user,
+          input.memorialSlug
+        );
+        if (!info.roomId) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "아직 가족관이 없습니다.",
+          });
+        }
+
+        // 지금 이 가족관에 있는 사진을 빠짐없이, 한 번씩만 보내야 한다. 그 사이
+        // 다른 가족이 사진을 올리거나 지웠으면 순서를 저장하지 않는다.
+        const current = new Set(info.photos.map(photo => photo.id));
+        const requested = new Set(input.photoIds);
+        const sameSet =
+          requested.size === input.photoIds.length &&
+          requested.size === current.size &&
+          input.photoIds.every(id => current.has(id));
+        if (!sameSet) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "그사이 사진이 바뀌었습니다. 화면을 새로 고친 뒤 다시 해 주세요.",
+          });
+        }
+
+        await reorderFamilyRoomPhotos(info.roomId, input.photoIds);
+        await createAdminAuditLog({
+          ...familyAuditActor(ctx.user),
+          action: "family_room.photo.reorder",
+          afterValue: input.photoIds.join(",").slice(0, 120),
           note: `${info.memorialName} (${info.memorialSlug})`,
         });
 

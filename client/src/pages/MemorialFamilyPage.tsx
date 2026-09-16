@@ -1,5 +1,5 @@
-import { toImgUrl } from "@/lib/imageUrl";
 import Footer from "@/components/Footer";
+import { FamilyPhotoGallery } from "@/components/memorial/FamilyPhotoAlbum";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import {
@@ -41,6 +41,7 @@ type FamilyRoom = {
     id: number;
     photoUrl: string;
     caption: string | null;
+    year?: string | null;
   }>;
 };
 
@@ -333,7 +334,10 @@ function UnlockedRoom({ room }: { room: FamilyRoom }) {
   );
 }
 
-/** 가족관 사진 (2026-09-16). 가족이 관리 화면에서 올린 사진을 이 가족관에서만 보여 준다. */
+/**
+ * 가족관 사진 (2026-09-16). 가족이 관리 화면에서 올린 사진을 이 가족관에서만 보여 준다.
+ * 추모관 앨범과 같은 격자이고, 누르면 같은 크게 보기 창이 열린다.
+ */
 function FamilyPhotoGrid({
   photos,
 }: {
@@ -349,23 +353,9 @@ function FamilyPhotoGrid({
       <h2 className="text-2xl font-light md:text-3xl" style={serifStyle}>
         가족끼리 간직하는 사진
       </h2>
-      <ul className="mt-6 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-        {photos.map(photo => (
-          <li key={photo.id} className="border border-[#dedede] bg-[#fdfdfd]">
-            <img
-              src={toImgUrl(photo.photoUrl)}
-              alt={photo.caption || "가족관 사진"}
-              loading="lazy"
-              className="aspect-[4/3] w-full object-cover"
-            />
-            {photo.caption && (
-              <p className="break-keep px-4 py-3 text-sm leading-6 text-[#4f4f4f] [overflow-wrap:anywhere]">
-                {photo.caption}
-              </p>
-            )}
-          </li>
-        ))}
-      </ul>
+      <div className="mt-6">
+        <FamilyPhotoGallery photos={photos} />
+      </div>
     </section>
   );
 }

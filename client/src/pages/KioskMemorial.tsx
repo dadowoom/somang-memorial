@@ -2,6 +2,7 @@ import { toImgUrl } from "@/lib/imageUrl";
 import "./kioskMemorialTabs.css";
 import MemorialBookSection from "@/components/memorial/MemorialBookSection";
 import MemorialGallerySection from "@/components/memorial/MemorialGallerySection";
+import { FamilyPhotoGallery } from "@/components/memorial/FamilyPhotoAlbum";
 import MemorialVideoSection from "@/components/memorial/MemorialVideoSection";
 import { ORG_INFO } from "@/lib/orgInfo";
 import { formatLifespan } from "@/lib/lifespan";
@@ -190,6 +191,7 @@ type FamilyRoom = {
     id: number;
     photoUrl: string;
     caption: string | null;
+    year?: string | null;
   }>;
 };
 
@@ -1488,25 +1490,10 @@ function KioskFamilySection({
               <h4 className="text-[22px]" style={serifStyle}>
                 가족끼리 간직하는 사진
               </h4>
-              <ul className="mt-4 grid grid-cols-2 gap-3">
-                {(room.photos ?? []).map(photo => (
-                  <li key={photo.id} className="border border-[#dadada] bg-white">
-                    <KioskLoadableImage
-                      src={toImgUrl(photo.photoUrl)}
-                      alt={photo.caption || "가족관 사진"}
-                      loadingText="사진을 불러오고 있습니다."
-                      containerClassName="relative aspect-[4/3] w-full overflow-hidden bg-[#f4f4f4]"
-                      imageClassName="h-full w-full object-cover"
-                      fallback={<span aria-hidden="true" />}
-                    />
-                    {photo.caption && (
-                      <p className="break-keep px-3 py-2 text-sm leading-6 text-[#64615d] [overflow-wrap:anywhere]">
-                        {photo.caption}
-                      </p>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              {/* 추모관 앨범과 같은 격자와 크게 보기 창 (2026-09-16). */}
+              <div className="mt-4">
+                <FamilyPhotoGallery photos={room.photos ?? []} />
+              </div>
             </article>
           )}
           {room.notes.map((note, index) => {
