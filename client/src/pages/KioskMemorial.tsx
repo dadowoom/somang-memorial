@@ -1241,7 +1241,7 @@ function KioskFamilySection({
     maxLength: 100,
     defaultMode: "number",
     variant: "digits",
-    submitLabel: "비밀번호 확인",
+    submitLabel: "가족관 입장",
     submitDisabled: verifyFamily.isPending,
     onSubmit: () => {
       submitPassword();
@@ -1432,22 +1432,23 @@ function KioskFamilySection({
           })}
         </div>
       ) : (
-        <form onSubmit={submit} className="border border-[#dadada] p-6">
-          <div className="mb-6 border-b border-[#dadada] pb-6 text-center">
-            <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center bg-[#18181b] text-white">
-              <LockKeyhole className="h-5 w-5" strokeWidth={1.7} />
-            </div>
-            <p className="text-xl text-[#64615d]" style={serifStyle}>
-              {status.memorialName || memorialName} {memorialRole}
-            </p>
-            <p className="mx-auto mt-4 max-w-xl break-keep text-base leading-8 text-[#64615d] [overflow-wrap:anywhere]">
-              이 공간은 유족과 가족을 위한 비공개 공간입니다. 전달받은
-              비밀번호를 입력한 뒤 들어갈 수 있습니다.
-            </p>
-          </div>
+        /* VIP 룸에 들어가듯 (2026-09-16 현장 요청): 어두운 바탕·금색 테두리·큰 비밀번호 칸. */
+        <form onSubmit={submit} className="kiosk-family-gate">
+          <div className="kiosk-family-gate__frame" aria-hidden="true" />
+          <span className="kiosk-family-gate__badge" aria-hidden="true">
+            <LockKeyhole strokeWidth={1.5} />
+          </span>
+          <p className="kiosk-family-gate__eyebrow">Private · Family Only</p>
+          <h3 className="kiosk-family-gate__title" style={serifStyle}>
+            {status.memorialName || memorialName} {memorialRole}님 가족관
+          </h3>
+          <p className="kiosk-family-gate__text">
+            유족과 가족만 들어갈 수 있는 공간입니다. 가족에게 전달받은 숫자
+            비밀번호를 누르고 들어와 주세요.
+          </p>
           <label
             htmlFor={`kiosk-family-password-${slug}`}
-            className="block text-sm font-medium text-[#555]"
+            className="kiosk-family-gate__label"
           >
             가족관 비밀번호
           </label>
@@ -1460,22 +1461,26 @@ function KioskFamilySection({
               setPassword(familyRoomPasswordDigits(event.target.value, 100));
               setMessage("");
             }}
-            placeholder="숫자 비밀번호를 입력해 주세요"
-            className="mt-3 h-16 w-full border border-[#18181b] px-5 text-2xl outline-none placeholder:text-[#aaa]"
+            placeholder="눌러서 숫자 입력"
+            className="kiosk-family-gate__input"
             autoComplete="off"
             maxLength={100}
             inputMode={passwordKeyboard.inputMode}
             onFocus={passwordKeyboard.onFocus}
             onClick={passwordKeyboard.onClick}
           />
-          {message && <p className="mt-3 text-sm text-[#9f2a2a]">{message}</p>}
+          {message && <p className="kiosk-family-gate__message">{message}</p>}
           <button
             type="submit"
             disabled={verifyFamily.isPending}
-            className="mt-5 h-16 w-full bg-[#18181b] text-lg font-medium text-white disabled:opacity-50"
+            className="kiosk-family-gate__enter"
           >
-            {verifyFamily.isPending ? "확인 중" : "비밀번호 확인"}
+            <LockKeyhole className="h-6 w-6" strokeWidth={1.8} />
+            {verifyFamily.isPending ? "확인 중" : "가족관 입장"}
           </button>
+          <p className="kiosk-family-gate__hint">
+            숫자 4~6자리 · 자판의 "가족관 입장"을 눌러도 됩니다
+          </p>
         </form>
       )}
     </KioskSection>
