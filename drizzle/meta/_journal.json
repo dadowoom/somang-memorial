@@ -169,6 +169,13 @@
       "when": 1788700000000,
       "tag": "0025_reseed_kim_somang_story",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1788800000000,
+      "tag": "0026_add_kim_somang_old_photos",
+      "breakpoints": true
     }
   ]
 }
