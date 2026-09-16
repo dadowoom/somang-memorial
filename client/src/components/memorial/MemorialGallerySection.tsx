@@ -748,6 +748,19 @@ function UploadResultBox({
   );
 }
 
+/** 손가락을 이만큼(px) 옆으로 밀면 다음·이전 사진으로 넘긴다. */
+export const LIGHTBOX_SWIPE_MIN_PX = 50;
+
+/**
+ * 밀기 방향을 판단한다. 옆으로 충분히, 그리고 위아래보다 더 크게 밀었을 때만
+ * 넘긴다. 왼쪽으로 밀면 다음 사진(1), 오른쪽으로 밀면 이전 사진(-1).
+ */
+export function lightboxSwipeDirection(dx: number, dy: number): -1 | 0 | 1 {
+  if (Math.abs(dx) < LIGHTBOX_SWIPE_MIN_PX) return 0;
+  if (Math.abs(dx) <= Math.abs(dy)) return 0;
+  return dx < 0 ? 1 : -1;
+}
+
 function Lightbox({
   photos,
   index,
@@ -762,9 +775,27 @@ function Lightbox({
   onNext: () => void;
 }) {
   const photo = photos[index];
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const hasPrev = index > 0;
+  const hasNext = index < photos.length - 1;
+
+  // PC 에서는 ← → 로 넘기고 Esc 로 닫는다.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") onPrev();
+      else if (event.key === "ArrowRight") onNext();
+      else if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose, onNext, onPrev]);
+
+  const arrowClass =
+    "absolute top-1/2 z-10 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-black/45 text-white shadow-lg transition-colors hover:bg-black/60 disabled:opacity-0";
+
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#3d2b1b]/90 p-4 backdrop-blur-md"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#3d2b1b]/90 p-4 backdrop-blur-md"
       onClick={onClose}
     >
       <button
@@ -775,51 +806,76 @@ function Lightbox({
       >
         <X className="h-5 w-5" />
       </button>
-      <button
-        type="button"
-        className="absolute left-3 top-1/2 rounded-full border border-white/15 bg-white/10 p-3 text-white transition-colors hover:bg-white/20 disabled:opacity-30"
-        onClick={event => {
-          event.stopPropagation();
-          onPrev();
-        }}
-        disabled={index === 0}
-        aria-label="이전 사진"
-      >
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-      <button
-        type="button"
-        className="absolute right-3 top-1/2 rounded-full border border-white/15 bg-white/10 p-3 text-white transition-colors hover:bg-white/20 disabled:opacity-30"
-        onClick={event => {
-          event.stopPropagation();
-          onNext();
-        }}
-        disabled={index === photos.length - 1}
-        aria-label="다음 사진"
-      >
-        <ChevronRight className="h-5 w-5" />
-      </button>
 
       <div
         className="max-h-[86vh] w-full max-w-5xl overflow-hidden border border-white/15 bg-white shadow-2xl"
         onClick={event => event.stopPropagation()}
       >
-        <img
-          src={toImgUrl(photo.photoUrl)}
-          alt={photo.caption || "앨범 사진"}
-          className="max-h-[74vh] w-full object-contain"
-          style={{ filter: memorialPhotoFilter }}
-        />
-        {(photo.caption || photo.year) && (
-          <div className="border-t border-[#dedede] bg-white px-5 py-4 text-center">
-            {photo.caption && (
-              <p className="text-sm text-[#171717]">{photo.caption}</p>
-            )}
-            {photo.year && (
-              <p className="mt-1 text-xs text-[#666666]">{photo.year}</p>
-            )}
-          </div>
-        )}
+        {/* 사진 위에서 손가락을 옆으로 밀면 넘어가고, 화살표는 사진 가운데 양옆에 둔다
+            (2026-09-16 요청). 위아래 밀기는 화면에 맡긴다. */}
+        <div
+          className="relative touch-pan-y select-none"
+          onPointerDown={event => {
+            swipeStart.current = { x: event.clientX, y: event.clientY };
+          }}
+          onPointerUp={event => {
+            const start = swipeStart.current;
+            swipeStart.current = null;
+            if (!start) return;
+            const direction = lightboxSwipeDirection(
+              event.clientX - start.x,
+              event.clientY - start.y
+            );
+            if (direction === 1) onNext();
+            if (direction === -1) onPrev();
+          }}
+          onPointerCancel={() => {
+            swipeStart.current = null;
+          }}
+        >
+          <img
+            src={toImgUrl(photo.photoUrl)}
+            alt={photo.caption || "앨범 사진"}
+            draggable={false}
+            className="max-h-[74vh] w-full object-contain"
+            style={{ filter: memorialPhotoFilter }}
+          />
+          <button
+            type="button"
+            className={`${arrowClass} left-3`}
+            onClick={event => {
+              event.stopPropagation();
+              onPrev();
+            }}
+            disabled={!hasPrev}
+            aria-label="이전 사진"
+          >
+            <ChevronLeft className="h-7 w-7" />
+          </button>
+          <button
+            type="button"
+            className={`${arrowClass} right-3`}
+            onClick={event => {
+              event.stopPropagation();
+              onNext();
+            }}
+            disabled={!hasNext}
+            aria-label="다음 사진"
+          >
+            <ChevronRight className="h-7 w-7" />
+          </button>
+        </div>
+        <div className="border-t border-[#dedede] bg-white px-5 py-4 text-center">
+          {photo.caption && (
+            <p className="text-sm text-[#171717]">{photo.caption}</p>
+          )}
+          {photo.year && (
+            <p className="mt-1 text-xs text-[#666666]">{photo.year}</p>
+          )}
+          <p className="mt-1 text-xs text-[#666666]">
+            {index + 1} / {photos.length} · 옆으로 밀어도 넘어갑니다
+          </p>
+        </div>
       </div>
     </div>
   );

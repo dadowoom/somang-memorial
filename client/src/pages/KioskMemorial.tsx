@@ -27,6 +27,7 @@ import {
   acquireKioskSubmissionLock,
   releaseKioskSubmissionLock,
 } from "@/lib/kioskSubmissionLock";
+import { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "@/lib/featureFlags";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
@@ -878,10 +879,12 @@ function KioskMemorialContent({
               <span>추도일 {memorialDayLabel}</span>
             </p>
           </div>
-          <KioskReminderForm
-            memorialSlug={memorial.slug}
-            memorialDay={memorialDayLabel}
-          />
+          {MEMORIAL_REMINDER_SIGNUP_ENABLED && (
+            <KioskReminderForm
+              memorialSlug={memorial.slug}
+              memorialDay={memorialDayLabel}
+            />
+          )}
         </article>
 
         <article className="mt-4 border border-[#dadada] p-6">

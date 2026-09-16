@@ -3,6 +3,7 @@ import { formatLifespan } from "@/lib/lifespan";
 import Navbar from "@/components/Navbar";
 import MemorialPortrait from "@/components/memorial/MemorialPortrait";
 import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
+import { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "@/lib/featureFlags";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
@@ -385,10 +386,12 @@ function MemorialContent({
                   </p>
                 </div>
 
-                <MemorialReminderForm
-                  memorialSlug={memorial.slug}
-                  memorialDay={memorialDayLabel}
-                />
+                {MEMORIAL_REMINDER_SIGNUP_ENABLED && (
+                  <MemorialReminderForm
+                    memorialSlug={memorial.slug}
+                    memorialDay={memorialDayLabel}
+                  />
+                )}
               </section>
             </div>
 
