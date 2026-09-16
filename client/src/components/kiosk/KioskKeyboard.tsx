@@ -23,7 +23,8 @@ import {
 } from "react";
 
 type KioskKeyboardMode = "ko" | "en" | "number" | "symbol";
-type KioskKeyboardVariant = "full" | "korean-name";
+/** digits: 숫자와 지우기만 (가족관 비밀번호처럼 숫자만 받는 칸, 2026-09-16). */
+type KioskKeyboardVariant = "full" | "korean-name" | "digits";
 type KioskKeyboardElement = HTMLInputElement | HTMLTextAreaElement;
 
 type ActiveField = {
@@ -259,8 +260,9 @@ export function KioskKeyboard({
 }) {
   const [mode, setMode] = useState<KioskKeyboardMode>(field.defaultMode);
   const nameOnly = field.variant === "korean-name";
+  const digitsOnly = field.variant === "digits";
   // Do not expose the previous field's mode while the field-change effect runs.
-  const displayedMode = nameOnly ? "ko" : mode;
+  const displayedMode = nameOnly ? "ko" : digitsOnly ? "number" : mode;
   const [shifted, setShifted] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -374,7 +376,11 @@ export function KioskKeyboard({
         </div>
 
         {displayedMode === "number" ? (
-          <NumberLayout onToken={insertToken} onBackspace={backspace} />
+          <NumberLayout
+            onToken={insertToken}
+            onBackspace={backspace}
+            showDash={!digitsOnly}
+          />
         ) : displayedMode === "symbol" ? (
           <SymbolLayout onToken={insertToken} onBackspace={backspace} />
         ) : (
@@ -389,7 +395,7 @@ export function KioskKeyboard({
         )}
 
         <div className="kiosk-keyboard-actions mt-1.5 flex gap-1.5">
-          {!nameOnly && (
+          {!nameOnly && !digitsOnly && (
             <>
               <ModeKey
                 active={mode === "ko"}
@@ -425,11 +431,13 @@ export function KioskKeyboard({
               />
             </>
           )}
-          <KeyboardKey
-            label="띄어쓰기"
-            onClick={() => insertToken(" ")}
-            className="kiosk-keyboard-space min-w-0 flex-[2.7] text-base"
-          />
+          {!digitsOnly && (
+            <KeyboardKey
+              label="띄어쓰기"
+              onClick={() => insertToken(" ")}
+              className="kiosk-keyboard-space min-w-0 flex-[2.7] text-base"
+            />
+          )}
           {field.multiline && (
             <KeyboardKey
               label="줄바꿈"
@@ -551,9 +559,11 @@ function TextLayout({
 function NumberLayout({
   onToken,
   onBackspace,
+  showDash = true,
 }: {
   onToken: (token: string) => void;
   onBackspace: () => void;
+  showDash?: boolean;
 }) {
   const rows = [
     ["1", "2", "3"],
@@ -571,7 +581,11 @@ function NumberLayout({
         </div>
       ))}
       <div className="kiosk-keyboard-row flex gap-1.5">
-        <KeyboardKey label="-" onClick={() => onToken("-")} />
+        {showDash ? (
+          <KeyboardKey label="-" onClick={() => onToken("-")} />
+        ) : (
+          <span aria-hidden="true" className="min-w-0 flex-1" />
+        )}
         <KeyboardKey label="0" onClick={() => onToken("0")} />
         <KeyboardKey
           label="지우기"

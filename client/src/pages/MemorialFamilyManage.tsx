@@ -12,6 +12,11 @@ import {
   labelClass,
   textAreaClass,
 } from "@/lib/formStyles";
+import {
+  FAMILY_ROOM_PASSWORD_MAX,
+  familyRoomPasswordDigits,
+  familyRoomPasswordProblem,
+} from "@shared/familyRoomPassword";
 
 const buttonClass =
   "inline-flex min-h-12 items-center justify-center bg-[#18181b] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50";
@@ -122,6 +127,12 @@ function CreateRoom({
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setMessage("");
+
+    const problem = familyRoomPasswordProblem(password);
+    if (problem) {
+      setMessage(problem);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setMessage("두 비밀번호가 서로 다릅니다.");
@@ -590,6 +601,12 @@ function PasswordSection({
     setMessage("");
     setDone(false);
 
+    const problem = familyRoomPasswordProblem(password);
+    if (problem) {
+      setMessage(problem);
+      return;
+    }
+
     if (password !== confirmPassword) {
       setMessage("두 비밀번호가 서로 다릅니다.");
       return;
@@ -756,23 +773,31 @@ function PasswordFields({
   minLength: number;
   label?: string;
 }) {
+  // 가족관 비밀번호는 숫자 4~6자리 (2026-09-16 결정). 휴대폰에서는 숫자판이
+  // 뜨고, 숫자가 아닌 글자는 칸에 들어가지 않는다.
+  const rangeText = `숫자 ${minLength}~${FAMILY_ROOM_PASSWORD_MAX}자리`;
+
   return (
     <>
       <label className="block">
         <span className={labelClass}>{label}</span>
         <input
           type="password"
+          inputMode="numeric"
+          pattern="[0-9]*"
           className={inputClass}
           value={password}
-          onChange={event => onPasswordChange(event.target.value)}
-          minLength={minLength}
-          maxLength={100}
+          onChange={event =>
+            onPasswordChange(familyRoomPasswordDigits(event.target.value))
+          }
+          maxLength={FAMILY_ROOM_PASSWORD_MAX}
           required
-          placeholder={`${minLength}자 이상`}
+          placeholder={rangeText}
           autoComplete="new-password"
         />
-        <span className="mt-2 block text-xs text-[#8a8a8a]">
-          가족들이 함께 쓰고 기억해야 하므로 {minLength}자 이상이면 됩니다.
+        <span className="mt-2 block text-xs leading-5 text-[#8a8a8a]">
+          가족들이 함께 쓰고 기억하기 쉽도록 {rangeText}로 정합니다. 생일이나
+          전화번호 끝자리처럼 남이 짐작하기 쉬운 숫자는 피해 주세요.
         </span>
       </label>
 
@@ -780,11 +805,14 @@ function PasswordFields({
         <span className={labelClass}>{label} 확인</span>
         <input
           type="password"
+          inputMode="numeric"
+          pattern="[0-9]*"
           className={inputClass}
           value={confirmPassword}
-          onChange={event => onConfirmChange(event.target.value)}
-          minLength={minLength}
-          maxLength={100}
+          onChange={event =>
+            onConfirmChange(familyRoomPasswordDigits(event.target.value))
+          }
+          maxLength={FAMILY_ROOM_PASSWORD_MAX}
           required
           placeholder="한 번 더 입력"
           autoComplete="new-password"

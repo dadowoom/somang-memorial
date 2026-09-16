@@ -45,6 +45,7 @@ import {
   useKioskKeyboard,
   useKioskKeyboardField,
 } from "@/components/kiosk/KioskKeyboard";
+import { familyRoomPasswordDigits } from "@shared/familyRoomPassword";
 import {
   ArrowLeft,
   Bell,
@@ -1204,12 +1205,15 @@ function KioskFamilySection({
     label: "가족관 비밀번호",
     alignToTop: true,
     value: password,
+    // 가족관 비밀번호는 숫자 (2026-09-16). 자판도 숫자판만 띄운다. 예전에 길게
+    // 정해 둔 숫자 비밀번호도 들어갈 수 있게 자릿수는 자르지 않는다.
     onChange: value => {
-      setPassword(value);
+      setPassword(familyRoomPasswordDigits(value, 100));
       setMessage("");
     },
     maxLength: 100,
     defaultMode: "number",
+    variant: "digits",
     submitLabel: "비밀번호 확인",
     submitDisabled: verifyFamily.isPending,
     onSubmit: () => {
@@ -1426,10 +1430,10 @@ function KioskFamilySection({
             type="password"
             value={password}
             onChange={event => {
-              setPassword(event.target.value);
+              setPassword(familyRoomPasswordDigits(event.target.value, 100));
               setMessage("");
             }}
-            placeholder="비밀번호를 입력해 주세요"
+            placeholder="숫자 비밀번호를 입력해 주세요"
             className="mt-3 h-16 w-full border border-[#18181b] px-5 text-2xl outline-none placeholder:text-[#aaa]"
             autoComplete="off"
             maxLength={100}
