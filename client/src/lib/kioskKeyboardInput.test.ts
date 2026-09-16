@@ -110,6 +110,21 @@ describe("backspaceKioskKeyboardValue", () => {
     });
   });
 
+  it.each([
+    ["가", "ㄱ"],
+    ["ㄱ", ""],
+    ["1", ""],
+    ["a", ""],
+    [" ", ""],
+  ])(
+    "deletes the last remaining character of %j instead of throwing",
+    (value, expected) => {
+      expect(
+        backspaceKioskKeyboardValue(value, value.length, value.length)
+      ).toEqual({ value: expected, cursor: expected.length });
+    }
+  );
+
   it("removes a selection without changing the surrounding text", () => {
     expect(backspaceKioskKeyboardValue("김소망", 1, 2)).toEqual({
       value: "김망",

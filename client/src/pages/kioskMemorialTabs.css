@@ -1,0 +1,49 @@
+/* 키오스크 추모관 탭바 (2026-09-16). 홈페이지 추모관의 탭바
+   (memberEditorial.css .memorial-record-nav)와 같은 모양: 검은 띠, 그림 + 흰 글씨,
+   칸 사이 얇은 흰 선. 누른 칸은 조금 밝다. 머리글(104px) 아래에 붙어 따라온다. */
+.kiosk-memorial-tabs {
+  position: sticky;
+  top: 104px;
+  z-index: 20;
+  display: flex;
+  align-items: stretch;
+  background: #1c1c1c;
+  color: #fff;
+  scroll-margin-top: 104px;
+}
+
+.kiosk-memorial-tabs button {
+  display: inline-flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 84px;
+  padding: 14px 8px;
+  border-right: 1px solid #ffffff20;
+  color: #eee;
+  font-size: 17px;
+  font-weight: 500;
+  word-break: keep-all;
+  transition: background 0.2s;
+}
+
+.kiosk-memorial-tabs button:last-child {
+  border-right: 0;
+}
+
+.kiosk-memorial-tabs button:active {
+  background: #4a4a4a;
+}
+
+.kiosk-memorial-tabs button[aria-current="page"] {
+  background: #373737;
+}
+
+.kiosk-memorial-tabs svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  stroke-width: 1.5;
+}
