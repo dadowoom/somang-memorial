@@ -87,11 +87,11 @@ describe("kioskInquiry.submit", () => {
   // 홈페이지 "문의하기" (2026-09-17): 같은 통로, 들어온 곳만 web.
   it("홈페이지에서 온 문의는 web 으로 적고 메일·기록에 홈페이지라고 남긴다", async () => {
     await expect(
-      caller(null).kioskInquiry.submit({ phone: "02-541-3726", source: "web" })
+      caller(null).kioskInquiry.submit({ phone: "02-123-4567", source: "web" })
     ).resolves.toEqual({ success: true, notified: true });
 
     expect(mocks.createKioskInquiry).toHaveBeenCalledWith({
-      phone: "02-541-3726",
+      phone: "02-123-4567",
       name: null,
       source: "web",
     });

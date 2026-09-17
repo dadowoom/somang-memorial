@@ -33,7 +33,7 @@ describe("InquiryDialog", () => {
     expect(html).toMatch(/inputmode="numeric"/i);
     expect(html).toContain(COMPANY_INQUIRY.submitLabel);
     expect(html).toContain(COMPANY_INQUIRY.consent);
-    expect(html).toContain('href="tel:02-541-3726"');
+    expect(html).toContain('href="tel:010-5307-4404"');
   });
 });
 
