@@ -159,6 +159,8 @@ describe("home page SSR regression", () => {
     ["/memorial/search", "추모관 찾기"],
     ["/memorial/create", "추모관 만들기"],
     ["/login?redirect=/my/find-parent&mode=signup", "우리 부모님 찾기"],
+    // 인생화원 카드는 예시 추모관으로 간다 (2026-09-17).
+    ["/memorial/kim-somang-kwonsa", "인생화원 예시 보기"],
   ])("preserves the destination and readable name of %s", (href, label) => {
     const links = content.filter(
       element => element.tag === "a" && attribute(element, "href") === href

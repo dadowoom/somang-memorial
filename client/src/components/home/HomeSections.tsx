@@ -6,6 +6,7 @@ import {
   Plus,
   Send,
 } from "lucide-react";
+import { sampleMemorialPath } from "@/lib/kioskQuickActions";
 import { Link } from "wouter";
 import "./homeSections.css";
 
@@ -41,8 +42,11 @@ const SERVICES = [
     title: "인생화원",
     desc: "신앙의 유산 남기기 서비스",
     icon: Flower2,
-    href: "/services/life-garden",
-    action: "서비스 이용하기",
+    // 인생화원은 준비 중이라 김소망 권사 예시 추모관을 보여 준다 (2026-09-17 요청,
+    // 이용 안내 인생화원 칸의 단추와 같은 이름·같은 곳).
+    href: sampleMemorialPath(),
+    action: "인생화원 예시 보기",
+    label: "인생화원 예시 보기",
   },
   {
     number: "03",
@@ -156,7 +160,7 @@ export default function HomeSections() {
                 <Link
                   key={service.number}
                   href={service.href}
-                  aria-label={service.title}
+                  aria-label={service.label ?? service.title}
                   className="home-sections__service-card"
                 >
                   <div className="home-sections__service-top">
