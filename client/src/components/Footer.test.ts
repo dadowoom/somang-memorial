@@ -13,8 +13,9 @@ describe("site footer contact", () => {
     const markup = renderToStaticMarkup(
       createElement(Router, { ssrPath: "/" }, createElement(Footer))
     );
-    expect(markup).toContain('href="tel:02-541-3726"');
-    expect(markup).toContain("경조부 02-541-3726");
+    expect(markup).toContain('href="tel:010-5307-4404"');
+    expect(markup).toContain("경조부 010-5307-4404");
     expect(markup).not.toContain("031-764");
+    expect(markup).not.toContain("541-3726");
   });
 });
