@@ -17,7 +17,10 @@
   position: relative;
   width: min(460px, 100%);
   max-height: calc(100dvh - 32px);
+  /* 위아래로만 내린다. 좌우로 밀리면 창이 흔들려 보인다 (2026-09-17 아이폰 13 mini). */
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 32px 24px 24px;
   background: #fff;
   color: #121212;
@@ -67,15 +70,21 @@
   color: #4f4f4f;
 }
 
+/* 아이폰(사파리 엔진)은 입력칸의 기본 너비를 한글 글꼴 기준으로 넓게 잡아, 칸이 창보다
+   넓어지고 창 전체가 좌우로 밀렸다 (2026-09-17 아이폰 13 mini). 칸의 칸 너비를 0 까지
+   줄어들 수 있게 하고(minmax(0, 1fr)), 입력칸은 그 너비에 딱 맞춘다. */
 .inquiry-dialog-form {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   margin-top: 22px;
 }
 
 .inquiry-dialog-field {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
+  min-width: 0;
 }
 
 .inquiry-dialog-field span {
@@ -85,6 +94,8 @@
 
 /* 16px 보다 작으면 아이폰이 입력칸을 누를 때 화면을 확대한다. */
 .inquiry-dialog-field input {
+  width: 100%;
+  min-width: 0;
   height: 52px;
   padding: 0 14px;
   border: 1px solid #b5b0a7;

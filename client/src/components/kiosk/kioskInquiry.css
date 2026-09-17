@@ -120,7 +120,11 @@
   color: #616161;
 }
 
+/* 입력칸 폭은 칸 너비에 맞춘다. 폭이 없으면 아이폰(사파리 엔진)이 기본 너비를
+   넓게 잡는다 (2026-09-17, formControlWidth.test.ts 가 지킨다). */
 .kiosk-inquiry-field input {
+  width: 100%;
+  min-width: 0;
   height: 64px;
   border: 1px solid #18181b;
   background: #fff;

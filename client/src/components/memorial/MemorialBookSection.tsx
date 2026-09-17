@@ -447,7 +447,7 @@ export default function MemorialBookSection({
                     if (event.key === "Escape") setAddingBook(false);
                   }}
                   placeholder="책 제목"
-                  className="h-10 border border-[#dedede] bg-white px-3 text-sm outline-none"
+                  className="h-10 min-w-0 max-w-full border border-[#dedede] bg-white px-3 text-sm outline-none"
                   autoFocus
                 />
                 <button
@@ -1124,7 +1124,7 @@ function PageEditModal({
                 onChange={event => setDateYear(event.target.value)}
                 placeholder="연도"
                 type="number"
-                className="h-10 border border-[#dedede] bg-white px-3 text-sm outline-none"
+                className="h-10 w-full min-w-0 border border-[#dedede] bg-white px-3 text-sm outline-none"
               />
               <input
                 value={dateMonth}
@@ -1133,7 +1133,7 @@ function PageEditModal({
                 type="number"
                 min={1}
                 max={12}
-                className="h-10 border border-[#dedede] bg-white px-3 text-sm outline-none"
+                className="h-10 w-full min-w-0 border border-[#dedede] bg-white px-3 text-sm outline-none"
               />
               <input
                 value={dateDay}
@@ -1142,7 +1142,7 @@ function PageEditModal({
                 type="number"
                 min={1}
                 max={31}
-                className="h-10 border border-[#dedede] bg-white px-3 text-sm outline-none"
+                className="h-10 w-full min-w-0 border border-[#dedede] bg-white px-3 text-sm outline-none"
               />
             </div>
           </div>
