@@ -34,6 +34,11 @@ function getTransporter() {
       // 465 는 처음부터 암호화된 연결, 그 외(587 등)는 STARTTLS 로 올린다.
       secure: ENV.smtpPort === 465,
       auth: { user: ENV.smtpUser, pass: ENV.smtpPassword },
+      // 기본값은 연결 2분·응답 10분이라, 메일 서버가 느리면 문의·비밀번호
+      // 재설정 요청이 몇 분씩 붙잡혀 있었다 (2026-09-18 점검).
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000,
     });
   }
 

@@ -86,6 +86,8 @@ export async function notifyOwner(
 
   try {
     const response = await fetch(endpoint, {
+      // 바깥 서버가 응답하지 않아도 요청이 무한정 붙잡히지 않게 한다.
+      signal: AbortSignal.timeout(10_000),
       method: "POST",
       headers: {
         accept: "application/json",

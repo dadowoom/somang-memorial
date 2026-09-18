@@ -67,3 +67,20 @@ describe("shouldLogTrpcError", () => {
     }
   });
 });
+
+describe("DB 오류 문구의 값 가리기", () => {
+  it("drizzle 이 붙인 params 뒤의 개인정보를 가린다", async () => {
+    const { redactQueryParams } = await import("./requestLogging");
+    const message =
+      "Failed query: insert into `users` (`email`, `phone`) values (?, ?)\nparams: kim@example.org,010-1234-5678";
+    const redacted = redactQueryParams(message);
+    expect(redacted).toContain("insert into `users`");
+    expect(redacted).not.toContain("kim@example.org");
+    expect(redacted).not.toContain("010-1234-5678");
+  });
+
+  it("params 가 없는 문구는 그대로 둔다", async () => {
+    const { redactQueryParams } = await import("./requestLogging");
+    expect(redactQueryParams("Duplicate entry")).toBe("Duplicate entry");
+  });
+});

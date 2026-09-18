@@ -136,6 +136,15 @@ export function shouldLogTrpcError(code: string) {
   return !EXPECTED_TRPC_ERROR_CODES.has(code);
 }
 
+/**
+ * DB 오류 문구에서 넣은 값(params)을 가린다. drizzle 은 오류 문구 끝에
+ * "params: 전화번호,이메일,..." 을 그대로 붙여서, 오류 한 번에 개인정보가
+ * 로그에 남았다 (2026-09-18 점검). 쿼리 모양만 남기면 원인은 충분히 찾는다.
+ */
+export function redactQueryParams(message: string) {
+  return message.replace(/(\bparams:)[\s\S]*$/, "$1 [가림]");
+}
+
 export function logTrpcError(input: {
   code: string;
   path: string | undefined;
@@ -144,12 +153,14 @@ export function logTrpcError(input: {
 }) {
   if (!shouldLogTrpcError(input.code)) return;
   const error = input.error;
-  const message = error instanceof Error ? error.message : String(error);
+  const message = redactQueryParams(
+    error instanceof Error ? error.message : String(error)
+  );
   const cause =
     error instanceof Error &&
     error.cause instanceof Error &&
-    error.cause.message !== message
-      ? error.cause.message
+    redactQueryParams(error.cause.message) !== message
+      ? redactQueryParams(error.cause.message)
       : undefined;
   console.error(
     `[trpc] ${JSON.stringify({
