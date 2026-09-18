@@ -9,6 +9,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { startReminderNotificationScheduler } from "./reminderScheduler";
+import { startUploadCleanupScheduler } from "./uploadCleanup";
 import { isDatabaseHealthy } from "../db";
 import { validateRuntimeConfig } from "./runtimeConfig";
 import { registerSecurityHeaders } from "./securityHeaders";
@@ -105,6 +106,7 @@ async function startServer() {
     console.log(`Server running on http://localhost:${port}/`);
   });
   startReminderNotificationScheduler();
+  startUploadCleanupScheduler();
 }
 
 // 기동에 실패하면 0 이 아닌 코드로 끝나야 pm2 가 "죽었다"고 보고 다시 띄운다.
