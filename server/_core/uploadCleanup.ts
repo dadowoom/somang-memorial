@@ -240,6 +240,41 @@ export async function runUploadCleanup({
   return { mode, moved, planned: plan.toTrash.length, skipped: false };
 }
 
+/**
+ * 추모관을 지울 때처럼 "방금 쓰지 않게 된 파일"을 바로 휴지통으로 옮긴다.
+ * 새벽 정리를 기다리면 그사이 주소로 계속 열리기 때문이다. 넘겨받은 목록은
+ * 이미 DB 에서 더 이상 쓰이지 않는 것으로 확인된 것이어야 한다.
+ */
+export function moveUploadsToTrash(
+  keys: string[],
+  { root = UPLOAD_DIR, now = new Date() }: { root?: string; now?: Date } = {}
+) {
+  const dayDir = path.join(root, TRASH_DIR_NAME, seoulDateKey(now));
+  const rootResolved = path.resolve(root);
+  let moved = 0;
+  for (const key of keys) {
+    const from = path.resolve(root, key);
+    // 휴지통 안이나 업로드 폴더 밖을 가리키는 값은 건드리지 않는다.
+    if (
+      !from.startsWith(rootResolved + path.sep) ||
+      key.startsWith(".") ||
+      key.includes("/.")
+    ) {
+      continue;
+    }
+    if (!fs.existsSync(from)) continue;
+    const to = path.join(dayDir, key);
+    try {
+      fs.mkdirSync(path.dirname(to), { recursive: true });
+      fs.renameSync(from, to);
+      moved += 1;
+    } catch (error) {
+      console.error(`[UploadCleanup] 옮기지 못함: ${key}`, error);
+    }
+  }
+  return moved;
+}
+
 const HOUR_MS = 60 * 60 * 1000;
 let lastRunKey = "";
 

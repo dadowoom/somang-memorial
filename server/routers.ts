@@ -59,6 +59,8 @@ import {
   listRecentMemorialLetters,
   normalizeEmail,
   deleteUserAccount,
+  deleteMemorialById,
+  verifyUserPasswordById,
   createPasswordResetToken,
   isAdminLoginIdentifier,
   PASSWORD_RESET_TTL_MINUTES,
@@ -81,6 +83,10 @@ import {
 import { nanoid } from "nanoid";
 import { decodeImageDataUrl } from "./_core/imageUpload";
 import { storagePut } from "./storage";
+import {
+  collectReferencedUploadKeys,
+  moveUploadsToTrash,
+} from "./_core/uploadCleanup";
 import { extractYoutubeVideoId } from "../shared/youtubeId";
 import {
   createIntermentMemorialCopy,
@@ -1427,6 +1433,83 @@ export const appRouter = router({
           note: `${existing.name} (${existing.slug})`,
         });
         return { success: true };
+      }),
+
+    // 추모관을 통째로 지운다 (2026-09-19). 개인정보처리방침의 "지우면 파기"
+    // 약속과, 유족의 삭제 요청을 처리할 수 있어야 해서 만들었다.
+    // 되돌릴 수 없으므로 추모관을 만든 사람과 관리자만, 이름을 그대로 적고
+    // 비밀번호를 한 번 더 넣어야 지울 수 있다. 초대받은 가족은 지울 수 없다.
+    delete: protectedProcedure
+      .input(
+        z.object({
+          id: z.number().int().positive(),
+          confirmName: z.string().trim().min(1).max(120),
+          password: z.string().min(1, "비밀번호를 입력해 주세요.").max(100),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const existing = await getAdminMemorialById(input.id);
+        if (!existing) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "추모관을 찾을 수 없습니다.",
+          });
+        }
+
+        const isAdmin = ctx.user.role === "admin";
+        const isOwner = existing.createdByUserId === ctx.user.id;
+        if (!isAdmin && !isOwner) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "추모관을 만든 분과 관리자만 삭제할 수 있습니다.",
+          });
+        }
+
+        if (input.confirmName !== existing.name.trim()) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "고인의 성함을 정확히 적어 주세요.",
+          });
+        }
+
+        const attemptKey = passwordAttemptKey(ctx.req, "delete-memorial");
+        ensurePasswordAttemptAllowed(attemptKey, loginAttemptLimiter);
+        if (!(await verifyUserPasswordById(ctx.user.id, input.password))) {
+          loginAttemptLimiter.recordFailure(attemptKey);
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "비밀번호가 맞지 않습니다.",
+          });
+        }
+        loginAttemptLimiter.recordSuccess(attemptKey);
+
+        // 지우기 전과 후에 DB 가 쓰는 사진 주소를 비교해, 이번 삭제로 더 이상
+        // 아무 데도 쓰이지 않게 된 파일만 바로 휴지통으로 옮긴다. 다른 곳에서도
+        // 쓰는 사진은 그대로 남는다.
+        const before = await collectReferencedUploadKeys();
+        await deleteMemorialById(existing.id);
+        let movedFiles = 0;
+        try {
+          const after = await collectReferencedUploadKeys();
+          const released = Array.from(before).filter(key => !after.has(key));
+          movedFiles = moveUploadsToTrash(released);
+        } catch (error) {
+          // 파일은 새벽 정리가 다시 찾아 치운다. 삭제 자체는 끝났다.
+          console.error("[MemorialDelete] 사진 파일 정리 실패", error);
+        }
+
+        await createAdminAuditLog({
+          adminUserId: isAdmin ? ctx.user.id : null,
+          targetUserId: existing.createdByUserId ?? null,
+          action: "memorial.delete",
+          beforeValue: `${existing.status}/${existing.visibility}`,
+          afterValue: "deleted",
+          note: `${existing.name} (${existing.slug}) · ${
+            isAdmin && !isOwner ? "관리자" : "만든 분"
+          }이 삭제 · 사진 파일 ${movedFiles}개 정리`,
+        });
+
+        return { success: true } as const;
       }),
 
     updateEditable: protectedProcedure
