@@ -1,8 +1,2 @@
-/**
- * 추도일 알림 신청 칸을 보여 줄지 (2026-09-16 사용자 결정: 당분간 숨김).
- *
- * 문자 발신번호(솔라피) 등록이 아직이라, 신청을 받아도 알림 문자가 나가지 않는다.
- * 발신번호 등록을 마치면 true 로 바꾼다. 서버의 신청 기능과 관리자 화면의 신청
- * 목록은 그대로 둔다. 홈페이지 추모관과 키오스크 추모관 모두 이 값을 따른다.
- */
-export const MEMORIAL_REMINDER_SIGNUP_ENABLED = false;
+// 서버도 같은 값을 따라야 해서 shared 로 옮겼다 (2026-09-18).
+export { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "@shared/featureFlags";

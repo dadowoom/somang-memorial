@@ -113,15 +113,21 @@ export function createPasswordAttemptLimiter({
   };
 }
 
-function clientAddress(req: Request) {
+export function clientAddress(req: Pick<Request, "headers" | "socket">) {
   // Forwarded headers are only trusted when an administrator explicitly enables
   // this for a reverse proxy. This prevents a direct client from spoofing an IP.
+  //
+  // Only the LAST entry is trusted. nginx ($proxy_add_x_forwarded_for) appends
+  // the real client address to whatever the client sent, so the leftmost entry
+  // is attacker-controlled: a fresh fake value per request would reset every
+  // limit. This matches Express `trust proxy 1` (one proxy in front).
   if (process.env.TRUST_PROXY === "true") {
     const forwardedFor = req.headers["x-forwarded-for"];
-    const firstAddress = Array.isArray(forwardedFor)
-      ? forwardedFor[0]
-      : forwardedFor?.split(",")[0];
-    if (firstAddress?.trim()) return firstAddress.trim();
+    const joined = Array.isArray(forwardedFor)
+      ? forwardedFor.join(",")
+      : forwardedFor;
+    const lastAddress = joined?.split(",").pop()?.trim();
+    if (lastAddress) return lastAddress;
   }
 
   return req.socket.remoteAddress ?? "unknown";

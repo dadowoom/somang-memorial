@@ -123,6 +123,7 @@ import { videoRouter } from "./routers/video";
 import { maskEmailForAudit, maskPhoneForAudit } from "../shared/auditNotes";
 import { credentialFingerprint } from "./_core/sessionCredential";
 import { describeBlockedMemorials } from "../shared/accountDeletion";
+import { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "../shared/featureFlags";
 import {
   FAMILY_ROOM_PASSWORD_MIN,
   familyRoomPasswordProblem,
@@ -173,8 +174,30 @@ const letterSubmissionLimiter = createPasswordAttemptLimiter({
   failureWindowMs: 10 * 60 * 1000,
   blockMs: 10 * 60 * 1000,
 });
+// 비공개 추모관·가족관 비밀번호를 여러 곳(접속지)에서 나눠 두드리는 것을 막는다.
+// 접속지 기준 제한(5회/10분)만으로는 주소를 바꿔 가며 숫자 4자리(1만 가지)를
+// 맞힐 수 있다. 비밀번호를 거는 대상(추모관·가족관) 하나를 기준으로 따로 센다.
+const protectedRoomSubjectLimiter = createPasswordAttemptLimiter({
+  failureLimit: 20,
+  failureWindowMs: 60 * 60 * 1000,
+  blockMs: 60 * 60 * 1000,
+});
 const reminderSubscriptionLimiter = createPasswordAttemptLimiter({
   failureLimit: 3,
+  failureWindowMs: 24 * 60 * 60 * 1000,
+  blockMs: 24 * 60 * 60 * 1000,
+});
+// 같은 번호로 가는 확인 문자: 접속지를 바꿔 가며 남의 번호로 문자를 계속
+// 보내는 것(문자 폭탄·요금)을 막는다. 번호 하나에 하루 3통.
+const reminderPhoneLimiter = createPasswordAttemptLimiter({
+  failureLimit: 3,
+  failureWindowMs: 24 * 60 * 60 * 1000,
+  blockMs: 24 * 60 * 60 * 1000,
+});
+// 서비스 전체의 확인 문자 하루 상한. 위 두 제한을 다 피해도 요금이 끝없이
+// 나가지 않게 하는 마지막 안전장치다.
+const reminderDailyTotalLimiter = createPasswordAttemptLimiter({
+  failureLimit: 200,
   failureWindowMs: 24 * 60 * 60 * 1000,
   blockMs: 24 * 60 * 60 * 1000,
 });
@@ -481,6 +504,7 @@ const reminderSubscribeInput = z.object({
     .max(20)
     .regex(/^[0-9\-\s+()]+$/, "휴대폰 번호 형식으로 입력해 주세요."),
   consent: z.literal(true),
+  accessToken: z.string().trim().max(128).optional(),
 });
 
 const adminLetterStatusInput = z.object({
@@ -1195,10 +1219,16 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         const attemptKey = passwordAttemptKey(ctx.req, `memorial:${input.slug}`);
+        const subjectKey = subjectAttemptKey(`memorial:${input.slug}`);
         ensurePasswordAttemptAllowed(attemptKey);
+        ensurePasswordAttemptAllowed(subjectKey, protectedRoomSubjectLimiter);
+        const recordFailure = () => {
+          passwordAttemptLimiter.recordFailure(attemptKey);
+          protectedRoomSubjectLimiter.recordFailure(subjectKey);
+        };
         const access = await verifyMemorialAccessPassword(input);
         if (access === null) {
-          passwordAttemptLimiter.recordFailure(attemptKey);
+          recordFailure();
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "추모관을 찾을 수 없습니다.",
@@ -1206,7 +1236,7 @@ export const appRouter = router({
         }
 
         if (access === false) {
-          passwordAttemptLimiter.recordFailure(attemptKey);
+          recordFailure();
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "비밀번호가 맞지 않습니다.",
@@ -1214,6 +1244,7 @@ export const appRouter = router({
         }
 
         passwordAttemptLimiter.recordSuccess(attemptKey);
+        protectedRoomSubjectLimiter.recordSuccess(subjectKey);
         return access;
       }),
 
@@ -1613,14 +1644,22 @@ export const appRouter = router({
           ctx.req,
           `family-room:${input.memorialSlug}`
         );
+        const subjectKey = subjectAttemptKey(
+          `family-room:${input.memorialSlug}`
+        );
         ensurePasswordAttemptAllowed(attemptKey);
+        ensurePasswordAttemptAllowed(subjectKey, protectedRoomSubjectLimiter);
+        const recordFailure = () => {
+          passwordAttemptLimiter.recordFailure(attemptKey);
+          protectedRoomSubjectLimiter.recordFailure(subjectKey);
+        };
         const room = await verifyMemorialFamilyRoomPassword(
           input.memorialSlug,
           input.password
         );
 
         if (room === null) {
-          passwordAttemptLimiter.recordFailure(attemptKey);
+          recordFailure();
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "가족관을 찾을 수 없습니다.",
@@ -1628,7 +1667,7 @@ export const appRouter = router({
         }
 
         if (room === false) {
-          passwordAttemptLimiter.recordFailure(attemptKey);
+          recordFailure();
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "비밀번호가 맞지 않습니다.",
@@ -1636,6 +1675,7 @@ export const appRouter = router({
         }
 
         passwordAttemptLimiter.recordSuccess(attemptKey);
+        protectedRoomSubjectLimiter.recordSuccess(subjectKey);
         return room;
       }),
 
@@ -2253,11 +2293,47 @@ export const appRouter = router({
     subscribe: publicProcedure
       .input(reminderSubscribeInput)
       .mutation(async ({ ctx, input }) => {
+        if (!MEMORIAL_REMINDER_SIGNUP_ENABLED) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "지금은 추도일 알림 신청을 받지 않습니다.",
+          });
+        }
+
         consumePublicSubmissionAttempt(
           reminderSubscriptionLimiter,
           passwordAttemptKey(ctx.req, "reminder-subscribe"),
           "문자 알림 요청이 너무 많습니다. 내일 다시 시도해 주세요."
         );
+        consumePublicSubmissionAttempt(
+          reminderPhoneLimiter,
+          subjectAttemptKey(
+            `reminder-phone:${input.phone.replace(/\D/g, "")}`
+          ),
+          "이 번호로는 오늘 더 신청할 수 없습니다. 내일 다시 시도해 주세요."
+        );
+        consumePublicSubmissionAttempt(
+          reminderDailyTotalLimiter,
+          subjectAttemptKey("reminder-daily-total"),
+          "오늘은 알림 신청이 많아 더 받을 수 없습니다. 내일 다시 시도해 주세요."
+        );
+
+        // 비공개 추모관은 입장한 사람만 신청할 수 있다. 확인 문자에 고인 성함과
+        // 추도일이 담기므로, 주소만 짐작해서 신청하면 비공개 정보가 새어 나간다.
+        const memorial = await getPublicMemorialBySlug(input.memorialSlug);
+        if (
+          !memorial ||
+          !(await canUserReadMemorialWithFamily(
+            memorial,
+            input.accessToken,
+            ctx.user
+          ))
+        ) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "추모관을 찾을 수 없습니다.",
+          });
+        }
 
         const subscribed = await createMemorialReminderSubscription({
           memorialSlug: input.memorialSlug,
