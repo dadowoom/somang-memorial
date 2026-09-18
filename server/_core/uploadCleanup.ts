@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { sql } from "drizzle-orm";
-import { getDb } from "../db";
+import { getDb, purgeExpiredKioskInquiries } from "../db";
 import { UPLOAD_DIR } from "../storage";
 
 /**
@@ -82,10 +82,18 @@ export function planUploadCleanup({
   // 안전장치: DB 를 제대로 못 읽었거나 주소 형식이 바뀌면 "전부 안 쓰는 파일"로
   // 보일 수 있다. 그때 멀쩡한 사진을 치우지 않도록 멈춘다.
   if (referenced.size === 0) {
-    return { ok: false, reason: "DB 에서 사진 주소를 하나도 찾지 못했습니다", toTrash };
+    return {
+      ok: false,
+      reason: "DB 에서 사진 주소를 하나도 찾지 못했습니다",
+      toTrash,
+    };
   }
   if (toTrash.length > MAX_TRASH_COUNT) {
-    return { ok: false, reason: `치울 파일이 너무 많습니다 (${toTrash.length}개)`, toTrash };
+    return {
+      ok: false,
+      reason: `치울 파일이 너무 많습니다 (${toTrash.length}개)`,
+      toTrash,
+    };
   }
   if (files.length >= 10 && toTrash.length / files.length > MAX_TRASH_RATIO) {
     return {
@@ -153,7 +161,9 @@ export async function collectReferencedUploadKeys(): Promise<Set<string>> {
       )
     );
     for (const row of rows) {
-      for (const key of extractUploadKeys(row.v == null ? null : String(row.v))) {
+      for (const key of extractUploadKeys(
+        row.v == null ? null : String(row.v)
+      )) {
         referenced.add(key);
       }
     }
@@ -280,8 +290,6 @@ let lastRunKey = "";
 
 /** 서울 시각 새벽 3시대에 하루 한 번 돈다 (백업은 4시 37분). */
 export function startUploadCleanupScheduler() {
-  if (uploadCleanupMode() === "off") return;
-
   const tick = () => {
     const now = new Date();
     const hour = Number(
@@ -294,6 +302,17 @@ export function startUploadCleanupScheduler() {
     const runKey = seoulDateKey(now);
     if (hour !== 3 || lastRunKey === runKey) return;
     lastRunKey = runKey;
+    // 보관 기한이 지난 제작 문의를 지운다 (개인정보처리방침 12항). 사진 정리
+    // 설정과 관계없이 늘 돈다.
+    purgeExpiredKioskInquiries()
+      .then(count => {
+        if (count > 0)
+          console.log(`[Retention] 기한 지난 제작 문의 ${count}건 삭제`);
+      })
+      .catch(error => {
+        console.error("[Retention] 제작 문의 정리 실패:", error);
+      });
+    if (uploadCleanupMode() === "off") return;
     runUploadCleanup().catch(error => {
       console.error("[UploadCleanup] 실패:", error);
     });
