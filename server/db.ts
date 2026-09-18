@@ -1,15 +1,5 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  inArray,
-  isNull,
-  like,
-  or,
-  sql,
-} from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
@@ -394,7 +384,10 @@ export async function countAdminUsers() {
   return result.length;
 }
 
-export async function updateAdminUserRole(id: number, role: "user" | "admin") {
+export async function updateAdminUserRole(
+  id: number,
+  role: "user" | "admin"
+) {
   const db = await getDb();
   if (!db) {
     throw new Error("Database is not available");
@@ -697,7 +690,10 @@ export async function listPublicMemorials() {
     })
     .from(memorials)
     .where(
-      and(eq(memorials.visibility, "public"), eq(memorials.status, "published"))
+      and(
+        eq(memorials.visibility, "public"),
+        eq(memorials.status, "published")
+      )
     )
     .orderBy(desc(memorials.createdAt))
     .limit(100);
@@ -828,53 +824,49 @@ export async function listUserMemorials(userId: number) {
     throw new Error("Database is not available");
   }
 
-  return (
-    db
-      .select({
-        id: memorials.id,
-        slug: memorials.slug,
-        name: memorials.name,
-        role: memorials.role,
-        birthDate: memorials.birthDate,
-        deathDate: memorials.deathDate,
-        church: memorials.church,
-        familyContact: memorials.familyContact,
-        familyPhone: memorials.familyPhone,
-        visibility: memorials.visibility,
-        status: memorials.status,
-        memorialDay: memorials.memorialDay,
-        createdAt: memorials.createdAt,
-        updatedAt: memorials.updatedAt,
-        createdByUserId: memorials.createdByUserId,
-        memberUserId: memorialFamilyMembers.userId,
-      })
-      .from(memorials)
-      // 내가 만든 추모관과, 가족 초대로 함께 관리하게 된 추모관을 같이 보여준다.
-      .leftJoin(
-        memorialFamilyMembers,
-        and(
-          eq(memorialFamilyMembers.memorialId, memorials.id),
-          eq(memorialFamilyMembers.userId, userId)
-        )
+  return db
+    .select({
+      id: memorials.id,
+      slug: memorials.slug,
+      name: memorials.name,
+      role: memorials.role,
+      birthDate: memorials.birthDate,
+      deathDate: memorials.deathDate,
+      church: memorials.church,
+      familyContact: memorials.familyContact,
+      familyPhone: memorials.familyPhone,
+      visibility: memorials.visibility,
+      status: memorials.status,
+      memorialDay: memorials.memorialDay,
+      createdAt: memorials.createdAt,
+      updatedAt: memorials.updatedAt,
+      createdByUserId: memorials.createdByUserId,
+      memberUserId: memorialFamilyMembers.userId,
+    })
+    .from(memorials)
+    // 내가 만든 추모관과, 가족 초대로 함께 관리하게 된 추모관을 같이 보여준다.
+    .leftJoin(
+      memorialFamilyMembers,
+      and(
+        eq(memorialFamilyMembers.memorialId, memorials.id),
+        eq(memorialFamilyMembers.userId, userId)
       )
-      .where(
-        or(
-          eq(memorials.createdByUserId, userId),
-          eq(memorialFamilyMembers.userId, userId)
-        )
+    )
+    .where(
+      or(
+        eq(memorials.createdByUserId, userId),
+        eq(memorialFamilyMembers.userId, userId)
       )
-      .orderBy(desc(memorials.updatedAt), desc(memorials.createdAt))
-      .limit(200)
-      .then(rows =>
-        rows.map(({ createdByUserId, memberUserId, ...row }) => ({
-          ...row,
-          membership:
-            createdByUserId === userId
-              ? ("owner" as const)
-              : ("member" as const),
-        }))
-      )
-  );
+    )
+    .orderBy(desc(memorials.updatedAt), desc(memorials.createdAt))
+    .limit(200)
+    .then(rows =>
+      rows.map(({ createdByUserId, memberUserId, ...row }) => ({
+        ...row,
+        membership:
+          createdByUserId === userId ? ("owner" as const) : ("member" as const),
+      }))
+    );
 }
 
 export async function getAdminMemorialBySlug(slug: string) {
@@ -1216,10 +1208,7 @@ export async function getMemorialAccessStatus(slug: string) {
     })
     .from(memorials)
     .where(
-      and(
-        eq(memorials.slug, slug),
-        inArray(memorials.status, [...FAMILY_READABLE_STATUSES])
-      )
+      and(eq(memorials.slug, slug), inArray(memorials.status, [...FAMILY_READABLE_STATUSES]))
     )
     .limit(1);
 
@@ -1319,10 +1308,7 @@ export async function getMemorialFamilyRoomStatus(slug: string) {
       eq(memorialFamilyRooms.memorialId, memorials.id)
     )
     .where(
-      and(
-        eq(memorials.slug, slug),
-        inArray(memorials.status, [...FAMILY_READABLE_STATUSES])
-      )
+      and(eq(memorials.slug, slug), inArray(memorials.status, [...FAMILY_READABLE_STATUSES]))
     )
     .limit(1);
 
@@ -1369,10 +1355,7 @@ export async function verifyMemorialFamilyRoomPassword(
       eq(memorialFamilyRooms.memorialId, memorials.id)
     )
     .where(
-      and(
-        eq(memorials.slug, slug),
-        inArray(memorials.status, [...FAMILY_READABLE_STATUSES])
-      )
+      and(eq(memorials.slug, slug), inArray(memorials.status, [...FAMILY_READABLE_STATUSES]))
     )
     .limit(1);
 
@@ -1708,6 +1691,7 @@ export async function reorderFamilyRoomPhotos(
   });
 }
 
+
 // ---------------------------------------------------------------------------
 // 가족 초대 (2026-09-13). 추모관 주인이 초대 링크를 만들어 가족에게 주면, 그 링크로
 // 들어온 가족이 함께 관리한다. 링크는 비밀번호 재설정 링크처럼 해시만 저장한다.
@@ -1719,10 +1703,7 @@ function hashFamilyInvitationToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export async function isMemorialFamilyMember(
-  memorialId: number,
-  userId: number
-) {
+export async function isMemorialFamilyMember(memorialId: number, userId: number) {
   const db = await getDb();
   if (!db) {
     throw new Error("Database is not available");
@@ -1782,8 +1763,7 @@ export async function addMemorialFamilyMember(input: {
     .from(memorials)
     .where(eq(memorials.id, input.memorialId))
     .limit(1);
-  if (!memorial[0])
-    return { added: false as const, reason: "missing" as const };
+  if (!memorial[0]) return { added: false as const, reason: "missing" as const };
   if (memorial[0].createdByUserId === input.userId) {
     return { added: false as const, reason: "owner" as const };
   }
@@ -1921,10 +1901,7 @@ export async function getMemorialFamilyInvitationByToken(token: string) {
       revokedAt: memorialFamilyInvitations.revokedAt,
     })
     .from(memorialFamilyInvitations)
-    .innerJoin(
-      memorials,
-      eq(memorials.id, memorialFamilyInvitations.memorialId)
-    )
+    .innerJoin(memorials, eq(memorials.id, memorialFamilyInvitations.memorialId))
     .where(
       eq(memorialFamilyInvitations.tokenHash, hashFamilyInvitationToken(token))
     )
@@ -2773,6 +2750,7 @@ export async function deleteMemorialBookPage(id: number) {
   await db.delete(memorialBookPages).where(eq(memorialBookPages.id, id));
 }
 
+
 /**
  * 회원 탈퇴. 개인정보보호법상 정보주체는 자기 정보를 지워 달라고 요구할 수
  * 있으므로 반드시 있어야 하는 기능입니다.
@@ -2835,10 +2813,7 @@ export async function deleteUserAccount(input: {
       .from(memorialFamilyMembers)
       .innerJoin(users, eq(users.id, memorialFamilyMembers.userId))
       .where(eq(memorialFamilyMembers.memorialId, memorial.id))
-      .orderBy(
-        asc(memorialFamilyMembers.createdAt),
-        asc(memorialFamilyMembers.id)
-      );
+      .orderBy(asc(memorialFamilyMembers.createdAt), asc(memorialFamilyMembers.id));
     ownedWithMembers.push({ ...memorial, members });
   }
 
@@ -2907,10 +2882,7 @@ export async function transferMemorialOwner(input: {
       );
   });
 
-  return {
-    fromUserId: current.createdByUserId ?? null,
-    toUserId: input.toUserId,
-  };
+  return { fromUserId: current.createdByUserId ?? null, toUserId: input.toUserId };
 }
 
 /* ------------------------------------------------------------------ *
