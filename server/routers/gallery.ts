@@ -10,6 +10,7 @@ import {
 import { memorialGalleryPhotos } from "../../drizzle/schema";
 import { canManageMemorialGallery } from "../../shared/memorialGalleryPermissions";
 import { withGalleryEditor } from "../galleryEditing";
+import { saveThumbnail } from "../_core/thumbnailStorage";
 import { decodeImageDataUrl } from "../_core/imageUpload";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { storagePut } from "../storage";
@@ -51,6 +52,8 @@ export const galleryRouter = router({
       z.object({
         memorialId: z.number(),
         dataUrl: z.string(),
+        /** 브라우저가 만든 작은 사진(긴 변 800px JPEG). 없으면 화면이 원본을 쓴다. */
+        thumbDataUrl: z.string().max(1_000_000).optional(),
         fileName: z.string(),
         caption: z.string().max(500).optional(),
         year: z.string().max(20).optional(),
@@ -80,7 +83,8 @@ export const galleryRouter = router({
           }
           const { buffer, mimeType, ext } = decodeImageDataUrl(input.dataUrl);
           const key = `gallery/${memorialId}/${nanoid()}.${ext}`;
-          const { url } = await storagePut(key, buffer, mimeType);
+          const { key: storedKey, url } = await storagePut(key, buffer, mimeType);
+          await saveThumbnail(storedKey, input.thumbDataUrl);
 
           const asProfile = input.asProfile === true;
           if (asProfile) {

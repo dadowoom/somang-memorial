@@ -3,6 +3,7 @@ import path from "path";
 import { sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { UPLOAD_DIR } from "../storage";
+import { thumbnailPathFor } from "../../shared/thumbnail";
 
 /**
  * 지운 사진이 서버에 그대로 남던 문제 (2026-09-18 점검).
@@ -82,10 +83,18 @@ export function planUploadCleanup({
   // 안전장치: DB 를 제대로 못 읽었거나 주소 형식이 바뀌면 "전부 안 쓰는 파일"로
   // 보일 수 있다. 그때 멀쩡한 사진을 치우지 않도록 멈춘다.
   if (referenced.size === 0) {
-    return { ok: false, reason: "DB 에서 사진 주소를 하나도 찾지 못했습니다", toTrash };
+    return {
+      ok: false,
+      reason: "DB 에서 사진 주소를 하나도 찾지 못했습니다",
+      toTrash,
+    };
   }
   if (toTrash.length > MAX_TRASH_COUNT) {
-    return { ok: false, reason: `치울 파일이 너무 많습니다 (${toTrash.length}개)`, toTrash };
+    return {
+      ok: false,
+      reason: `치울 파일이 너무 많습니다 (${toTrash.length}개)`,
+      toTrash,
+    };
   }
   if (files.length >= 10 && toTrash.length / files.length > MAX_TRASH_RATIO) {
     return {
@@ -153,12 +162,25 @@ export async function collectReferencedUploadKeys(): Promise<Set<string>> {
       )
     );
     for (const row of rows) {
-      for (const key of extractUploadKeys(row.v == null ? null : String(row.v))) {
+      for (const key of extractUploadKeys(
+        row.v == null ? null : String(row.v)
+      )) {
         referenced.add(key);
       }
     }
   }
-  return referenced;
+  return withThumbnails(referenced);
+}
+
+/**
+ * 원본이 쓰이면 그 옆의 작은 사진(shared/thumbnail.ts)도 쓰이는 것이다. DB 에
+ * 작은 사진 주소는 따로 적지 않으므로, 이걸 빼면 매일 새벽 작은 사진을 모두
+ * "안 쓰는 파일"로 보고 치운다.
+ */
+export function withThumbnails(keys: Set<string>) {
+  const all = new Set(keys);
+  keys.forEach(key => all.add(thumbnailPathFor(key)));
+  return all;
 }
 
 function seoulDateKey(date: Date) {

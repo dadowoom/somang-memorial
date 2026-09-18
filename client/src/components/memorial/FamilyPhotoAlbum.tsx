@@ -1,4 +1,7 @@
-import { compressImageFile } from "@/lib/imageCompression";
+import {
+  compressImageFile,
+  makeThumbnailDataUrl,
+} from "@/lib/imageCompression";
 import { trpc } from "@/lib/trpc";
 import { Camera, ImagePlus, Upload } from "lucide-react";
 import type { RefObject } from "react";
@@ -139,9 +142,11 @@ export function FamilyPhotoManager({
         const file = imageFiles[index];
         try {
           const compressed = await compressImageFile(file);
+          const thumbDataUrl = await makeThumbnailDataUrl(file);
           await addPhoto.mutateAsync({
             memorialSlug: slug,
             dataUrl: compressed.dataUrl,
+            thumbDataUrl,
             fileName: compressed.fileName,
           });
           success += 1;

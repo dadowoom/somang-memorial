@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { ArrowLeft, CalendarPlus, MapPin, Phone, Share2 } from "lucide-react";
 import { ReactNode, useMemo, useState } from "react";
 import { Link, useRoute } from "wouter";
+import ThumbImage from "@/components/ThumbImage";
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 
@@ -123,9 +124,7 @@ function ObituarySheet({
   const [shareMessage, setShareMessage] = useState("");
 
   // 고인 사진은 "프로필 사진"만, 아래 작은 사진은 앨범 사진에서 고른다 (2026-09-16).
-  const portrait = photos.find(
-    photo => photo.isRepresentative === 1
-  )?.photoUrl;
+  const portrait = photos.find(photo => photo.isRepresentative === 1)?.photoUrl;
   const albumPhotos = photos.filter(photo => photo.isRepresentative !== 1);
   const galleryPhotos = albumPhotos.slice(0, 3);
   const remainingPhotoCount = Math.max(0, albumPhotos.length - 3);
@@ -143,7 +142,10 @@ function ObituarySheet({
   if (memorial.servicePlace?.trim())
     rows.push({ label: "빈소", value: memorial.servicePlace.trim() });
   if (memorial.serviceTime?.trim())
-    rows.push({ label: "예배", value: memorial.serviceTime.trim().replace("T", " ") });
+    rows.push({
+      label: "예배",
+      value: memorial.serviceTime.trim().replace("T", " "),
+    });
   if (memorial.memorialDay?.trim())
     rows.push({ label: "추도일", value: memorial.memorialDay.trim() });
   if (memorial.familyContact?.trim() || memorial.familyPhone?.trim())
@@ -238,8 +240,8 @@ function ObituarySheet({
         <div className="px-[26px] pt-[30px]">
           <div className="flex aspect-[4/5] w-full items-center justify-center overflow-hidden border border-[#3a362e] bg-[#1e1c17]">
             {portrait ? (
-              <img
-                src={toImgUrl(portrait)}
+              <ThumbImage
+                src={portrait}
                 alt={`${memorial.name} ${memorial.role}`}
                 className="h-full w-full object-cover"
               />
@@ -362,8 +364,8 @@ function ObituarySheet({
                   key={photo.photoUrl}
                   className="relative aspect-square overflow-hidden bg-[#232019]"
                 >
-                  <img
-                    src={toImgUrl(photo.photoUrl)}
+                  <ThumbImage
+                    src={photo.photoUrl}
                     alt=""
                     className="h-full w-full object-cover"
                   />

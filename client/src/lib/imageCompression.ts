@@ -1,3 +1,8 @@
+import {
+  THUMBNAIL_MAX_BYTES,
+  THUMBNAIL_MAX_DIMENSION,
+} from "@shared/thumbnail";
+
 const DEFAULT_MAX_BYTES = 8 * 1024 * 1024;
 const DEFAULT_MAX_DIMENSION = 2400;
 const MIN_QUALITY = 0.58;
@@ -153,4 +158,47 @@ export async function compressImageFile(
     originalBytes: file.size,
     outputBytes: blob.size,
   };
+}
+
+/**
+ * 사진첩 격자에 쓸 작은 사진(긴 변 800px JPEG)을 만든다 (2026-09-19,
+ * shared/thumbnail.ts). 만들지 못하면 undefined — 올리기는 그대로 하고 화면은
+ * 원본을 쓴다. 휴대폰 사진은 8MB 이하면 원본 그대로 올라가므로(4000px 넘는
+ * 것도 흔하다) 격자에서는 이 작은 사진이 큰 차이를 만든다.
+ */
+export async function makeThumbnailDataUrl(
+  file: File
+): Promise<string | undefined> {
+  try {
+    const image = await loadImage(file);
+    const scale = Math.min(
+      1,
+      THUMBNAIL_MAX_DIMENSION /
+        Math.max(image.naturalWidth, image.naturalHeight)
+    );
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) return undefined;
+    // 투명한 PNG 가 JPEG 에서 검게 나오지 않도록 흰 바탕을 먼저 깐다.
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+
+    let quality = 0.82;
+    let blob = await canvasToBlob(canvas, "image/jpeg", quality);
+    while (blob.size > THUMBNAIL_MAX_BYTES * 0.9 && quality > 0.5) {
+      quality -= 0.1;
+      blob = await canvasToBlob(canvas, "image/jpeg", quality);
+    }
+    if (blob.type !== "image/jpeg" || blob.size > THUMBNAIL_MAX_BYTES) {
+      return undefined;
+    }
+    return await readBlobAsDataUrl(blob);
+  } catch {
+    return undefined;
+  }
 }

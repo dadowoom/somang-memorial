@@ -103,6 +103,7 @@ import {
   useState,
 } from "react";
 import { useLocation, useRoute } from "wouter";
+import ThumbImage from "@/components/ThumbImage";
 
 type TimelineItem = {
   year: string;
@@ -1850,8 +1851,8 @@ function KioskObituarySection({
 
         <div className="mx-auto mt-8 flex aspect-[4/5] w-full max-w-[360px] items-center justify-center overflow-hidden border border-[#3a362e] bg-[#1e1c17]">
           {portraitPhoto ? (
-            <img
-              src={toImgUrl(portraitPhoto.photoUrl)}
+            <ThumbImage
+              src={portraitPhoto.photoUrl}
               alt={`${memorial.name} ${memorial.role}`}
               className="h-full w-full object-cover"
             />
@@ -1948,8 +1949,8 @@ function KioskObituarySection({
                 key={photo.id}
                 className="relative aspect-square overflow-hidden bg-[#232019]"
               >
-                <img
-                  src={toImgUrl(photo.photoUrl)}
+                <ThumbImage
+                  src={photo.photoUrl}
                   alt=""
                   className="h-full w-full object-cover"
                 />
