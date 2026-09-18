@@ -3092,3 +3092,36 @@ export async function verifyUserPasswordById(userId: number, password: string) {
   const hash = rows[0]?.passwordHash;
   return Boolean(hash) && verifyUserPassword(password, hash as string);
 }
+
+/**
+ * 제작 문의 보관 기한 (2026-09-19). 개인정보처리방침 12항과 문의 창의 약속대로
+ * "연락을 마치면 지체 없이, 늦어도 3개월 안에" 지운다. 매일 새벽 정리 때 부른다.
+ * - 연락함(contacted)으로 바꾼 지 7일 지난 문의
+ * - 상태와 관계없이 들어온 지 90일 지난 문의
+ */
+export const INQUIRY_CONTACTED_KEEP_DAYS = 7;
+export const INQUIRY_MAX_KEEP_DAYS = 90;
+
+export async function purgeExpiredKioskInquiries(now = new Date()) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  const day = 24 * 60 * 60 * 1000;
+  const contactedBefore = new Date(
+    now.getTime() - INQUIRY_CONTACTED_KEEP_DAYS * day
+  );
+  const createdBefore = new Date(now.getTime() - INQUIRY_MAX_KEEP_DAYS * day);
+  const [result] = await db
+    .delete(kioskInquiries)
+    .where(
+      or(
+        and(
+          eq(kioskInquiries.status, "contacted"),
+          sql`${kioskInquiries.updatedAt} < ${contactedBefore}`
+        ),
+        sql`${kioskInquiries.createdAt} < ${createdBefore}`
+      )
+    );
+  return (result as { affectedRows?: number })?.affectedRows ?? 0;
+}
