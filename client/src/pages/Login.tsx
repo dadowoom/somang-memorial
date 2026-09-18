@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import { inputClass, labelClass } from "@/lib/formStyles";
 import { trpc } from "@/lib/trpc";
 import { getLoginMode } from "@/lib/loginMode";
+import { SIGNUP_PRIVACY_NOTICE } from "@shared/consent";
 import {
   ArrowRight,
   Check,
@@ -53,6 +54,7 @@ export default function Login() {
   const [signupPasswordConfirm, setSignupPasswordConfirm] = useState("");
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [serviceConsent, setServiceConsent] = useState(false);
+  const [over14Consent, setOver14Consent] = useState(false);
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
@@ -65,7 +67,7 @@ export default function Login() {
   const introText = isCreateRedirect
     ? "추모관 만들기는 로그인 후 이용할 수 있습니다. 처음 방문하셨다면 회원가입을 해 주세요. 가입을 마치면 바로 추모관을 작성할 수 있습니다."
     : "로그인하시면 추모관을 만들거나 가족과 함께 관리하는 기록을 이어갈 수 있습니다. 처음 방문하셨다면 회원가입을 해 주세요.";
-  const allConsentChecked = privacyConsent && serviceConsent;
+  const allConsentChecked = privacyConsent && serviceConsent && over14Consent;
   const passwordConfirmMessage =
     signupPasswordConfirm.length === 0
       ? ""
@@ -131,7 +133,7 @@ export default function Login() {
     }
 
     if (!allConsentChecked) {
-      setMessage("개인정보 수집 및 서비스 이용 필수 동의가 필요합니다.");
+      setMessage("필수 동의 항목에 모두 동의해 주세요.");
       return;
     }
 
@@ -141,6 +143,7 @@ export default function Login() {
         email,
         phone,
         password: signupPassword,
+        consents: { privacy: true, terms: true, over14: true },
       });
 
       await utils.auth.me.invalidate();
@@ -179,7 +182,9 @@ export default function Login() {
               </p>
 
               <div className="account-steps" aria-label="이용 순서">
-                <span>01 회원가입</span><span>02 기록 남기기</span><span>03 가족과 나누기</span>
+                <span>01 회원가입</span>
+                <span>02 기록 남기기</span>
+                <span>03 가족과 나누기</span>
               </div>
             </div>
 
@@ -212,7 +217,9 @@ export default function Login() {
                       <input
                         type="text"
                         value={loginIdentifier}
-                        onChange={event => setLoginIdentifier(event.target.value)}
+                        onChange={event =>
+                          setLoginIdentifier(event.target.value)
+                        }
                         className={`${inputClass} pr-9`}
                         placeholder="아이디 또는 이메일 주소"
                         autoComplete="username"
@@ -372,6 +379,7 @@ export default function Login() {
                         onChange={event => {
                           setPrivacyConsent(event.target.checked);
                           setServiceConsent(event.target.checked);
+                          setOver14Consent(event.target.checked);
                         }}
                         className="mt-1 h-4 w-4 accent-[#18181b]"
                       />
@@ -383,7 +391,17 @@ export default function Login() {
                         checked={privacyConsent}
                         onChange={setPrivacyConsent}
                         label="개인정보 수집 및 이용 동의"
-                        description="성함, 이메일, 휴대폰 번호를 회원 확인과 추모관 작성 안내에 사용합니다."
+                        description={
+                          <>
+                            수집 항목: {SIGNUP_PRIVACY_NOTICE.items}
+                            <br />
+                            이용 목적: {SIGNUP_PRIVACY_NOTICE.purpose}
+                            <br />
+                            보유 기간: {SIGNUP_PRIVACY_NOTICE.retention}
+                            <br />
+                            {SIGNUP_PRIVACY_NOTICE.refusal}
+                          </>
+                        }
                         documentHref="/privacy"
                       />
                       <ConsentCheckbox
@@ -392,6 +410,12 @@ export default function Login() {
                         label="서비스 이용 동의"
                         description="소망교회 디지털 추모관 회원가입과 추모관 생성 절차에 동의합니다."
                         documentHref="/terms"
+                      />
+                      <ConsentCheckbox
+                        checked={over14Consent}
+                        onChange={setOver14Consent}
+                        label="만 14세 이상입니다"
+                        description="만 14세 미만은 보호자 동의 절차가 따로 필요해 회원가입을 받지 않습니다."
                       />
                     </div>
                   </div>
@@ -467,8 +491,8 @@ function ConsentCheckbox({
   checked: boolean;
   onChange: (checked: boolean) => void;
   label: string;
-  description: string;
-  documentHref: string;
+  description: ReactNode;
+  documentHref?: string;
 }) {
   const inputId = useId();
 
@@ -491,14 +515,16 @@ function ConsentCheckbox({
         <span className="mt-1 block text-xs leading-5 text-[#8a8a8a]">
           {description}
         </span>
-        <a
-          href={documentHref}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-1 inline-block text-xs leading-5 text-[#616161] underline underline-offset-4 hover:text-[#121212]"
-        >
-          전문 보기
-        </a>
+        {documentHref && (
+          <a
+            href={documentHref}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 inline-block text-xs leading-5 text-[#616161] underline underline-offset-4 hover:text-[#121212]"
+          >
+            전문 보기
+          </a>
+        )}
       </span>
     </div>
   );
