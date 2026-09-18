@@ -3058,3 +3058,32 @@ export async function updateKioskInquiryStatus(id: number, status: string) {
 
   return { before: current.status, phone: current.phone };
 }
+
+/**
+ * 추모관을 통째로 지운다 (2026-09-19). 편지·사진첩·영상·책·가족관·가족 초대·
+ * 알림 신청은 DB 의 외래키(ON DELETE CASCADE)로 함께 지워진다.
+ * 사진 파일은 여기서 지우지 않는다. 부르는 쪽에서 "더 이상 아무 데도 쓰이지
+ * 않게 된 파일"만 골라 휴지통으로 옮긴다.
+ */
+export async function deleteMemorialById(memorialId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  await db.delete(memorials).where(eq(memorials.id, memorialId));
+}
+
+/** 비밀번호로 가입한 회원의 비밀번호가 맞는지. 외부 로그인 계정은 false. */
+export async function verifyUserPasswordById(userId: number, password: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  const rows = await db
+    .select({ passwordHash: users.passwordHash })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  const hash = rows[0]?.passwordHash;
+  return Boolean(hash) && verifyUserPassword(password, hash as string);
+}

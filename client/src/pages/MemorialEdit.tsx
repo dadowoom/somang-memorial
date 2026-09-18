@@ -1,12 +1,18 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { memorialRequiredFields as requiredFields } from "@/lib/memorialFormCopy";
-import { errorClass, inputClass, labelClass, selectClass, textAreaClass } from "@/lib/formStyles";
+import {
+  errorClass,
+  inputClass,
+  labelClass,
+  selectClass,
+  textAreaClass,
+} from "@/lib/formStyles";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, ArrowRight, Check, Plus, Save, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link, useRoute } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
 
 type Visibility = "public" | "private";
 // "링크 공개"는 예전 자료에만 남아 있는 값이다. 화면에서 새로 고를 수는 없지만,
@@ -49,6 +55,7 @@ type AdminMemorial = {
   }>;
   hasAccessPassword: boolean;
   href: string;
+  createdByUserId: number | null;
 };
 
 type FormState = {
@@ -620,7 +627,9 @@ export default function MemorialEdit() {
                         className={inputClass}
                         maxLength={255}
                         value={form.servicePlace}
-                        onChange={event => updateField("servicePlace", event.target.value)}
+                        onChange={event =>
+                          updateField("servicePlace", event.target.value)
+                        }
                         placeholder="예: 소망교회 본당"
                       />
                     </Field>
@@ -770,9 +779,12 @@ export default function MemorialEdit() {
                       </div>
                       {form.visibility === "link" && (
                         <p className="mt-3 text-xs leading-5 text-[#616161]">
-                          지금은 <span className="font-medium text-[#121212]">링크 공개</span>
-                          {" "}상태입니다. 주소를 아는 분만 볼 수 있습니다. 위에서 고르지
-                          않으면 그대로 유지됩니다.
+                          지금은{" "}
+                          <span className="font-medium text-[#121212]">
+                            링크 공개
+                          </span>{" "}
+                          상태입니다. 주소를 아는 분만 볼 수 있습니다. 위에서
+                          고르지 않으면 그대로 유지됩니다.
                         </p>
                       )}
                     </Field>
@@ -816,8 +828,8 @@ export default function MemorialEdit() {
                           <option value="private">비공개로 보관</option>
                         </select>
                         <p className="mt-2 text-xs leading-5 text-[#616161]">
-                          작성 중에는 가족과 관리자만 볼 수 있고, 검색·키오스크에
-                          나오지 않으며 편지도 받지 않습니다.
+                          작성 중에는 가족과 관리자만 볼 수 있고,
+                          검색·키오스크에 나오지 않으며 편지도 받지 않습니다.
                         </p>
                       </Field>
                     )}
@@ -897,9 +909,127 @@ export default function MemorialEdit() {
             </div>
           </form>
         )}
+
+        {memorial && (isAdmin || memorial.createdByUserId === user?.id) && (
+          <MemorialDeleteSection
+            memorialId={memorial.id}
+            memorialName={memorial.name}
+            afterDeleteHref={isAdminPath ? "/admin" : "/my/memorials"}
+          />
+        )}
       </main>
 
       <Footer />
+    </div>
+  );
+}
+
+/**
+ * 추모관 삭제 (2026-09-19). 되돌릴 수 없으므로 한 번 더 펼쳐서, 고인의 성함과
+ * 비밀번호를 넣어야 지워진다. 만든 분과 관리자에게만 보인다(서버도 확인한다).
+ */
+function MemorialDeleteSection({
+  memorialId,
+  memorialName,
+  afterDeleteHref,
+}: {
+  memorialId: number;
+  memorialName: string;
+  afterDeleteHref: string;
+}) {
+  const [, setLocation] = useLocation();
+  const utils = trpc.useUtils();
+  const [open, setOpen] = useState(false);
+  const [confirmName, setConfirmName] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const deleteMemorial = trpc.memorial.delete.useMutation({
+    onSuccess: async () => {
+      await utils.invalidate();
+      setLocation(afterDeleteHref);
+    },
+    onError: err => setError(err.message || "삭제하지 못했습니다."),
+  });
+  const nameMatches = confirmName.trim() === memorialName.trim();
+
+  return (
+    <div className="container pb-16">
+      <section className="border border-[#d9b8b8] p-5 md:p-6">
+        <p className="text-sm font-medium text-[#8a1f1f]">추모관 삭제</p>
+        <p className="mt-2 text-sm leading-6 text-[#616161]">
+          추모관과 함께 편지, 사진첩, 영상, 추모 책, 가족관, 추도일 알림 신청이
+          모두 지워집니다. 지운 뒤에는 되돌릴 수 없습니다.
+        </p>
+
+        {!open ? (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="mt-4 inline-flex h-11 items-center gap-2 border border-[#8a1f1f] px-5 text-sm text-[#8a1f1f] transition-colors hover:bg-[#fbf3f3]"
+          >
+            <Trash2 className="h-4 w-4" strokeWidth={1.6} />이 추모관 삭제하기
+          </button>
+        ) : (
+          <form
+            className="mt-5 grid gap-4 md:max-w-md"
+            onSubmit={event => {
+              event.preventDefault();
+              setError("");
+              if (!nameMatches) {
+                setError("고인의 성함을 정확히 적어 주세요.");
+                return;
+              }
+              deleteMemorial.mutate({ id: memorialId, confirmName, password });
+            }}
+          >
+            <label className="grid gap-2">
+              <span className={labelClass}>
+                확인을 위해 고인의 성함 <strong>{memorialName}</strong> 을(를)
+                적어 주세요
+              </span>
+              <input
+                className={inputClass}
+                value={confirmName}
+                onChange={event => setConfirmName(event.target.value)}
+                autoComplete="off"
+              />
+            </label>
+            <label className="grid gap-2">
+              <span className={labelClass}>내 계정 비밀번호</span>
+              <input
+                type="password"
+                className={inputClass}
+                value={password}
+                onChange={event => setPassword(event.target.value)}
+                autoComplete="current-password"
+              />
+            </label>
+            {error && <p className="text-sm text-[#8a1f1f]">{error}</p>}
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  setConfirmName("");
+                  setPassword("");
+                  setError("");
+                }}
+                className="h-11 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5]"
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                disabled={!nameMatches || !password || deleteMemorial.isPending}
+                className="inline-flex h-11 items-center justify-center gap-2 bg-[#8a1f1f] px-5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Trash2 className="h-4 w-4" strokeWidth={1.6} />
+                {deleteMemorial.isPending ? "삭제하는 중" : "영구 삭제"}
+              </button>
+            </div>
+          </form>
+        )}
+      </section>
     </div>
   );
 }
