@@ -3,9 +3,10 @@
  *
  * 동의를 받았다는 것은 분쟁이 나면 운영자가 증명해야 한다. 그래서 가입할 때
  * 어느 판(版)의 약관·개인정보처리방침에 언제 동의했는지를 회원 정보에 남긴다.
- * 약관이나 방침의 내용을 바꾸면 이 값을 바꾼 날짜로 올린다.
+ * 약관이나 방침의 내용을 바꾸면 이 값을 새 시행일로 올린다 (client/src/lib/orgInfo.ts 의
+ * policyEffectiveDate 와 같은 날).
  */
-export const CONSENT_VERSION = "2026-09-19";
+export const CONSENT_VERSION = "2026-09-26";
 
 /** 가입 화면의 개인정보 동의 문구. 법(개인정보보호법 15조 2항)이 요구하는 네 가지. */
 export const SIGNUP_PRIVACY_NOTICE = {
