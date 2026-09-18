@@ -1,4 +1,5 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
+import { CONSENT_VERSION } from "../shared/consent";
 import { and, asc, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import { drizzle } from "drizzle-orm/mysql2";
@@ -268,6 +269,10 @@ export async function createLocalUser(input: {
     approvalStatus: "approved",
     approvedAt: now,
     lastSignedIn: now,
+    // 가입 화면에서 필수 동의를 모두 받아야 여기까지 온다 (routers 의 signup).
+    termsAgreedAt: now,
+    privacyAgreedAt: now,
+    consentVersion: CONSENT_VERSION,
   });
 
   const created = await getUserByEmail(email);

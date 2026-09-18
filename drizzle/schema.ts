@@ -41,6 +41,10 @@ export const users = mysqlTable(
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
     lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+    /** 가입 때 동의한 시각과 약관·방침의 판(shared/consent.ts). 옛 회원은 비어 있다. */
+    termsAgreedAt: timestamp("termsAgreedAt"),
+    privacyAgreedAt: timestamp("privacyAgreedAt"),
+    consentVersion: varchar("consentVersion", { length: 20 }),
   },
   table => [
     index("users_email_idx").on(table.email),

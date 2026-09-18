@@ -552,6 +552,15 @@ const authSignupInput = z.object({
     .regex(/^[0-9\-\s+()]*$/, "휴대폰 번호 형식으로 입력해 주세요.")
     .optional(),
   password: z.string().min(8, "비밀번호는 8자 이상 입력해 주세요.").max(100),
+  // 필수 동의 세 가지를 모두 받아야 가입된다. 화면만 믿지 않고 서버도 확인한다.
+  consents: z.object(
+    {
+      privacy: z.literal(true),
+      terms: z.literal(true),
+      over14: z.literal(true),
+    },
+    { message: "필수 동의가 필요합니다." }
+  ),
 });
 
 const authLoginInput = z.object({
