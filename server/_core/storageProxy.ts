@@ -8,6 +8,8 @@ export function registerStorageProxy(app: Express) {
     UPLOAD_URL_PREFIX,
     express.static(UPLOAD_DIR, {
       fallthrough: false,
+      // 휴지통(.trash)처럼 점으로 시작하는 것은 절대 내보내지 않는다.
+      dotfiles: "deny",
       maxAge: "30d",
       immutable: true,
     })
