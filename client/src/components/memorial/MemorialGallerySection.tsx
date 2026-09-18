@@ -1,6 +1,9 @@
 import InlineEditText from "@/components/InlineEditText";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { compressImageFile } from "@/lib/imageCompression";
+import {
+  compressImageFile,
+  makeThumbnailDataUrl,
+} from "@/lib/imageCompression";
 import { toImgUrl } from "@/lib/imageUrl";
 import { useScrollLock } from "@/lib/scrollLock";
 import { trpc } from "@/lib/trpc";
@@ -20,6 +23,7 @@ import {
 import type { ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import ThumbImage from "@/components/ThumbImage";
 
 type GalleryPhoto = {
   id: number;
@@ -234,9 +238,11 @@ export default function MemorialGallerySection({
         const file = selected[index];
         try {
           const compressed = await compressImageFile(file);
+          const thumbDataUrl = await makeThumbnailDataUrl(file);
           const uploaded = await uploadPhoto.mutateAsync({
             memorialId,
             dataUrl: compressed.dataUrl,
+            thumbDataUrl,
             fileName: compressed.fileName,
             sortOrder: albumPhotos.length + index,
             asProfile: target === "profile",
@@ -372,8 +378,8 @@ export default function MemorialGallerySection({
               <div className="mt-4 flex gap-4">
                 <div className="flex aspect-[4/5] w-28 shrink-0 items-center justify-center overflow-hidden border border-[#dedede] bg-[#f5f5f5]">
                   {profilePhoto ? (
-                    <img
-                      src={toImgUrl(profilePhoto.photoUrl)}
+                    <ThumbImage
+                      src={profilePhoto.photoUrl}
                       alt="지금 쓰는 프로필 사진"
                       className="h-full w-full object-cover"
                     />
@@ -921,8 +927,8 @@ export function AlbumPhotoGrid<Photo extends AlbumPhoto>({
             className="h-full w-full text-left"
             onClick={() => onOpen(index)}
           >
-            <img
-              src={toImgUrl(photo.photoUrl)}
+            <ThumbImage
+              src={photo.photoUrl}
               alt={photo.caption || altFallback}
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
             />

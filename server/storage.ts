@@ -63,3 +63,18 @@ export async function storageGetSignedUrl(relKey: string) {
   const key = normalizeKey(relKey);
   return `${UPLOAD_URL_PREFIX}/${key}`;
 }
+
+/**
+ * 정해진 이름 그대로 저장한다(뒤에 무작위 글자를 붙이지 않는다). 원본 옆에 두는
+ * 작은 사진처럼 이름으로 찾아야 하는 파일에만 쓴다.
+ */
+export async function storagePutExact(
+  relKey: string,
+  data: Buffer | Uint8Array
+): Promise<{ key: string; url: string }> {
+  const key = normalizeKey(relKey);
+  const filePath = path.join(UPLOAD_DIR, key);
+  ensureDir(path.dirname(filePath));
+  await fs.promises.writeFile(filePath, Buffer.from(data as Uint8Array));
+  return { key, url: `${UPLOAD_URL_PREFIX}/${key}` };
+}

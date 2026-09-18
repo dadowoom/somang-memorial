@@ -3,6 +3,7 @@ import path from "path";
 import { sql } from "drizzle-orm";
 import { getDb, purgeExpiredKioskInquiries } from "../db";
 import { UPLOAD_DIR } from "../storage";
+import { thumbnailPathFor } from "../../shared/thumbnail";
 
 /**
  * 지운 사진이 서버에 그대로 남던 문제 (2026-09-18 점검).
@@ -168,7 +169,18 @@ export async function collectReferencedUploadKeys(): Promise<Set<string>> {
       }
     }
   }
-  return referenced;
+  return withThumbnails(referenced);
+}
+
+/**
+ * 원본이 쓰이면 그 옆의 작은 사진(shared/thumbnail.ts)도 쓰이는 것이다. DB 에
+ * 작은 사진 주소는 따로 적지 않으므로, 이걸 빼면 매일 새벽 작은 사진을 모두
+ * "안 쓰는 파일"로 보고 치운다.
+ */
+export function withThumbnails(keys: Set<string>) {
+  const all = new Set(keys);
+  keys.forEach(key => all.add(thumbnailPathFor(key)));
+  return all;
 }
 
 function seoulDateKey(date: Date) {
