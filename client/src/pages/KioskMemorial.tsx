@@ -994,6 +994,7 @@ function KioskMemorialContent({
             <KioskReminderForm
               memorialSlug={memorial.slug}
               memorialDay={memorialDayLabel}
+              accessToken={accessToken}
             />
           )}
         </article>
@@ -2020,9 +2021,11 @@ const FAMILY_NOTE_ICONS: LucideIcon[] = [Users, BookOpenText, HeartHandshake];
 function KioskReminderForm({
   memorialSlug,
   memorialDay,
+  accessToken,
 }: {
   memorialSlug: string;
   memorialDay: string;
+  accessToken?: string;
 }) {
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
@@ -2076,7 +2079,12 @@ function KioskReminderForm({
       return false;
     }
     setMessage("");
-    subscribe.mutate({ memorialSlug, phone: trimmedPhone, consent: true });
+    subscribe.mutate({
+      memorialSlug,
+      phone: trimmedPhone,
+      consent: true,
+      accessToken: accessToken || undefined,
+    });
     return true;
   }
 

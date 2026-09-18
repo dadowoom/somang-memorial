@@ -455,6 +455,7 @@ function MemorialContent({
                   <MemorialReminderForm
                     memorialSlug={memorial.slug}
                     memorialDay={memorialDayLabel}
+                    accessToken={accessToken}
                   />
                 )}
               </section>
@@ -581,9 +582,11 @@ function HeroFact({ label, value }: { label: string; value: string }) {
 function MemorialReminderForm({
   memorialSlug,
   memorialDay,
+  accessToken,
 }: {
   memorialSlug: string;
   memorialDay: string;
+  accessToken?: string;
 }) {
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
@@ -622,6 +625,7 @@ function MemorialReminderForm({
       memorialSlug,
       phone: trimmedPhone,
       consent: true,
+      accessToken: accessToken || undefined,
     });
   };
 
