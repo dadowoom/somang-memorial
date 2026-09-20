@@ -71,4 +71,45 @@ describe("1995~2006 안장 명단 등록", () => {
     const plan = planImport(prepareRecords(source()), []);
     expect(plan.insert).toHaveLength(1);
   });
+
+  it("동명이인 확인을 받은 경우에만 같은 이름을 넣는다", () => {
+    const records = prepareRecords(source());
+    const other = [
+      {
+        sourceId: 1,
+        nameNormalized: "가상인물",
+        birthDate: "1900-05-05",
+        deathDate: "1985-05-05",
+      },
+    ];
+    expect(() => planImport(records, other)).toThrow();
+    expect(
+      planImport(records, other, { allowExistingName: true }).insert
+    ).toHaveLength(1);
+  });
+
+  it("동명이인이라 해도 생년월일이나 소천일이 같으면 멈춘다", () => {
+    const records = prepareRecords(source());
+    const sameBirth = [
+      {
+        sourceId: 1,
+        nameNormalized: "가상인물",
+        birthDate: "1930-01-01",
+        deathDate: "1985-05-05",
+      },
+    ];
+    const sameDeath = [
+      {
+        sourceId: 1,
+        nameNormalized: "가상인물",
+        birthDate: "1900-05-05",
+        deathDate: "2000-01-01",
+      },
+    ];
+    for (const existing of [sameBirth, sameDeath]) {
+      expect(() =>
+        planImport(records, existing, { allowExistingName: true })
+      ).toThrow();
+    }
+  });
 });
