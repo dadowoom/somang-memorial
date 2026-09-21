@@ -294,7 +294,7 @@ export default function AdminKioskPosters() {
                         onChange={event =>
                           changeSeconds(poster, Number(event.target.value))
                         }
-                        className="h-9 border border-[#b5b0a7] bg-white px-2 text-sm text-[#121212]"
+                        className="h-9 max-w-full border border-[#b5b0a7] bg-white px-2 text-sm text-[#121212]"
                       >
                         {SECOND_CHOICES.map(seconds => (
                           <option key={seconds} value={seconds}>

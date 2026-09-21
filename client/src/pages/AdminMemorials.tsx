@@ -308,7 +308,7 @@ export default function AdminMemorials() {
                 onChange={event =>
                   setStatusFilter(event.target.value as MemorialStatusFilter)
                 }
-                className="h-12 border border-[#b5b0a7] bg-white px-4 text-sm text-[#121212] outline-none focus:border-[#18181b]"
+                className="h-12 max-w-full border border-[#b5b0a7] bg-white px-4 text-sm text-[#121212] outline-none focus:border-[#18181b]"
               >
                 <option value="all">모든 상태</option>
                 <option value="pending">검토 대기</option>
@@ -411,7 +411,7 @@ export default function AdminMemorials() {
                               event.target.value as MemorialStatus
                             )
                           }
-                          className="h-10 border border-[#b5b0a7] bg-white px-3 text-sm text-[#121212] outline-none focus:border-[#18181b] disabled:cursor-not-allowed disabled:opacity-50"
+                          className="h-10 max-w-full border border-[#b5b0a7] bg-white px-3 text-sm text-[#121212] outline-none focus:border-[#18181b] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <option value="pending">검토 대기</option>
                           <option value="published">게시 중</option>
