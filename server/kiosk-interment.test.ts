@@ -46,7 +46,7 @@ describe("키오스크 안장 기록", () => {
     );
     expect(
       toKioskInterment({ ...record, burialPlace: "금촌 기독묘원" }).message
-    ).toBe("등록된 안장 장소: 금촌 기독묘원");
+    ).toBe("소망동산이 아닌 다른 곳에 모셔졌습니다.");
     expect(
       toKioskInterment({ ...record, burialPlace: "소망동산" }).message
     ).toBe("소망교회 소망동산에 안장되어 있습니다.");
@@ -60,9 +60,9 @@ describe("키오스크 안장 기록", () => {
         role: "권사",
         birthDate: null,
         deathDate: "2020-05-20",
-        burialPlace: "가구역 12",
+        burialPlace: "다른 장지",
         burialDate: "2020-05-22",
-        message: "등록된 안장 장소: 가구역 12",
+        message: "소망동산이 아닌 다른 곳에 모셔졌습니다.",
         href: null,
       },
     ]);
@@ -84,6 +84,21 @@ describe("키오스크 안장 기록", () => {
     const sql = new MySqlDialect().sqlToQuery(query.where.mock.calls[0][0]);
     expect(sql.params).toEqual(["%김\\%\\_%"]);
     expect(query.limit).toHaveBeenCalledWith(20);
+  });
+
+  it("장지 원문(화장장·시각·선산 주소)은 공개 화면에 내보내지 않는다", () => {
+    const other = toKioskInterment({
+      ...record,
+      burialPlace: "충남 예산군 봉산면 봉림리 선영 안장/홍성추모공원 08:00 화장",
+    });
+    expect(other.burialPlace).toBe("다른 장지");
+    expect(JSON.stringify(other)).not.toContain("봉림리");
+    const somang = toKioskInterment({
+      ...record,
+      burialPlace: "소망동산(원지동 09:10)",
+    });
+    expect(somang.burialPlace).toBe("소망동산");
+    expect(JSON.stringify(somang)).not.toContain("09:10");
   });
 
   it("원본 자료와 담당자 정보는 응답에서 제외한다", () => {
