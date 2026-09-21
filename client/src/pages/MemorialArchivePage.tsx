@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useRoute } from "wouter";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 type ArchiveMemorial = {
   id: number;
@@ -86,6 +87,7 @@ export default function MemorialArchivePage() {
   }, [slug]);
 
   const memorial = memorialQuery.data as ArchiveMemorial | undefined;
+  useDocumentTitle(memorial ? `${memorial.name} ${memorial.role} 기록관 | 소망이 있는 곳` : null);
   const photosQuery = trpc.gallery.listByMemorial.useQuery(
     {
       memorialId: memorial?.id ?? 0,

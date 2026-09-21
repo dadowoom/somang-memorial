@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { Link, useRoute } from "wouter";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 const warmGold = "#666666";
@@ -102,6 +103,7 @@ export default function MemorialPublicDetail() {
   }, [slug]);
 
   const memorial = memorialQuery.data as MemorialRecord | undefined;
+  useDocumentTitle(memorial ? `${memorial.name} ${memorial.role} 추모관 | 소망이 있는 곳` : null);
   const isLocked = memorialQuery.error?.data?.code === "FORBIDDEN";
   const photosQuery = trpc.gallery.listByMemorial.useQuery(
     {

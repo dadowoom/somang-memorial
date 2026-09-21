@@ -7,6 +7,7 @@ import { ArrowLeft, CalendarPlus, MapPin, Phone, Share2 } from "lucide-react";
 import { ReactNode, useMemo, useState } from "react";
 import { Link, useRoute } from "wouter";
 import ThumbImage from "@/components/ThumbImage";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
 
@@ -60,6 +61,7 @@ export default function MemorialObituary() {
     { enabled: Boolean(slug), retry: false }
   );
   const memorial = memorialQuery.data as MemorialRecord | undefined;
+  useDocumentTitle(memorial ? `[부고] 故 ${memorial.name} ${memorial.role} | 소망이 있는 곳` : null);
 
   const photosQuery = trpc.gallery.listByMemorial.useQuery(
     { memorialId: memorial?.id ?? 0, accessToken: accessToken || undefined },
