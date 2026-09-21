@@ -4,10 +4,15 @@ import fs from "node:fs/promises";
 import mysql from "mysql2/promise";
 
 const sourcePath = process.argv[2];
+// 교회 소천자 명단 전체(소망동산이 아닌 곳에 모셔진 분 포함)를 넣을 때만 켠다
+// (2026-09-21 사용자 결정: 이름·생년월일·소천일이 있으면 장지와 관계없이 등록).
+// 장지 원문은 저장하지만, 공개 화면에는 "소망동산"/"다른 장지"로만 보인다
+// (shared/kioskInterment.ts publicBurialPlace).
+const anyBurialPlace = process.argv.includes("--any-burial-place");
 
 if (!sourcePath) {
   throw new Error(
-    "Usage: node importSomangIntermentRecords.mjs <records.json>"
+    "Usage: node importSomangIntermentRecords.mjs <records.json> [--any-burial-place]"
   );
 }
 
@@ -35,7 +40,12 @@ const normalized = records.map((record, index) => {
   if (!Number.isInteger(sourceId) || sourceId <= 0) {
     throw new Error(`Invalid sourceId at record ${index + 1}`);
   }
-  if (!name || !birthDate || !deathDate || !burialPlace.includes("소망동산")) {
+  if (
+    !name ||
+    !birthDate ||
+    !deathDate ||
+    (!anyBurialPlace && !burialPlace.includes("소망동산"))
+  ) {
     throw new Error(`Invalid Somang Garden record at row ${index + 1}`);
   }
 
