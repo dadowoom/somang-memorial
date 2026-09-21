@@ -14,6 +14,10 @@ import { pathToFileURL } from "node:url";
  * 쓰는 법 (서버에서):
  *   node scripts/importInterment1995_2006.mjs source.json           # 확인만
  *   node scripts/importInterment1995_2006.mjs source.json --apply   # 실제 등록
+ *
+ * --allow-existing-name 을 주면 "이름이 같은 분이 이미 있어도" 넣는다. 교회가
+ * 동명이인이라고 확인해 준 분들만 이 선택지로 넣는다(2026-09-21). 이때에도
+ * 생년월일이나 소천일이 하나라도 같으면 여전히 멈춘다 — 같은 분일 수 있어서다.
  */
 export const SOURCE_KEY = "interment-1995-2006-260920";
 /** 기존 자료의 번호와 겹치지 않도록 이 명단만의 음수 번호대를 쓴다. */
@@ -85,7 +89,7 @@ export function prepareRecords(input) {
   });
 }
 
-export function planImport(records, existing) {
+export function planImport(records, existing, { allowExistingName = false } = {}) {
   const insert = [];
   const skipped = [];
   for (const r of records) {
@@ -99,10 +103,34 @@ export function planImport(records, existing) {
     }
     // 이름이 같은 분이 이미 있으면 멈춘다. 같은 분의 다른 기록일 수도 있고,
     // 동명이인일 수도 있어서 기계가 정할 일이 아니다.
-    if (existing.some(x => norm(x.nameNormalized) === r.nameNormalized)) {
-      throw Error(`Existing person with the same name; review required`);
+    const sameName = existing.filter(
+      x => norm(x.nameNormalized) === r.nameNormalized
+    );
+    if (sameName.length > 0) {
+      if (!allowExistingName) {
+        throw Error("Existing person with the same name; review required");
+      }
+      // 동명이인이라고 확인받았더라도, 날짜가 하나라도 겹치면 같은 분일 수 있다.
+      if (
+        sameName.some(
+          x =>
+            x.deathDate === r.deathDate ||
+            (r.birthDate && x.birthDate === r.birthDate)
+        )
+      ) {
+        throw Error("Same name and date as an existing record; review required");
+      }
     }
-    if (insert.some(x => x.nameNormalized === r.nameNormalized)) {
+    if (
+      insert.some(
+        x =>
+          x.nameNormalized === r.nameNormalized &&
+          (x.deathDate === r.deathDate ||
+            (r.birthDate && x.birthDate === r.birthDate))
+      ) ||
+      (!allowExistingName &&
+        insert.some(x => x.nameNormalized === r.nameNormalized))
+    ) {
       throw Error("Duplicate person in source");
     }
     insert.push(r);
@@ -113,8 +141,12 @@ export function planImport(records, existing) {
 async function main() {
   const args = process.argv.slice(2);
   const apply = args.includes("--apply");
-  if (args.length !== (apply ? 2 : 1)) {
-    throw Error("Usage: importInterment1995_2006.mjs source.json [--apply]");
+  const allowExistingName = args.includes("--allow-existing-name");
+  const flags = (apply ? 1 : 0) + (allowExistingName ? 1 : 0);
+  if (args.length !== flags + 1) {
+    throw Error(
+      "Usage: importInterment1995_2006.mjs source.json [--apply] [--allow-existing-name]"
+    );
   }
   const { default: dotenv } = await import("dotenv");
   dotenv.config({ quiet: true });
@@ -133,7 +165,7 @@ async function main() {
       "SELECT sourceId,nameNormalized,birthDate,deathDate,sourcePayload FROM somang_interment_records" +
         (apply ? " FOR UPDATE" : "")
     );
-    const plan = planImport(records, existing);
+    const plan = planImport(records, existing, { allowExistingName });
     if (apply) {
       for (const r of plan.insert) {
         await c.execute(
@@ -159,6 +191,7 @@ async function main() {
     console.log(
       JSON.stringify({
         applied: apply,
+        allowExistingName,
         existing: existing.length,
         source: records.length,
         insert: plan.insert.length,
