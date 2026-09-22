@@ -2369,6 +2369,52 @@ export async function consumeReminderPhoneVerification(
   });
 }
 
+/** 이 번호로 받는 중인 알림이 있는지. */
+export async function hasActiveReminderSubscription(
+  memorialId: number,
+  phone: string
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  const rows = await db
+    .select({ id: memorialReminderSubscriptions.id })
+    .from(memorialReminderSubscriptions)
+    .where(
+      and(
+        eq(memorialReminderSubscriptions.memorialId, memorialId),
+        eq(memorialReminderSubscriptions.phone, normalizeReminderPhone(phone)),
+        eq(memorialReminderSubscriptions.status, "active")
+      )
+    )
+    .limit(1);
+  return rows.length > 0;
+}
+
+/**
+ * 받는 분이 직접 알림을 끊을 때 신청 기록을 지운다 (2026-09-23). 관리자가
+ * 취소할 때(상태만 cancelled)와 달리 전화번호를 남기지 않는다.
+ */
+export async function deleteReminderSubscriptionByPhone(
+  memorialId: number,
+  phone: string
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  const [result] = await db
+    .delete(memorialReminderSubscriptions)
+    .where(
+      and(
+        eq(memorialReminderSubscriptions.memorialId, memorialId),
+        eq(memorialReminderSubscriptions.phone, normalizeReminderPhone(phone))
+      )
+    );
+  return (result as { affectedRows?: number })?.affectedRows ?? 0;
+}
+
 /** 하루 지난 인증 기록을 지운다. 매일 새벽 정리 때 부른다. */
 export async function purgeOldReminderPhoneVerifications(now = new Date()) {
   const db = await getDb();

@@ -17,6 +17,8 @@ import {
   createMemorialReminderSubscription,
   createReminderPhoneVerification,
   deleteReminderPhoneVerification,
+  deleteReminderSubscriptionByPhone,
+  hasActiveReminderSubscription,
   canUserReadMemorial,
   countAdminUsers,
   getAdminUserById,
@@ -538,6 +540,17 @@ const reminderRequestCodeInput = z.object({
   memorialSlug: z.string().trim().min(1).max(120),
   phone: reminderPhoneInput,
   accessToken: z.string().trim().max(128).optional(),
+  // subscribe = 알림 신청, cancel = 알림 그만 받기 (2026-09-23)
+  purpose: z.enum(["subscribe", "cancel"]).default("subscribe"),
+});
+
+const reminderCancelInput = z.object({
+  memorialSlug: z.string().trim().min(1).max(120),
+  phone: reminderPhoneInput,
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "인증번호 6자리를 넣어 주세요."),
 });
 
 const reminderSubscribeInput = z.object({
@@ -2434,27 +2447,31 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // 알림 신청 전에 그 번호로 인증번호를 보낸다 (2026-09-23).
+    // 알림 신청·해지 전에 그 번호로 인증번호를 보낸다 (2026-09-23).
     requestCode: publicProcedure
       .input(reminderRequestCodeInput)
       .mutation(async ({ ctx, input }) => {
-        if (!MEMORIAL_REMINDER_SIGNUP_ENABLED) {
+        const cancelling = input.purpose === "cancel";
+        // 알림 그만 받기는 신청 칸을 꺼 두어도 언제나 된다 (수신 거부).
+        if (!cancelling && !MEMORIAL_REMINDER_SIGNUP_ENABLED) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "지금은 추도일 알림 신청을 받지 않습니다.",
           });
         }
 
-        // 비공개 추모관은 입장한 사람만 신청할 수 있다.
+        // 신청은 게시된 추모관만, 비공개는 입장한 사람만 할 수 있다. 해지는
+        // 이미 알림을 받던 분이 하는 것이라 추모관 입장을 묻지 않는다.
         const memorial = await getPublicMemorialBySlug(input.memorialSlug);
         if (
           !memorial ||
-          memorial.status !== "published" ||
-          !(await canUserReadMemorialWithFamily(
-            memorial,
-            input.accessToken,
-            ctx.user
-          ))
+          (!cancelling &&
+            (memorial.status !== "published" ||
+              !(await canUserReadMemorialWithFamily(
+                memorial,
+                input.accessToken,
+                ctx.user
+              ))))
         ) {
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -2488,12 +2505,21 @@ export const appRouter = router({
           "오늘은 알림 신청이 많아 더 받을 수 없습니다. 내일 다시 시도해 주세요."
         );
 
+        // 해지인데 이 번호로 받는 알림이 없으면 보내지 않는다. 답은 똑같이 해서
+        // 남의 번호가 알림을 받는지 떠볼 수 없게 한다.
+        if (
+          cancelling &&
+          !(await hasActiveReminderSubscription(memorial.id, digits))
+        ) {
+          return { sent: true, expiresInSeconds: VERIFY_CODE_TTL_MS / 1000 };
+        }
+
         const code = generateVerifyCode();
         const phoneHash = hashReminderPhone(digits, ENV.cookieSecret);
         const verificationId = await createReminderPhoneVerification({
           memorialId: memorial.id,
           phoneHash,
-          purpose: "subscribe",
+          purpose: input.purpose,
           codeHash: hashVerifyCode(phoneHash, code, ENV.cookieSecret),
           expiresAt: new Date(Date.now() + VERIFY_CODE_TTL_MS),
         });
@@ -2513,6 +2539,48 @@ export const appRouter = router({
         }
 
         return { sent: true, expiresInSeconds: VERIFY_CODE_TTL_MS / 1000 };
+      }),
+
+    // 알림 그만 받기 (2026-09-23). 알림톡의 "알림 그만 받기" 버튼이
+    // /memorial/<주소>?reminder=stop 으로 열고, 그 번호로 받은 인증번호를 넣으면
+    // 신청 기록(전화번호)을 지운다.
+    cancel: publicProcedure
+      .input(reminderCancelInput)
+      .mutation(async ({ ctx, input }) => {
+        consumePublicSubmissionAttempt(
+          reminderCodeVerifyLimiter,
+          passwordAttemptKey(ctx.req, "reminder-code-verify"),
+          "인증번호를 너무 많이 넣었습니다. 1시간 뒤 다시 시도해 주세요."
+        );
+
+        const memorial = await getPublicMemorialBySlug(input.memorialSlug);
+        if (!memorial) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "추모관을 찾을 수 없습니다.",
+          });
+        }
+
+        const digits = input.phone.replace(/\D/g, "");
+        const phoneHash = hashReminderPhone(digits, ENV.cookieSecret);
+        const verified = await consumeReminderPhoneVerification({
+          memorialId: memorial.id,
+          phoneHash,
+          purpose: "cancel",
+          codeHash: hashVerifyCode(phoneHash, input.code, ENV.cookieSecret),
+        });
+        if (verified.result !== "ok") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: verifyFailureMessage(
+              verified.result,
+              verified.attemptsLeft
+            ),
+          });
+        }
+
+        await deleteReminderSubscriptionByPhone(memorial.id, digits);
+        return { cancelled: true };
       }),
 
     subscribe: publicProcedure
