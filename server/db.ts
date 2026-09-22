@@ -26,6 +26,7 @@ import {
   memorialLetters,
   memorialReminderSubscriptions,
   memorialVideos,
+  reminderPhoneVerifications,
   memorials,
   somangIntermentRecords,
   passwordResetTokens,
@@ -45,6 +46,12 @@ import {
   planMemorialHandover,
   type MemorialHandover,
 } from "../shared/accountDeletion";
+import {
+  judgeVerification,
+  VERIFY_KEEP_MS,
+  VERIFY_MAX_ATTEMPTS,
+  type VerifyResult,
+} from "./reminderVerification";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -2251,6 +2258,128 @@ export async function updateMemorialLetterStatus(
     .update(memorialLetters)
     .set({ status })
     .where(eq(memorialLetters.id, id));
+}
+
+// ---------------------------------------------------------------------------
+// 추도일 알림 본인 번호 확인 (2026-09-23). 규칙은 server/reminderVerification.ts.
+
+type ReminderVerificationKey = {
+  memorialId: number;
+  phoneHash: string;
+  purpose: "subscribe" | "cancel";
+};
+
+/** 새 인증번호를 적는다. 같은 번호·추모관·용도의 이전 인증번호는 못 쓰게 한다. */
+export async function createReminderPhoneVerification(
+  input: ReminderVerificationKey & { codeHash: string; expiresAt: Date }
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  return db.transaction(async tx => {
+    await tx
+      .update(reminderPhoneVerifications)
+      .set({ usedAt: new Date() })
+      .where(
+        and(
+          eq(reminderPhoneVerifications.phoneHash, input.phoneHash),
+          eq(reminderPhoneVerifications.memorialId, input.memorialId),
+          eq(reminderPhoneVerifications.purpose, input.purpose),
+          isNull(reminderPhoneVerifications.usedAt)
+        )
+      );
+    const [result] = await tx.insert(reminderPhoneVerifications).values({
+      memorialId: input.memorialId,
+      phoneHash: input.phoneHash,
+      purpose: input.purpose,
+      codeHash: input.codeHash,
+      expiresAt: input.expiresAt,
+    });
+    return Number((result as { insertId?: number }).insertId ?? 0);
+  });
+}
+
+/** 인증번호를 보내지 못했을 때 방금 적은 기록을 지운다. */
+export async function deleteReminderPhoneVerification(id: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  await db
+    .delete(reminderPhoneVerifications)
+    .where(eq(reminderPhoneVerifications.id, id));
+}
+
+/**
+ * 넣은 인증번호를 확인한다. 맞으면 사용 표시를 해서 다시 못 쓰게 하고,
+ * 틀리면 틀린 횟수를 올린다. 동시에 두 번 눌러도 한 번만 통과한다(줄 잠금).
+ */
+export async function consumeReminderPhoneVerification(
+  input: ReminderVerificationKey & { codeHash: string },
+  now = new Date()
+): Promise<{ result: VerifyResult; attemptsLeft: number }> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  return db.transaction(async tx => {
+    const [record] = await tx
+      .select({
+        id: reminderPhoneVerifications.id,
+        codeHash: reminderPhoneVerifications.codeHash,
+        attempts: reminderPhoneVerifications.attempts,
+        expiresAt: reminderPhoneVerifications.expiresAt,
+        usedAt: reminderPhoneVerifications.usedAt,
+      })
+      .from(reminderPhoneVerifications)
+      .where(
+        and(
+          eq(reminderPhoneVerifications.phoneHash, input.phoneHash),
+          eq(reminderPhoneVerifications.memorialId, input.memorialId),
+          eq(reminderPhoneVerifications.purpose, input.purpose),
+          isNull(reminderPhoneVerifications.usedAt)
+        )
+      )
+      .orderBy(desc(reminderPhoneVerifications.id))
+      .limit(1)
+      .for("update");
+
+    const result = judgeVerification(record ?? null, input.codeHash, now);
+    if (!record) return { result, attemptsLeft: 0 };
+    if (result === "ok") {
+      await tx
+        .update(reminderPhoneVerifications)
+        .set({ usedAt: now })
+        .where(eq(reminderPhoneVerifications.id, record.id));
+      return { result, attemptsLeft: 0 };
+    }
+    if (result === "wrong") {
+      const attempts = record.attempts + 1;
+      await tx
+        .update(reminderPhoneVerifications)
+        .set({ attempts })
+        .where(eq(reminderPhoneVerifications.id, record.id));
+      return {
+        result,
+        attemptsLeft: Math.max(0, VERIFY_MAX_ATTEMPTS - attempts),
+      };
+    }
+    return { result, attemptsLeft: 0 };
+  });
+}
+
+/** 하루 지난 인증 기록을 지운다. 매일 새벽 정리 때 부른다. */
+export async function purgeOldReminderPhoneVerifications(now = new Date()) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  const before = new Date(now.getTime() - VERIFY_KEEP_MS);
+  const [result] = await db
+    .delete(reminderPhoneVerifications)
+    .where(sql`${reminderPhoneVerifications.createdAt} < ${before}`);
+  return (result as { affectedRows?: number })?.affectedRows ?? 0;
 }
 
 export async function listAdminReminderSubscriptions(limit = 300) {

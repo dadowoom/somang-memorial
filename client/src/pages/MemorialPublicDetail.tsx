@@ -7,6 +7,7 @@ import MemorialPortrait from "@/components/memorial/MemorialPortrait";
 import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
 import SampleInquiryFab from "@/components/inquiry/SampleInquiryFab";
 import { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "@/lib/featureFlags";
+import { useReminderSignup } from "@/hooks/useReminderSignup";
 import { isSampleMemorialSlug } from "@/lib/kioskQuickActions";
 import { trpc } from "@/lib/trpc";
 import {
@@ -590,45 +591,12 @@ function MemorialReminderForm({
   memorialDay: string;
   accessToken?: string;
 }) {
-  const [phone, setPhone] = useState("");
-  const [consent, setConsent] = useState(false);
-  const [message, setMessage] = useState("");
-  const subscribeMutation = trpc.reminder.subscribe.useMutation({
-    onSuccess: data => {
-      setPhone("");
-      setConsent(false);
-      setMessage(
-        data.confirmationSent
-          ? `${data.memorialDay} 추도일 알림 신청이 저장되었고 확인 문자를 보냈습니다.`
-          : `${data.memorialDay} 추도일 알림 신청이 저장되었습니다. ${data.confirmationMessage}`
-      );
-    },
-    onError: error => {
-      setMessage(error.message || "알림 신청 중 문제가 생겼습니다.");
-    },
-  });
+  const signup = useReminderSignup({ memorialSlug, accessToken });
 
   const submitReminder = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const trimmedPhone = phone.trim();
-
-    if (!trimmedPhone) {
-      setMessage("휴대폰 번호를 입력해 주세요.");
-      return;
-    }
-
-    if (!consent) {
-      setMessage("추도일 알림을 위한 번호 저장에 동의해 주세요.");
-      return;
-    }
-
-    setMessage("");
-    subscribeMutation.mutate({
-      memorialSlug,
-      phone: trimmedPhone,
-      consent: true,
-      accessToken: accessToken || undefined,
-    });
+    if (signup.step === "phone") signup.sendCode();
+    else signup.submitCode();
   };
 
   return (
@@ -647,47 +615,93 @@ function MemorialReminderForm({
             추도일 알림 받기
           </p>
           <p className="mt-1 text-xs leading-5" style={{ color: mutedText }}>
-            휴대폰 번호를 남기면 {memorialDay} 추도일 안내를 받을 수 있습니다.
+            휴대폰 번호를 남기면 {memorialDay} 추도일 하루 전 카카오톡으로
+            알려 드립니다.
           </p>
         </div>
       </div>
 
-      <div className="grid gap-2">
-        <input
-          value={phone}
-          onChange={event => setPhone(event.target.value)}
-          placeholder="010-0000-0000"
-          inputMode="tel"
-          maxLength={20}
-          className="h-11 w-full border border-[#dedede] bg-white px-3 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#555555]"
-        />
-        <label
-          className="flex cursor-pointer items-start gap-3 py-2 text-xs leading-5"
-          style={{ color: mutedText }}
-        >
+      {signup.step === "phone" ? (
+        <div className="grid gap-2">
           <input
-            type="checkbox"
-            checked={consent}
-            onChange={event => setConsent(event.target.checked)}
-            className="mt-0.5 h-5 w-5 shrink-0"
+            value={signup.phone}
+            onChange={event => signup.setPhone(event.target.value)}
+            placeholder="010-0000-0000"
+            inputMode="tel"
+            autoComplete="tel"
+            maxLength={20}
+            className="h-11 w-full border border-[#dedede] bg-white px-3 text-sm text-[#121212] outline-none transition-colors placeholder:text-[#9a9a9a] focus:border-[#555555]"
           />
-          <span>
-            추도일 알림 신청을 위해 휴대폰 번호를 저장하는 데 동의합니다.
-          </span>
-        </label>
-        <button
-          type="submit"
-          disabled={subscribeMutation.isPending}
-          className="inline-flex h-11 items-center justify-center gap-2 bg-[#171717] px-4 text-sm font-medium text-white transition-colors hover:bg-[#393939] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {subscribeMutation.isPending ? "신청 중" : "알림 신청"}
-          <Bell className="h-4 w-4" strokeWidth={1.7} />
-        </button>
-      </div>
+          <label
+            className="flex cursor-pointer items-start gap-3 py-2 text-xs leading-5"
+            style={{ color: mutedText }}
+          >
+            <input
+              type="checkbox"
+              checked={signup.consent}
+              onChange={event => signup.setConsent(event.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0"
+            />
+            <span>
+              추도일 알림 신청을 위해 휴대폰 번호를 저장하는 데 동의합니다.
+            </span>
+          </label>
+          <button
+            type="submit"
+            disabled={signup.pending}
+            className="inline-flex h-11 items-center justify-center gap-2 bg-[#171717] px-4 text-sm font-medium text-white transition-colors hover:bg-[#393939] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {signup.sendingCode ? "보내는 중" : "카카오톡으로 인증번호 받기"}
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-2">
+          <p className="text-xs leading-5" style={{ color: mutedText }}>
+            {signup.phone} 번호의 카카오톡을 확인해 주세요.{" "}
+            <button
+              type="button"
+              onClick={signup.changePhone}
+              className="underline underline-offset-2"
+            >
+              번호 바꾸기
+            </button>
+          </p>
+          <input
+            value={signup.code}
+            onChange={event => signup.setCode(event.target.value)}
+            placeholder="인증번호 6자리"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            className="h-11 w-full border border-[#dedede] bg-white px-3 text-center text-lg tracking-[0.4em] text-[#121212] outline-none transition-colors placeholder:text-sm placeholder:tracking-normal placeholder:text-[#9a9a9a] focus:border-[#555555]"
+          />
+          <button
+            type="submit"
+            disabled={signup.pending}
+            className="inline-flex h-11 items-center justify-center gap-2 bg-[#171717] px-4 text-sm font-medium text-white transition-colors hover:bg-[#393939] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {signup.subscribing ? "신청 중" : "알림 신청"}
+            <Bell className="h-4 w-4" strokeWidth={1.7} />
+          </button>
+          <button
+            type="button"
+            onClick={signup.sendCode}
+            disabled={signup.pending}
+            className="h-10 text-xs underline underline-offset-2 disabled:opacity-50"
+            style={{ color: mutedText }}
+          >
+            {signup.sendingCode ? "보내는 중" : "인증번호 다시 받기"}
+          </button>
+        </div>
+      )}
 
-      {message && (
-        <p className="mt-3 text-xs leading-5" style={{ color: mutedText }}>
-          {message}
+      {signup.message && (
+        <p
+          className="mt-3 text-xs leading-5"
+          style={{ color: mutedText }}
+          role="status"
+        >
+          {signup.message}
         </p>
       )}
     </form>

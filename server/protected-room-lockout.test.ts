@@ -79,9 +79,29 @@ describe("추도일 알림 신청", () => {
     const result = appRouter.createCaller(context("10.5.0.1")).reminder.subscribe({
       memorialSlug: "any-memorial",
       phone: "010-1234-5678",
+      code: "123456",
       consent: true,
     });
     expect(await codeOf(result)).toBe("FORBIDDEN");
     expect(mocks.createMemorialReminderSubscription).not.toHaveBeenCalled();
+  });
+
+  it("신청 스위치가 꺼져 있으면 인증번호도 보내지 않는다", async () => {
+    const result = appRouter
+      .createCaller(context("10.5.0.2"))
+      .reminder.requestCode({
+        memorialSlug: "any-memorial",
+        phone: "010-1234-5678",
+      });
+    expect(await codeOf(result)).toBe("FORBIDDEN");
+  });
+
+  it("인증번호 없이는 신청할 수 없다", async () => {
+    const result = appRouter.createCaller(context("10.5.0.3")).reminder.subscribe({
+      memorialSlug: "any-memorial",
+      phone: "010-1234-5678",
+      consent: true,
+    } as never);
+    expect(await codeOf(result)).toBe("BAD_REQUEST");
   });
 });
