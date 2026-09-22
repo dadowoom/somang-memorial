@@ -1,6 +1,6 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { CONSENT_VERSION } from "../shared/consent";
-import { and, asc, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, like, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
@@ -46,6 +46,7 @@ import {
   planMemorialHandover,
   type MemorialHandover,
 } from "../shared/accountDeletion";
+import { isReminderDue, seoulDateAfter } from "./reminderSchedule";
 import {
   judgeVerification,
   VERIFY_KEEP_MS,
@@ -2505,44 +2506,12 @@ export async function updateReminderSubscriptionStatus(
     .where(eq(memorialReminderSubscriptions.id, id));
 }
 
-function getSeoulDateParts(date = new Date()) {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const [year, month, day] = formatter.format(date).split("-").map(Number);
-  return { year, month, day };
-}
-
-function addDays(date: Date, days: number) {
-  const next = new Date(date);
-  next.setUTCDate(next.getUTCDate() + days);
-  return next;
-}
-
-function parseMemorialMonthDay(value: string | null) {
-  if (!value) return null;
-
-  const isoMatch = value.match(/\b\d{4}-(\d{1,2})-(\d{1,2})\b/);
-  if (isoMatch) {
-    return { month: Number(isoMatch[1]), day: Number(isoMatch[2]) };
-  }
-
-  const koreanMatch = value.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/);
-  if (koreanMatch) {
-    return { month: Number(koreanMatch[1]), day: Number(koreanMatch[2]) };
-  }
-
-  const slashMatch = value.match(/\b(\d{1,2})[./](\d{1,2})\b/);
-  if (slashMatch) {
-    return { month: Number(slashMatch[1]), day: Number(slashMatch[2]) };
-  }
-
-  return null;
-}
-
+/**
+ * 내일(daysBefore 뒤)이 추도일인 신청 중, 올해 아직 보내지 않은 분들.
+ * 추도일은 신청 때 적어 둔 값이 아니라 **지금 추모관에 적힌 값**을 쓴다.
+ * 가족이 나중에 추도일을 고쳐도 바른 날 보내기 위해서다 (2026-09-23).
+ * 게시된 추모관만 보낸다.
+ */
 export async function listDueReminderSubscriptions(
   date = new Date(),
   daysBefore = 1
@@ -2552,16 +2521,16 @@ export async function listDueReminderSubscriptions(
     throw new Error("Database is not available");
   }
 
-  const targetDate = addDays(date, daysBefore);
-  const target = getSeoulDateParts(targetDate);
+  const target = seoulDateAfter(date, daysBefore);
   const notificationYear = target.year;
 
   const rows = await db
     .select({
       id: memorialReminderSubscriptions.id,
       phone: memorialReminderSubscriptions.phone,
-      memorialDay: memorialReminderSubscriptions.memorialDay,
+      savedMemorialDay: memorialReminderSubscriptions.memorialDay,
       lastNotifiedYear: memorialReminderSubscriptions.lastNotifiedYear,
+      liveMemorialDay: memorials.memorialDay,
       memorialSlug: memorials.slug,
       memorialName: memorials.name,
       memorialRole: memorials.role,
@@ -2571,16 +2540,55 @@ export async function listDueReminderSubscriptions(
       memorials,
       eq(memorialReminderSubscriptions.memorialId, memorials.id)
     )
-    .where(eq(memorialReminderSubscriptions.status, "active"))
-    .limit(1000);
+    .where(
+      and(
+        eq(memorialReminderSubscriptions.status, "active"),
+        eq(memorials.status, "published")
+      )
+    )
+    .limit(5000);
 
   return rows
-    .filter(row => {
-      if (row.lastNotifiedYear === notificationYear) return false;
-      const day = parseMemorialMonthDay(row.memorialDay);
-      return day?.month === target.month && day.day === target.day;
-    })
-    .map(row => ({ ...row, notificationYear }));
+    .map(({ savedMemorialDay, liveMemorialDay, ...row }) => ({
+      ...row,
+      memorialDay: liveMemorialDay || savedMemorialDay,
+      notificationYear,
+    }))
+    .filter(
+      row =>
+        row.lastNotifiedYear !== notificationYear &&
+        isReminderDue(row.memorialDay, target)
+    );
+}
+
+/**
+ * 보내기 **전에** "올해 보냄"을 먼저 찍는다 (2026-09-23).
+ * 이미 찍혀 있으면(다른 곳에서 먼저 가져갔으면) false 를 돌려주고 보내지 않는다.
+ * 서버 프로그램이 둘이 되거나 같은 시간에 두 번 돌아도 한 분께 한 번만 간다.
+ */
+export async function claimReminderNotification(
+  id: number,
+  notificationYear: number
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const [result] = await db
+    .update(memorialReminderSubscriptions)
+    .set({ lastNotifiedYear: notificationYear })
+    .where(
+      and(
+        eq(memorialReminderSubscriptions.id, id),
+        eq(memorialReminderSubscriptions.status, "active"),
+        or(
+          isNull(memorialReminderSubscriptions.lastNotifiedYear),
+          ne(memorialReminderSubscriptions.lastNotifiedYear, notificationYear)
+        )
+      )
+    );
+  return ((result as { affectedRows?: number })?.affectedRows ?? 0) === 1;
 }
 
 export async function markReminderNotificationSent(
@@ -2604,8 +2612,13 @@ export async function markReminderNotificationSent(
     .where(eq(memorialReminderSubscriptions.id, id));
 }
 
+/**
+ * 보내지 못했으면 "올해 보냄" 표시를 되돌려서 다음 시간에 다시 보내게 한다.
+ * 실패 사유는 관리자 화면에서 볼 수 있게 남긴다.
+ */
 export async function markReminderNotificationFailed(
   id: number,
+  previousNotifiedYear: number | null,
   errorMessage: string
 ) {
   const db = await getDb();
@@ -2616,6 +2629,7 @@ export async function markReminderNotificationFailed(
   await db
     .update(memorialReminderSubscriptions)
     .set({
+      lastNotifiedYear: previousNotifiedYear,
       lastNotificationError: errorMessage.slice(0, 1000),
     })
     .where(eq(memorialReminderSubscriptions.id, id));

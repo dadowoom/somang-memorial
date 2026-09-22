@@ -1,8 +1,10 @@
 import {
+  claimReminderNotification,
   listDueReminderSubscriptions,
   markReminderNotificationFailed,
   markReminderNotificationSent,
 } from "../db";
+import { isReminderSendHour } from "../reminderSchedule";
 import { ENV } from "./env";
 import {
   buildReminderDayBeforeMessage,
@@ -16,18 +18,7 @@ type ReminderTarget = Awaited<
 >[number];
 
 const HOUR_MS = 60 * 60 * 1000;
-let lastRunKey = "";
-
-function getSeoulDateParts(date = new Date()) {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const [year, month, day] = formatter.format(date).split("-").map(Number);
-  return { year, month, day };
-}
+let running = false;
 
 function buildReminderMessage(target: ReminderTarget) {
   return buildReminderDayBeforeMessage({
@@ -37,7 +28,18 @@ function buildReminderMessage(target: ReminderTarget) {
   });
 }
 
+/**
+ * 추도일 하루 전 알림을 보낸다 (2026-09-23 정리).
+ *
+ * 매시간 불린다. 서울 9시~20시에만 보내고, 한 분씩 "올해 보냄"을 먼저 찍은
+ * 뒤에 보낸다. 먼저 찍지 못하면(이미 누가 보냈으면) 건너뛴다. 보내다 실패하면
+ * 표시를 되돌려 다음 시간에 다시 보낸다. 규칙: server/reminderSchedule.ts
+ */
 export async function runReminderNotificationJob(date = new Date()) {
+  if (!isReminderSendHour(date)) {
+    return { sent: 0, failed: 0, skipped: true };
+  }
+
   const status = getAlimtalkConfigStatus();
   if (!status.enabled) {
     console.warn("[Reminder] AlimTalk is not fully configured.", status);
@@ -52,6 +54,12 @@ export async function runReminderNotificationJob(date = new Date()) {
   let failed = 0;
 
   for (const target of targets) {
+    const claimed = await claimReminderNotification(
+      target.id,
+      target.notificationYear
+    );
+    if (!claimed) continue;
+
     try {
       const result = await sendAlimtalk(
         target.phone,
@@ -67,8 +75,11 @@ export async function runReminderNotificationJob(date = new Date()) {
       failed += 1;
       await markReminderNotificationFailed(
         target.id,
+        target.lastNotifiedYear ?? null,
         error instanceof Error ? error.message : "알림톡 발송 실패"
-      );
+      ).catch(markError => {
+        console.error("[Reminder] 실패 기록을 남기지 못함", markError);
+      });
     }
   }
 
@@ -84,16 +95,19 @@ export async function runReminderNotificationJob(date = new Date()) {
 export function startReminderNotificationScheduler() {
   if (!ENV.reminderSchedulerEnabled) return;
 
-  const runOncePerSeoulDay = () => {
-    const { year, month, day } = getSeoulDateParts();
-    const runKey = `${year}-${month}-${day}`;
-    if (lastRunKey === runKey) return;
-    lastRunKey = runKey;
-    runReminderNotificationJob().catch(error => {
-      console.error("[Reminder] scheduled job failed:", error);
-    });
+  const runHourly = () => {
+    // 한 번 도는 데 한 시간이 넘으면 겹치지 않게 이번 차례는 건너뛴다.
+    if (running) return;
+    running = true;
+    runReminderNotificationJob()
+      .catch(error => {
+        console.error("[Reminder] scheduled job failed:", error);
+      })
+      .finally(() => {
+        running = false;
+      });
   };
 
-  setTimeout(runOncePerSeoulDay, 10_000);
-  setInterval(runOncePerSeoulDay, HOUR_MS);
+  setTimeout(runHourly, 10_000);
+  setInterval(runHourly, HOUR_MS);
 }
