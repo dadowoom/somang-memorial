@@ -445,6 +445,35 @@ export type InsertMemorialReminderSubscription =
   typeof memorialReminderSubscriptions.$inferInsert;
 
 /**
+ * 추도일 알림 본인 번호 확인 (2026-09-23). 번호·인증번호는 해시만 남긴다.
+ * 5분 뒤 만료, 5번 틀리면 잠김. 한 번 쓰면 usedAt 이 찍힌다.
+ */
+export const reminderPhoneVerifications = mysqlTable(
+  "reminder_phone_verifications",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    memorialId: int("memorialId")
+      .notNull()
+      .references(() => memorials.id, { onDelete: "cascade" }),
+    phoneHash: varchar("phoneHash", { length: 64 }).notNull(),
+    purpose: mysqlEnum("purpose", ["subscribe", "cancel"]).notNull(),
+    codeHash: varchar("codeHash", { length: 64 }).notNull(),
+    attempts: int("attempts").default(0).notNull(),
+    expiresAt: timestamp("expiresAt").notNull(),
+    usedAt: timestamp("usedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("reminder_phone_verifications_lookup_idx").on(
+      table.phoneHash,
+      table.memorialId,
+      table.purpose
+    ),
+    index("reminder_phone_verifications_expiresAt_idx").on(table.expiresAt),
+  ]
+);
+
+/**
  * 비밀번호 재설정 링크. 실제 값은 저장하지 않고 해시만 보관합니다 —
  * 데이터베이스가 새더라도 그것만으로 남의 계정 비밀번호를 바꿀 수 없어야 합니다.
  */

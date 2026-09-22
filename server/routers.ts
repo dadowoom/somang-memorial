@@ -13,7 +13,10 @@ import {
   createMemorialLetter,
   createAdminAuditLog,
   createLocalUser,
+  consumeReminderPhoneVerification,
   createMemorialReminderSubscription,
+  createReminderPhoneVerification,
+  deleteReminderPhoneVerification,
   canUserReadMemorial,
   countAdminUsers,
   getAdminUserById,
@@ -111,10 +114,18 @@ import {
 import { sdk } from "./_core/sdk";
 import {
   buildReminderConfirmMessage,
+  buildVerifyCodeMessage,
   formatDeceasedLabel,
   getAlimtalkConfigStatus,
   sendAlimtalk,
 } from "./_core/alimtalk";
+import {
+  generateVerifyCode,
+  hashReminderPhone,
+  hashVerifyCode,
+  VERIFY_CODE_TTL_MS,
+  verifyFailureMessage,
+} from "./reminderVerification";
 import { systemRouter } from "./_core/systemRouter";
 import {
   adminProcedure,
@@ -190,19 +201,27 @@ const protectedRoomSubjectLimiter = createPasswordAttemptLimiter({
   failureWindowMs: 60 * 60 * 1000,
   blockMs: 60 * 60 * 1000,
 });
-const reminderSubscriptionLimiter = createPasswordAttemptLimiter({
-  failureLimit: 3,
+// 인증번호 요청: 접속지 하나에 하루 20번. 교회 키오스크는 여러 분이 한
+// 접속지를 같이 쓰므로 넉넉히 두고, 번호별·전체 상한으로 요금을 묶는다.
+const reminderCodeRequestLimiter = createPasswordAttemptLimiter({
+  failureLimit: 20,
   failureWindowMs: 24 * 60 * 60 * 1000,
   blockMs: 24 * 60 * 60 * 1000,
 });
-// 같은 번호로 가는 확인 문자: 접속지를 바꿔 가며 남의 번호로 문자를 계속
-// 보내는 것(문자 폭탄·요금)을 막는다. 번호 하나에 하루 3통.
+// 인증번호 넣기: 접속지 하나에 1시간 30번. 인증번호 하나는 5번 틀리면 잠긴다.
+const reminderCodeVerifyLimiter = createPasswordAttemptLimiter({
+  failureLimit: 30,
+  failureWindowMs: 60 * 60 * 1000,
+  blockMs: 60 * 60 * 1000,
+});
+// 같은 번호로 가는 인증번호: 접속지를 바꿔 가며 남의 번호로 알림톡을 계속
+// 보내는 것(알림 폭탄·요금)을 막는다. 번호 하나에 하루 3통.
 const reminderPhoneLimiter = createPasswordAttemptLimiter({
   failureLimit: 3,
   failureWindowMs: 24 * 60 * 60 * 1000,
   blockMs: 24 * 60 * 60 * 1000,
 });
-// 서비스 전체의 확인 문자 하루 상한. 위 두 제한을 다 피해도 요금이 끝없이
+// 서비스 전체의 인증번호 하루 상한. 위 제한을 다 피해도 요금이 끝없이
 // 나가지 않게 하는 마지막 안전장치다.
 const reminderDailyTotalLimiter = createPasswordAttemptLimiter({
   failureLimit: 200,
@@ -504,14 +523,30 @@ const parentFinderCreateInput = parentFinderSearchInput.extend({
   familyConfirmation: z.literal(true),
 });
 
+const reminderPhoneInput = z
+  .string()
+  .trim()
+  .min(10)
+  .max(20)
+  .regex(/^[0-9\-\s+()]+$/, "휴대폰 번호 형식으로 입력해 주세요.")
+  .refine(
+    value => /^01\d{8,9}$/.test(value.replace(/[^\d]/g, "")),
+    "휴대폰 번호(010으로 시작)로 입력해 주세요."
+  );
+
+const reminderRequestCodeInput = z.object({
+  memorialSlug: z.string().trim().min(1).max(120),
+  phone: reminderPhoneInput,
+  accessToken: z.string().trim().max(128).optional(),
+});
+
 const reminderSubscribeInput = z.object({
   memorialSlug: z.string().trim().min(1).max(120),
-  phone: z
+  phone: reminderPhoneInput,
+  code: z
     .string()
     .trim()
-    .min(10)
-    .max(20)
-    .regex(/^[0-9\-\s+()]+$/, "휴대폰 번호 형식으로 입력해 주세요."),
+    .regex(/^\d{6}$/, "인증번호 6자리를 넣어 주세요."),
   consent: z.literal(true),
   accessToken: z.string().trim().max(128).optional(),
 });
@@ -2399,6 +2434,87 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // 알림 신청 전에 그 번호로 인증번호를 보낸다 (2026-09-23).
+    requestCode: publicProcedure
+      .input(reminderRequestCodeInput)
+      .mutation(async ({ ctx, input }) => {
+        if (!MEMORIAL_REMINDER_SIGNUP_ENABLED) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "지금은 추도일 알림 신청을 받지 않습니다.",
+          });
+        }
+
+        // 비공개 추모관은 입장한 사람만 신청할 수 있다.
+        const memorial = await getPublicMemorialBySlug(input.memorialSlug);
+        if (
+          !memorial ||
+          memorial.status !== "published" ||
+          !(await canUserReadMemorialWithFamily(
+            memorial,
+            input.accessToken,
+            ctx.user
+          ))
+        ) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "추모관을 찾을 수 없습니다.",
+          });
+        }
+
+        if (!getAlimtalkConfigStatus().enabled) {
+          console.error("[Reminder] 알림톡 설정이 끝나지 않아 인증번호를 못 보냄");
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "지금은 인증번호를 보낼 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
+          });
+        }
+
+        const digits = input.phone.replace(/\D/g, "");
+        consumePublicSubmissionAttempt(
+          reminderCodeRequestLimiter,
+          passwordAttemptKey(ctx.req, "reminder-code-request"),
+          "인증번호 요청이 너무 많습니다. 내일 다시 시도해 주세요."
+        );
+        consumePublicSubmissionAttempt(
+          reminderPhoneLimiter,
+          subjectAttemptKey(`reminder-phone:${digits}`),
+          "이 번호로는 오늘 인증번호를 더 받을 수 없습니다. 내일 다시 시도해 주세요."
+        );
+        consumePublicSubmissionAttempt(
+          reminderDailyTotalLimiter,
+          subjectAttemptKey("reminder-daily-total"),
+          "오늘은 알림 신청이 많아 더 받을 수 없습니다. 내일 다시 시도해 주세요."
+        );
+
+        const code = generateVerifyCode();
+        const phoneHash = hashReminderPhone(digits, ENV.cookieSecret);
+        const verificationId = await createReminderPhoneVerification({
+          memorialId: memorial.id,
+          phoneHash,
+          purpose: "subscribe",
+          codeHash: hashVerifyCode(phoneHash, code, ENV.cookieSecret),
+          expiresAt: new Date(Date.now() + VERIFY_CODE_TTL_MS),
+        });
+
+        try {
+          await sendAlimtalk(digits, buildVerifyCodeMessage(code));
+        } catch (error) {
+          console.error("[Reminder] 인증번호 알림톡 발송 실패", error);
+          await deleteReminderPhoneVerification(verificationId).catch(
+            () => undefined
+          );
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message:
+              "인증번호를 보내지 못했습니다. 카카오톡을 쓰는 번호인지 확인하고 다시 시도해 주세요.",
+          });
+        }
+
+        return { sent: true, expiresInSeconds: VERIFY_CODE_TTL_MS / 1000 };
+      }),
+
     subscribe: publicProcedure
       .input(reminderSubscribeInput)
       .mutation(async ({ ctx, input }) => {
@@ -2410,24 +2526,12 @@ export const appRouter = router({
         }
 
         consumePublicSubmissionAttempt(
-          reminderSubscriptionLimiter,
-          passwordAttemptKey(ctx.req, "reminder-subscribe"),
-          "문자 알림 요청이 너무 많습니다. 내일 다시 시도해 주세요."
-        );
-        consumePublicSubmissionAttempt(
-          reminderPhoneLimiter,
-          subjectAttemptKey(
-            `reminder-phone:${input.phone.replace(/\D/g, "")}`
-          ),
-          "이 번호로는 오늘 더 신청할 수 없습니다. 내일 다시 시도해 주세요."
-        );
-        consumePublicSubmissionAttempt(
-          reminderDailyTotalLimiter,
-          subjectAttemptKey("reminder-daily-total"),
-          "오늘은 알림 신청이 많아 더 받을 수 없습니다. 내일 다시 시도해 주세요."
+          reminderCodeVerifyLimiter,
+          passwordAttemptKey(ctx.req, "reminder-code-verify"),
+          "인증번호를 너무 많이 넣었습니다. 1시간 뒤 다시 시도해 주세요."
         );
 
-        // 비공개 추모관은 입장한 사람만 신청할 수 있다. 확인 문자에 고인 성함과
+        // 비공개 추모관은 입장한 사람만 신청할 수 있다. 확인 안내에 고인 성함과
         // 추도일이 담기므로, 주소만 짐작해서 신청하면 비공개 정보가 새어 나간다.
         const memorial = await getPublicMemorialBySlug(input.memorialSlug);
         if (
@@ -2441,6 +2545,24 @@ export const appRouter = router({
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "추모관을 찾을 수 없습니다.",
+          });
+        }
+
+        // 본인 번호 확인. 그 번호로 받은 인증번호가 맞아야 신청을 저장한다.
+        const phoneHash = hashReminderPhone(input.phone, ENV.cookieSecret);
+        const verified = await consumeReminderPhoneVerification({
+          memorialId: memorial.id,
+          phoneHash,
+          purpose: "subscribe",
+          codeHash: hashVerifyCode(phoneHash, input.code, ENV.cookieSecret),
+        });
+        if (verified.result !== "ok") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: verifyFailureMessage(
+              verified.result,
+              verified.attemptsLeft
+            ),
           });
         }
 

@@ -1,7 +1,11 @@
 import fs from "fs";
 import path from "path";
 import { sql } from "drizzle-orm";
-import { getDb, purgeExpiredKioskInquiries } from "../db";
+import {
+  getDb,
+  purgeExpiredKioskInquiries,
+  purgeOldReminderPhoneVerifications,
+} from "../db";
 import { UPLOAD_DIR } from "../storage";
 import { thumbnailPathFor } from "../../shared/thumbnail";
 
@@ -324,6 +328,10 @@ export function startUploadCleanupScheduler() {
       .catch(error => {
         console.error("[Retention] 제작 문의 정리 실패:", error);
       });
+    // 하루 지난 추도일 알림 인증 기록도 지운다 (번호 해시만 남아 있지만 오래 둘 이유가 없다).
+    purgeOldReminderPhoneVerifications().catch(error => {
+      console.error("[Retention] 알림 인증 기록 정리 실패:", error);
+    });
     if (uploadCleanupMode() === "off") return;
     runUploadCleanup().catch(error => {
       console.error("[UploadCleanup] 실패:", error);

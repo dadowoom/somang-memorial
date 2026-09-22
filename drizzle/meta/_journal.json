@@ -190,6 +190,13 @@
       "when": 1789000000000,
       "tag": "0028_add_user_consent_record",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1789100000000,
+      "tag": "0029_add_reminder_phone_verifications",
+      "breakpoints": true
     }
   ]
 }
