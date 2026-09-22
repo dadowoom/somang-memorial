@@ -2050,6 +2050,7 @@ export async function createMemorialReminderSubscription(input: {
       id: memorials.id,
       slug: memorials.slug,
       name: memorials.name,
+      role: memorials.role,
       memorialDay: memorials.memorialDay,
       status: memorials.status,
     })
@@ -2081,6 +2082,7 @@ export async function createMemorialReminderSubscription(input: {
     memorialId: target.id,
     memorialSlug: target.slug,
     memorialName: target.name,
+    memorialRole: target.role,
     phone: normalizedPhone,
     memorialDay: target.memorialDay || "추후 안내",
   };

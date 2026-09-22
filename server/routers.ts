@@ -110,10 +110,11 @@ import {
 } from "./_core/passwordAttemptLimiter";
 import { sdk } from "./_core/sdk";
 import {
-  getSmsConfigStatus,
-  sendReminderConfirmationSms,
-  sendSms,
-} from "./_core/sms";
+  buildReminderConfirmMessage,
+  formatDeceasedLabel,
+  getAlimtalkConfigStatus,
+  sendAlimtalk,
+} from "./_core/alimtalk";
 import { systemRouter } from "./_core/systemRouter";
 import {
   adminProcedure,
@@ -2340,19 +2341,32 @@ export const appRouter = router({
   }),
 
   reminder: router({
-    smsStatus: adminProcedure.query(() => getSmsConfigStatus()),
+    smsStatus: adminProcedure.query(() => getAlimtalkConfigStatus()),
 
+    // 관리자 번호로 "신청 완료" 알림톡을 예시 추모관 내용으로 한 통 보낸다.
+    // 휴면을 푼 뒤 30일 안에 한 번은 보내야 채널이 다시 휴면이 되지 않는다.
     testSend: adminProcedure
       .input(adminSmsTestInput)
       .mutation(async ({ input }) => {
-        await sendSms({
-          to: input.phone,
-          text: [
-            "[소망이 있는 곳]",
-            "추도일 알림 문자 연동 테스트입니다.",
-            "이 문자를 받으셨다면 SOLAPI 발송 설정이 정상입니다.",
-          ].join("\n"),
-        });
+        try {
+          await sendAlimtalk(
+            input.phone,
+            buildReminderConfirmMessage({
+              deceased: "김소망 권사",
+              memorialDay: "매년 05월 22일",
+              memorialSlug: "kim-somang-kwonsa",
+            })
+          );
+        } catch (error) {
+          console.error("[Reminder] 알림톡 테스트 발송 실패", error);
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              error instanceof Error
+                ? error.message
+                : "알림톡 테스트 발송에 실패했습니다.",
+          });
+        }
 
         return { success: true };
       }),
@@ -2443,28 +2457,33 @@ export const appRouter = router({
         }
 
         try {
-          await sendReminderConfirmationSms({
-            to: subscribed.phone,
-            memorialName: subscribed.memorialName,
-            memorialDay: subscribed.memorialDay,
-            memorialSlug: subscribed.memorialSlug,
-          });
+          await sendAlimtalk(
+            subscribed.phone,
+            buildReminderConfirmMessage({
+              deceased: formatDeceasedLabel(
+                subscribed.memorialName,
+                subscribed.memorialRole
+              ),
+              memorialDay: subscribed.memorialDay,
+              memorialSlug: subscribed.memorialSlug,
+            })
+          );
 
           return {
             ...subscribed,
             confirmationSent: true,
-            confirmationMessage: "확인 문자를 발송했습니다.",
+            confirmationMessage: "카카오톡으로 신청 확인 안내를 보냈습니다.",
           };
         } catch (error) {
-          // 실제 원인은 서버 로그에만 남긴다. "SOLAPI 발신번호가 설정되지
-          // 않았습니다" 같은 내부 사정이 유가족 화면에 그대로 보이면
-          // 무슨 말인지도 모르고 불안하기만 하다.
-          console.error("[Reminder] 확인 문자 발송 실패", error);
+          // 실제 원인은 서버 로그에만 남긴다. "발송 설정이 끝나지 않았습니다"
+          // 같은 내부 사정이 유가족 화면에 그대로 보이면 무슨 말인지도 모르고
+          // 불안하기만 하다.
+          console.error("[Reminder] 신청 확인 알림톡 발송 실패", error);
           return {
             ...subscribed,
             confirmationSent: false,
             confirmationMessage:
-              "확인 문자는 보내드리지 못했지만, 추도일 알림 신청은 저장되었습니다.",
+              "확인 안내는 보내드리지 못했지만, 추도일 알림 신청은 저장되었습니다.",
           };
         }
       }),
