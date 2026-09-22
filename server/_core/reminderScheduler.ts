@@ -4,8 +4,12 @@ import {
   markReminderNotificationSent,
 } from "../db";
 import { ENV } from "./env";
-import { buildMemorialUrl } from "./siteUrl";
-import { getSmsConfigStatus, sendSms } from "./sms";
+import {
+  buildReminderDayBeforeMessage,
+  formatDeceasedLabel,
+  getAlimtalkConfigStatus,
+  sendAlimtalk,
+} from "./alimtalk";
 
 type ReminderTarget = Awaited<
   ReturnType<typeof listDueReminderSubscriptions>
@@ -25,29 +29,18 @@ function getSeoulDateParts(date = new Date()) {
   return { year, month, day };
 }
 
-function buildReminderText(target: ReminderTarget) {
-  const dayLabel = target.memorialDay || "추도일";
-  return [
-    "[소망이 있는 곳]",
-    `내일은 ${target.memorialName} ${target.memorialRole}님의 ${dayLabel}입니다.`,
-    "고인의 삶과 믿음을 기억하며 조용히 마음을 전해보세요.",
-    buildMemorialUrl(target.memorialSlug),
-  ].join("\n");
-}
-
-function extractMessageId(result: unknown) {
-  if (!result || typeof result !== "object") return null;
-  const maybeResult = result as {
-    groupId?: string;
-    resultList?: Array<{ messageId?: string }>;
-  };
-  return maybeResult.resultList?.[0]?.messageId ?? maybeResult.groupId ?? null;
+function buildReminderMessage(target: ReminderTarget) {
+  return buildReminderDayBeforeMessage({
+    deceased: formatDeceasedLabel(target.memorialName, target.memorialRole),
+    memorialDay: target.memorialDay || "추도일",
+    memorialSlug: target.memorialSlug,
+  });
 }
 
 export async function runReminderNotificationJob(date = new Date()) {
-  const status = getSmsConfigStatus();
+  const status = getAlimtalkConfigStatus();
   if (!status.enabled) {
-    console.warn("[Reminder] SOLAPI is not fully configured.", status);
+    console.warn("[Reminder] AlimTalk is not fully configured.", status);
     return { sent: 0, failed: 0, skipped: true };
   }
 
@@ -60,21 +53,21 @@ export async function runReminderNotificationJob(date = new Date()) {
 
   for (const target of targets) {
     try {
-      const result = await sendSms({
-        to: target.phone,
-        text: buildReminderText(target),
-      });
+      const result = await sendAlimtalk(
+        target.phone,
+        buildReminderMessage(target)
+      );
       await markReminderNotificationSent(
         target.id,
         target.notificationYear,
-        extractMessageId(result)
+        result.messageId
       );
       sent += 1;
     } catch (error) {
       failed += 1;
       await markReminderNotificationFailed(
         target.id,
-        error instanceof Error ? error.message : "문자 발송 실패"
+        error instanceof Error ? error.message : "알림톡 발송 실패"
       );
     }
   }

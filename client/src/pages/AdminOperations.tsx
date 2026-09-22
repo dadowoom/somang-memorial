@@ -99,7 +99,7 @@ export default function AdminOperations() {
   });
   const inquiries = (inquiriesQuery.data ?? []) as AdminKioskInquiry[];
   const testSend = trpc.reminder.testSend.useMutation({
-    onSuccess: () => setTestMessage("테스트 문자를 발송했습니다."),
+    onSuccess: () => setTestMessage("시험 알림톡을 보냈습니다. 카카오톡을 확인해 주세요."),
     onError: error => setTestMessage(error.message),
   });
 
@@ -313,13 +313,13 @@ export default function AdminOperations() {
                   <div className="mb-4 flex items-start justify-between gap-4">
                     <div>
                       <p className="text-xs font-medium uppercase tracking-[0.24em] text-[#777]">
-                        SMS
+                        KakaoTalk
                       </p>
                       <h2
                         className="mt-2 text-2xl font-normal"
                         style={serifStyle}
                       >
-                        문자 발송 설정
+                        알림톡 발송 설정
                       </h2>
                     </div>
                     <StatusBadge
@@ -328,14 +328,18 @@ export default function AdminOperations() {
                     />
                   </div>
 
-                  <dl className="grid grid-cols-3 gap-px bg-[#b5b0a7] text-center text-xs text-[#616161]">
+                  <dl className="grid grid-cols-2 gap-px bg-[#b5b0a7] text-center text-xs text-[#616161] sm:grid-cols-4">
                     <ConfigItem
                       label="API Key"
                       enabled={Boolean(smsStatusQuery.data?.hasApiKey)}
                     />
                     <ConfigItem
-                      label="Secret"
-                      enabled={Boolean(smsStatusQuery.data?.hasApiSecret)}
+                      label="발신프로필"
+                      enabled={Boolean(smsStatusQuery.data?.hasSenderKey)}
+                    />
+                    <ConfigItem
+                      label="템플릿"
+                      enabled={Boolean(smsStatusQuery.data?.hasTemplates)}
                     />
                     <ConfigItem
                       label="발신번호"
@@ -350,7 +354,7 @@ export default function AdminOperations() {
                       setTestMessage("");
                       if (
                         !window.confirm(
-                          `${testPhone} 번호로 테스트 문자를 발송하시겠습니까?`
+                          `${testPhone} 번호로 시험 알림톡을 보내시겠습니까? (요금이 나갑니다)`
                         )
                       )
                         return;

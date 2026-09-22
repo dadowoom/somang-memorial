@@ -281,7 +281,7 @@ export default function AdminMemorials() {
                     추도일 알림 신청
                   </strong>
                   <span className="mt-2 block text-sm leading-6 text-[#616161]">
-                    문자 기능 {smsStatusQuery.data?.enabled ? "정상" : "설정 확인 필요"}
+                    알림톡 {smsStatusQuery.data?.enabled ? "정상" : "설정 확인 필요"}
                   </span>
                 </button>
               </Link>
