@@ -231,6 +231,33 @@ describe("고쳐 보낸 명단에서 추가분만 넣기 (--update)", () => {
     expect(plan.held.map(h => h.sourceRow).sort()).toEqual([2, 3, 4, 5]);
   });
 
+  it("연도만 다르게 적힌 같은 분일 수 있으면 보류한다", () => {
+    const prepared = prepareUpdateRecords(
+      upd([
+        row(2, "가상열", "1957-12-11", "2000-10-27"),
+        row(3, "가상열하나", "", "1997-03-13"),
+        row(4, "가상열둘", "1905-09-10", "2023-12-08"),
+      ]),
+      TODAY
+    );
+    const plan = planUpdate(prepared, [
+      {
+        sourceId: 9,
+        nameNormalized: "가상열",
+        birthDate: "1959-12-11",
+        deathDate: "1996-06-16",
+      },
+      {
+        sourceId: 10,
+        nameNormalized: "가상열하나",
+        birthDate: "1928-02-29",
+        deathDate: "1993-05-28",
+      },
+    ]);
+    expect(plan.insert).toHaveLength(0);
+    expect(plan.held.map(h => h.sourceRow).sort()).toEqual([2, 3, 4]);
+  });
+
   it("출처 표시가 맞지 않으면 멈춘다", () => {
     expect(() =>
       prepareUpdateRecords({ ...upd([]), sourceKey: "other" }, TODAY)

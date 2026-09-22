@@ -149,8 +149,12 @@ export function planImport(records, existing, { allowExistingName = false } = {}
  *
  * 한 분씩 판단한다 (전체를 멈추지 않는다).
  * - 이미 있음: 이름이 같고 생년월일이나 소천일이 하나라도 같은 기록이 DB 에 있다.
- * - 보류: 날짜가 잘못됐거나, 이 파일 안에 같은 이름이 두 번 이상 있다. 교회 확인 필요.
- * - 넣음: 나머지. 이름만 같고 날짜가 전부 다르면 동명이인으로 보고 넣되, 목록에 표시한다.
+ * - 보류 (교회 확인 필요, 넣지 않음):
+ *   · 날짜가 잘못됐거나, 소천 때 나이가 110세를 넘는다.
+ *   · 이 파일 안에 같은 이름이 두 번 이상 있다.
+ *   · 이름이 같은 기존 기록과 생일의 월·일이 같다 — 연도만 다르게 적힌 같은 분일 수 있다.
+ *   · 이름이 같은 기존 기록이 있는데 이 줄에 생년월일이 없어 견줄 수 없다.
+ * - 넣음: 나머지. 이름만 같고 생일도 확실히 다르면 동명이인으로 넣고, 목록에 표시한다.
  * 소천일은 명단에 적힌 대로 1995년 이전도 받는다(교회가 1991~1994 분을 덧붙임).
  */
 export const UPDATE_SOURCE_ID_BASE = -200610000;
@@ -214,6 +218,29 @@ export function prepareUpdateRecords(input, today) {
   };
 }
 
+function holdReason(r, sameName, nameCount) {
+  if (
+    r.birthDate &&
+    Number(r.deathDate.slice(0, 4)) - Number(r.birthDate.slice(0, 4)) > 110
+  ) {
+    return "소천 때 나이 확인 필요";
+  }
+  if (nameCount.get(r.nameNormalized) > 1) {
+    return "파일 안에 같은 이름이 두 번 이상";
+  }
+  if (sameName.length === 0) return null;
+  if (!r.birthDate) return "같은 이름이 있는데 생년월일이 없어 견줄 수 없음";
+  const monthDay = r.birthDate.slice(5);
+  if (
+    sameName.some(
+      x => validDate(x.birthDate) && x.birthDate.slice(5) === monthDay
+    )
+  ) {
+    return "같은 이름의 기존 기록과 생일 월·일이 같음";
+  }
+  return null;
+}
+
 export function planUpdate(prepared, existing) {
   const sameDate = (x, r) =>
     x.deathDate === r.deathDate ||
@@ -242,12 +269,9 @@ export function planUpdate(prepared, existing) {
       already.push(r.sourceRow);
       continue;
     }
-    if (nameCount.get(r.nameNormalized) > 1) {
-      held.push({
-        sourceRow: r.sourceRow,
-        name: r.name,
-        reason: "파일 안에 같은 이름이 두 번 이상",
-      });
+    const reason = holdReason(r, sameName, nameCount);
+    if (reason) {
+      held.push({ sourceRow: r.sourceRow, name: r.name, reason });
       continue;
     }
     next -= 1;
