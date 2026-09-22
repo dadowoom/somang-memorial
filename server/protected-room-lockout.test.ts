@@ -96,6 +96,25 @@ describe("추도일 알림 신청", () => {
     expect(await codeOf(result)).toBe("FORBIDDEN");
   });
 
+  it("알림 그만 받기는 신청 스위치가 꺼져 있어도 막지 않는다", async () => {
+    const result = appRouter
+      .createCaller(context("10.5.0.4"))
+      .reminder.requestCode({
+        memorialSlug: "any-memorial",
+        phone: "010-1234-5678",
+        purpose: "cancel",
+      });
+    expect(await codeOf(result)).not.toBe("FORBIDDEN");
+  });
+
+  it("인증번호 없이는 알림을 끌 수 없다", async () => {
+    const result = appRouter.createCaller(context("10.5.0.5")).reminder.cancel({
+      memorialSlug: "any-memorial",
+      phone: "010-1234-5678",
+    } as never);
+    expect(await codeOf(result)).toBe("BAD_REQUEST");
+  });
+
   it("인증번호 없이는 신청할 수 없다", async () => {
     const result = appRouter.createCaller(context("10.5.0.3")).reminder.subscribe({
       memorialSlug: "any-memorial",

@@ -8,6 +8,7 @@ import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
 import SampleInquiryFab from "@/components/inquiry/SampleInquiryFab";
 import { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "@/lib/featureFlags";
 import { useReminderSignup } from "@/hooks/useReminderSignup";
+import ReminderStopPanel from "@/components/memorial/ReminderStopPanel";
 import { isSampleMemorialSlug } from "@/lib/kioskQuickActions";
 import { trpc } from "@/lib/trpc";
 import {
@@ -24,7 +25,7 @@ import {
   Images,
 } from "lucide-react";
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
-import { Link, useRoute } from "wouter";
+import { Link, useRoute, useSearch } from "wouter";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
@@ -87,6 +88,9 @@ const readStoredAccessToken = (slug: string) => {
 export default function MemorialPublicDetail() {
   const [, params] = useRoute<{ slug: string }>("/memorial/:slug");
   const slug = params?.slug ?? "";
+  // 알림톡 "알림 그만 받기" 버튼으로 들어온 경우 (2026-09-23).
+  const stoppingReminder =
+    new URLSearchParams(useSearch()).get("reminder") === "stop";
   const [accessToken, setAccessToken] = useState(() =>
     readStoredAccessToken(slug)
   );
@@ -127,7 +131,9 @@ export default function MemorialPublicDetail() {
       <Navbar />
 
       <main className="pt-16">
-        {memorialQuery.isLoading ? (
+        {stoppingReminder ? (
+          <ReminderStopPanel slug={slug} />
+        ) : memorialQuery.isLoading ? (
           <CenteredState>추모관을 불러오고 있습니다.</CenteredState>
         ) : isLocked && accessStatusQuery.data?.isPreparing ? (
           <PreparingMemorialState />
