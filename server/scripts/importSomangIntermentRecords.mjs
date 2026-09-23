@@ -107,16 +107,25 @@ try {
   // 이미 가족이 추모관을 만든 기록은 덮어쓰지 않는다 (2026-09-23). 추모관과
   // 연결된 기록의 성함·날짜가 바뀌면 가족이 만든 추모관과 어긋난다.
   const [existingRows] = await connection.query(
-    `SELECT r.sourceId, m.id AS memorialId
+    `SELECT r.sourceId, r.sourcePayload, m.id AS memorialId
        FROM somang_interment_records r
        LEFT JOIN memorials m ON m.intermentRecordId = r.id
       WHERE r.sourceId IN (?)` + (apply ? " FOR UPDATE" : ""),
     [[...sourceIds]]
   );
   const existing = new Set(existingRows.map(row => Number(row.sourceId)));
+  // 관리자 화면에서 고친 기록도 덮어쓰지 않는다 (2026-09-23). 교회가 바로잡아 달라고
+  // 한 내용이 옛 엑셀 값으로 되돌아가면 안 된다.
+  const adminEdited = row => {
+    try {
+      return Boolean(JSON.parse(row.sourcePayload ?? "{}").adminEditedAt);
+    } catch {
+      return false;
+    }
+  };
   const linked = new Set(
     existingRows
-      .filter(row => row.memorialId != null)
+      .filter(row => row.memorialId != null || adminEdited(row))
       .map(row => Number(row.sourceId))
   );
   const writable = apply
@@ -131,7 +140,7 @@ try {
     update: normalized.filter(
       record => existing.has(record.sourceId) && !linked.has(record.sourceId)
     ).length,
-    skippedLinkedToMemorial: linked.size,
+    skippedLinkedOrAdminEdited: linked.size,
   };
 
   for (let offset = 0; offset < writable.length; offset += 200) {

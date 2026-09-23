@@ -480,6 +480,14 @@ function formatAuditAction(action: string) {
   if (action === "reminder.status.update") return "추도일 알림 취소/복구";
   if (action === "user.delete") return "회원 탈퇴";
   if (action === "memorial.owner.transfer") return "추모관 주인 넘김(탈퇴)";
+  if (action === "memorial.delete") return "추모관 삭제";
+  if (action === "kioskPoster.create") return "키오스크 광고 추가";
+  if (action === "kioskPoster.update") return "키오스크 광고 변경";
+  if (action === "kioskPoster.delete") return "키오스크 광고 삭제";
+  // 2026-09-23: 관리자 화면에서 안장 기록 고치기
+  if (action === "interment.update") return "안장 기록 수정";
+  if (action === "interment.create") return "안장 기록 추가";
+  if (action === "interment.delete") return "안장 기록 삭제";
   return action;
 }
 

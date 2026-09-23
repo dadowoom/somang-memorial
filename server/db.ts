@@ -43,6 +43,11 @@ import {
   normalizeIntermentName,
 } from "../shared/parentFinder";
 import {
+  type CleanIntermentFields,
+  describeIntermentChanges,
+  UNKNOWN_DATE,
+} from "../shared/intermentAdmin";
+import {
   publicMemorialName,
   toMemorialAccessStatus,
 } from "../shared/memorialAccessStatus";
@@ -3807,4 +3812,209 @@ export async function setLetterNoticeOptOut(userId: number, optOut: boolean) {
       .delete(userLetterNoticeOptOuts)
       .where(eq(userLetterNoticeOptOuts.userId, userId));
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * 관리자 화면에서 안장 기록 고치기 (2026-09-23). 규칙: shared/intermentAdmin.ts
+ * 고치기·넣기·지우기와 관리 기록은 한 묶음으로 저장한다.
+ * ------------------------------------------------------------------ */
+
+/** 관리자가 새로 넣은 기록의 원본 번호(sourceId)는 이 아래로 매긴다. */
+export const ADMIN_INTERMENT_SOURCE_BASE = -900000000;
+
+const adminIntermentSelection = {
+  id: somangIntermentRecords.id,
+  sourceId: somangIntermentRecords.sourceId,
+  name: somangIntermentRecords.name,
+  role: somangIntermentRecords.role,
+  affiliation: somangIntermentRecords.affiliation,
+  pastor: somangIntermentRecords.pastor,
+  funeralChurch: somangIntermentRecords.funeralChurch,
+  birthDate: somangIntermentRecords.birthDate,
+  deathDate: somangIntermentRecords.deathDate,
+  deathAge: somangIntermentRecords.deathAge,
+  burialPlace: somangIntermentRecords.burialPlace,
+  burialDate: somangIntermentRecords.burialDate,
+  updatedAt: somangIntermentRecords.updatedAt,
+  memorialSlug: memorials.slug,
+  memorialName: memorials.name,
+} as const;
+
+export async function searchIntermentRecordsForAdmin(keyword: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  const normalized = normalizeIntermentName(keyword);
+  if (!normalized) return [];
+  return db
+    .select(adminIntermentSelection)
+    .from(somangIntermentRecords)
+    .leftJoin(memorials, eq(memorials.intermentRecordId, somangIntermentRecords.id))
+    .where(
+      like(
+        somangIntermentRecords.nameNormalized,
+        `%${escapeMemorialSearchKeyword(normalized)}%`
+      )
+    )
+    .orderBy(asc(somangIntermentRecords.nameNormalized), asc(somangIntermentRecords.id))
+    .limit(50);
+}
+
+type AdminIntermentAudit = { adminUserId: number };
+
+function withAdminMark(payload: string, adminUserId: number, action: string) {
+  let data: Record<string, unknown> = {};
+  try {
+    const parsed = JSON.parse(payload);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      data = parsed;
+    }
+  } catch {
+    // 원본 자료가 JSON 이 아니면 새로 적는다.
+  }
+  // 옛 가져오기 도구(server/scripts/importSomangIntermentRecords.mjs)는 이 표시가
+  // 있는 기록을 덮어쓰지 않는다.
+  return JSON.stringify({
+    ...data,
+    adminEditedAt: new Date().toISOString(),
+    adminEditedBy: adminUserId,
+    adminAction: action,
+  });
+}
+
+/**
+ * 안장 기록을 고친다. 바뀐 칸이 없으면 아무것도 하지 않는다. 고친 기록은 옛
+ * 가져오기 도구가 덮어쓰지 않도록 표시한다. 돌려주는 값: 없음(null) 또는 바뀐 칸 설명.
+ */
+export async function updateIntermentRecordByAdmin(
+  id: number,
+  fields: CleanIntermentFields,
+  audit: AdminIntermentAudit
+): Promise<{ changes: string[] } | null> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  return db.transaction(async tx => {
+    const rows = await tx
+      .select()
+      .from(somangIntermentRecords)
+      .where(eq(somangIntermentRecords.id, id))
+      .for("update");
+    const row = rows[0];
+    if (!row) return null;
+    const before: CleanIntermentFields = {
+      name: row.name,
+      role: row.role,
+      affiliation: row.affiliation,
+      pastor: row.pastor,
+      funeralChurch: row.funeralChurch,
+      birthDate: row.birthDate || UNKNOWN_DATE,
+      deathDate: row.deathDate || UNKNOWN_DATE,
+      deathAge: row.deathAge,
+      burialPlace: row.burialPlace,
+      burialDate:
+        !row.burialDate || row.burialDate === UNKNOWN_DATE ? null : row.burialDate,
+    };
+    const changes = describeIntermentChanges(before, fields);
+    if (changes.length === 0) return { changes };
+
+    await tx
+      .update(somangIntermentRecords)
+      .set({
+        ...fields,
+        nameNormalized: normalizeIntermentName(fields.name),
+        sourcePayload: withAdminMark(row.sourcePayload, audit.adminUserId, "update"),
+      })
+      .where(eq(somangIntermentRecords.id, id));
+    await tx.insert(adminAuditLogs).values({
+      adminUserId: audit.adminUserId,
+      action: "interment.update",
+      beforeValue: `안장기록 ${id}`,
+      afterValue: changes.join(" / ").slice(0, 1000),
+      note: `${before.name} → ${fields.name}`.slice(0, 500),
+    });
+    return { changes };
+  });
+}
+
+/** 관리자가 안장 기록을 새로 넣는다. 새 기록 번호를 돌려준다. */
+export async function createIntermentRecordByAdmin(
+  fields: CleanIntermentFields,
+  audit: AdminIntermentAudit
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  return db.transaction(async tx => {
+    const [lowest] = await tx
+      .select({ sourceId: sql<number | null>`MIN(${somangIntermentRecords.sourceId})` })
+      .from(somangIntermentRecords)
+      .where(sql`${somangIntermentRecords.sourceId} <= ${ADMIN_INTERMENT_SOURCE_BASE}`)
+      .for("update");
+    const current = lowest?.sourceId == null ? null : Number(lowest.sourceId);
+    const sourceId =
+      current == null ? ADMIN_INTERMENT_SOURCE_BASE - 1 : current - 1;
+    const [result] = await tx.insert(somangIntermentRecords).values({
+      ...fields,
+      sourceId,
+      nameNormalized: normalizeIntermentName(fields.name),
+      sourcePayload: withAdminMark(
+        JSON.stringify({ source: "admin" }),
+        audit.adminUserId,
+        "create"
+      ),
+    });
+    const id = Number((result as { insertId?: number }).insertId ?? 0);
+    await tx.insert(adminAuditLogs).values({
+      adminUserId: audit.adminUserId,
+      action: "interment.create",
+      afterValue: `안장기록 ${id}`,
+      note: `${fields.name} · ${fields.birthDate} ~ ${fields.deathDate}`.slice(0, 500),
+    });
+    return id;
+  });
+}
+
+/**
+ * 잘못 들어간 안장 기록을 지운다. 이 기록으로 만든 추모관이 있으면 지우지 않는다
+ * (reason: "linked").
+ */
+export async function deleteIntermentRecordByAdmin(
+  id: number,
+  audit: AdminIntermentAudit
+): Promise<{ ok: true } | { ok: false; reason: "missing" | "linked" }> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  return db.transaction(async tx => {
+    const rows = await tx
+      .select()
+      .from(somangIntermentRecords)
+      .where(eq(somangIntermentRecords.id, id))
+      .for("update");
+    const row = rows[0];
+    if (!row) return { ok: false, reason: "missing" } as const;
+    const linked = await tx
+      .select({ id: memorials.id })
+      .from(memorials)
+      .where(eq(memorials.intermentRecordId, id))
+      .limit(1);
+    if (linked.length > 0) return { ok: false, reason: "linked" } as const;
+
+    await tx.delete(somangIntermentRecords).where(eq(somangIntermentRecords.id, id));
+    await tx.insert(adminAuditLogs).values({
+      adminUserId: audit.adminUserId,
+      action: "interment.delete",
+      beforeValue: `안장기록 ${id} (원본 ${row.sourceId})`,
+      note: `${row.name} · ${row.birthDate} ~ ${row.deathDate} · ${row.burialPlace}`.slice(
+        0,
+        500
+      ),
+    });
+    return { ok: true } as const;
+  });
 }
