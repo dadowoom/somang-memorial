@@ -1,4 +1,5 @@
 import type { Express, Request } from "express";
+import express from "express";
 
 function isSecureRequest(req: Request) {
   if (req.protocol === "https") return true;
@@ -26,6 +27,9 @@ function isSecureRequest(req: Request) {
  * 스타일은 화면 부품(알림창 등)이 <style> 을 직접 넣으므로 'unsafe-inline' 을 둔다.
  * 스크립트는 우리 사이트 것만 허락한다 (운영 index.html 에 인라인 스크립트 없음).
  */
+/** 브라우저가 어긋난 것을 알려 오는 곳 (2026-09-23). */
+export const CSP_REPORT_PATH = "/api/csp-report";
+
 export const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self'",
@@ -39,6 +43,7 @@ export const CONTENT_SECURITY_POLICY = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  `report-uri ${CSP_REPORT_PATH}`,
 ].join("; ");
 
 export type CspMode = "off" | "report-only" | "enforce";
@@ -96,4 +101,96 @@ export function registerSecurityHeaders(app: Express) {
 
     next();
   });
+}
+
+function clean(value: unknown, max: number) {
+  if (typeof value !== "string") return "";
+  return value.replace(/[^ -~]/g, "?").slice(0, max);
+}
+
+/**
+ * 브라우저가 보낸 어긋남 알림에서 서버 기록에 남길 것만 뽑는다. 주소의 ? 뒤
+ * (비밀번호 재설정 열쇠 등)와 # 뒤는 버린다. 추모관 주소(성함)와 초대 주소(초대
+ * 열쇠)의 그 칸은 * 로 가린다. 어느 화면인지만 알면 된다.
+ */
+export function summarizeCspReport(body: unknown) {
+  const report =
+    body && typeof body === "object" && "csp-report" in body
+      ? (body as Record<string, unknown>)["csp-report"]
+      : null;
+  if (!report || typeof report !== "object") return null;
+  const data = report as Record<string, unknown>;
+  const directive = clean(
+    data["effective-directive"] || data["violated-directive"],
+    40
+  ).split(" ")[0];
+  if (!directive) return null;
+
+  const withoutQuery = (value: unknown) => {
+    const text = typeof value === "string" ? value : "";
+    try {
+      const url = new URL(text);
+      return `${url.origin}${url.pathname}`;
+    } catch {
+      return text.split(/[?#]/)[0];
+    }
+  };
+  let page = withoutQuery(data["document-uri"]);
+  try {
+    page = new URL(page).pathname;
+  } catch {
+    // 주소가 아니면 그대로 (앞에서 ? 뒤는 버렸다)
+  }
+  const MASK_AFTER = new Set(["memorial", "memorials", "invite"]);
+  page = page
+    .split("/")
+    .map((segment, index, all) =>
+      segment &&
+      (segment.includes("%") ||
+        /[^ -~]/.test(segment) ||
+        (MASK_AFTER.has(all[index - 1]) &&
+          !["create", "search"].includes(segment)))
+        ? "*"
+        : segment
+    )
+    .join("/");
+  return {
+    directive,
+    blocked: clean(withoutQuery(data["blocked-uri"]), 100) || "(없음)",
+    page: clean(page, 100),
+  };
+}
+
+const CSP_REPORT_LOG_LIMIT_PER_HOUR = 100;
+
+/**
+ * 어긋남 알림을 받아 서버 기록(pm2 로그)에 한 줄씩 남긴다. 로그인해야 들어가는
+ * 화면(수정·관리자)은 운영자가 직접 열어 볼 수 없으므로, 실제로 쓰는 동안
+ * 어긋나는 것이 있는지 여기서 본다. 한 시간에 100줄까지만 남긴다.
+ * express.json 보다 먼저 등록한다 (알림은 application/csp-report 로 온다).
+ */
+export function registerCspReportRoute(app: Express) {
+  let windowStart = Date.now();
+  let logged = 0;
+  app.post(
+    CSP_REPORT_PATH,
+    express.json({
+      limit: "16kb",
+      type: ["application/csp-report", "application/json"],
+    }),
+    (req, res) => {
+      const summary = summarizeCspReport(req.body);
+      if (Date.now() - windowStart > 60 * 60 * 1000) {
+        windowStart = Date.now();
+        logged = 0;
+      }
+      if (summary && logged < CSP_REPORT_LOG_LIMIT_PER_HOUR) {
+        logged += 1;
+        console.warn(
+          `[CSP] ${summary.directive} blocked=${summary.blocked} page=${summary.page}`
+        );
+      }
+      res.status(204).end();
+    }
+  );
 }

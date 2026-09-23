@@ -12,7 +12,10 @@ import { startReminderNotificationScheduler } from "./reminderScheduler";
 import { startUploadCleanupScheduler } from "./uploadCleanup";
 import { isDatabaseHealthy } from "../db";
 import { validateRuntimeConfig } from "./runtimeConfig";
-import { registerSecurityHeaders } from "./securityHeaders";
+import {
+  registerCspReportRoute,
+  registerSecurityHeaders,
+} from "./securityHeaders";
 import {
   logTrpcError,
   redactQueryParams,
@@ -53,6 +56,8 @@ async function startServer() {
   // Compress text responses (HTML, JS, CSS, JSON). Already-compressed images
   // are skipped by the middleware's default content-type filter.
   app.use(compression());
+  // 보안 정책 어긋남 알림 (application/csp-report). 아래 express.json 보다 먼저.
+  registerCspReportRoute(app);
   // 20MB is the largest permitted source image; base64 encoding needs a
   // little additional room without allowing arbitrary 50MB request bodies.
   app.use(express.json({ limit: "30mb" }));
