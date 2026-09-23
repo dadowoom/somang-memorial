@@ -3,6 +3,7 @@ import { inputClass } from "@/lib/formStyles";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
+import { ORG_INFO } from "@/lib/orgInfo";
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,6 +12,7 @@ import {
   MapPin,
   Search,
   ShieldCheck,
+  TriangleAlert,
 } from "lucide-react";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -32,7 +34,11 @@ type ParentSearchRecord = {
 // Interment records store 0000-00-00 (or an empty value) when the birth date is
 // unknown. Show a plain label instead of the placeholder in that case.
 function formatBirthDate(value: string) {
-  if (!value || value.startsWith("0000") || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  if (
+    !value ||
+    value.startsWith("0000") ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
     return "정보 없음";
   }
   return value;
@@ -83,7 +89,28 @@ export default function ParentFinder() {
 
   const handleStartMemorial = async (record: ParentSearchRecord) => {
     if (!familyConfirmed) {
-      setNotice("가족 확인 안내에 동의한 뒤 시작해 주세요.");
+      setNotice(
+        "위의 '꼭 확인해 주세요'를 읽고 확인 칸에 표시한 뒤 시작해 주세요."
+      );
+      return;
+    }
+    // 이름이 같은 다른 분의 추모관을 잘못 만들지 않게 한 번 더 묻는다 (2026-09-23).
+    const lifespan = [
+      formatBirthDate(record.birthDate),
+      record.deathDate || "소천일 미상",
+    ].join(" ~ ");
+    if (
+      !window.confirm(
+        [
+          `${record.name}${record.role ? ` ${record.role}` : ""} (${lifespan})`,
+          "",
+          "이분이 저의 부모님(가족)이 맞습니까?",
+          "추모관은 한 분당 하나만 만들 수 있어, 잘못 만들면 실제 가족이 추모관을 만들 수 없게 됩니다.",
+          "",
+          `애매하시면 [취소]를 누르고 ${ORG_INFO.contactPhoneLabel}(${ORG_INFO.contactPhone})로 먼저 문의해 주세요.`,
+        ].join("\n")
+      )
+    ) {
       return;
     }
 
@@ -112,7 +139,7 @@ export default function ParentFinder() {
       }
 
       setNotice(
-        "가족이 이미 이분의 추모관을 준비하고 있습니다. 먼저 시작한 가족에게 '가족 초대' 링크를 받으시면 함께 관리할 수 있습니다. 연락이 닿지 않으면 교회 관리자에게 문의해 주세요."
+        `다른 분이 이미 이분의 추모관을 준비하고 있습니다. 먼저 시작한 가족에게 '가족 초대' 링크를 받으시면 함께 관리할 수 있습니다. 우리 가족이 만든 것이 아니거나 연락이 닿지 않으면 ${ORG_INFO.contactPhoneLabel}(${ORG_INFO.contactPhone})로 알려 주세요.`
       );
     } catch (error) {
       setNotice(
@@ -169,7 +196,8 @@ export default function ParentFinder() {
               </p>
               <p className="mt-2 break-keep text-xs leading-5 text-[#616161] [overflow-wrap:anywhere]">
                 성함만으로 찾을 수 있으며, 생년월일도 입력하시면 찾으시는 분을
-                더 정확히 확인할 수 있습니다. 전화번호와 연락처는 사용하지 않습니다.
+                더 정확히 확인할 수 있습니다. 전화번호와 연락처는 사용하지
+                않습니다.
               </p>
             </aside>
           </div>
@@ -233,7 +261,9 @@ export default function ParentFinder() {
                   일치하는 등록 기록을 찾지 못했습니다.
                 </p>
                 <p className="mt-2 text-xs leading-5 text-[#777]">
-                  성함을 다시 확인해 주세요.
+                  성함을 다시 확인해 주세요. 그래도 없으시면{" "}
+                  {ORG_INFO.contactPhoneLabel}({ORG_INFO.contactPhone})로 문의해
+                  주세요.
                 </p>
               </div>
             )}
@@ -244,18 +274,59 @@ export default function ParentFinder() {
                   <HeartHandshake className="h-4 w-4" strokeWidth={1.7} />
                   확인된 부모님 기록
                 </div>
-                <label className="mb-4 flex items-start gap-3 border border-[#b5b0a7] bg-[#f7f7f7] p-4 text-sm leading-6 text-[#444]">
-                  <input
-                    type="checkbox"
-                    checked={familyConfirmed}
-                    onChange={event => setFamilyConfirmed(event.target.checked)}
-                    className="mt-1 h-4 w-4"
-                  />
-                  <span>
-                    저는 고인의 가족이며, 이 정보로 추모관을 시작할 권한이
-                    있음을 확인합니다.
-                  </span>
-                </label>
+                <div
+                  className="mb-4 border border-[#d9b36c] bg-[#fffaf0] p-5 text-sm leading-6 text-[#4a3b1f]"
+                  role="note"
+                >
+                  <p className="flex items-center gap-2 font-medium text-[#3a2e14]">
+                    <TriangleAlert className="h-4 w-4" strokeWidth={1.8} />꼭
+                    확인해 주세요
+                  </p>
+                  <ul className="mt-3 list-disc space-y-1.5 pl-5 break-keep [overflow-wrap:anywhere]">
+                    <li>
+                      성함이 같은 분이 여러 분 계십니다.{" "}
+                      <strong>생년월일과 소천일자</strong>가 우리 부모님과
+                      같은지 반드시 확인해 주세요.
+                    </li>
+                    <li>
+                      추모관은 <strong>한 분당 하나만</strong> 만들 수 있습니다.
+                      다른 분의 추모관을 잘못 만들면 그 가족이 추모관을 만들 수
+                      없게 됩니다.
+                    </li>
+                    <li>
+                      가족이 아닌 분이 만든 추모관은 교회가 확인한 뒤 내리거나
+                      실제 가족에게 넘길 수 있습니다.
+                    </li>
+                    <li>
+                      <strong>
+                        우리 부모님이 맞는지 애매하거나, 기록이 다르거나, 찾는
+                        분이 없으면
+                      </strong>{" "}
+                      시작하기 전에 {ORG_INFO.contactPhoneLabel}(
+                      <a
+                        href={`tel:${ORG_INFO.contactPhone}`}
+                        className="underline underline-offset-2"
+                      >
+                        {ORG_INFO.contactPhone}
+                      </a>
+                      )로 먼저 문의해 주세요.
+                    </li>
+                  </ul>
+                  <label className="mt-4 flex items-start gap-3 border-t border-[#ead7ae] pt-4 font-medium text-[#3a2e14]">
+                    <input
+                      type="checkbox"
+                      checked={familyConfirmed}
+                      onChange={event =>
+                        setFamilyConfirmed(event.target.checked)
+                      }
+                      className="mt-1 h-5 w-5 shrink-0"
+                    />
+                    <span>
+                      위 내용을 확인했으며, 제가 고른 분이 저의 부모님(가족)이
+                      맞습니다.
+                    </span>
+                  </label>
+                </div>
                 <div className="space-y-4">
                   {records.map(record => (
                     <article
@@ -318,8 +389,10 @@ export default function ParentFinder() {
                           </Link>
                         ) : record.memorial?.state === "restricted" ? (
                           <p className="max-w-48 text-xs leading-5 text-[#777]">
-                            이미 가족이 추모관을 준비하고 있습니다. 교회에 가족
-                            참여를 요청해 주세요.
+                            이미 다른 분이 추모관을 준비하고 있습니다. 우리
+                            가족이 만든 것이 아니거나 함께 관리하고 싶으시면{" "}
+                            {ORG_INFO.contactPhoneLabel}({ORG_INFO.contactPhone}
+                            )로 알려 주세요.
                           </p>
                         ) : (
                           <button
