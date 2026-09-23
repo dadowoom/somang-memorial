@@ -15,6 +15,10 @@ export const ENV = {
   aligoTplReminderConfirm: process.env.ALIGO_TPL_REMINDER_CONFIRM ?? "",
   aligoTplReminderDayBefore: process.env.ALIGO_TPL_REMINDER_DAY_BEFORE ?? "",
   aligoTplVerifyCode: process.env.ALIGO_TPL_VERIFY_CODE ?? "",
+  /** 새 편지 알림 템플릿 (2026-09-23). 비어 있으면 새 편지 알림을 보내지 않는다. */
+  aligoTplLetterNotice: process.env.ALIGO_TPL_LETTER_NOTICE ?? "",
+  /** "true" 일 때만 새 편지 알림을 보낸다. 카카오 검수 전에는 꺼 둔다. */
+  letterNoticeEnabled: process.env.LETTER_NOTICE_ENABLED === "true",
   /** Y 이면 알리고가 실제로 보내지 않고 요청만 확인한다. */
   aligoTestMode: process.env.ALIGO_TEST_MODE === "Y",
   publicSiteUrl: process.env.PUBLIC_SITE_URL ?? "",

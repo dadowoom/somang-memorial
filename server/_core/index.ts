@@ -9,6 +9,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { startReminderNotificationScheduler } from "./reminderScheduler";
+import { startLetterNoticeScheduler } from "./letterNoticeScheduler";
 import { startUploadCleanupScheduler } from "./uploadCleanup";
 import { isDatabaseHealthy } from "../db";
 import { validateRuntimeConfig } from "./runtimeConfig";
@@ -112,6 +113,7 @@ async function startServer() {
     console.log(`Server running on http://localhost:${port}/`);
   });
   startReminderNotificationScheduler();
+  startLetterNoticeScheduler();
   startUploadCleanupScheduler();
 }
 

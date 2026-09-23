@@ -586,3 +586,29 @@ export const memorialWritingDrafts = mysqlTable(
 );
 
 export type MemorialWritingDraft = typeof memorialWritingDrafts.$inferSelect;
+
+/**
+ * 새 편지 알림톡 (2026-09-23). 추모관마다 "어디까지 알렸는지"를 적는다.
+ * lastLetterId 보다 번호가 큰 공개 편지가 새 편지다. 같은 날(서울) 두 번 보내지
+ * 않으려고 lastSentDate("2026-09-24")를 적는다.
+ */
+export const memorialLetterNotices = mysqlTable("memorial_letter_notices", {
+  memorialId: int("memorialId")
+    .primaryKey()
+    .references(() => memorials.id, { onDelete: "cascade" }),
+  lastLetterId: int("lastLetterId").default(0).notNull(),
+  lastSentDate: varchar("lastSentDate", { length: 10 }),
+  lastSentAt: timestamp("lastSentAt"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/** 새 편지 알림톡을 받지 않겠다고 한 회원. 줄이 있으면 보내지 않는다. */
+export const userLetterNoticeOptOuts = mysqlTable(
+  "user_letter_notice_optouts",
+  {
+    userId: int("userId")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  }
+);

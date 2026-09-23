@@ -130,6 +130,49 @@ export function buildReminderDayBeforeMessage(
   };
 }
 
+/**
+ * 템플릿 "새 편지 도착 알림" (2026-09-23). 추모관을 만든 가족·초대받은 가족에게
+ * 보낸다. 버튼은 가족용 편지 화면과 알림 설정 화면이다 (로그인 필요).
+ */
+export function buildLetterNoticeMessage(input: {
+  deceased: string;
+  letterCount: number;
+  memorialSlug: string;
+}): AlimtalkMessage {
+  const lettersUrl = `${TEMPLATE_SITE_URL}/my/memorials/${encodeURIComponent(
+    input.memorialSlug
+  )}/letters`;
+  const settingsUrl = `${TEMPLATE_SITE_URL}/my/account`;
+  return {
+    templateCode: ENV.aligoTplLetterNotice,
+    subject: "새 편지 도착 알림",
+    message: [
+      "[소망이 있는 곳]",
+      `${input.deceased}님 추모관에 새 편지 ${input.letterCount}통이 도착했습니다.`,
+      "",
+      "가족분께서 편지를 읽어 보시고, 추모관에 어울리지 않는 편지는 숨기실 수 있습니다.",
+      "",
+      "소망교회 온라인 추모관을 만드신 가족께 보내는 안내입니다.",
+    ].join("\n"),
+    buttons: [
+      {
+        name: "편지 확인하기",
+        linkType: "WL",
+        linkTypeName: "웹링크",
+        linkMo: lettersUrl,
+        linkPc: lettersUrl,
+      },
+      {
+        name: "알림 설정",
+        linkType: "WL",
+        linkTypeName: "웹링크",
+        linkMo: settingsUrl,
+        linkPc: settingsUrl,
+      },
+    ],
+  };
+}
+
 /** 템플릿 "알림 인증번호" (알리고 UL_7254, 보안 템플릿, 버튼 없음). */
 export function buildVerifyCodeMessage(code: string): AlimtalkMessage {
   if (!/^\d{6}$/.test(code))
