@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => {
     verifyUserPasswordById: vi.fn(),
     deleteMemorialById: vi.fn(),
     createAdminAuditLog: vi.fn(),
+    appendAdminAuditNote: vi.fn(),
     collectReferencedUploadKeys: vi.fn(),
     moveUploadsToTrash: vi.fn(),
   };
@@ -22,6 +23,7 @@ vi.mock("./db", async () => {
     verifyUserPasswordById: mocks.verifyUserPasswordById,
     deleteMemorialById: mocks.deleteMemorialById,
     createAdminAuditLog: mocks.createAdminAuditLog,
+    appendAdminAuditNote: mocks.appendAdminAuditNote,
   };
 });
 vi.mock("./_core/uploadCleanup", async () => {
@@ -71,6 +73,7 @@ beforeEach(() => {
     .mockResolvedValueOnce(new Set(["gallery/5/a.jpg", "gallery/9/shared.jpg"]))
     .mockResolvedValueOnce(new Set(["gallery/9/shared.jpg"]));
   mocks.moveUploadsToTrash.mockReturnValue(1);
+  mocks.deleteMemorialById.mockResolvedValue(77);
 });
 
 describe("추모관 삭제", () => {
@@ -78,10 +81,16 @@ describe("추모관 삭제", () => {
     expect(
       await codeOf(caller({ id: 10, role: "user" }).memorial.delete(input))
     ).toBe("OK");
-    expect(mocks.deleteMemorialById).toHaveBeenCalledWith(5);
-    expect(mocks.moveUploadsToTrash).toHaveBeenCalledWith(["gallery/5/a.jpg"]);
-    expect(mocks.createAdminAuditLog).toHaveBeenCalledWith(
+    // 지우기와 기록은 한 묶음이다 (2026-09-23, L-4).
+    expect(mocks.deleteMemorialById).toHaveBeenCalledWith(
+      5,
       expect.objectContaining({ action: "memorial.delete" })
+    );
+    expect(mocks.moveUploadsToTrash).toHaveBeenCalledWith(["gallery/5/a.jpg"]);
+    // 파일 정리 결과는 그 기록에 덧붙인다.
+    expect(mocks.appendAdminAuditNote).toHaveBeenCalledWith(
+      77,
+      " · 사진 파일 1개 정리"
     );
   });
 

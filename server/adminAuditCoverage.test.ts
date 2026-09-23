@@ -118,6 +118,14 @@ describe("reminder.updateStatus 감사기록", () => {
   });
 });
 
+/** 탈퇴 요청이 DB 에 넘긴 기록 목록 (회원 삭제와 같은 묶음에서 저장된다). */
+function auditFromLastDeletion(transfers: unknown[]) {
+  const [args] = mocks.deleteUserAccount.mock.calls.at(-1) ?? [];
+  return (args as { auditFor: (t: unknown[]) => unknown[] }).auditFor(
+    transfers
+  ) as Record<string, unknown>[];
+}
+
 describe("auth.deleteAccount 감사기록", () => {
   it("탈퇴하면 회원번호와 가린 이메일만 남는다", async () => {
     await expect(
@@ -126,8 +134,11 @@ describe("auth.deleteAccount 감사기록", () => {
     expect(mocks.deleteUserAccount).toHaveBeenCalledWith({
       userId: 7,
       password: "somang2026",
+      auditFor: expect.any(Function),
     });
-    const [entry] = mocks.createAdminAuditLog.mock.calls[0];
+    // 기록은 회원 삭제와 한 묶음으로 저장된다 (2026-09-23, L-4).
+    expect(mocks.createAdminAuditLog).not.toHaveBeenCalled();
+    const [entry] = auditFromLastDeletion([]);
     expect(entry).toEqual({
       adminUserId: null,
       targetUserId: null,
@@ -154,13 +165,22 @@ describe("auth.deleteAccount 감사기록", () => {
     await expect(
       caller(member).auth.deleteAccount({ password: "somang2026" })
     ).resolves.toEqual({ success: true });
-    expect(mocks.createAdminAuditLog).toHaveBeenCalledWith({
+    const entries = auditFromLastDeletion([
+      {
+        memorialId: 1,
+        name: "김소망",
+        slug: "kim-somang-kwonsa",
+        toUserId: 8,
+        toName: "둘째",
+      },
+    ]);
+    expect(entries).toContainEqual({
       adminUserId: null,
       targetUserId: 8,
       action: "memorial.owner.transfer",
       note: "김소망 (kim-somang-kwonsa) · 탈퇴한 회원번호 7 → 가족 둘째",
     });
-    expect(mocks.createAdminAuditLog).toHaveBeenCalledWith(
+    expect(entries).toContainEqual(
       expect.objectContaining({ action: "user.delete" })
     );
   });

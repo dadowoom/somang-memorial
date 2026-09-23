@@ -403,34 +403,61 @@ export async function countAdminUsers() {
   return result.length;
 }
 
+/**
+ * 권한을 바꾸고 관리 기록을 한 묶음으로 남긴다 (2026-09-23, 계획서 L-4). 전에는
+ * 권한만 바뀌고 기록 저장이 실패하면 "누가 바꿨는지"가 사라졌다.
+ *
+ * 관리자를 내릴 때는 관리자 행을 잠그고 다시 센다. 두 관리자가 동시에 서로를
+ * 내리면 앞의 확인(countAdminUsers)만으로는 관리자가 0명이 될 수 있었다.
+ */
 export async function updateAdminUserRole(
   id: number,
-  role: "user" | "admin"
-) {
+  role: "user" | "admin",
+  audit: InsertAdminAuditLog
+): Promise<{ ok: true } | { ok: false; reason: "last-admin" }> {
   const db = await getDb();
   if (!db) {
     throw new Error("Database is not available");
   }
 
-  await db.update(users).set({ role }).where(eq(users.id, id));
+  return db.transaction(async tx => {
+    if (role !== "admin") {
+      const admins = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.role, "admin"))
+        .for("update");
+      if (admins.some(admin => admin.id === id) && admins.length <= 1) {
+        return { ok: false, reason: "last-admin" } as const;
+      }
+    }
+    await tx.update(users).set({ role }).where(eq(users.id, id));
+    await tx.insert(adminAuditLogs).values(audit);
+    return { ok: true } as const;
+  });
 }
 
+/** 가입 승인 상태를 바꾸고 관리 기록을 한 묶음으로 남긴다 (2026-09-23, L-4). */
 export async function updateAdminUserStatus(
   id: number,
-  approvalStatus: "approved" | "rejected"
+  approvalStatus: "approved" | "rejected",
+  audit: InsertAdminAuditLog
 ) {
   const db = await getDb();
   if (!db) {
     throw new Error("Database is not available");
   }
 
-  await db
-    .update(users)
-    .set({
-      approvalStatus,
-      approvedAt: approvalStatus === "approved" ? new Date() : null,
-    })
-    .where(eq(users.id, id));
+  await db.transaction(async tx => {
+    await tx
+      .update(users)
+      .set({
+        approvalStatus,
+        approvedAt: approvalStatus === "approved" ? new Date() : null,
+      })
+      .where(eq(users.id, id));
+    await tx.insert(adminAuditLogs).values(audit);
+  });
 }
 
 export async function createAdminAuditLog(input: InsertAdminAuditLog) {
@@ -440,6 +467,20 @@ export async function createAdminAuditLog(input: InsertAdminAuditLog) {
   }
 
   await db.insert(adminAuditLogs).values(input);
+}
+
+/**
+ * 이미 남긴 관리 기록의 메모 끝에 덧붙인다. 작업과 한 묶음으로 기록을 남긴 뒤,
+ * 묶음 밖에서 한 일(사진 파일 정리 등)의 결과를 적을 때만 쓴다. 실패해도
+ * 작업과 기록은 이미 저장되어 있다.
+ */
+export async function appendAdminAuditNote(id: number, suffix: string) {
+  const db = await getDb();
+  if (!db || !id) return;
+  await db
+    .update(adminAuditLogs)
+    .set({ note: sql`CONCAT(COALESCE(${adminAuditLogs.note}, ''), ${suffix})` })
+    .where(eq(adminAuditLogs.id, id));
 }
 
 export async function listAdminAuditLogs(limit = 100) {
@@ -3008,6 +3049,13 @@ export type DeleteUserAccountResult =
 export async function deleteUserAccount(input: {
   userId: number;
   password: string;
+  /**
+   * 넘긴 추모관과 탈퇴 기록. 회원 삭제와 한 묶음으로 저장한다 (2026-09-23, L-4).
+   * 전에는 탈퇴가 끝난 뒤 따로 적어서, 기록 저장이 실패하면 흔적이 없었다.
+   */
+  auditFor?: (
+    transfers: MemorialHandover[]
+  ) => InsertAdminAuditLog[];
 }): Promise<DeleteUserAccountResult> {
   const db = await getDb();
   if (!db) {
@@ -3070,6 +3118,8 @@ export async function deleteUserAccount(input: {
         );
     }
     await tx.delete(users).where(eq(users.id, user.id));
+    const logs = input.auditFor?.(plan.transfers) ?? [];
+    if (logs.length > 0) await tx.insert(adminAuditLogs).values(logs);
   });
 
   return { ok: true, handedOver: plan.transfers };
@@ -3303,12 +3353,23 @@ export async function updateKioskInquiryStatus(id: number, status: string) {
  * 사진 파일은 여기서 지우지 않는다. 부르는 쪽에서 "더 이상 아무 데도 쓰이지
  * 않게 된 파일"만 골라 휴지통으로 옮긴다.
  */
-export async function deleteMemorialById(memorialId: number) {
+/**
+ * 추모관을 지우고 관리 기록을 한 묶음으로 남긴다 (2026-09-23, L-4). 남긴 기록의
+ * 번호를 돌려준다 (사진 파일 정리 결과를 나중에 덧붙이려고).
+ */
+export async function deleteMemorialById(
+  memorialId: number,
+  audit: InsertAdminAuditLog
+) {
   const db = await getDb();
   if (!db) {
     throw new Error("Database is not available");
   }
-  await db.delete(memorials).where(eq(memorials.id, memorialId));
+  return db.transaction(async tx => {
+    await tx.delete(memorials).where(eq(memorials.id, memorialId));
+    const [result] = await tx.insert(adminAuditLogs).values(audit);
+    return Number((result as { insertId?: number }).insertId ?? 0);
+  });
 }
 
 /** 비밀번호로 가입한 회원의 비밀번호가 맞는지. 외부 로그인 계정은 false. */
