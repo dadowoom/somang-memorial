@@ -2,18 +2,26 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "./_core/context";
 import { canManageMemorialGallery } from "../shared/memorialGalleryPermissions";
 
-const mocks = vi.hoisted(() => ({
-  getDb: vi.fn(),
-  getAdminMemorialById: vi.fn(),
-  listMemorialGalleryPhotos: vi.fn(),
-  storagePut: vi.fn(),
-  decodeImageDataUrl: vi.fn(),
-  requireReadableMemorialById: vi.fn(),
-  // 가족 초대(2026-09-13): 주인·관리자가 아닐 때만 조회된다. 기본은 "가족 아님".
-  isMemorialFamilyMember: vi.fn(),
-}));
+const mocks = vi.hoisted(() => {
+  // 비공개 추모관 사진 주소에 서명할 때 쓴다 (protectedMedia.ts).
+  process.env.JWT_SECRET ||= "test-secret-gallery";
+  return {
+    getDb: vi.fn(),
+    canReadMemorial: vi.fn(),
+    getAdminMemorialById: vi.fn(),
+    listMemorialGalleryPhotos: vi.fn(),
+    storagePut: vi.fn(),
+    decodeImageDataUrl: vi.fn(),
+    requireReadableMemorialById: vi.fn(),
+    // 가족 초대(2026-09-13): 주인·관리자가 아닐 때만 조회된다. 기본은 "가족 아님".
+    isMemorialFamilyMember: vi.fn(),
+  };
+});
 vi.mock("./db", () => mocks);
-vi.mock("./storage", () => ({ storagePut: mocks.storagePut }));
+vi.mock("./storage", () => ({
+  storagePut: mocks.storagePut,
+  UPLOAD_URL_PREFIX: "/uploads",
+}));
 vi.mock("./_core/imageUpload", () => ({
   decodeImageDataUrl: mocks.decodeImageDataUrl,
 }));
@@ -318,5 +326,37 @@ describe("gallery API", () => {
         .listByMemorial({ memorialId: 42 })
     ).rejects.toThrow();
     expect(mocks.listMemorialGalleryPhotos).not.toHaveBeenCalled();
+  });
+
+  // 가족관·비공개 사진 보호 (2026-09-23, protectedMedia.ts).
+  const rows = [
+    { id: 1, memorialId: 42, photoUrl: "/uploads/gallery/42/a_1.jpg" },
+    { id: 2, memorialId: 42, photoUrl: "https://example.com/b.jpg" },
+  ];
+
+  it("공개 추모관 사진은 원래 주소 그대로 내준다", async () => {
+    mocks.requireReadableMemorialById.mockResolvedValue(pending);
+    mocks.canReadMemorial.mockReturnValue(true);
+    mocks.listMemorialGalleryPhotos.mockResolvedValue(rows);
+    await expect(
+      galleryRouter
+        .createCaller(context(null))
+        .listByMemorial({ memorialId: 42 })
+    ).resolves.toEqual(rows);
+  });
+
+  it("비공개·작성 중 추모관 사진은 기한이 적힌 주소로 내준다", async () => {
+    mocks.requireReadableMemorialById.mockResolvedValue(pending);
+    mocks.canReadMemorial.mockReturnValue(false);
+    mocks.listMemorialGalleryPhotos.mockResolvedValue(rows);
+    const result = await galleryRouter
+      .createCaller(context(owner))
+      .listByMemorial({ memorialId: 42 });
+    expect(mocks.canReadMemorial).toHaveBeenCalledWith(pending, null);
+    expect(result[0].photoUrl).toMatch(
+      /^\/uploads\/s\/\d+\.[A-Za-z0-9_-]+\/gallery\/42\/a_1\.jpg$/
+    );
+    // 바깥 주소는 우리 서버 파일이 아니므로 그대로 둔다.
+    expect(result[1].photoUrl).toBe("https://example.com/b.jpg");
   });
 });

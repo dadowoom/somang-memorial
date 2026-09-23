@@ -3,23 +3,30 @@ import type { TrpcContext } from "./_core/context";
 
 // 가족관 영상·사진 (2026-09-16). 핵심은 "가족관마다 따로" — 사진은 가족관 번호로만
 // 저장·삭제되고, 남의 추모관에는 아무것도 못 한다.
-const mocks = vi.hoisted(() => ({
-  getMemorialFamilyRoomManageInfo: vi.fn(),
-  updateMemorialFamilyRoomVideo: vi.fn(),
-  addFamilyRoomPhoto: vi.fn(),
-  deleteFamilyRoomPhoto: vi.fn(),
-  updateFamilyRoomPhoto: vi.fn(),
-  reorderFamilyRoomPhotos: vi.fn(),
-  isMemorialFamilyMember: vi.fn(),
-  createAdminAuditLog: vi.fn(),
-  storagePut: vi.fn(),
-  decodeImageDataUrl: vi.fn(),
-}));
+const mocks = vi.hoisted(() => {
+  // 가족관 사진 주소에 서명할 때 쓴다 (protectedMedia.ts).
+  process.env.JWT_SECRET ||= "test-secret-family-room";
+  return {
+    getMemorialFamilyRoomManageInfo: vi.fn(),
+    updateMemorialFamilyRoomVideo: vi.fn(),
+    addFamilyRoomPhoto: vi.fn(),
+    deleteFamilyRoomPhoto: vi.fn(),
+    updateFamilyRoomPhoto: vi.fn(),
+    reorderFamilyRoomPhotos: vi.fn(),
+    isMemorialFamilyMember: vi.fn(),
+    createAdminAuditLog: vi.fn(),
+    storagePut: vi.fn(),
+    decodeImageDataUrl: vi.fn(),
+  };
+});
 vi.mock("./db", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("./db");
   return { ...actual, ...mocks };
 });
-vi.mock("./storage", () => ({ storagePut: mocks.storagePut }));
+vi.mock("./storage", () => ({
+  storagePut: mocks.storagePut,
+  UPLOAD_URL_PREFIX: "/uploads",
+}));
 vi.mock("./_core/imageUpload", () => ({
   decodeImageDataUrl: mocks.decodeImageDataUrl,
 }));
@@ -128,7 +135,10 @@ describe("familyRoom.addPhoto", () => {
       caller(owner).familyRoom.addPhoto({ ...photo, caption: "생신날" })
     ).resolves.toEqual({
       success: true,
-      url: "/uploads/family-rooms/500/abc.jpg",
+      // 돌려주는 주소는 기한이 적힌 주소다. DB 에는 원래 주소를 적는다.
+      url: expect.stringMatching(
+        /^\/uploads\/s\/\d+\.[A-Za-z0-9_-]+\/family-rooms\/500\/abc\.jpg$/
+      ),
     });
     const [key] = mocks.storagePut.mock.calls[0];
     expect(key).toMatch(/^family-rooms\/500\/[A-Za-z0-9_-]+\.jpg$/);

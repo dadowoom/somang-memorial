@@ -3,10 +3,12 @@ import { nanoid } from "nanoid";
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import {
+  canReadMemorial,
   getAdminMemorialById,
   isMemorialFamilyMember,
   listMemorialGalleryPhotos,
 } from "../db";
+import { signMediaUrl } from "../_core/protectedMedia";
 import { memorialGalleryPhotos } from "../../drizzle/schema";
 import { canManageMemorialGallery } from "../../shared/memorialGalleryPermissions";
 import { withGalleryEditor } from "../galleryEditing";
@@ -39,12 +41,19 @@ export const galleryRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      await requireReadableMemorialById({
+      const memorial = await requireReadableMemorialById({
         memorialId: input.memorialId,
         accessToken: input.accessToken,
         ctx,
       });
-      return listMemorialGalleryPhotos(input.memorialId);
+      const photos = await listMemorialGalleryPhotos(input.memorialId);
+      // 비공개·작성 중 추모관 사진은 기한이 적힌 주소로만 내준다 (2026-09-23,
+      // protectedMedia.ts). 공개 추모관은 그냥 주소 그대로다.
+      if (canReadMemorial(memorial, null)) return photos;
+      return photos.map(photo => ({
+        ...photo,
+        photoUrl: signMediaUrl(photo.photoUrl),
+      }));
     }),
 
   upload: protectedProcedure

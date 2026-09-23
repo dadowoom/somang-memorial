@@ -48,6 +48,7 @@ import {
   type MemorialHandover,
 } from "../shared/accountDeletion";
 import { isReminderDue, seoulDateAfter } from "./reminderSchedule";
+import { signMediaUrl } from "./_core/protectedMedia";
 import {
   judgeVerification,
   VERIFY_KEEP_MS,
@@ -1582,7 +1583,7 @@ export async function listFamilyRoomPhotos(
     throw new Error("Database is not available");
   }
 
-  return db
+  const rows = await db
     .select({
       id: memorialFamilyRoomPhotos.id,
       photoUrl: memorialFamilyRoomPhotos.photoUrl,
@@ -1596,6 +1597,9 @@ export async function listFamilyRoomPhotos(
       asc(memorialFamilyRoomPhotos.sortOrder),
       asc(memorialFamilyRoomPhotos.id)
     );
+  // 가족관 사진은 기한이 적힌 주소로만 내준다 (2026-09-23, protectedMedia.ts).
+  // 이 목록은 비밀번호를 확인했거나 관리 권한이 있는 요청에만 나간다.
+  return rows.map(row => ({ ...row, photoUrl: signMediaUrl(row.photoUrl) }));
 }
 
 export async function addFamilyRoomPhoto(input: {
