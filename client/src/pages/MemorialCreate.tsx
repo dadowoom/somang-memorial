@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { ReviewGroup, ReviewValue, StepGuide, WritingExample } from "@/components/memorial/MemorialCreateGuidance";
 import { draftKeyForUser, legacyDraftKey, readMemorialDraft, serializeOwnedDraft, writingFingerprint, type DraftWriting } from "@/lib/memorialCreateDraft";
 import { forgetWriting, getWritingSession, rememberWriting } from "@/lib/memorialWritingSession";
+import { useServerDraftAutosave } from "@/hooks/useServerDraftAutosave";
 import { memorialRequiredFields as requiredFields } from "@/lib/memorialFormCopy";
 import {
   ArrowLeft,
@@ -162,12 +163,59 @@ export default function MemorialCreate() {
   const submitting = useRef(false);
   const [personalDevice, setPersonalDevice] = useState(false);
   const [hydratedOwner, setHydratedOwner] = useState<number | null>(null);
+  const [resumedInTab, setResumedInTab] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [savedFingerprint, setSavedFingerprint] = useState(() => writingFingerprint(initialForm, []));
   const [availableDraft, setAvailableDraft] = useState<{ key: string; legacy: boolean; writing: DraftWriting } | null>(null);
   const usedDraftKeys = useRef(new Set<string>());
   const fingerprint = useMemo(() => writingFingerprint(form, timeline), [form, timeline]);
   const dirty = hydratedOwner === user?.id && fingerprint !== savedFingerprint;
+
+  // 쓰는 글은 로그인한 계정에 자동 저장한다 (2026-09-23). 이 기기에는 남기지 않는다.
+  const autosave = useServerDraftAutosave({
+    userId: user?.id ?? null,
+    ready: Boolean(user?.id) && hydratedOwner === user?.id,
+    resumedInTab,
+    stopped: submitted || createMemorialMutation.isPending,
+    dirty,
+    fingerprint,
+    buildPayload: savedAt => serializeOwnedDraft(user?.id ?? 0, form, timeline, step, savedAt),
+    onSaved: (savedPrint, savedAt) => {
+      setSavedFingerprint(savedPrint);
+      setLastSavedAt(savedAt);
+    },
+    onRestore: writing => {
+      const restored = { ...initialForm, ...writing.form, accessPassword: "" } as MemorialForm;
+      setForm(restored);
+      setTimeline(writing.timeline.length > 0 ? writing.timeline : [makeTimelineItem()]);
+      setStep(writing.step);
+      setLastSavedAt(writing.savedAt);
+      setSavedFingerprint(writingFingerprint(restored, writing.timeline));
+      setErrors({});
+      setNotice("자동 저장된 글을 불러왔습니다. 비공개로 등록할 때는 입장 비밀번호를 다시 입력해 주세요.");
+    },
+  });
+  const continueServerDraft = () => {
+    if (dirty && !window.confirm("지금 쓴 내용 대신 자동 저장된 글을 불러오시겠습니까?")) return;
+    autosave.restore();
+  };
+  const startNewWriting = () => {
+    if (!window.confirm("자동 저장된 글을 지우고 새로 쓰시겠습니까? 지운 글은 되살릴 수 없습니다.")) return;
+    void autosave.discard();
+  };
+  const savedTime = lastSavedAt ? new Date(lastSavedAt).toLocaleString("ko-KR") : "";
+  const autosaveStatus = (() => {
+    switch (autosave.state) {
+      case "checking": return "저장된 글이 있는지 확인하고 있습니다.";
+      case "waiting-choice": return "위에서 저장된 글을 이어 쓸지 골라 주세요. 고르기 전에는 자동 저장을 멈춥니다.";
+      case "check-failed": return "저장된 글을 확인하지 못해 자동 저장을 멈췄습니다. 인터넷 연결을 확인한 뒤 ‘다시 확인’을 눌러 주세요.";
+      case "saving": return "저장하고 있습니다…";
+      case "failed": return "자동 저장하지 못했습니다. 인터넷 연결을 확인해 주세요. 쓴 글은 화면에 그대로 있습니다.";
+      default: return lastSavedAt
+        ? `자동 저장됨: ${savedTime}${dirty ? " · 이후 쓴 글은 곧 저장됩니다." : ""}`
+        : "글을 쓰기 시작하면 자동으로 저장됩니다.";
+    }
+  })();
 
   useEffect(() => {
     if (!user?.id) return;
@@ -184,8 +232,10 @@ export default function MemorialCreate() {
       setSavedFingerprint(memory.savedFingerprint);
       setLastSavedAt(memory.savedAt);
       usedDraftKeys.current = new Set(memory.persistedKeys);
+      setResumedInTab(true);
       setNotice("작성 중인 글을 이어서 표시합니다. 입장 비밀번호는 다시 입력해 주세요.");
     } else {
+      setResumedInTab(false);
       setForm(initialForm);
       setTimeline([makeTimelineItem()]);
       setStep(0);
@@ -205,7 +255,7 @@ export default function MemorialCreate() {
         else setNotice("저장된 글의 형식을 확인하지 못했습니다. 기존 저장 내용은 지우지 않았습니다.");
       }
     } catch {
-      setNotice("이 브라우저에서는 임시저장을 이용하기 어렵습니다. 작성은 가능하지만 중요한 글은 따로 보관해 주세요.");
+      // 예전 방식(이 기기) 저장본을 읽지 못해도 괜찮다. 이제는 서버에 자동 저장한다.
     }
     setHydratedOwner(user.id);
   }, [user?.id]);
@@ -346,27 +396,18 @@ export default function MemorialCreate() {
     goToStep(step + 1);
   };
 
-  const saveDraft = () => {
+  const saveDraft = async () => {
     if (submitted || createMemorialMutation.isPending) return;
-    if (!personalDevice || !user) {
-      setNotice("개인 기기 확인에 체크한 뒤 임시저장을 이용해 주세요. 공용 기기에서는 저장하지 마세요.");
-      document.getElementById("personal-writing-device")?.focus();
+    if (autosave.state === "waiting-choice") {
+      setNotice("위에서 자동 저장된 글을 이어 쓸지 먼저 골라 주세요.");
+      document.getElementById("writing-safety-title")?.scrollIntoView({ block: "center" });
       return;
     }
-    try {
-      const key = draftKeyForUser(user.id);
-      if (localStorage.getItem(key) && !usedDraftKeys.current.has(key) && !window.confirm("이전에 임시저장한 글을 지금 작성한 내용으로 바꾸시겠습니까?")) return;
-      const savedAt = Date.now();
-      localStorage.setItem(key, serializeOwnedDraft(user.id, form, timeline, step, savedAt));
-      usedDraftKeys.current.add(key);
-      setLastSavedAt(savedAt);
-      setSavedFingerprint(fingerprint);
-      setAvailableDraft(null);
-      setNotice("이 브라우저에 글을 임시저장했습니다. 같은 계정으로 로그인해 이어쓸 수 있습니다. 입장 비밀번호는 저장하지 않습니다.");
-    } catch {
-      setNotice("이 브라우저에 임시저장하지 못했습니다. 작성 중인 내용은 화면에 그대로 있습니다. 중요한 글은 따로 보관해 주세요.");
+    if (!dirty) {
+      setNotice(lastSavedAt ? "글이 이미 저장되어 있습니다." : "아직 저장할 글이 없습니다.");
+      return;
     }
-    setSubmitted(false);
+    await autosave.saveNow();
   };
 
   const collectErrors = () => {
@@ -436,6 +477,7 @@ export default function MemorialCreate() {
 
       try { usedDraftKeys.current.forEach(key => localStorage.removeItem(key)); } catch { /* Registration already succeeded. */ }
       forgetWriting();
+      autosave.clearAfterCreate();
       setCreatedMemorial(created);
       setNotice("추모관을 만들었습니다. 지금은 작성 중이라 가족만 볼 수 있습니다. 프로필 사진과 앨범을 올린 뒤 ‘등록 완료하기’를 눌러 주세요.");
       setSubmitted(true);
@@ -511,7 +553,7 @@ export default function MemorialCreate() {
                   <p>기본 정보 → 신앙 이야기 → 생애 기록 → 사진 안내 → 공개 설정 순서로 진행합니다.</p>
                   <p><strong>필수</strong> 표시만 먼저 채워도 됩니다. 긴 글을 완성하려고 애쓰지 않으셔도 괜찮습니다.</p>
                   <p>마지막 단계에서 내용을 다시 확인합니다. 이전 단계로 돌아가도 입력한 글은 유지됩니다.</p>
-                  <p>개인 기기에서만 임시저장을 이용해 주세요. 같은 브라우저·같은 계정에서 이어쓸 수 있고, 입장 비밀번호는 저장하지 않습니다.</p>
+                  <p>쓰는 글은 로그인한 계정에 자동으로 저장됩니다. 창이 닫혀도 다시 로그인하면 이어 쓸 수 있고, 입장 비밀번호는 저장하지 않습니다.</p>
                 </WritingExample>
               </div>
             </div>
@@ -561,20 +603,34 @@ export default function MemorialCreate() {
 
         {!submitted && <section className="container pt-8" aria-labelledby="writing-safety-title">
           <div className="border border-[#d5cfc5] bg-[#fcfbf8] p-5 md:p-6">
-            <h2 id="writing-safety-title" className="text-lg font-medium">작성한 글, 안전하게 이어쓰기</h2>
-            <p className="mt-2 text-base leading-7 text-[#616161]">창을 닫기 전 임시저장을 눌러주세요. 다른 PC나 휴대폰으로는 이어지지 않습니다. 공용 기기에서는 저장하지 마세요.</p>
-            <label className="mt-4 flex min-h-12 cursor-pointer items-center gap-3 text-base">
-              <input id="personal-writing-device" type="checkbox" checked={personalDevice} disabled={createMemorialMutation.isPending} onChange={event => setPersonalDevice(event.target.checked)} className="h-5 w-5 shrink-0" />
-              개인 기기입니다. 이 브라우저에서 임시저장·불러오기를 이용합니다.
-            </label>
-            <p role="status" className="mt-3 text-sm leading-6 text-[#616161]">
-              {lastSavedAt ? `마지막 저장: ${new Date(lastSavedAt).toLocaleString("ko-KR")}${dirty ? " · 이후 변경한 내용은 아직 저장되지 않았습니다." : " · 글이 저장되어 있습니다."}` : "아직 이 작성 내용은 임시저장하지 않았습니다."}
+            <h2 id="writing-safety-title" className="text-lg font-medium">쓰는 글은 자동으로 저장됩니다</h2>
+            <p className="mt-2 text-base leading-7 text-[#616161]">로그인한 계정에 저장되어, 창이 닫혀도 다시 로그인하면 이어 쓸 수 있습니다. 다른 PC나 휴대폰에서도 이어집니다. 이 기기에는 남지 않으며, 입장 비밀번호는 저장하지 않습니다.</p>
+            {autosave.pendingDraft && (
+              <div className="mt-4 border-t border-[#d5cfc5] pt-4">
+                <p className="text-base leading-7">{new Date(autosave.pendingDraft.updatedAt).toLocaleString("ko-KR")}에 자동 저장된 글이 있습니다.</p>
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                  <button type="button" onClick={continueServerDraft} disabled={createMemorialMutation.isPending} className="min-h-12 bg-[#18181b] px-5 text-base text-white disabled:opacity-50">저장된 글 이어 쓰기</button>
+                  <button type="button" onClick={startNewWriting} disabled={createMemorialMutation.isPending} className="min-h-12 border border-[#18181b] px-5 text-base disabled:opacity-50">지우고 새로 쓰기</button>
+                </div>
+              </div>
+            )}
+            <p role="status" aria-live="polite" className={`mt-3 text-sm leading-6 ${autosave.state === "failed" || autosave.state === "check-failed" ? "text-[#b42318]" : "text-[#616161]"}`}>
+              {autosaveStatus}
             </p>
-            <button type="button" onClick={saveDraft} disabled={createMemorialMutation.isPending} className="mt-3 min-h-12 border border-[#18181b] px-5 text-base disabled:opacity-50">지금 임시저장</button>
+            {autosave.state === "check-failed" && (
+              <button type="button" onClick={autosave.retryCheck} className="mt-3 min-h-12 border border-[#18181b] px-5 text-base">다시 확인</button>
+            )}
+            {autosave.state === "failed" && (
+              <button type="button" onClick={() => void saveDraft()} className="mt-3 min-h-12 border border-[#18181b] px-5 text-base">다시 저장</button>
+            )}
             {availableDraft && (
               <div className="mt-4 border-t border-[#d5cfc5] pt-4">
-                <p className="text-base leading-7">{availableDraft.legacy ? "이전 방식으로 저장된 글이 있습니다. 본인 글이 맞는 개인 기기에서만 불러오세요." : "이 계정으로 임시저장한 글이 있습니다."}</p>
-                <button type="button" onClick={restoreDraft} disabled={!personalDevice || createMemorialMutation.isPending} className="mt-3 min-h-12 border border-[#18181b] px-5 text-base disabled:cursor-not-allowed disabled:opacity-50">임시저장한 글 이어쓰기</button>
+                <p className="text-base leading-7">{availableDraft.legacy ? "이 기기에 예전 방식으로 저장된 글이 있습니다. 본인 글이 맞는 개인 기기에서만 불러오세요." : "이 기기에 예전 방식으로 임시저장한 글이 있습니다."}</p>
+                <label className="mt-3 flex min-h-12 cursor-pointer items-center gap-3 text-base">
+                  <input id="personal-writing-device" type="checkbox" checked={personalDevice} disabled={createMemorialMutation.isPending} onChange={event => setPersonalDevice(event.target.checked)} className="h-5 w-5 shrink-0" />
+                  개인 기기입니다. 이 기기에 저장된 글을 불러옵니다.
+                </label>
+                <button type="button" onClick={restoreDraft} disabled={!personalDevice || createMemorialMutation.isPending} className="mt-3 min-h-12 border border-[#18181b] px-5 text-base disabled:cursor-not-allowed disabled:opacity-50">이 기기의 글 이어쓰기</button>
               </div>
             )}
           </div>
@@ -1101,12 +1157,12 @@ export default function MemorialCreate() {
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <button
                       type="button"
-                      onClick={saveDraft}
+                      onClick={() => void saveDraft()}
                       disabled={createMemorialMutation.isPending || submitted}
                       className="inline-flex h-11 items-center justify-center gap-2 border border-[#b5b0a7] px-5 text-sm transition-colors hover:bg-[#f5f5f5]"
                     >
                       <Save className="h-4 w-4" strokeWidth={1.6} />
-                      임시저장
+                      지금 저장
                     </button>
                     {step > 0 ? (
                       <button
