@@ -655,6 +655,9 @@ const textDisplaySizeSchema = z.enum(["auto", "small", "normal", "large"]);
 
 export const memorialUpdateInput = z.object({
   id: z.number(),
+  // 수정 화면을 열 때 본 "마지막으로 고친 시각" (2026-09-23). 그 사이에 다른
+  // 가족이 고쳤으면 덮어쓰지 않고 알린다. 빼고 보내면 확인 없이 저장한다.
+  expectedUpdatedAt: z.date().optional(),
   name: z.string().trim().min(1).max(120).optional(),
   role: z.string().trim().min(1).max(80).optional(),
   birthDate: z.string().trim().min(1).max(20).optional(),
@@ -727,6 +730,7 @@ export const buildMemorialUpdateData = (
 ) => {
   const {
     id: _id,
+    expectedUpdatedAt: _expectedUpdatedAt,
     accessPassword,
     timeline,
     visibility,
@@ -1623,6 +1627,20 @@ export const appRouter = router({
           });
         }
 
+        // 동시에 고친 가족이 있으면 덮어쓰지 않는다 (2026-09-23). 전에는 나중에
+        // 저장한 쪽이 먼저 고친 쪽의 글을 말없이 지웠다.
+        if (
+          input.expectedUpdatedAt &&
+          existing.updatedAt &&
+          existing.updatedAt.getTime() !== input.expectedUpdatedAt.getTime()
+        ) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message:
+              "이 화면을 연 뒤에 다른 가족이 추모관을 먼저 고쳤습니다. 지금 쓰신 내용은 아직 저장되지 않았습니다.",
+          });
+        }
+
         const editableInput =
           ctx.user.role === "admin"
             ? input
@@ -1653,7 +1671,8 @@ export const appRouter = router({
           });
         }
 
-        return { success: true };
+        const saved = await getAdminMemorialById(input.id);
+        return { success: true, updatedAt: saved?.updatedAt ?? null };
       }),
   }),
 
