@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { Send } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { Link } from "wouter";
 
 const serifStyle = { fontFamily: "'Noto Serif KR', serif" } as const;
@@ -23,6 +23,8 @@ export default function MemorialLettersSection({
   const [author, setAuthor] = useState("");
   const [content, setContent] = useState("");
   const [message, setMessage] = useState("");
+  // 빠르게 두 번 눌러도 편지가 두 통 저장되지 않게 (2026-09-23).
+  const sending = useRef(false);
   const queryInput = {
     memorialSlug,
     accessToken: accessToken || undefined,
@@ -51,13 +53,22 @@ export default function MemorialLettersSection({
       return;
     }
 
+    if (sending.current || createLetterMutation.isPending) return;
+    sending.current = true;
     setMessage("");
-    createLetterMutation.mutate({
-      memorialSlug,
-      accessToken: accessToken || undefined,
-      author: trimmedAuthor,
-      content: trimmedContent,
-    });
+    createLetterMutation.mutate(
+      {
+        memorialSlug,
+        accessToken: accessToken || undefined,
+        author: trimmedAuthor,
+        content: trimmedContent,
+      },
+      {
+        onSettled: () => {
+          sending.current = false;
+        },
+      }
+    );
   };
 
   return (

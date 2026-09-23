@@ -55,7 +55,6 @@ describe("키오스크 안장 기록", () => {
     const rows = await searchKioskSomangIntermentRecords("김테스트");
     expect(rows.map(toKioskInterment)).toEqual([
       {
-        id: 7,
         name: "김테스트",
         role: "권사",
         birthDate: null,
@@ -66,6 +65,11 @@ describe("키오스크 안장 기록", () => {
         href: null,
       },
     ]);
+  });
+
+  it("기록 번호는 키오스크로 내보내지 않는다", async () => {
+    const rows = await searchKioskSomangIntermentRecords("김테스트");
+    expect(rows.map(toKioskInterment)[0]).not.toHaveProperty("id");
   });
 
   it("연결 조회는 공개·게시된 추모관만 허용한다", async () => {

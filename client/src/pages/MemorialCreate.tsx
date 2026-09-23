@@ -381,6 +381,11 @@ export default function MemorialCreate() {
     if (form.visibility === "private" && !form.accessPassword.trim()) {
       nextErrors.accessPassword =
         "비공개 추모관 입장 비밀번호를 입력해 주세요.";
+    } else if (
+      form.visibility === "private" &&
+      form.accessPassword.trim().length < 4
+    ) {
+      nextErrors.accessPassword = "입장 비밀번호는 4글자 이상으로 정해 주세요.";
     }
 
     return nextErrors;
@@ -1025,7 +1030,7 @@ export default function MemorialCreate() {
                       error={errors.accessPassword}
                       required
                       maxLength={80}
-                      hint="방문자와 공유할 입장 비밀번호입니다. 회원 로그인·가족관 비밀번호와는 다릅니다. 쉬운 숫자나 생년월일은 피해 주세요."
+                      hint="방문자와 공유할 입장 비밀번호입니다(4글자 이상). 회원 로그인·가족관 비밀번호와는 다릅니다. 쉬운 숫자나 생년월일은 피해 주세요."
                     >
                       <input
                         type="password"

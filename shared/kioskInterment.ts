@@ -17,7 +17,11 @@ export function publicBurialPlace(place: string | null | undefined) {
   return text.includes("소망동산") ? "소망동산" : "다른 장지";
 }
 
-/** Only the fields approved for the public kiosk leave the server. */
+/**
+ * Only the fields approved for the public kiosk leave the server.
+ * 기록 번호(id)는 내보내지 않는다 (2026-09-23). 누구나 쓰는 키오스크 검색에서
+ * 번호를 얻어 "부모님 찾기"로 남의 부모님 추모관을 먼저 만드는 것을 어렵게 한다.
+ */
 export function toKioskInterment(record: {
   id: number;
   name: string;
@@ -31,7 +35,6 @@ export function toKioskInterment(record: {
   const date = (value: string | null) =>
     value && isSearchableIntermentBirthDate(value) ? value : null;
   return {
-    id: record.id,
     name: getIntermentPersonName(record.name),
     role: record.role?.trim() || null,
     birthDate: date(record.birthDate),

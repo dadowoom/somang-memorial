@@ -518,9 +518,9 @@ export default function Kiosk() {
                     <ArrowRight className="h-5 w-5 shrink-0 text-[#18181b]" />
                   </button>
                 ))}
-                {intermentResults.map(record => (
+                {intermentResults.map((record, index) => (
                   <button
-                    key={`interment-${record.id}`}
+                    key={`interment-${index}-${record.name}`}
                     type="button"
                     onClick={() => {
                       closeKeyboard();

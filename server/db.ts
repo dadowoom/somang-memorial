@@ -636,9 +636,9 @@ export async function getSomangIntermentRecordForClaim(input: {
 }
 
 /**
- * Kiosk search exposes only the minimum public confirmation needed on site:
- * a matching name and the fact that the person is interred at Somang Garden.
- * It deliberately excludes dates, contact details, and source metadata.
+ * 키오스크 안장 기록 검색. 화면에 내보낼 칸은 shared/kioskInterment.ts 의
+ * toKioskInterment 가 고른다: 성함·직분·생몰일·안장일, 장지는 "소망동산/다른 장지"만.
+ * 기록 번호·장지 원문·연락처·원본 자료는 내보내지 않는다 (2026-09-23 설명 바로잡음).
  */
 export async function searchKioskSomangIntermentRecords(keyword: string) {
   const db = await getDb();
@@ -1943,6 +1943,12 @@ export async function listFamilyMemberMemorialIds(userId: number) {
   return rows.map(row => row.memorialId);
 }
 
+function insertedLetterId(result: unknown) {
+  const id = Number((result as { insertId?: number })?.insertId ?? 0);
+  if (!id) throw new Error("편지 번호를 받지 못했습니다.");
+  return id;
+}
+
 export async function createMemorialLetter(input: {
   memorialSlug?: string;
   recipientName?: string;
@@ -1969,7 +1975,7 @@ export async function createMemorialLetter(input: {
 
     if (!memorial[0]) return null;
 
-    await db.insert(memorialLetters).values({
+    const [inserted] = await db.insert(memorialLetters).values({
       memorialId: memorial[0].id,
       recipientName: memorial[0].name,
       recipientRole: memorial[0].role,
@@ -1994,8 +2000,9 @@ export async function createMemorialLetter(input: {
       })
       .from(memorialLetters)
       .innerJoin(memorials, eq(memorialLetters.memorialId, memorials.id))
-      .where(eq(memorialLetters.memorialId, memorial[0].id))
-      .orderBy(desc(memorialLetters.id))
+      // 방금 저장한 편지 번호로 읽는다. "가장 최근 편지"로 읽으면 같은 순간
+      // 다른 분이 쓴 편지가 대신 보일 수 있다 (2026-09-23).
+      .where(eq(memorialLetters.id, insertedLetterId(inserted)))
       .limit(1);
 
     return created[0] ?? null;
@@ -2004,7 +2011,7 @@ export async function createMemorialLetter(input: {
   const recipientName = input.recipientName?.trim();
   if (!recipientName) return null;
 
-  await db.insert(memorialLetters).values({
+  const [inserted] = await db.insert(memorialLetters).values({
     memorialId: null,
     recipientName,
     recipientRole: input.recipientRole?.trim() || null,
@@ -2026,14 +2033,7 @@ export async function createMemorialLetter(input: {
     })
     .from(memorialLetters)
     .leftJoin(memorials, eq(memorialLetters.memorialId, memorials.id))
-    .where(
-      and(
-        isNull(memorialLetters.memorialId),
-        eq(memorialLetters.author, input.author),
-        eq(memorialLetters.recipientName, recipientName)
-      )
-    )
-    .orderBy(desc(memorialLetters.id))
+    .where(eq(memorialLetters.id, insertedLetterId(inserted)))
     .limit(1);
 
   return created[0] ?? null;
@@ -3157,20 +3157,28 @@ export async function resetPasswordWithToken(input: {
   const now = new Date();
   // 비밀번호 변경과 링크 닫기는 한 묶음이다. 둘 중 하나만 되면(예: 비밀번호는
   // 바뀌었는데 링크가 살아 있음) 링크로 또 바꿀 수 있으므로 트랜잭션으로 묶는다.
-  await db.transaction(async tx => {
+  // 링크를 먼저 닫고(아직 안 쓴 링크일 때만), 닫혔을 때만 비밀번호를 바꾼다.
+  // 같은 링크를 동시에 두 번 눌러도 한 번만 통과한다 (2026-09-23).
+  return db.transaction(async tx => {
+    const [closed] = await tx
+      .update(passwordResetTokens)
+      .set({ usedAt: now })
+      .where(
+        and(
+          eq(passwordResetTokens.id, row.id),
+          isNull(passwordResetTokens.usedAt)
+        )
+      );
+    if (((closed as { affectedRows?: number })?.affectedRows ?? 0) !== 1) {
+      return false;
+    }
+
     await tx
       .update(users)
       .set({ passwordHash: hashUserPassword(input.password) })
       .where(eq(users.id, row.userId));
-
-    // 한 번 쓴 링크는 즉시 닫습니다.
-    await tx
-      .update(passwordResetTokens)
-      .set({ usedAt: now })
-      .where(eq(passwordResetTokens.id, row.id));
+    return true;
   });
-
-  return true;
 }
 
 // ---------------------------------------------------------------------------

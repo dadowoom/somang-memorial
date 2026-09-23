@@ -200,3 +200,26 @@ describe("부모님 찾기로 만드는 추모관", () => {
     expect(mocks.createMemorial).not.toHaveBeenCalled();
   });
 });
+
+// 2026-09-23: 비공개 추모관 입장 비밀번호는 새로 정할 때 4글자 이상.
+describe("비공개 추모관 입장 비밀번호 길이", () => {
+  it("3글자 비밀번호는 받지 않는다", async () => {
+    await expect(
+      caller().memorial.create({
+        ...input,
+        visibility: "private",
+        accessPassword: "123",
+      })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(mocks.createMemorial).not.toHaveBeenCalled();
+  });
+
+  it("4글자 비밀번호는 받는다", async () => {
+    await caller().memorial.create({
+      ...input,
+      visibility: "private",
+      accessPassword: "1234",
+    });
+    expect(savedMemorial().accessPasswordHash).toBeTruthy();
+  });
+});

@@ -33,6 +33,8 @@ export default function Letters() {
   const [message, setMessage] = useState("");
 
   const lettersQuery = trpc.letter.recent.useQuery({ limit: 100 });
+  // 빠르게 두 번 눌러도 편지가 두 통 저장되지 않게 (2026-09-23).
+  const sending = useRef(false);
   const createLetter = trpc.letter.create.useMutation({
     onSuccess: async () => {
       setRecipientName("");
@@ -93,12 +95,21 @@ export default function Letters() {
       return;
     }
 
+    if (sending.current || createLetter.isPending) return;
+    sending.current = true;
     setMessage("");
-    createLetter.mutate({
-      recipientName: trimmedRecipient,
-      author: trimmedAuthor,
-      content: trimmedContent,
-    });
+    createLetter.mutate(
+      {
+        recipientName: trimmedRecipient,
+        author: trimmedAuthor,
+        content: trimmedContent,
+      },
+      {
+        onSettled: () => {
+          sending.current = false;
+        },
+      }
+    );
   };
 
   return (
@@ -405,7 +416,7 @@ function LetterCard({
           className="letter-card__read"
           aria-expanded={expanded}
           aria-controls={contentId}
-          onClick={() => setExpanded((value) => !value)}
+          onClick={() => setExpanded(value => !value)}
         >
           {expanded ? "편지 접기" : "편지 펼쳐 읽기"}
           <span aria-hidden="true">{expanded ? "−" : "+"}</span>
