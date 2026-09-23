@@ -15,6 +15,7 @@ import { validateRuntimeConfig } from "./runtimeConfig";
 import { registerSecurityHeaders } from "./securityHeaders";
 import {
   logTrpcError,
+  redactQueryParams,
   registerErrorHandler,
   registerRequestLogging,
 } from "./requestLogging";
@@ -113,12 +114,21 @@ async function startServer() {
 // 전에는 console.error 만 하고 조용히 끝나서 정상 종료처럼 보였다 (2026-09-14).
 // 처리되지 않은 오류도 같은 이유로 기록을 남기고 바로 끝낸다. Node 는 원래
 // 이런 오류에 프로세스를 끝내지만, 어디서 났는지 로그에 남기려고 명시한다.
+// DB 오류에는 넣은 값(개인정보)이 붙어 나오므로 가리고 남긴다 (2026-09-23).
+const fatalDescription = (error: unknown) => {
+  if (!(error instanceof Error)) return redactQueryParams(String(error));
+  // 오류가 난 자리(스택의 "at ..." 줄)만 남기고, 문구는 값을 가린다.
+  const frames = (error.stack ?? "")
+    .split("\n")
+    .filter(line => line.trim().startsWith("at "));
+  return [redactQueryParams(error.message), ...frames].join("\n");
+};
 process.on("unhandledRejection", reason => {
-  console.error("[fatal] 처리되지 않은 비동기 오류", reason);
+  console.error("[fatal] 처리되지 않은 비동기 오류", fatalDescription(reason));
   process.exit(1);
 });
 process.on("uncaughtException", error => {
-  console.error("[fatal] 처리되지 않은 오류", error);
+  console.error("[fatal] 처리되지 않은 오류", fatalDescription(error));
   process.exit(1);
 });
 

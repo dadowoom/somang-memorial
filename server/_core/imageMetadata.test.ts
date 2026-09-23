@@ -105,6 +105,25 @@ describe("JPEG 숨은 정보 제거", () => {
   });
 });
 
+describe("JPEG 뒤에 덧붙은 자료", () => {
+  // 휴대폰은 사진 끝(FF D9) 뒤에 두 번째 사진이나 짧은 영상을 덧붙이고, 그 안에
+  // 다시 위치정보를 넣기도 한다 (2026-09-23).
+  it("그림의 끝 표식 뒤에 붙은 것은 버린다", () => {
+    const trailer = Buffer.from("TRAILING-GPS-SECRET", "ascii");
+    const input = Buffer.concat([makeJpegWithExif(), trailer]);
+    const output = stripImageMetadata(input);
+    expect(output.includes(trailer)).toBe(false);
+    expect(output.subarray(-2)).toEqual(Buffer.from([0xff, 0xd9]));
+  });
+
+  it("끝 표식이 없으면 그림 데이터를 자르지 않는다", () => {
+    const jpeg = makeJpegWithExif();
+    const noEoi = jpeg.subarray(0, jpeg.length - 2);
+    const output = stripImageMetadata(noEoi);
+    expect(output.subarray(-3)).toEqual(Buffer.from([0xaa, 0xbb, 0xcc]));
+  });
+});
+
 describe("PNG 숨은 정보 제거", () => {
   it("글자·EXIF 덩어리를 떼어내고 그림 데이터는 남긴다", () => {
     const cleaned = stripImageMetadata(makePngWithText());

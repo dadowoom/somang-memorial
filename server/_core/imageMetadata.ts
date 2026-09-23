@@ -41,6 +41,7 @@ export function detectImageFormat(
 
 // EXIF(위치·촬영정보), XMP, IPTC, 주석. 색상 프로필(APP2)과 JFIF(APP0)는 남깁니다.
 const JPEG_SEGMENTS_TO_DROP = new Set([0xe1, 0xed, 0xfe]);
+const JPEG_EOI = Buffer.from([0xff, 0xd9]);
 
 function stripJpeg(buffer: Buffer) {
   const parts: Buffer[] = [buffer.subarray(0, 2)]; // SOI
@@ -51,9 +52,15 @@ function stripJpeg(buffer: Buffer) {
 
     const marker = buffer[offset + 1];
 
-    // 압축된 그림 데이터가 시작되면 끝까지 그대로 옮깁니다.
+    // 압축된 그림 데이터가 시작되면 그림의 끝 표식(EOI, FF D9)까지만 옮깁니다.
+    // 그 뒤에 붙은 것(휴대폰이 덧붙이는 두 번째 사진·짧은 영상과 그 안의 위치
+    // 정보)은 버립니다 (2026-09-23). 그림 데이터 안에서는 FF D9 가 나올 수 없어
+    // 처음 만나는 FF D9 가 그림의 끝입니다. 못 찾으면 예전처럼 끝까지 옮깁니다.
     if (marker === 0xda) {
-      parts.push(buffer.subarray(offset));
+      const end = buffer.indexOf(JPEG_EOI, offset + 2);
+      parts.push(
+        end === -1 ? buffer.subarray(offset) : buffer.subarray(offset, end + 2)
+      );
       return Buffer.concat(parts);
     }
 
