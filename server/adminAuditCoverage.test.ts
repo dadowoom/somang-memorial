@@ -89,7 +89,7 @@ describe("letter.updateStatus 감사기록", () => {
 });
 
 describe("reminder.updateStatus 감사기록", () => {
-  it("문자 알림을 취소하면 번호를 가린 채 기록한다", async () => {
+  it("추도일 알림을 취소하면 번호를 가린 채 기록한다", async () => {
     await expect(
       caller(admin).reminder.updateStatus({ id: 5, status: "cancelled" })
     ).resolves.toEqual({ success: true });
@@ -103,7 +103,7 @@ describe("reminder.updateStatus 감사기록", () => {
       action: "reminder.status.update",
       beforeValue: "active",
       afterValue: "cancelled",
-      note: "문자 알림 5 · 010-****-5678 · 김소망 (kim-somang-kwonsa)",
+      note: "추도일 알림 5 · 010-****-5678 · 김소망 (kim-somang-kwonsa)",
     });
     expect(JSON.stringify(entry)).not.toContain("1234-5678");
   });

@@ -8,6 +8,7 @@ import MemorialBackToTop from "@/components/memorial/MemorialBackToTop";
 import SampleInquiryFab from "@/components/inquiry/SampleInquiryFab";
 import { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "@/lib/featureFlags";
 import { useReminderSignup } from "@/hooks/useReminderSignup";
+import { REMINDER_PRIVACY_NOTICE } from "@shared/consent";
 import ReminderStopPanel from "@/components/memorial/ReminderStopPanel";
 import { isSampleMemorialSlug } from "@/lib/kioskQuickActions";
 import { trpc } from "@/lib/trpc";
@@ -649,7 +650,19 @@ function MemorialReminderForm({
               className="mt-0.5 h-5 w-5 shrink-0"
             />
             <span>
-              추도일 알림 신청을 위해 휴대폰 번호를 저장하는 데 동의합니다.
+              개인정보 수집·이용에 동의합니다 (필수).
+              <span className="mt-1 block">
+                수집 항목: {REMINDER_PRIVACY_NOTICE.items}
+                <br />
+                이용 목적: {REMINDER_PRIVACY_NOTICE.purpose}
+                <br />
+                보유 기간: {REMINDER_PRIVACY_NOTICE.retention}
+                <br />
+                {REMINDER_PRIVACY_NOTICE.refusal}{" "}
+                <Link href="/privacy" className="underline underline-offset-2">
+                  개인정보처리방침
+                </Link>
+              </span>
             </span>
           </label>
           <button

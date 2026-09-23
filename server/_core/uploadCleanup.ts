@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import {
   getDb,
   purgeExpiredKioskInquiries,
+  purgeCancelledReminderSubscriptions,
   purgeOldReminderPhoneVerifications,
 } from "../db";
 import { UPLOAD_DIR } from "../storage";
@@ -332,6 +333,15 @@ export function startUploadCleanupScheduler() {
     purgeOldReminderPhoneVerifications().catch(error => {
       console.error("[Retention] 알림 인증 기록 정리 실패:", error);
     });
+    // 관리자가 취소한 지 30일 지난 추도일 알림 신청(전화번호)을 지운다.
+    purgeCancelledReminderSubscriptions()
+      .then(count => {
+        if (count > 0)
+          console.log(`[Retention] 취소된 추도일 알림 신청 ${count}건 삭제`);
+      })
+      .catch(error => {
+        console.error("[Retention] 취소된 알림 신청 정리 실패:", error);
+      });
     if (uploadCleanupMode() === "off") return;
     runUploadCleanup().catch(error => {
       console.error("[UploadCleanup] 실패:", error);

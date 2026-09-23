@@ -2416,6 +2416,31 @@ export async function deleteReminderSubscriptionByPhone(
   return (result as { affectedRows?: number })?.affectedRows ?? 0;
 }
 
+/**
+ * 관리자가 취소한 추도일 알림 신청은 30일 뒤 지운다 (2026-09-23).
+ * 그 사이에는 관리자가 되살릴 수 있다. 매일 새벽 정리 때 부른다.
+ */
+export const CANCELLED_REMINDER_KEEP_DAYS = 30;
+
+export async function purgeCancelledReminderSubscriptions(now = new Date()) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  const before = new Date(
+    now.getTime() - CANCELLED_REMINDER_KEEP_DAYS * 24 * 60 * 60 * 1000
+  );
+  const [result] = await db
+    .delete(memorialReminderSubscriptions)
+    .where(
+      and(
+        eq(memorialReminderSubscriptions.status, "cancelled"),
+        sql`${memorialReminderSubscriptions.updatedAt} < ${before}`
+      )
+    );
+  return (result as { affectedRows?: number })?.affectedRows ?? 0;
+}
+
 /** 하루 지난 인증 기록을 지운다. 매일 새벽 정리 때 부른다. */
 export async function purgeOldReminderPhoneVerifications(now = new Date()) {
   const db = await getDb();
@@ -2465,7 +2490,7 @@ export async function listAdminReminderSubscriptions(limit = 300) {
     .limit(limit);
 }
 
-/** 문자 알림 신청 한 건. 관리자가 취소/복구할 때 감사기록에 남기려고 쓴다. */
+/** 추도일 알림 신청 한 건. 관리자가 취소/복구할 때 감사기록에 남기려고 쓴다. */
 export async function getReminderSubscriptionById(id: number) {
   const db = await getDb();
   if (!db) {
