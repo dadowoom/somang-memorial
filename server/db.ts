@@ -3318,6 +3318,50 @@ export async function verifyUserPasswordById(userId: number, password: string) {
 }
 
 /**
+ * 지금 비밀번호를 확인한 뒤 비밀번호를 새로 저장한다 (2026-09-23).
+ * nextPassword 를 주지 않으면 같은 비밀번호를 새 소금(salt)으로 다시 저장한다 —
+ * 저장값이 바뀌므로 로그인 지문이 달라져, 다른 기기의 로그인이 모두 끊긴다
+ * ("다른 기기 모두 로그아웃"). 아직 안 쓴 비밀번호 재설정 링크도 함께 닫는다.
+ * 새 저장값을 돌려준다. 비밀번호가 틀리면 null.
+ */
+export async function replaceUserPasswordAfterCheck(input: {
+  userId: number;
+  currentPassword: string;
+  nextPassword?: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  const rows = await db
+    .select({ passwordHash: users.passwordHash })
+    .from(users)
+    .where(eq(users.id, input.userId))
+    .limit(1);
+  const current = rows[0]?.passwordHash;
+  if (!current || !verifyUserPassword(input.currentPassword, current)) {
+    return null;
+  }
+  const nextHash = hashUserPassword(input.nextPassword ?? input.currentPassword);
+  await db.transaction(async tx => {
+    await tx
+      .update(users)
+      .set({ passwordHash: nextHash })
+      .where(eq(users.id, input.userId));
+    await tx
+      .update(passwordResetTokens)
+      .set({ usedAt: new Date() })
+      .where(
+        and(
+          eq(passwordResetTokens.userId, input.userId),
+          isNull(passwordResetTokens.usedAt)
+        )
+      );
+  });
+  return nextHash;
+}
+
+/**
  * 제작 문의 보관 기한 (2026-09-19). 개인정보처리방침 12항과 문의 창의 약속대로
  * "연락을 마치면 지체 없이, 늦어도 3개월 안에" 지운다. 매일 새벽 정리 때 부른다.
  * - 연락함(contacted)으로 바꾼 지 7일 지난 문의

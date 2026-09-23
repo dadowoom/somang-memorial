@@ -14,6 +14,7 @@ import {
   createAdminAuditLog,
   createLocalUser,
   consumeReminderPhoneVerification,
+  replaceUserPasswordAfterCheck,
   createMemorialReminderSubscription,
   createReminderPhoneVerification,
   deleteReminderPhoneVerification,
@@ -143,6 +144,7 @@ import { uploadRouter } from "./routers/upload";
 import { videoRouter } from "./routers/video";
 import { maskEmailForAudit, maskPhoneForAudit } from "../shared/auditNotes";
 import { credentialFingerprint } from "./_core/sessionCredential";
+import type { TrpcContext } from "./_core/context";
 import { describeBlockedMemorials } from "../shared/accountDeletion";
 import { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "../shared/featureFlags";
 import {
@@ -766,6 +768,44 @@ export const buildMemorialUpdateData = (
   return updateData;
 };
 
+/**
+ * 지금 비밀번호를 확인하고 비밀번호 저장값을 바꾼 뒤, 이 기기에 새 로그인 쿠키를
+ * 준다. 저장값이 바뀌면 다른 기기의 옛 로그인은 지문이 맞지 않아 끊긴다.
+ */
+async function replacePasswordAndKeepThisDevice(
+  ctx: TrpcContext & { user: NonNullable<TrpcContext["user"]> },
+  currentPassword: string,
+  options: { nextPassword?: string }
+) {
+  const attemptKey = passwordAttemptKey(ctx.req, `password-change:${ctx.user.id}`);
+  ensurePasswordAttemptAllowed(attemptKey, loginAttemptLimiter);
+  const nextHash = await replaceUserPasswordAfterCheck({
+    userId: ctx.user.id,
+    currentPassword,
+    nextPassword: options.nextPassword,
+  });
+  if (!nextHash) {
+    loginAttemptLimiter.recordFailure(attemptKey);
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "지금 비밀번호가 맞지 않습니다.",
+    });
+  }
+  loginAttemptLimiter.recordSuccess(attemptKey);
+
+  const sessionToken = await sdk.createSessionToken(ctx.user.openId, {
+    name: ctx.user.name || ctx.user.email || "",
+    expiresInMs: SESSION_TTL_MS,
+    credential: credentialFingerprint(nextHash),
+  });
+  const cookieOptions = getSessionCookieOptions(ctx.req);
+  ctx.res.cookie(COOKIE_NAME, sessionToken, {
+    ...cookieOptions,
+    maxAge: SESSION_TTL_MS,
+  });
+  return { success: true } as const;
+}
+
 export const appRouter = router({
   // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
@@ -997,6 +1037,45 @@ export const appRouter = router({
 
         return { success: true } as const;
       }),
+
+    // 비밀번호 변경 (2026-09-23). 바꾸면 다른 기기의 로그인은 모두 끊기고,
+    // 지금 이 기기는 새 비밀번호로 로그인된 채 남는다.
+    changePassword: protectedProcedure
+      .input(
+        z.object({
+          currentPassword: z
+            .string()
+            .min(1, "지금 비밀번호를 입력해 주세요.")
+            .max(100),
+          newPassword: z
+            .string()
+            .min(8, "새 비밀번호는 8자 이상 입력해 주세요.")
+            .max(100),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        if (input.currentPassword === input.newPassword) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "지금 비밀번호와 다른 비밀번호로 정해 주세요.",
+          });
+        }
+        return replacePasswordAndKeepThisDevice(ctx, input.currentPassword, {
+          nextPassword: input.newPassword,
+        });
+      }),
+
+    // 다른 기기 모두 로그아웃 (2026-09-23). 교회 공용 PC 등에서 로그아웃하지 않고
+    // 떠났을 때 쓴다. 비밀번호는 그대로이고, 이 기기만 로그인된 채 남는다.
+    logoutOtherDevices: protectedProcedure
+      .input(
+        z.object({
+          password: z.string().min(1, "비밀번호를 입력해 주세요.").max(100),
+        })
+      )
+      .mutation(async ({ ctx, input }) =>
+        replacePasswordAndKeepThisDevice(ctx, input.password, {})
+      ),
 
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
