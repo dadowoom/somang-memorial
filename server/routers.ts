@@ -68,6 +68,8 @@ import {
   appendAdminAuditNote,
   deleteMemorialById,
   deleteMemorialWritingDraft,
+  listMemorialLettersForFamily,
+  setMemorialLetterStatusForMemorial,
   verifyUserPasswordById,
   createPasswordResetToken,
   isAdminLoginIdentifier,
@@ -143,6 +145,7 @@ import { bookRouter } from "./routers/book";
 import { galleryRouter } from "./routers/gallery";
 import { kioskPosterRouter } from "./routers/kioskPoster";
 import { memorialDraftRouter } from "./routers/memorialDraft";
+import { canUserManageMemorialMedia } from "./routers/memorialAccess";
 import { kioskInquiryRouter } from "./routers/kioskInquiry";
 import { uploadRouter } from "./routers/upload";
 import { videoRouter } from "./routers/video";
@@ -448,6 +451,28 @@ const familyRoomReorderPhotosInput = z.object({
  * 관리자가 했으면 adminUserId, 유가족이 했으면 targetUserId 에 본인을 적는다.
  * 관리자 화면은 adminUserId 가 없으면 "유가족 본인"으로 표시한다 (2026-09-14).
  */
+/** 편지를 보고 숨길 수 있는 사람인지 (추모관을 만든 가족·초대받은 가족·관리자). */
+async function requireLetterManager(
+  user: { id: number; role: string; approvalStatus?: string },
+  memorialSlug: string
+) {
+  const memorial = await getPublicMemorialBySlug(memorialSlug);
+  if (!memorial) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "추모관을 찾을 수 없습니다.",
+    });
+  }
+  if (!(await canUserManageMemorialMedia(user, memorial))) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message:
+        "편지를 관리할 권한이 없습니다. 추모관을 만든 가족과 초대받은 가족만 관리할 수 있습니다.",
+    });
+  }
+  return memorial;
+}
+
 function familyAuditActor(user: { id: number; role: string }) {
   return user.role === "admin"
     ? { adminUserId: user.id, targetUserId: null }
@@ -1803,6 +1828,61 @@ export const appRouter = router({
           }`,
         });
         return { success: true };
+      }),
+
+    // 가족이 편지를 보고 숨기기 (2026-09-23). 추모관을 만든 가족·초대받은 가족·
+    // 관리자만. 전에는 이상한 편지가 와도 다도움(관리자)에게 부탁해야 숨길 수 있었다.
+    familyList: protectedProcedure
+      .input(z.object({ memorialSlug: z.string().trim().min(1).max(120) }))
+      .query(async ({ ctx, input }) => {
+        const memorial = await requireLetterManager(
+          ctx.user,
+          input.memorialSlug
+        );
+        return {
+          memorialName: [memorial.name, memorial.role].filter(Boolean).join(" "),
+          memorialSlug: memorial.slug,
+          memorialStatus: memorial.status,
+          letters: await listMemorialLettersForFamily(memorial.id),
+        };
+      }),
+
+    familyUpdateStatus: protectedProcedure
+      .input(
+        z.object({
+          memorialSlug: z.string().trim().min(1).max(120),
+          letterId: z.number().int().positive(),
+          status: z.enum(["published", "hidden"]),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const memorial = await requireLetterManager(
+          ctx.user,
+          input.memorialSlug
+        );
+        const before = await setMemorialLetterStatusForMemorial({
+          letterId: input.letterId,
+          memorialId: memorial.id,
+          status: input.status,
+        });
+        if (!before) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "이 추모관의 편지를 찾을 수 없습니다.",
+          });
+        }
+        if (before.status !== input.status) {
+          await createAdminAuditLog({
+            ...familyAuditActor(ctx.user),
+            action: "letter.status.update",
+            beforeValue: before.status,
+            afterValue: input.status,
+            note: `편지 ${input.letterId} · ${before.author} → ${memorial.name} (${memorial.slug}) · ${
+              ctx.user.role === "admin" ? "관리자" : "가족"
+            }이 변경`,
+          });
+        }
+        return { success: true } as const;
       }),
 
     recent: publicProcedure

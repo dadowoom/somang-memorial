@@ -67,6 +67,10 @@ export default function MemorialNextActions({
         <Link href={`/my/memorials/${memorial.slug}/family`}>
           <span className={buttonClass}>가족관 관리</span>
         </Link>
+        {/* 받은 편지를 보고 어울리지 않는 편지를 숨긴다 (2026-09-23). */}
+        <Link href={`/my/memorials/${memorial.slug}/letters`}>
+          <span className={buttonClass}>받은 편지</span>
+        </Link>
         {/* 초대와 가족 제외는 주인과 관리자만. 초대받은 가족이 또 초대하면 주인이 누가 들어왔는지 알 수 없다. */}
         {(isAdmin || memorial.membership !== "member") && (
           <Link href={`/my/memorials/${memorial.slug}/family-members`}>
