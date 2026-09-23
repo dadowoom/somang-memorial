@@ -29,6 +29,12 @@ describe("주소에서 파일 경로 뽑기", () => {
     ).toEqual(["gallery/2/x.png"]);
     expect(extractUploadKeys(null)).toEqual([]);
   });
+
+  it("기한이 적힌 주소도 실제 파일 이름으로 센다", () => {
+    expect(
+      extractUploadKeys("/uploads/s/1790000000.AbC-_1/family-rooms/5/a_b.jpg")
+    ).toEqual(["family-rooms/5/a_b.jpg"]);
+  });
 });
 
 describe("치울 목록 정하기", () => {

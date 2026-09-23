@@ -90,6 +90,7 @@ import { nanoid } from "nanoid";
 import { decodeImageDataUrl } from "./_core/imageUpload";
 import { saveThumbnail } from "./_core/thumbnailStorage";
 import { storagePut } from "./storage";
+import { signMediaUrl } from "./_core/protectedMedia";
 import {
   collectReferencedUploadKeys,
   moveUploadsToTrash,
@@ -2116,7 +2117,7 @@ export const appRouter = router({
           note: `${info.memorialName} (${info.memorialSlug})`,
         });
 
-        return { success: true, url };
+        return { success: true, url: signMediaUrl(url) };
       }),
 
     deletePhoto: protectedProcedure

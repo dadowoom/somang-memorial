@@ -57,7 +57,11 @@ export function extractUploadKeys(text: string | null | undefined): string[] {
     } catch {
       // 잘못된 % 표기는 그대로 둔다
     }
-    keys.push(key.replace(/^\/+/, ""));
+    // 기한이 적힌 주소(/uploads/s/<기한>.<서명>/...)가 글에 붙여 넣어졌어도
+    // 실제 파일 이름으로 센다 (2026-09-23, protectedMedia.ts).
+    keys.push(
+      key.replace(/^\/+/, "").replace(/^s\/\d+\.[A-Za-z0-9_-]+\//, "")
+    );
   }
   return keys;
 }
