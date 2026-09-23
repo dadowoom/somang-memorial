@@ -2312,6 +2312,70 @@ export async function updateMemorialLetterStatus(
     .where(eq(memorialLetters.id, id));
 }
 
+/**
+ * 가족이 보는 편지 목록 (2026-09-23). 숨긴 편지도 함께 보여 주어 가족이 다시
+ * 보이게 할 수 있다. 권한 확인은 부르는 쪽(letter.familyList)이 한다.
+ */
+export async function listMemorialLettersForFamily(memorialId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  return db
+    .select({
+      id: memorialLetters.id,
+      author: memorialLetters.author,
+      content: memorialLetters.content,
+      status: memorialLetters.status,
+      createdAt: memorialLetters.createdAt,
+    })
+    .from(memorialLetters)
+    .where(eq(memorialLetters.memorialId, memorialId))
+    .orderBy(desc(memorialLetters.createdAt), desc(memorialLetters.id))
+    .limit(300);
+}
+
+/**
+ * 가족이 이 추모관에 온 편지를 숨기거나 다시 보이게 한다. 다른 추모관의 편지
+ * 번호를 넣으면 아무것도 바뀌지 않고 null 을 돌려준다. 바꾸기 전 상태와 글쓴이를
+ * 돌려준다 (관리 기록용).
+ */
+export async function setMemorialLetterStatusForMemorial(input: {
+  letterId: number;
+  memorialId: number;
+  status: "published" | "hidden";
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({ author: memorialLetters.author, status: memorialLetters.status })
+    .from(memorialLetters)
+    .where(
+      and(
+        eq(memorialLetters.id, input.letterId),
+        eq(memorialLetters.memorialId, input.memorialId)
+      )
+    )
+    .limit(1);
+  const before = rows[0];
+  if (!before) return null;
+
+  await db
+    .update(memorialLetters)
+    .set({ status: input.status })
+    .where(
+      and(
+        eq(memorialLetters.id, input.letterId),
+        eq(memorialLetters.memorialId, input.memorialId)
+      )
+    );
+  return before;
+}
+
 // ---------------------------------------------------------------------------
 // 추도일 알림 본인 번호 확인 (2026-09-23). 규칙은 server/reminderVerification.ts.
 
