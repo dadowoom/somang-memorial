@@ -12,6 +12,7 @@ import { getEmailConfigStatus, sendKioskInquiryEmail } from "../_core/email";
 import {
   createPasswordAttemptLimiter,
   passwordAttemptKey,
+  subjectAttemptKey,
 } from "../_core/passwordAttemptLimiter";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 import { maskPhoneForAudit } from "../../shared/auditNotes";
@@ -35,6 +36,14 @@ const inquiryLimiter = createPasswordAttemptLimiter({
   blockMs: 10 * 60 * 1000,
 });
 
+// 서비스 전체의 하루 문의 상한 (2026-09-23). 접속지를 바꿔 가며 장난 문의를
+// 쏟아 넣어 표와 업체 메일함을 채우는 것을 막는 마지막 안전장치다.
+const inquiryDailyTotalLimiter = createPasswordAttemptLimiter({
+  failureLimit: 100,
+  failureWindowMs: 24 * 60 * 60 * 1000,
+  blockMs: 24 * 60 * 60 * 1000,
+});
+
 export const kioskInquiryRouter = router({
   submit: publicProcedure
     .input(
@@ -46,7 +55,14 @@ export const kioskInquiryRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const key = passwordAttemptKey(ctx.req, "kiosk-inquiry");
+      const dailyKey = subjectAttemptKey("kiosk-inquiry-daily-total");
       const check = inquiryLimiter.check(key);
+      if (!inquiryDailyTotalLimiter.check(dailyKey).allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `오늘은 문의가 많아 더 받을 수 없습니다. 전화로 연락해 주세요.`,
+        });
+      }
       if (!check.allowed) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
@@ -65,6 +81,7 @@ export const kioskInquiryRouter = router({
 
       // 접수 자체를 횟수로 센다 (비밀번호 재설정 요청과 같은 방식).
       inquiryLimiter.recordFailure(key);
+      inquiryDailyTotalLimiter.recordFailure(dailyKey);
 
       const source = input.source ?? "kiosk";
       const id = await createKioskInquiry({ phone, name, source });

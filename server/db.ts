@@ -33,6 +33,7 @@ import {
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { redactQueryParams } from "./_core/requestLogging";
 import {
   getIntermentPersonName,
   isSameIntermentPersonName,
@@ -142,7 +143,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       set: updateSet,
     });
   } catch (error) {
-    console.error("[Database] Failed to upsert user:", error);
+    // 오류 문구에 넣은 값(이메일·이름)이 붙어 나오므로 가리고 남긴다 (2026-09-23).
+    console.error(
+      "[Database] Failed to upsert user:",
+      redactQueryParams(error instanceof Error ? error.message : String(error))
+    );
     throw error;
   }
 }
