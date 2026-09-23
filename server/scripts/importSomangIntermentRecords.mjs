@@ -9,10 +9,13 @@ const sourcePath = process.argv[2];
 // 장지 원문은 저장하지만, 공개 화면에는 "소망동산"/"다른 장지"로만 보인다
 // (shared/kioskInterment.ts publicBurialPlace).
 const anyBurialPlace = process.argv.includes("--any-burial-place");
+// 기본은 "확인만" (2026-09-23). --apply 를 붙여야 실제로 쓴다. 전에는 돌리는 즉시
+// 기존 기록의 이름·날짜·장지를 덮어썼다.
+const apply = process.argv.includes("--apply");
 
-if (!sourcePath) {
+if (!sourcePath || sourcePath.startsWith("--")) {
   throw new Error(
-    "Usage: node importSomangIntermentRecords.mjs <records.json> [--any-burial-place]"
+    "Usage: node importSomangIntermentRecords.mjs <records.json> [--any-burial-place] [--apply]"
   );
 }
 
@@ -97,10 +100,42 @@ const sql = `
 `;
 
 try {
-  await connection.beginTransaction();
+  await connection.query(
+    apply ? "START TRANSACTION" : "START TRANSACTION READ ONLY"
+  );
 
-  for (let offset = 0; offset < normalized.length; offset += 200) {
-    const chunk = normalized.slice(offset, offset + 200);
+  // 이미 가족이 추모관을 만든 기록은 덮어쓰지 않는다 (2026-09-23). 추모관과
+  // 연결된 기록의 성함·날짜가 바뀌면 가족이 만든 추모관과 어긋난다.
+  const [existingRows] = await connection.query(
+    `SELECT r.sourceId, m.id AS memorialId
+       FROM somang_interment_records r
+       LEFT JOIN memorials m ON m.intermentRecordId = r.id
+      WHERE r.sourceId IN (?)` + (apply ? " FOR UPDATE" : ""),
+    [[...sourceIds]]
+  );
+  const existing = new Set(existingRows.map(row => Number(row.sourceId)));
+  const linked = new Set(
+    existingRows
+      .filter(row => row.memorialId != null)
+      .map(row => Number(row.sourceId))
+  );
+  const writable = apply
+    ? normalized.filter(record => !linked.has(record.sourceId))
+    : [];
+  const summary = {
+    applied: apply,
+    source: normalized.length,
+    insert: normalized.filter(
+      record => !existing.has(record.sourceId)
+    ).length,
+    update: normalized.filter(
+      record => existing.has(record.sourceId) && !linked.has(record.sourceId)
+    ).length,
+    skippedLinkedToMemorial: linked.size,
+  };
+
+  for (let offset = 0; offset < writable.length; offset += 200) {
+    const chunk = writable.slice(offset, offset + 200);
     for (const record of chunk) {
       await connection.execute(sql, [
         record.sourceId,
@@ -120,10 +155,17 @@ try {
     }
   }
 
-  await connection.commit();
-  process.stdout.write(
-    `${JSON.stringify({ importedRecords: normalized.length, sourceIds: sourceIds.size })}\n`
-  );
+  if (apply) {
+    await connection.commit();
+  } else {
+    await connection.rollback();
+  }
+  process.stdout.write(`${JSON.stringify(summary)}\n`);
+  if (!apply) {
+    process.stdout.write(
+      "확인만 했습니다. 실제로 쓰려면 --apply 를 붙이세요.\n"
+    );
+  }
 } catch (error) {
   await connection.rollback();
   throw error;
