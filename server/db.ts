@@ -20,6 +20,8 @@ import {
   memorialBooks,
   memorialFamilyInvitations,
   memorialFamilyMembers,
+  memorialLetterNotices,
+  userLetterNoticeOptOuts,
   memorialWritingDrafts,
   memorialFamilyRoomPhotos,
   memorialFamilyRooms,
@@ -3581,4 +3583,228 @@ export async function deleteMemorialWritingDraft(userId: number) {
         eq(memorialWritingDrafts.kind, "create")
       )
     );
+}
+
+/* ------------------------------------------------------------------ *
+ * 새 편지 알림톡 (2026-09-23, drizzle/0031). 규칙: server/_core/letterNoticeScheduler.ts
+ * ------------------------------------------------------------------ */
+
+/**
+ * 알릴 새 편지가 있는 추모관. 등록이 끝난(published) 추모관에서, 지난번에 알린
+ * 편지 번호보다 큰 공개 편지가 있고, 오늘(서울) 아직 보내지 않은 곳.
+ */
+export async function listLetterNoticeCandidates(today: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  const rows = await db
+    .select({
+      memorialId: memorials.id,
+      memorialSlug: memorials.slug,
+      memorialName: memorials.name,
+      memorialRole: memorials.role,
+      lastLetterId: memorialLetterNotices.lastLetterId,
+      lastSentDate: memorialLetterNotices.lastSentDate,
+      maxLetterId: sql<number>`MAX(${memorialLetters.id})`,
+      newCount: sql<number>`COUNT(${memorialLetters.id})`,
+    })
+    .from(memorials)
+    .innerJoin(
+      memorialLetters,
+      and(
+        eq(memorialLetters.memorialId, memorials.id),
+        eq(memorialLetters.status, "published")
+      )
+    )
+    .leftJoin(
+      memorialLetterNotices,
+      eq(memorialLetterNotices.memorialId, memorials.id)
+    )
+    .where(
+      and(
+        eq(memorials.status, "published"),
+        sql`${memorialLetters.id} > COALESCE(${memorialLetterNotices.lastLetterId}, 0)`,
+        or(
+          isNull(memorialLetterNotices.lastSentDate),
+          ne(memorialLetterNotices.lastSentDate, today)
+        )
+      )
+    )
+    .groupBy(
+      memorials.id,
+      memorials.slug,
+      memorials.name,
+      memorials.role,
+      memorialLetterNotices.lastLetterId,
+      memorialLetterNotices.lastSentDate
+    )
+    .limit(200);
+  return rows.map(row => ({
+    ...row,
+    lastLetterId: row.lastLetterId ?? 0,
+    lastSentDate: row.lastSentDate ?? null,
+    maxLetterId: Number(row.maxLetterId),
+    newCount: Number(row.newCount),
+  }));
+}
+
+/**
+ * 새 편지 알림을 받을 사람: 추모관을 만든 가족과 초대받은 가족 중, 승인된 계정이고
+ * 휴대폰 번호가 있으며 알림을 끄지 않은 사람. 같은 번호는 한 번만.
+ */
+export async function listLetterNoticeRecipients(memorialId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  const pick = {
+    userId: users.id,
+    phone: users.phone,
+    approvalStatus: users.approvalStatus,
+    optedOut: userLetterNoticeOptOuts.userId,
+  };
+  const owners = await db
+    .select(pick)
+    .from(memorials)
+    .innerJoin(users, eq(users.id, memorials.createdByUserId))
+    .leftJoin(userLetterNoticeOptOuts, eq(userLetterNoticeOptOuts.userId, users.id))
+    .where(eq(memorials.id, memorialId));
+  const family = await db
+    .select(pick)
+    .from(memorialFamilyMembers)
+    .innerJoin(users, eq(users.id, memorialFamilyMembers.userId))
+    .leftJoin(userLetterNoticeOptOuts, eq(userLetterNoticeOptOuts.userId, users.id))
+    .where(eq(memorialFamilyMembers.memorialId, memorialId));
+
+  const seen = new Set<string>();
+  const recipients: { userId: number; phone: string }[] = [];
+  for (const row of [...owners, ...family]) {
+    if (row.optedOut != null || row.approvalStatus !== "approved") continue;
+    const digits = (row.phone ?? "").replace(/[^0-9]/g, "");
+    if (digits.length < 10 || seen.has(digits)) continue;
+    seen.add(digits);
+    recipients.push({ userId: row.userId, phone: digits });
+  }
+  return recipients;
+}
+
+/**
+ * 보내기 전에 "여기까지 알렸음, 오늘 보냈음"을 먼저 적는다. 그사이 누가 먼저
+ * 적었으면(값이 예상과 다르면) false — 두 번 보내지 않는다.
+ */
+export async function claimLetterNotice(input: {
+  memorialId: number;
+  expectLastLetterId: number;
+  expectSentDate: string | null;
+  lastLetterId: number;
+  today: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  return db.transaction(async tx => {
+    const rows = await tx
+      .select({
+        lastLetterId: memorialLetterNotices.lastLetterId,
+        lastSentDate: memorialLetterNotices.lastSentDate,
+      })
+      .from(memorialLetterNotices)
+      .where(eq(memorialLetterNotices.memorialId, input.memorialId))
+      .for("update");
+    const row = rows[0];
+    if (!row) {
+      if (input.expectLastLetterId !== 0 || input.expectSentDate !== null) {
+        return false;
+      }
+      try {
+        await tx.insert(memorialLetterNotices).values({
+          memorialId: input.memorialId,
+          lastLetterId: input.lastLetterId,
+          lastSentDate: input.today,
+          lastSentAt: new Date(),
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    if (
+      row.lastLetterId !== input.expectLastLetterId ||
+      (row.lastSentDate ?? null) !== input.expectSentDate
+    ) {
+      return false;
+    }
+    await tx
+      .update(memorialLetterNotices)
+      .set({
+        lastLetterId: input.lastLetterId,
+        lastSentDate: input.today,
+        lastSentAt: new Date(),
+      })
+      .where(eq(memorialLetterNotices.memorialId, input.memorialId));
+    return true;
+  });
+}
+
+/** 한 통도 보내지 못했으면 되돌린다. 다음 차례에 다시 보낸다. */
+export async function revertLetterNotice(input: {
+  memorialId: number;
+  lastLetterId: number;
+  lastSentDate: string | null;
+}) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  await db
+    .update(memorialLetterNotices)
+    .set({ lastLetterId: input.lastLetterId, lastSentDate: input.lastSentDate })
+    .where(eq(memorialLetterNotices.memorialId, input.memorialId));
+}
+
+/**
+ * 받을 사람이 없는 추모관(모두 알림을 끔 등)은 보내지 않고 "여기까지 봤음"만
+ * 적는다. 오늘 보낸 것으로 치지는 않는다.
+ */
+export async function skipLetterNotice(memorialId: number, lastLetterId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  await db
+    .insert(memorialLetterNotices)
+    .values({ memorialId, lastLetterId })
+    .onDuplicateKeyUpdate({ set: { lastLetterId } });
+}
+
+export async function getLetterNoticeOptOut(userId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  const rows = await db
+    .select({ userId: userLetterNoticeOptOuts.userId })
+    .from(userLetterNoticeOptOuts)
+    .where(eq(userLetterNoticeOptOuts.userId, userId))
+    .limit(1);
+  return rows.length > 0;
+}
+
+export async function setLetterNoticeOptOut(userId: number, optOut: boolean) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  if (optOut) {
+    await db
+      .insert(userLetterNoticeOptOuts)
+      .values({ userId })
+      .onDuplicateKeyUpdate({ set: { userId } });
+  } else {
+    await db
+      .delete(userLetterNoticeOptOuts)
+      .where(eq(userLetterNoticeOptOuts.userId, userId));
+  }
 }

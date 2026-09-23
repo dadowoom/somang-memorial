@@ -90,6 +90,36 @@ describe("추도일 알림톡 문구", () => {
   });
 });
 
+describe("새 편지 알림톡 문구 (2026-09-23)", () => {
+  // 알리고에 올린 "새 편지 도착 알림" 템플릿과 글자·줄바꿈까지 같아야 한다.
+  it("문구와 버튼이 등록한 템플릿과 같다", async () => {
+    process.env.ALIGO_TPL_LETTER_NOTICE = "UL_TEST_LETTER";
+    const { buildLetterNoticeMessage } = await load();
+    const m = buildLetterNoticeMessage({
+      deceased: "가상인 권사",
+      letterCount: 3,
+      memorialSlug: "가상인",
+    });
+    expect(m.message).toBe(
+      "[소망이 있는 곳]\n" +
+        "가상인 권사님 추모관에 새 편지 3통이 도착했습니다.\n" +
+        "\n" +
+        "가족분께서 편지를 읽어 보시고, 추모관에 어울리지 않는 편지는 숨기실 수 있습니다.\n" +
+        "\n" +
+        "소망교회 온라인 추모관을 만드신 가족께 보내는 안내입니다."
+    );
+    expect(m.buttons.map(button => button.name)).toEqual([
+      "편지 확인하기",
+      "알림 설정",
+    ]);
+    expect(m.buttons[0].linkMo).toBe(
+      "https://somangmemorial.co.kr/my/memorials/%EA%B0%80%EC%83%81%EC%9D%B8/letters"
+    );
+    expect(m.buttons[0].linkPc).toBe(m.buttons[0].linkMo);
+    expect(m.buttons[1].linkMo).toBe("https://somangmemorial.co.kr/my/account");
+  });
+});
+
 describe("알리고 요청", () => {
   it("템플릿 코드·대체문자 끔·버튼을 담고, 번호는 숫자만 보낸다", async () => {
     const { buildAligoSendForm, buildReminderConfirmMessage } = await load();

@@ -76,6 +76,8 @@ export default function AccountSettings() {
           </p>
         </section>
 
+        <LetterNoticeSection />
+
         <PasswordAndDevicesSection />
 
         <section className="mt-16">
@@ -170,6 +172,67 @@ export default function AccountSettings() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+/**
+ * 새 편지 알림 받기 (2026-09-23). 추모관을 만든 가족·초대받은 가족에게, 새 편지가
+ * 오면 카카오 알림톡으로 알린다(같은 추모관은 하루 한 번). 여기서 끄고 켠다.
+ */
+function LetterNoticeSection() {
+  const utils = trpc.useUtils();
+  const setting = trpc.letterNotice.get.useQuery();
+  const update = trpc.letterNotice.set.useMutation();
+  const [message, setMessage] = useState("");
+  const enabled = setting.data?.enabled ?? true;
+
+  async function toggle(next: boolean) {
+    setMessage("");
+    try {
+      await update.mutateAsync({ enabled: next });
+      await utils.letterNotice.get.invalidate();
+      setMessage(
+        next
+          ? "새 편지 알림을 다시 받습니다."
+          : "새 편지 알림을 받지 않습니다. 받은 편지는 ‘내 추모관 → 받은 편지’에서 언제든 볼 수 있습니다."
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "잠시 후 다시 시도해 주세요."
+      );
+    }
+  }
+
+  return (
+    <section className="mt-16">
+      <h2 className="border-b border-[#e2e2e2] pb-3 text-lg font-medium text-[#121212]">
+        새 편지 알림
+      </h2>
+      <p className="mt-5 text-sm leading-7 text-[#4a4a4a]">
+        관리하시는 추모관에 새 편지가 오면 가입하신 휴대폰 번호로 카카오
+        알림톡을 보내 드립니다. 같은 추모관은 하루 한 번까지, 오전 9시부터 저녁
+        8시 사이에만 보냅니다.
+      </p>
+      <label className="mt-4 flex min-h-12 cursor-pointer items-center gap-3 text-base text-[#121212]">
+        <input
+          type="checkbox"
+          checked={enabled}
+          disabled={setting.isLoading || update.isPending}
+          onChange={event => void toggle(event.target.checked)}
+          className="h-5 w-5 shrink-0"
+        />
+        새 편지가 오면 알림 받기
+      </label>
+      {message && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="mt-3 text-sm leading-6 text-[#616161]"
+        >
+          {message}
+        </p>
+      )}
+    </section>
   );
 }
 
