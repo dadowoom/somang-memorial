@@ -1,5 +1,6 @@
 import {
   ArrowUpRight,
+  BookUser,
   ClipboardList,
   LayoutDashboard,
   MonitorPlay,
@@ -32,6 +33,12 @@ const navigationItems = [
     label: "키오스크 광고",
     description: "대기 화면 포스터",
     icon: MonitorPlay,
+  },
+  {
+    href: "/admin/interment",
+    label: "안장 기록",
+    description: "소천자 명단 고치기",
+    icon: BookUser,
   },
 ];
 

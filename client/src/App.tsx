@@ -31,6 +31,7 @@ const AdminMemorials = lazy(() => import("./pages/AdminMemorials"));
 const AdminOperations = lazy(() => import("./pages/AdminOperations"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminKioskPosters = lazy(() => import("./pages/AdminKioskPosters"));
+const AdminInterment = lazy(() => import("./pages/AdminInterment"));
 const MemorialSearch = lazy(() => import("./pages/MemorialSearch"));
 const MemorialPublicDetail = lazy(() => import("./pages/MemorialPublicDetail"));
 const SomangHill = lazy(() => import("./pages/SomangHill"));
@@ -86,6 +87,7 @@ function Router() {
         <Route path={"/admin/operations"} component={AdminOperations} />
         <Route path={"/admin/users"} component={AdminUsers} />
         <Route path={"/admin/kiosk"} component={AdminKioskPosters} />
+        <Route path={"/admin/interment"} component={AdminInterment} />
         <Route path={"/admin"} component={AdminMemorials} />
         <Route path={"/admin/memorials/:slug/edit"} component={MemorialEdit} />
         <Route path={"/my/account"} component={AccountSettings} />

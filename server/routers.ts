@@ -146,6 +146,7 @@ import { galleryRouter } from "./routers/gallery";
 import { kioskPosterRouter } from "./routers/kioskPoster";
 import { memorialDraftRouter } from "./routers/memorialDraft";
 import { letterNoticeRouter } from "./routers/letterNotice";
+import { intermentAdminRouter } from "./routers/intermentAdmin";
 import { canUserManageMemorialMedia } from "./routers/memorialAccess";
 import { kioskInquiryRouter } from "./routers/kioskInquiry";
 import { uploadRouter } from "./routers/upload";
@@ -2907,6 +2908,7 @@ export const appRouter = router({
   kioskInquiry: kioskInquiryRouter,
   memorialDraft: memorialDraftRouter,
   letterNotice: letterNoticeRouter,
+  intermentAdmin: intermentAdminRouter,
 
   // TODO: add feature routers here, e.g.
   // todo: router({
