@@ -1,6 +1,7 @@
 import {
   index,
   int,
+  mediumtext,
   mysqlEnum,
   mysqlTable,
   text,
@@ -556,3 +557,32 @@ export const memorialFamilyInvitations = mysqlTable(
 
 export type MemorialFamilyInvitation =
   typeof memorialFamilyInvitations.$inferSelect;
+
+/**
+ * 추모관 작성 중 자동 저장 (2026-09-23). 로그인한 계정마다 하나씩 서버에 둔다.
+ * 기기에 남기지 않으므로 교회 공용 PC 에 흔적이 없고, 휴대폰에서 쓰다 끊겨도
+ * 다른 기기에서 이어 쓸 수 있다. 입장 비밀번호는 저장하지 않는다.
+ * 추모관을 만들면 지우고, 회원이 탈퇴하면 함께 지워진다.
+ */
+export const memorialWritingDrafts = mysqlTable(
+  "memorial_writing_drafts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: mysqlEnum("kind", ["create"]).default("create").notNull(),
+    payload: mediumtext("payload").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    uniqueIndex("memorial_writing_drafts_user_kind_unique").on(
+      table.userId,
+      table.kind
+    ),
+    index("memorial_writing_drafts_updatedAt_idx").on(table.updatedAt),
+  ]
+);
+
+export type MemorialWritingDraft = typeof memorialWritingDrafts.$inferSelect;

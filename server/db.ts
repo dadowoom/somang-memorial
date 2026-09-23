@@ -20,6 +20,7 @@ import {
   memorialBooks,
   memorialFamilyInvitations,
   memorialFamilyMembers,
+  memorialWritingDrafts,
   memorialFamilyRoomPhotos,
   memorialFamilyRooms,
   memorialGalleryPhotos,
@@ -3462,4 +3463,58 @@ export async function purgeExpiredKioskInquiries(now = new Date()) {
       )
     );
   return (result as { affectedRows?: number })?.affectedRows ?? 0;
+}
+
+/* ------------------------------------------------------------------ *
+ * 추모관 작성 중 자동 저장 (2026-09-23, drizzle/0030)
+ * ------------------------------------------------------------------ */
+
+export async function getMemorialWritingDraft(userId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  const rows = await db
+    .select({
+      payload: memorialWritingDrafts.payload,
+      updatedAt: memorialWritingDrafts.updatedAt,
+    })
+    .from(memorialWritingDrafts)
+    .where(
+      and(
+        eq(memorialWritingDrafts.userId, userId),
+        eq(memorialWritingDrafts.kind, "create")
+      )
+    )
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function saveMemorialWritingDraft(
+  userId: number,
+  payload: string
+) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  await db
+    .insert(memorialWritingDrafts)
+    .values({ userId, kind: "create", payload })
+    .onDuplicateKeyUpdate({ set: { payload, updatedAt: new Date() } });
+}
+
+export async function deleteMemorialWritingDraft(userId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+  await db
+    .delete(memorialWritingDrafts)
+    .where(
+      and(
+        eq(memorialWritingDrafts.userId, userId),
+        eq(memorialWritingDrafts.kind, "create")
+      )
+    );
 }

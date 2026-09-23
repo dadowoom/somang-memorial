@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   createMemorial: vi.fn(),
   getSomangIntermentRecordForClaim: vi.fn(),
   isMemorialFamilyMember: vi.fn(),
+  deleteMemorialWritingDraft: vi.fn(),
 }));
 vi.mock("./db", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("./db");
@@ -84,6 +85,8 @@ describe("회원 추모관은 작성 중으로 시작한다", () => {
     });
     expect(canUserReadMemorial(savedMemorial())).toBe(false);
     expect(canUserReadMemorial(savedMemorial(), null, member)).toBe(true);
+    // 다 쓴 글은 자동 저장본에서 지운다 (2026-09-23).
+    expect(mocks.deleteMemorialWritingDraft).toHaveBeenCalledWith(7);
     // 등록을 마치면 방문자도 읽는다.
     expect(
       canUserReadMemorial({ ...savedMemorial(), status: "published" })

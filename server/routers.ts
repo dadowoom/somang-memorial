@@ -67,6 +67,7 @@ import {
   deleteUserAccount,
   appendAdminAuditNote,
   deleteMemorialById,
+  deleteMemorialWritingDraft,
   verifyUserPasswordById,
   createPasswordResetToken,
   isAdminLoginIdentifier,
@@ -141,6 +142,7 @@ import {
 import { bookRouter } from "./routers/book";
 import { galleryRouter } from "./routers/gallery";
 import { kioskPosterRouter } from "./routers/kioskPoster";
+import { memorialDraftRouter } from "./routers/memorialDraft";
 import { kioskInquiryRouter } from "./routers/kioskInquiry";
 import { uploadRouter } from "./routers/upload";
 import { videoRouter } from "./routers/video";
@@ -1503,6 +1505,14 @@ export const appRouter = router({
           managerMemo: input.managerMemo || null,
         });
 
+        // 다 쓴 글은 자동 저장본에서 지운다 (2026-09-23). 추모관은 이미 만들어졌으므로
+        // 지우기에 실패해도 만들기는 성공으로 둔다.
+        try {
+          await deleteMemorialWritingDraft(ctx.user.id);
+        } catch (error) {
+          console.error("[MemorialCreate] 자동 저장본 지우기 실패", error);
+        }
+
         return {
           id: created.id,
           slug: created.slug,
@@ -2814,6 +2824,7 @@ export const appRouter = router({
   upload: uploadRouter,
   kioskPoster: kioskPosterRouter,
   kioskInquiry: kioskInquiryRouter,
+  memorialDraft: memorialDraftRouter,
 
   // TODO: add feature routers here, e.g.
   // todo: router({
