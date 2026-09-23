@@ -295,9 +295,50 @@ describe("초대받은 가족의 권한", () => {
   it("게시된 추모관의 글을 직접 고칠 수 있다", async () => {
     await expect(
       caller(member).memorial.updateEditable({ id: 42, summary: "가족이 고침" })
-    ).resolves.toEqual({ success: true });
+    ).resolves.toMatchObject({ success: true });
     expect(mocks.updateMemorial).toHaveBeenCalled();
     expect(mocks.isMemorialFamilyMember).toHaveBeenCalledWith(42, 8);
+  });
+
+  // 2026-09-23: 가족 둘이 동시에 고치면 나중 저장이 먼저 저장을 지우지 않게.
+  it("화면을 연 뒤 다른 가족이 먼저 고쳤으면 저장하지 않고 알린다", async () => {
+    mocks.getAdminMemorialById.mockResolvedValue({
+      ...memorial,
+      updatedAt: new Date("2026-09-23T02:00:05Z"),
+    });
+    await expect(
+      caller(member).memorial.updateEditable({
+        id: 42,
+        summary: "가족이 고침",
+        expectedUpdatedAt: new Date("2026-09-23T02:00:00Z"),
+      })
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(mocks.updateMemorial).not.toHaveBeenCalled();
+  });
+
+  it("아무도 먼저 고치지 않았으면 저장하고 새 시각을 돌려준다", async () => {
+    const seen = new Date("2026-09-23T02:00:00Z");
+    const after = new Date("2026-09-23T02:10:00Z");
+    mocks.getAdminMemorialById
+      .mockResolvedValueOnce({ ...memorial, updatedAt: seen })
+      .mockResolvedValueOnce({ ...memorial, updatedAt: after });
+    await expect(
+      caller(member).memorial.updateEditable({
+        id: 42,
+        summary: "가족이 고침",
+        expectedUpdatedAt: seen,
+      })
+    ).resolves.toEqual({ success: true, updatedAt: after });
+    expect(mocks.updateMemorial).toHaveBeenCalled();
+  });
+
+  it("'내 내용으로 저장'(시각 없이)은 확인 없이 저장한다", async () => {
+    mocks.getAdminMemorialById.mockResolvedValue({
+      ...memorial,
+      updatedAt: new Date("2026-09-23T02:00:05Z"),
+    });
+    await caller(member).memorial.updateEditable({ id: 42, summary: "덮어씀" });
+    expect(mocks.updateMemorial).toHaveBeenCalled();
   });
 
   it("초대받지 않은 남은 여전히 못 고친다", async () => {

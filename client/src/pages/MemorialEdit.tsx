@@ -56,6 +56,7 @@ type AdminMemorial = {
   hasAccessPassword: boolean;
   href: string;
   createdByUserId: number | null;
+  updatedAt?: Date | string | null;
 };
 
 type FormState = {
@@ -154,6 +155,10 @@ export default function MemorialEdit() {
     Partial<Record<keyof FormState, string>>
   >({});
   const [notice, setNotice] = useState("");
+  // 이 화면을 연 때의 "마지막으로 고친 시각". 저장할 때 서버가 그 사이에 다른
+  // 가족이 고쳤는지 이것으로 확인한다 (2026-09-23).
+  const [baseUpdatedAt, setBaseUpdatedAt] = useState<Date | null>(null);
+  const [conflict, setConflict] = useState(false);
   const memorial = memorialQuery.data as AdminMemorial | undefined;
 
   useEffect(() => {
@@ -199,6 +204,8 @@ export default function MemorialEdit() {
     );
     setErrors({});
     setNotice("");
+    setConflict(false);
+    setBaseUpdatedAt(memorial.updatedAt ? new Date(memorial.updatedAt) : null);
     setLoadedId(memorial.id);
   }, [loadedId, memorial]);
 
@@ -285,6 +292,11 @@ export default function MemorialEdit() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    await saveMemorial(false);
+  };
+
+  // 다른 가족이 먼저 고친 것을 알고도 "내 내용으로 저장"을 고르면 확인 없이 저장한다.
+  const saveMemorial = async (overwrite: boolean) => {
     if (!memorial) return;
 
     if (!validate()) {
@@ -299,6 +311,7 @@ export default function MemorialEdit() {
       setNotice("수정 내용을 저장하고 있습니다.");
       const payload = {
         id: memorial.id,
+        expectedUpdatedAt: overwrite ? undefined : (baseUpdatedAt ?? undefined),
         name: form.name,
         role: form.role,
         birthDate: form.birthDate,
@@ -324,11 +337,13 @@ export default function MemorialEdit() {
         })),
       };
 
-      await updateMemorial.mutateAsync(
+      const saved = await updateMemorial.mutateAsync(
         isAdmin
           ? { ...payload, managerMemo: form.managerMemo || null }
           : payload
       );
+      setConflict(false);
+      if (saved.updatedAt) setBaseUpdatedAt(new Date(saved.updatedAt));
 
       await Promise.all([
         utils.memorial.editableBySlug.invalidate({ slug }),
@@ -341,6 +356,16 @@ export default function MemorialEdit() {
       setNotice("수정 내용이 저장되었습니다.");
     } catch (error) {
       console.error("[Memorial Edit] Failed to save", error);
+      const code = (error as { data?: { code?: string } })?.data?.code;
+      if (code === "CONFLICT") {
+        setConflict(true);
+        setNotice(
+          error instanceof Error
+            ? error.message
+            : "다른 가족이 추모관을 먼저 고쳤습니다."
+        );
+        return;
+      }
       setNotice("저장 중 문제가 생겼습니다. 잠시 뒤 다시 시도해 주세요.");
     }
   };
@@ -893,6 +918,53 @@ export default function MemorialEdit() {
                     </div>
                   </div>
                 </section>
+
+                {conflict && (
+                  <section
+                    className="border border-[#d9b36c] bg-[#fffaf0] p-5 md:p-6"
+                    role="alert"
+                  >
+                    <p className="text-sm font-medium text-[#3a2e14]">
+                      다른 가족이 먼저 고쳤습니다
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-[#4a3b1f]">
+                      이 화면을 여신 뒤에 함께 관리하는 가족이 추모관을
+                      고쳤습니다. 그대로 저장하면 그분이 고친 내용이 사라질 수
+                      있습니다. 지금 쓰신 글이 아깝다면 먼저 복사해 두신 뒤
+                      골라 주세요.
+                    </p>
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          // 새 내용을 먼저 받아 온 뒤 화면을 다시 채운다.
+                          await memorialQuery.refetch();
+                          setConflict(false);
+                          setLoadedId(null);
+                        }}
+                        className="h-11 border border-[#18181b] px-5 text-sm"
+                      >
+                        다른 가족이 고친 내용 불러오기
+                      </button>
+                      <button
+                        type="button"
+                        disabled={updateMemorial.isPending}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "지금 쓰신 내용으로 저장할까요? 다른 가족이 고친 내용은 사라집니다."
+                            )
+                          ) {
+                            void saveMemorial(true);
+                          }
+                        }}
+                        className="h-11 bg-[#18181b] px-5 text-sm text-white disabled:opacity-50"
+                      >
+                        내 내용으로 저장하기
+                      </button>
+                    </div>
+                  </section>
+                )}
 
                 {notice === "수정 내용이 저장되었습니다." && (
                   <section className="border border-[#18181b] p-5 md:p-6">
