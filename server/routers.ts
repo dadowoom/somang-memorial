@@ -2443,17 +2443,17 @@ export const appRouter = router({
         if (!subscription) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "문자 알림 신청을 찾을 수 없습니다.",
+            message: "추도일 알림 신청을 찾을 수 없습니다.",
           });
         }
         await updateReminderSubscriptionStatus(input.id, input.status);
-        // 문자 알림을 취소·복구한 관리자를 남긴다. 번호는 가린다 (2026-09-14).
+        // 추도일 알림을 취소·복구한 관리자를 남긴다. 번호는 가린다 (2026-09-14).
         await createAdminAuditLog({
           adminUserId: ctx.user.id,
           action: "reminder.status.update",
           beforeValue: subscription.status,
           afterValue: input.status,
-          note: `문자 알림 ${subscription.id} · ${maskPhoneForAudit(
+          note: `추도일 알림 ${subscription.id} · ${maskPhoneForAudit(
             subscription.phone
           )} · ${subscription.memorialName} (${subscription.memorialSlug})`,
         });

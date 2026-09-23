@@ -477,7 +477,7 @@ function formatAuditAction(action: string) {
   if (action === "kiosk_inquiry.create") return "문의 접수";
   if (action === "kiosk_inquiry.status.update") return "문의 처리 상태";
   if (action === "letter.status.update") return "편지 숨김/게시";
-  if (action === "reminder.status.update") return "문자 알림 취소/복구";
+  if (action === "reminder.status.update") return "추도일 알림 취소/복구";
   if (action === "user.delete") return "회원 탈퇴";
   if (action === "memorial.owner.transfer") return "추모관 주인 넘김(탈퇴)";
   return action;

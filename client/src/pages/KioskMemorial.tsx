@@ -30,6 +30,7 @@ import {
 } from "@/lib/kioskSubmissionLock";
 import { MEMORIAL_REMINDER_SIGNUP_ENABLED } from "@/lib/featureFlags";
 import { useReminderSignup } from "@/hooks/useReminderSignup";
+import { REMINDER_PRIVACY_NOTICE } from "@shared/consent";
 import { lockPageScroll } from "@/lib/scrollLock";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -2105,7 +2106,16 @@ function KioskReminderForm({
               className="mt-0.5 h-6 w-6 shrink-0"
             />
             <span className="break-keep [overflow-wrap:anywhere]">
-              추도일 알림 신청을 위해 휴대폰 번호를 저장하는 데 동의합니다.
+              개인정보 수집·이용에 동의합니다 (필수).
+              <span className="mt-1 block text-[13px] leading-5">
+                수집 항목: {REMINDER_PRIVACY_NOTICE.items}
+                <br />
+                이용 목적: {REMINDER_PRIVACY_NOTICE.purpose}
+                <br />
+                보유 기간: {REMINDER_PRIVACY_NOTICE.retention}
+                <br />
+                {REMINDER_PRIVACY_NOTICE.refusal}
+              </span>
             </span>
           </label>
           <button
