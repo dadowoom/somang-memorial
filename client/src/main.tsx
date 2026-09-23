@@ -7,6 +7,7 @@ import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
 import { installChunkReloadHandler } from "./lib/chunkReload";
+import { applyViewportZoomPolicy } from "./lib/viewportZoom";
 import {
   fetchWithKioskTimeout,
   isKioskPathname,
@@ -16,6 +17,8 @@ import "./index.css";
 
 // 배포 직후 옛 탭이 새 화면 조각을 못 받으면 한 번 새로고침한다 (2026-09-15).
 installChunkReloadHandler();
+// 안드로이드는 두 손가락 확대를 허락하고, 아이폰은 입력칸 자동 확대만 막는다 (2026-09-23).
+applyViewportZoomPolicy();
 
 const queryClient = new QueryClient();
 
