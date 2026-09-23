@@ -264,7 +264,7 @@ export default function PrivacyPolicy() {
         />
       </LegalSection>
 
-      <LegalSection heading="9. 개인정보 보호책임자">
+      <LegalSection heading="9. 개인정보 보호책임자와 실무 담당">
         <p>
           개인정보 처리에 관한 문의, 불만, 피해 구제는 아래로 연락해 주십시오.
           받는 즉시 성실하게 답변드리겠습니다.
@@ -272,8 +272,16 @@ export default function PrivacyPolicy() {
         <LegalTable
           columns={["구분", "내용"]}
           rows={[
-            ["성명", ORG_INFO.privacyOfficer.name],
-            ["직책", ORG_INFO.privacyOfficer.position],
+            [
+              "개인정보 보호책임자",
+              [ORG_INFO.privacyOfficer.position, ORG_INFO.privacyOfficer.name]
+                .filter(Boolean)
+                .join(" "),
+            ],
+            [
+              "개인정보 보호 실무 담당",
+              `${ORG_INFO.privacyContact.name} — ${ORG_INFO.privacyContact.role}`,
+            ],
             ["이메일", ORG_INFO.contactEmail],
             ["전화", ORG_INFO.contactPhone],
             ["주소", ORG_INFO.address],
