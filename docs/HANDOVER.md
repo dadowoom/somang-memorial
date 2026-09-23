@@ -52,6 +52,18 @@ pnpm run dev
   배포 스크립트 안의 `drizzle-kit migrate` 한 곳에서만 일어난다.
   (`db:push` 명령은 2026-09-14 에 없앴다. `generate` 를 같이 돌려 운영에 없던
   마이그레이션 파일을 새로 만들어 버릴 수 있었다.)
+- **`drizzle-kit generate` 도 쓰지 않는다** (2026-09-23). 비교 기준 파일
+  (`drizzle/meta/`)이 첫 판(0000)에 멈춰 있어서, 돌리면 이미 운영에 있는 표를
+  전부 다시 만들려는 엉뚱하고 거대한 파일이 생긴다. 표를 바꿀 때는
+  1. `drizzle/00NN_무엇.sql` 을 **손으로** 쓰고 (가능하면 `IF NOT EXISTS` 처럼
+     다시 돌려도 안전하게, 기존 칸을 지우거나 이름을 바꾸지 않게),
+  2. `drizzle/meta/_journal.json` 끝에 같은 `tag` 로 한 줄을 더하고
+     (`when` 은 앞 줄보다 크게),
+  3. `drizzle/schema.ts` 를 같은 모양으로 맞춘다.
+- 안장 명단 가져오기 도구(`server/scripts/importSomangIntermentRecords.mjs`,
+  `scripts/importInterment1995_2006.mjs`)는 **기본이 "확인만"** 이다. 결과를
+  보고 표를 백업한 뒤에 `--apply` 로 실제로 쓴다. 가족이 추모관을 만든 기록은
+  덮어쓰지 않는다.
 - 자료 삭제와 비밀번호 변경은 관리자 승인을 받고 한다.
 - 셸 스크립트(`*.sh`)는 리눅스에서 돈다. 줄바꿈은 `.gitattributes` 가 LF 로
   고정하니 건드리지 않는다.
