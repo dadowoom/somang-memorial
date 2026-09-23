@@ -6,7 +6,6 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { FormEvent, useState } from "react";
 import { Link, useLocation } from "wouter";
 
-
 export default function AccountSettings() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
@@ -76,6 +75,8 @@ export default function AccountSettings() {
             에 적어 두었습니다.
           </p>
         </section>
+
+        <PasswordAndDevicesSection />
 
         <section className="mt-16">
           <h2 className="border-b border-[#e2e2e2] pb-3 text-lg font-medium text-[#121212]">
@@ -169,5 +170,150 @@ export default function AccountSettings() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+/**
+ * 비밀번호 변경과 다른 기기 모두 로그아웃 (2026-09-23).
+ * 둘 다 다른 기기의 로그인을 끊고, 지금 이 기기는 로그인된 채 남는다.
+ */
+function PasswordAndDevicesSection() {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [nextAgain, setNextAgain] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [devicePassword, setDevicePassword] = useState("");
+  const [deviceMessage, setDeviceMessage] = useState("");
+  const changePassword = trpc.auth.changePassword.useMutation();
+  const logoutOthers = trpc.auth.logoutOtherDevices.useMutation();
+
+  async function handleChangePassword(event: FormEvent) {
+    event.preventDefault();
+    setPasswordMessage("");
+    if (next.length < 8) {
+      setPasswordMessage("새 비밀번호는 8자 이상 입력해 주세요.");
+      return;
+    }
+    if (next !== nextAgain) {
+      setPasswordMessage("새 비밀번호 두 칸이 서로 다릅니다.");
+      return;
+    }
+    try {
+      await changePassword.mutateAsync({
+        currentPassword: current,
+        newPassword: next,
+      });
+      setCurrent("");
+      setNext("");
+      setNextAgain("");
+      setPasswordMessage(
+        "비밀번호를 바꿨습니다. 다른 기기의 로그인은 모두 끊겼습니다."
+      );
+    } catch (error) {
+      setPasswordMessage(
+        error instanceof Error ? error.message : "잠시 후 다시 시도해 주세요."
+      );
+    }
+  }
+
+  async function handleLogoutOthers(event: FormEvent) {
+    event.preventDefault();
+    setDeviceMessage("");
+    try {
+      await logoutOthers.mutateAsync({ password: devicePassword });
+      setDevicePassword("");
+      setDeviceMessage(
+        "다른 기기의 로그인을 모두 끊었습니다. 이 기기는 그대로 로그인되어 있습니다."
+      );
+    } catch (error) {
+      setDeviceMessage(
+        error instanceof Error ? error.message : "잠시 후 다시 시도해 주세요."
+      );
+    }
+  }
+
+  return (
+    <section className="mt-16">
+      <h2 className="border-b border-[#e2e2e2] pb-3 text-lg font-medium text-[#121212]">
+        비밀번호와 로그인
+      </h2>
+
+      <form onSubmit={handleChangePassword} className="mt-6 space-y-4">
+        <p className="text-sm font-medium text-[#121212]">비밀번호 바꾸기</p>
+        <input
+          type="password"
+          required
+          value={current}
+          onChange={event => setCurrent(event.target.value)}
+          placeholder="지금 비밀번호"
+          className={inputClass}
+          autoComplete="current-password"
+        />
+        <input
+          type="password"
+          required
+          value={next}
+          onChange={event => setNext(event.target.value)}
+          placeholder="새 비밀번호 (8자 이상)"
+          className={inputClass}
+          autoComplete="new-password"
+        />
+        <input
+          type="password"
+          required
+          value={nextAgain}
+          onChange={event => setNextAgain(event.target.value)}
+          placeholder="새 비밀번호 한 번 더"
+          className={inputClass}
+          autoComplete="new-password"
+        />
+        {passwordMessage ? (
+          <p className="text-xs leading-5 text-[#616161]" role="status">
+            {passwordMessage}
+          </p>
+        ) : null}
+        <button
+          type="submit"
+          disabled={changePassword.isPending}
+          className="h-12 w-full bg-[#18181b] text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+        >
+          {changePassword.isPending ? "바꾸는 중..." : "비밀번호 바꾸기"}
+        </button>
+      </form>
+
+      <form
+        onSubmit={handleLogoutOthers}
+        className="mt-10 space-y-4 border-t border-[#e2e2e2] pt-6"
+      >
+        <p className="text-sm font-medium text-[#121212]">
+          다른 기기 모두 로그아웃
+        </p>
+        <p className="text-sm leading-7 text-[#4a4a4a]">
+          교회나 다른 사람의 컴퓨터에서 로그아웃하지 않고 나오셨다면 눌러
+          주세요. 비밀번호는 바뀌지 않고, 지금 이 기기만 로그인된 채 남습니다.
+        </p>
+        <input
+          type="password"
+          required
+          value={devicePassword}
+          onChange={event => setDevicePassword(event.target.value)}
+          placeholder="지금 비밀번호"
+          className={inputClass}
+          autoComplete="current-password"
+        />
+        {deviceMessage ? (
+          <p className="text-xs leading-5 text-[#616161]" role="status">
+            {deviceMessage}
+          </p>
+        ) : null}
+        <button
+          type="submit"
+          disabled={logoutOthers.isPending}
+          className="h-12 w-full border border-[#18181b] text-sm font-medium text-[#121212] transition-colors hover:bg-[#18181b] hover:text-white disabled:opacity-40"
+        >
+          {logoutOthers.isPending ? "처리 중..." : "다른 기기 모두 로그아웃"}
+        </button>
+      </form>
+    </section>
   );
 }
