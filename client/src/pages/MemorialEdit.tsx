@@ -271,6 +271,12 @@ export default function MemorialEdit() {
     ) {
       nextErrors.accessPassword =
         "비공개 추모관은 입장 비밀번호를 입력해 주세요.";
+    } else if (
+      form.visibility === "private" &&
+      form.accessPassword.trim() &&
+      form.accessPassword.trim().length < 4
+    ) {
+      nextErrors.accessPassword = "입장 비밀번호는 4글자 이상으로 정해 주세요.";
     }
 
     setErrors(nextErrors);

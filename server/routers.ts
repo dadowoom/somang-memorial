@@ -293,6 +293,19 @@ function consumePublicSubmissionAttempt(
   limiter.recordFailure(key);
 }
 
+// 비공개 추모관 입장 비밀번호. 새로 정하거나 바꿀 때는 4글자 이상 (2026-09-23).
+// 비워 두면 "바꾸지 않음"이다. 이미 정해 둔 짧은 비밀번호는 그대로 열린다.
+const MEMORIAL_ACCESS_PASSWORD_MIN = 4;
+const memorialAccessPasswordInput = z
+  .string()
+  .trim()
+  .max(80)
+  .refine(
+    value => value === "" || value.length >= MEMORIAL_ACCESS_PASSWORD_MIN,
+    `입장 비밀번호는 ${MEMORIAL_ACCESS_PASSWORD_MIN}글자 이상으로 정해 주세요.`
+  )
+  .optional();
+
 const memorialCreateInput = z.object({
   name: z.string().trim().min(1).max(120),
   role: z.string().trim().min(1).max(80),
@@ -311,7 +324,7 @@ const memorialCreateInput = z.object({
   serviceTime: z.string().trim().max(40).optional(),
   memorialDay: z.string().trim().max(40).optional(),
   visibility: z.enum(["public", "private"]).default("public"),
-  accessPassword: z.string().trim().max(80).optional(),
+  accessPassword: memorialAccessPasswordInput,
   managerMemo: z.string().trim().max(2000).optional(),
   timeline: z
     .array(
@@ -659,7 +672,7 @@ export const memorialUpdateInput = z.object({
   serviceTime: z.string().trim().max(40).nullable().optional(),
   memorialDay: z.string().trim().max(40).nullable().optional(),
   visibility: z.enum(["public", "private"]).optional(),
-  accessPassword: z.string().trim().max(80).optional(),
+  accessPassword: memorialAccessPasswordInput,
   status: z.enum(["pending", "published", "private"]).optional(),
   managerMemo: z.string().trim().max(2000).nullable().optional(),
   timeline: z
