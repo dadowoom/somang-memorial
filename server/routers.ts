@@ -65,6 +65,7 @@ import {
   listRecentMemorialLetters,
   normalizeEmail,
   deleteUserAccount,
+  appendAdminAuditNote,
   deleteMemorialById,
   verifyUserPasswordById,
   createPasswordResetToken,
@@ -935,9 +936,27 @@ export const appRouter = router({
         const attemptKey = passwordAttemptKey(ctx.req, "delete-account");
         ensurePasswordAttemptAllowed(attemptKey, loginAttemptLimiter);
 
+        // 넘긴 추모관과 탈퇴 기록은 회원 삭제와 한 묶음으로 저장된다 (2026-09-23, L-4).
+        // 탈퇴는 되돌릴 수 없으므로 "누가 언제"만이라도 남긴다. 회원 행이 지워지므로
+        // targetUserId 를 걸 수 없어 번호와 가린 이메일을 메모에 적는다 (2026-09-14).
         const removed = await deleteUserAccount({
           userId: ctx.user.id,
           password: input.password,
+          auditFor: transfers => [
+            // 가족에게 넘어간 추모관은 새 주인을 대상으로 기록한다.
+            ...transfers.map(transfer => ({
+              adminUserId: null,
+              targetUserId: transfer.toUserId,
+              action: "memorial.owner.transfer",
+              note: `${transfer.name} (${transfer.slug}) · 탈퇴한 회원번호 ${ctx.user.id} → 가족 ${transfer.toName ?? transfer.toUserId}`,
+            })),
+            {
+              adminUserId: null,
+              targetUserId: null,
+              action: "user.delete",
+              note: `회원 탈퇴 (회원번호 ${ctx.user.id}, ${maskEmailForAudit(ctx.user.email)})`,
+            },
+          ],
         });
 
         if (!removed.ok && removed.reason === "password") {
@@ -959,23 +978,6 @@ export const appRouter = router({
         }
 
         loginAttemptLimiter.recordSuccess(attemptKey);
-        // 가족에게 넘어간 추모관은 새 주인을 대상으로 기록한다.
-        for (const transfer of removed.handedOver) {
-          await createAdminAuditLog({
-            adminUserId: null,
-            targetUserId: transfer.toUserId,
-            action: "memorial.owner.transfer",
-            note: `${transfer.name} (${transfer.slug}) · 탈퇴한 회원번호 ${ctx.user.id} → 가족 ${transfer.toName ?? transfer.toUserId}`,
-          });
-        }
-        // 탈퇴는 되돌릴 수 없으므로 "누가 언제"만이라도 남긴다. 회원 행은 이미 지워져
-        // targetUserId 를 걸 수 없으니 번호와 가린 이메일을 메모에 적는다 (2026-09-14).
-        await createAdminAuditLog({
-          adminUserId: null,
-          targetUserId: null,
-          action: "user.delete",
-          note: `회원 탈퇴 (회원번호 ${ctx.user.id}, ${maskEmailForAudit(ctx.user.email)})`,
-        });
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
 
@@ -1644,7 +1646,17 @@ export const appRouter = router({
         // 아무 데도 쓰이지 않게 된 파일만 바로 휴지통으로 옮긴다. 다른 곳에서도
         // 쓰는 사진은 그대로 남는다.
         const before = await collectReferencedUploadKeys();
-        await deleteMemorialById(existing.id);
+        // 지우기와 관리 기록은 한 묶음이다 (2026-09-23, L-4).
+        const auditId = await deleteMemorialById(existing.id, {
+          adminUserId: isAdmin ? ctx.user.id : null,
+          targetUserId: existing.createdByUserId ?? null,
+          action: "memorial.delete",
+          beforeValue: `${existing.status}/${existing.visibility}`,
+          afterValue: "deleted",
+          note: `${existing.name} (${existing.slug}) · ${
+            isAdmin && !isOwner ? "관리자" : "만든 분"
+          }이 삭제`,
+        });
         let movedFiles = 0;
         try {
           const after = await collectReferencedUploadKeys();
@@ -1654,17 +1666,15 @@ export const appRouter = router({
           // 파일은 새벽 정리가 다시 찾아 치운다. 삭제 자체는 끝났다.
           console.error("[MemorialDelete] 사진 파일 정리 실패", error);
         }
-
-        await createAdminAuditLog({
-          adminUserId: isAdmin ? ctx.user.id : null,
-          targetUserId: existing.createdByUserId ?? null,
-          action: "memorial.delete",
-          beforeValue: `${existing.status}/${existing.visibility}`,
-          afterValue: "deleted",
-          note: `${existing.name} (${existing.slug}) · ${
-            isAdmin && !isOwner ? "관리자" : "만든 분"
-          }이 삭제 · 사진 파일 ${movedFiles}개 정리`,
-        });
+        try {
+          await appendAdminAuditNote(
+            auditId,
+            ` · 사진 파일 ${movedFiles}개 정리`
+          );
+        } catch (error) {
+          // 삭제와 기록은 이미 저장됐다. 파일 개수만 못 적었다.
+          console.error("[MemorialDelete] 기록에 파일 개수 덧붙이기 실패", error);
+        }
 
         return { success: true } as const;
       }),
@@ -2452,8 +2462,9 @@ export const appRouter = router({
         }
 
         if (targetUser.role !== input.role) {
-          await updateAdminUserRole(input.id, input.role);
-          await createAdminAuditLog({
+          // 권한 변경과 기록은 한 묶음이다 (2026-09-23, L-4). 동시에 두 관리자를
+          // 내려 관리자가 0명이 되는 일도 여기서 한 번 더 막는다.
+          const changed = await updateAdminUserRole(input.id, input.role, {
             adminUserId: ctx.user.id,
             targetUserId: input.id,
             action: "user.role.update",
@@ -2461,6 +2472,12 @@ export const appRouter = router({
             afterValue: input.role,
             note: `${targetUser.name || targetUser.email || "회원"} 권한 변경`,
           });
+          if (!changed.ok) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "마지막 관리자 권한은 해제할 수 없습니다.",
+            });
+          }
         }
 
         return { success: true };
@@ -2485,8 +2502,8 @@ export const appRouter = router({
         }
 
         if (targetUser.approvalStatus !== input.approvalStatus) {
-          await updateAdminUserStatus(input.id, input.approvalStatus);
-          await createAdminAuditLog({
+          // 상태 변경과 기록은 한 묶음이다 (2026-09-23, L-4).
+          await updateAdminUserStatus(input.id, input.approvalStatus, {
             adminUserId: ctx.user.id,
             targetUserId: input.id,
             action: "user.status.update",
