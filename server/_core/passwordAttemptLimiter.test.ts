@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   clientAddress,
   createPasswordAttemptLimiter,
+  normalizeAttemptSubject,
 } from "./passwordAttemptLimiter";
 
 describe("password attempt limiter", () => {
@@ -86,5 +87,24 @@ describe("client address behind nginx", () => {
   it("ignores forwarded headers unless a proxy is trusted", () => {
     delete process.env.TRUST_PROXY;
     expect(clientAddress(req("203.0.113.7"))).toBe("127.0.0.1");
+  });
+});
+
+describe("시도 횟수를 셀 이름 맞추기", () => {
+  it("대소문자·전각·보이지 않는 글자·빈칸이 달라도 같은 이름이 된다", () => {
+    const zwsp = String.fromCharCode(0x200b);
+    const bom = String.fromCharCode(0xfeff);
+    const fullwidthA = String.fromCharCode(0xff21);
+    const base = normalizeAttemptSubject("kim-somang");
+    for (const variant of [
+      "KIM-somang",
+      "Kim-Somang",
+      `kim-${zwsp}somang`,
+      `${bom}kim-somang `,
+      `kim-som${fullwidthA}ng`,
+    ]) {
+      expect(normalizeAttemptSubject(variant), variant).toBe(base);
+    }
+    expect(normalizeAttemptSubject("kim-somang-2")).not.toBe(base);
   });
 });

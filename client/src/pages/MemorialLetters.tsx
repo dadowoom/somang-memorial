@@ -152,20 +152,28 @@ export default function MemorialLetters() {
                     {letter.content}
                   </p>
                   <div className="mt-4">
-                    <button
-                      type="button"
-                      disabled={update.isPending}
-                      onClick={() =>
-                        void changeStatus(
-                          letter.id,
-                          letter.author,
-                          hidden ? "published" : "hidden"
-                        )
-                      }
-                      className={subtleButtonClass}
-                    >
-                      {hidden ? "다시 보이게 하기" : "이 편지 숨기기"}
-                    </button>
+                    {hidden && letter.lockedByChurch ? (
+                      // 교회(관리자)가 숨긴 편지는 가족이 되살리지 않는다 (2026-09-25).
+                      <p className="text-sm leading-6 text-[#616161]">
+                        교회에서 숨긴 편지입니다. 다시 보이게 하려면 교회에
+                        문의해 주세요.
+                      </p>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={update.isPending}
+                        onClick={() =>
+                          void changeStatus(
+                            letter.id,
+                            letter.author,
+                            hidden ? "published" : "hidden"
+                          )
+                        }
+                        className={subtleButtonClass}
+                      >
+                        {hidden ? "다시 보이게 하기" : "이 편지 숨기기"}
+                      </button>
+                    )}
                   </div>
                 </li>
               );

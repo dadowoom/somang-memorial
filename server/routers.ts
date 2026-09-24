@@ -89,7 +89,13 @@ import {
   verifyUserPassword,
   verifyMemorialAccessPassword,
   verifyMemorialFamilyRoomPassword,
+  findMemorialIdBySlug,
+  listChurchHiddenLetterIds,
 } from "./db";
+import {
+  LETTER_STATUS_ACTION,
+  letterStatusNotePrefix,
+} from "../shared/letterHideSource";
 import { nanoid } from "nanoid";
 import { decodeImageDataUrl } from "./_core/imageUpload";
 import { saveThumbnail } from "./_core/thumbnailStorage";
@@ -116,6 +122,7 @@ import {
 import { getSessionCookieOptions } from "./_core/cookies";
 import {
   createPasswordAttemptLimiter,
+  normalizeAttemptSubject,
   passwordAttemptKey,
   subjectAttemptKey,
 } from "./_core/passwordAttemptLimiter";
@@ -241,6 +248,20 @@ const reminderDailyTotalLimiter = createPasswordAttemptLimiter({
   failureWindowMs: 24 * 60 * 60 * 1000,
   blockMs: 24 * 60 * 60 * 1000,
 });
+
+/**
+ * 비공개 추모관·가족관 비밀번호 시도 횟수를 셀 대상 (2026-09-25).
+ * 주소로 찾은 추모관의 번호로 센다. 찾지 못한 주소는 모양을 맞춘 주소로 센다.
+ */
+async function protectedRoomAttemptSubject(
+  kind: "memorial" | "family-room",
+  slug: string
+) {
+  const memorialId = await findMemorialIdBySlug(slug);
+  return memorialId === null
+    ? `${kind}:slug:${normalizeAttemptSubject(slug)}`
+    : `${kind}:id:${memorialId}`;
+}
 
 function ensurePasswordAttemptAllowed(
   key: string,
@@ -1412,8 +1433,12 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const attemptKey = passwordAttemptKey(ctx.req, `memorial:${input.slug}`);
-        const subjectKey = subjectAttemptKey(`memorial:${input.slug}`);
+        const subject = await protectedRoomAttemptSubject(
+          "memorial",
+          input.slug
+        );
+        const attemptKey = passwordAttemptKey(ctx.req, subject);
+        const subjectKey = subjectAttemptKey(subject);
         ensurePasswordAttemptAllowed(attemptKey);
         ensurePasswordAttemptAllowed(subjectKey, protectedRoomSubjectLimiter);
         const recordFailure = () => {
@@ -1822,10 +1847,10 @@ export const appRouter = router({
         // 편지를 숨기거나 되살린 관리자를 남긴다 (2026-09-14).
         await createAdminAuditLog({
           adminUserId: ctx.user.id,
-          action: "letter.status.update",
+          action: LETTER_STATUS_ACTION,
           beforeValue: letter.status,
           afterValue: input.status,
-          note: `편지 ${letter.id} · ${letter.author} → ${letter.memorialName}${
+          note: `${letterStatusNotePrefix(letter.id)}${letter.author} → ${letter.memorialName}${
             letter.memorialSlug ? ` (${letter.memorialSlug})` : ""
           }`,
         });
@@ -1841,11 +1866,20 @@ export const appRouter = router({
           ctx.user,
           input.memorialSlug
         );
+        const letters = await listMemorialLettersForFamily(memorial.id);
+        // 관리자(교회)가 숨긴 편지는 가족이 되살릴 수 없다 (2026-09-25).
+        const churchHidden =
+          ctx.user.role === "admin"
+            ? new Set<number>()
+            : await listChurchHiddenLetterIds(memorial.id);
         return {
           memorialName: [memorial.name, memorial.role].filter(Boolean).join(" "),
           memorialSlug: memorial.slug,
           memorialStatus: memorial.status,
-          letters: await listMemorialLettersForFamily(memorial.id),
+          letters: letters.map(letter => ({
+            ...letter,
+            lockedByChurch: churchHidden.has(letter.id),
+          })),
         };
       }),
 
@@ -1862,6 +1896,19 @@ export const appRouter = router({
           ctx.user,
           input.memorialSlug
         );
+        // 관리자(교회)가 숨긴 편지는 관리자만 다시 보이게 한다 (2026-09-25).
+        if (ctx.user.role !== "admin" && input.status === "published") {
+          const locked = await listChurchHiddenLetterIds(memorial.id, [
+            input.letterId,
+          ]);
+          if (locked.has(input.letterId)) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message:
+                "교회에서 숨긴 편지는 다시 보이게 할 수 없습니다. 교회에 문의해 주세요.",
+            });
+          }
+        }
         const before = await setMemorialLetterStatusForMemorial({
           letterId: input.letterId,
           memorialId: memorial.id,
@@ -1876,10 +1923,10 @@ export const appRouter = router({
         if (before.status !== input.status) {
           await createAdminAuditLog({
             ...familyAuditActor(ctx.user),
-            action: "letter.status.update",
+            action: LETTER_STATUS_ACTION,
             beforeValue: before.status,
             afterValue: input.status,
-            note: `편지 ${input.letterId} · ${before.author} → ${memorial.name} (${memorial.slug}) · ${
+            note: `${letterStatusNotePrefix(input.letterId)}${before.author} → ${memorial.name} (${memorial.slug}) · ${
               ctx.user.role === "admin" ? "관리자" : "가족"
             }이 변경`,
           });
@@ -1997,13 +2044,12 @@ export const appRouter = router({
     verify: publicProcedure
       .input(familyRoomVerifyInput)
       .mutation(async ({ ctx, input }) => {
-        const attemptKey = passwordAttemptKey(
-          ctx.req,
-          `family-room:${input.memorialSlug}`
+        const subject = await protectedRoomAttemptSubject(
+          "family-room",
+          input.memorialSlug
         );
-        const subjectKey = subjectAttemptKey(
-          `family-room:${input.memorialSlug}`
-        );
+        const attemptKey = passwordAttemptKey(ctx.req, subject);
+        const subjectKey = subjectAttemptKey(subject);
         ensurePasswordAttemptAllowed(attemptKey);
         ensurePasswordAttemptAllowed(subjectKey, protectedRoomSubjectLimiter);
         const recordFailure = () => {
