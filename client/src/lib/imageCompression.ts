@@ -2,11 +2,17 @@ import {
   THUMBNAIL_MAX_BYTES,
   THUMBNAIL_MAX_DIMENSION,
 } from "@shared/thumbnail";
+import {
+  UPLOAD_MAX_BYTES,
+  UPLOAD_MAX_DIMENSION,
+  UPLOAD_TARGET_BYTES,
+} from "@shared/imageLimits";
 
-const DEFAULT_MAX_BYTES = 8 * 1024 * 1024;
-const DEFAULT_MAX_DIMENSION = 2400;
-const MIN_QUALITY = 0.58;
-const QUALITY_STEP = 0.08;
+const START_QUALITY = 0.82;
+const MIN_QUALITY = 0.6;
+const QUALITY_STEP = 0.06;
+/** 품질을 낮춰도 크면 이 크기까지만 더 줄인다. */
+const MIN_SHRINK_DIMENSION = 1200;
 
 type CompressOptions = {
   maxBytes?: number;
@@ -67,31 +73,34 @@ function canvasToBlob(
   });
 }
 
-function extensionForMime(mimeType: string) {
-  if (mimeType === "image/png") return "png";
-  if (mimeType === "image/webp") return "webp";
-  return "jpg";
-}
-
 function replaceExtension(fileName: string, ext: string) {
   const base = fileName.replace(/\.[^.]+$/, "");
   return `${base || "image"}.${ext}`;
 }
 
+/**
+ * 올리기 전에 사진을 줄인다 (2026-09-24, shared/imageLimits.ts).
+ *
+ * 파일 크기와 상관없이 긴 변 2048px, 1MB 안팎의 JPEG 로 만든다. 이미 작은
+ * JPEG(2048px·1MB 이하)만 그대로 둔다. 서버는 이보다 큰 사진을 받지 않는다.
+ */
 export async function compressImageFile(
   file: File,
   options: CompressOptions = {}
 ): Promise<CompressedImage> {
-  const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
-  const maxDimension = options.maxDimension ?? DEFAULT_MAX_DIMENSION;
+  const targetBytes = options.maxBytes ?? UPLOAD_TARGET_BYTES;
+  const maxDimension = options.maxDimension ?? UPLOAD_MAX_DIMENSION;
 
   if (!file.type.startsWith("image/")) {
     throw new Error("이미지 파일만 업로드할 수 있습니다.");
   }
 
+  const image = await loadImage(file);
+  const longSide = Math.max(image.naturalWidth, image.naturalHeight);
   if (
-    file.size <= maxBytes &&
-    ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)
+    file.type === "image/jpeg" &&
+    file.size <= targetBytes &&
+    longSide <= maxDimension
   ) {
     return {
       dataUrl: await readBlobAsDataUrl(file),
@@ -102,58 +111,44 @@ export async function compressImageFile(
     };
   }
 
-  const image = await loadImage(file);
-  const scale = Math.min(
-    1,
-    maxDimension / Math.max(image.naturalWidth, image.naturalHeight)
-  );
-  const width = Math.max(1, Math.round(image.naturalWidth * scale));
-  const height = Math.max(1, Math.round(image.naturalHeight * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
+  const draw = (limit: number) => {
+    const scale = Math.min(1, limit / longSide);
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("이미지 압축을 준비할 수 없습니다.");
+    // 투명한 PNG 가 JPEG 에서 검게 나오지 않도록 흰 바탕을 먼저 깐다.
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+    return canvas;
+  };
 
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("이미지 압축을 준비할 수 없습니다.");
-  context.drawImage(image, 0, 0, width, height);
-
-  let outputType =
-    file.type === "image/png" && file.size <= maxBytes * 1.5
-      ? "image/png"
-      : "image/jpeg";
-  let outputExt = extensionForMime(outputType);
-  let quality = outputType === "image/png" ? 0.92 : 0.86;
-  let blob = await canvasToBlob(canvas, outputType, quality);
-
-  while (
-    blob.size > maxBytes &&
-    outputType !== "image/png" &&
-    quality > MIN_QUALITY
-  ) {
+  let limit = Math.min(maxDimension, longSide);
+  let canvas = draw(limit);
+  let quality = START_QUALITY;
+  let blob = await canvasToBlob(canvas, "image/jpeg", quality);
+  while (blob.size > targetBytes && quality > MIN_QUALITY) {
     quality = Math.max(MIN_QUALITY, quality - QUALITY_STEP);
-    blob = await canvasToBlob(canvas, outputType, quality);
+    blob = await canvasToBlob(canvas, "image/jpeg", quality);
   }
-
-  let currentWidth = width;
-  let currentHeight = height;
-  while (blob.size > maxBytes && currentWidth > 640 && currentHeight > 640) {
-    outputType = "image/jpeg";
-    outputExt = "jpg";
-    const smallerCanvas = document.createElement("canvas");
-    const reduceScale = Math.sqrt(maxBytes / blob.size) * 0.9;
-    currentWidth = Math.max(1, Math.round(currentWidth * reduceScale));
-    currentHeight = Math.max(1, Math.round(currentHeight * reduceScale));
-    smallerCanvas.width = currentWidth;
-    smallerCanvas.height = currentHeight;
-    const smallerContext = smallerCanvas.getContext("2d");
-    if (!smallerContext) throw new Error("이미지 압축을 준비할 수 없습니다.");
-    smallerContext.drawImage(image, 0, 0, currentWidth, currentHeight);
-    blob = await canvasToBlob(smallerCanvas, outputType, 0.78);
+  while (blob.size > targetBytes && limit > MIN_SHRINK_DIMENSION) {
+    limit = Math.max(MIN_SHRINK_DIMENSION, Math.round(limit * 0.85));
+    canvas = draw(limit);
+    blob = await canvasToBlob(canvas, "image/jpeg", 0.78);
+  }
+  if (blob.size > UPLOAD_MAX_BYTES) {
+    throw new Error(
+      "사진을 충분히 줄이지 못했습니다. 다른 사진으로 올려 주세요."
+    );
   }
 
   return {
     dataUrl: await readBlobAsDataUrl(blob),
-    fileName: replaceExtension(file.name, outputExt),
+    fileName: replaceExtension(file.name, "jpg"),
     compressed: true,
     originalBytes: file.size,
     outputBytes: blob.size,
@@ -163,8 +158,8 @@ export async function compressImageFile(
 /**
  * 사진첩 격자에 쓸 작은 사진(긴 변 800px JPEG)을 만든다 (2026-09-19,
  * shared/thumbnail.ts). 만들지 못하면 undefined — 올리기는 그대로 하고 화면은
- * 원본을 쓴다. 휴대폰 사진은 8MB 이하면 원본 그대로 올라가므로(4000px 넘는
- * 것도 흔하다) 격자에서는 이 작은 사진이 큰 차이를 만든다.
+ * 원본을 쓴다. 올리는 사진도 2048px 로 줄이지만(2026-09-24), 격자에는 800px
+ * 작은 사진이 훨씬 가볍다.
  */
 export async function makeThumbnailDataUrl(
   file: File

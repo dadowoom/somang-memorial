@@ -59,10 +59,10 @@ async function startServer() {
   app.use(compression());
   // 보안 정책 어긋남 알림 (application/csp-report). 아래 express.json 보다 먼저.
   registerCspReportRoute(app);
-  // 20MB is the largest permitted source image; base64 encoding needs a
-  // little additional room without allowing arbitrary 50MB request bodies.
-  app.use(express.json({ limit: "30mb" }));
-  app.use(express.urlencoded({ limit: "30mb", extended: true }));
+  // 사진은 1.5MB 까지 받는다 (2026-09-24, shared/imageLimits.ts). base64 로 바꾸면
+  // 2MB 쯤, 작은 사진(800KB 이하)을 더해도 5MB 안이다. 전에는 30MB 까지 받았다.
+  app.use(express.json({ limit: "5mb" }));
+  app.use(express.urlencoded({ limit: "5mb", extended: true }));
   app.get("/healthz", (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
     res.status(200).json({ status: "ok" });
