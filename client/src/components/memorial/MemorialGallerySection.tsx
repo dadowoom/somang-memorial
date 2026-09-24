@@ -114,6 +114,9 @@ export function uploadFailureReason(error: unknown) {
   if (error instanceof Error && error.message.includes("열 수 없습니다")) {
     return "이 사진은 열 수 없는 형식입니다. JPG·PNG 사진을 고르거나, 휴대폰 카메라 설정에서 '호환성 우선'으로 바꿔 주세요.";
   }
+  if (error instanceof Error && error.message.includes("충분히 줄이지 못했습니다")) {
+    return error.message;
+  }
   return "사진을 올리지 못했습니다. 인터넷 연결을 확인해 주세요.";
 }
 
