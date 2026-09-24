@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => {
     claimLetterNotice: vi.fn(),
     revertLetterNotice: vi.fn(),
     skipLetterNotice: vi.fn(),
+    createAdminAuditLog: vi.fn(),
     sendAlimtalk: vi.fn(),
     getAlimtalkConfigStatus: vi.fn(),
   };
@@ -20,6 +21,7 @@ vi.mock("../db", () => ({
   claimLetterNotice: mocks.claimLetterNotice,
   revertLetterNotice: mocks.revertLetterNotice,
   skipLetterNotice: mocks.skipLetterNotice,
+  createAdminAuditLog: mocks.createAdminAuditLog,
 }));
 vi.mock("./alimtalk", async () => {
   const actual =
@@ -31,7 +33,12 @@ vi.mock("./alimtalk", async () => {
   };
 });
 
-import { runLetterNoticeJob, seoulDateKey } from "./letterNoticeScheduler";
+import {
+  LETTER_NOTICE_MAX_TRIES,
+  resetLetterNoticeTries,
+  runLetterNoticeJob,
+  seoulDateKey,
+} from "./letterNoticeScheduler";
 
 // 서울 2026-09-24 오전 10시 / 밤 11시
 const MORNING = new Date("2026-09-24T01:00:00Z");
@@ -50,6 +57,9 @@ const candidate = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetLetterNoticeTries();
+  mocks.revertLetterNotice.mockResolvedValue(undefined);
+  mocks.createAdminAuditLog.mockResolvedValue(undefined);
   mocks.getAlimtalkConfigStatus.mockReturnValue({ enabled: true });
   mocks.listLetterNoticeCandidates.mockResolvedValue([candidate]);
   mocks.listLetterNoticeRecipients.mockResolvedValue([
@@ -138,5 +148,55 @@ describe("새 편지 알림 보내기", () => {
     expect(mocks.skipLetterNotice).toHaveBeenCalledWith(5, 33);
     expect(mocks.claimLetterNotice).not.toHaveBeenCalled();
     expect(mocks.sendAlimtalk).not.toHaveBeenCalled();
+  });
+
+  // 2026-09-24: 계속 실패하는 가족에게는 3번까지만 보내고 멈춘다.
+  it("같은 새 편지 알림을 3번 모두 못 보내면 멈추고 관리 기록에 남긴다", async () => {
+    mocks.sendAlimtalk.mockRejectedValue(new Error("카카오톡 사용자 아님"));
+
+    for (let run = 1; run <= LETTER_NOTICE_MAX_TRIES; run += 1) {
+      await runLetterNoticeJob(MORNING);
+    }
+
+    // 1·2번째는 되돌려 다시 보내고, 3번째는 되돌리지 않고 멈춘다
+    expect(mocks.revertLetterNotice).toHaveBeenCalledTimes(2);
+    expect(mocks.createAdminAuditLog).toHaveBeenCalledTimes(1);
+    expect(mocks.createAdminAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "letter_notice.give_up",
+        afterValue: "3번 실패로 멈춤",
+      })
+    );
+  });
+
+  it("새 편지가 와서 알릴 묶음이 바뀌면 처음부터 다시 센다", async () => {
+    mocks.sendAlimtalk.mockRejectedValue(new Error("카카오톡 사용자 아님"));
+    await runLetterNoticeJob(MORNING);
+    await runLetterNoticeJob(MORNING);
+    mocks.listLetterNoticeCandidates.mockResolvedValue([
+      { ...candidate, lastLetterId: 33, maxLetterId: 35, newCount: 2 },
+    ]);
+    await runLetterNoticeJob(MORNING);
+    expect(mocks.createAdminAuditLog).not.toHaveBeenCalled();
+    expect(mocks.revertLetterNotice).toHaveBeenCalledTimes(3);
+  });
+
+  it("한 추모관에서 오류가 나도 나머지 추모관 알림은 나간다", async () => {
+    mocks.listLetterNoticeCandidates.mockResolvedValue([
+      { ...candidate, memorialId: 5 },
+      { ...candidate, memorialId: 6, memorialName: "이믿음" },
+    ]);
+    mocks.listLetterNoticeRecipients.mockImplementation(
+      async (memorialId: number) => {
+        if (memorialId === 5) throw new Error("DB 연결 끊김");
+        return [{ userId: 9, phone: "01000000002" }];
+      }
+    );
+
+    const result = await runLetterNoticeJob(MORNING);
+
+    expect(mocks.sendAlimtalk).toHaveBeenCalledTimes(1);
+    expect(mocks.sendAlimtalk.mock.calls[0][1].message).toContain("이믿음");
+    expect(result).toMatchObject({ sent: 1 });
   });
 });

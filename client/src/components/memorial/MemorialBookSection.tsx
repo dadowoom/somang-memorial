@@ -35,6 +35,7 @@ import {
 } from "@/lib/bookLayout";
 import { lockPageScroll } from "@/lib/scrollLock";
 import { toast } from "sonner";
+import { uploadFailureReason } from "./MemorialGallerySection";
 import "./memorialBook.css";
 
 type BookPage = {
@@ -1083,7 +1084,6 @@ function PageEditModal({
       setPhotoKey(data.key);
       toast.success("사진이 업로드되었습니다.");
     },
-    onError: error => toast.error(error.message),
   });
 
   const uploadPagePhoto = async (file: File) => {
@@ -1095,6 +1095,9 @@ function PageEditModal({
         fileName: compressed.fileName,
         folder: "book-pages",
       });
+    } catch (error) {
+      // 사진 줄이기 실패와 올리기 실패를 여기서 함께 알린다.
+      toast.error(uploadFailureReason(error));
     } finally {
       setUploading(false);
     }

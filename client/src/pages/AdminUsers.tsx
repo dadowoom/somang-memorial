@@ -488,6 +488,8 @@ function formatAuditAction(action: string) {
   if (action === "interment.update") return "안장 기록 수정";
   if (action === "interment.create") return "안장 기록 추가";
   if (action === "interment.delete") return "안장 기록 삭제";
+  // 2026-09-24: 새 편지 알림을 3번 모두 못 보내 멈춘 기록
+  if (action === "letter_notice.give_up") return "새 편지 알림 멈춤(발송 실패)";
   return action;
 }
 
@@ -496,6 +498,7 @@ function formatAuditActor(log: AdminAuditLog) {
   if (log.adminName || log.adminEmail) return log.adminName || log.adminEmail;
   if (log.adminUserId) return "관리자";
   if (log.action === "user.delete") return "탈퇴한 회원 본인";
+  if (log.action === "letter_notice.give_up") return "자동 알림";
   return "유가족 본인";
 }
 
