@@ -239,7 +239,7 @@ export default function AdminKioskPosters() {
               {busy ? "올리는 중입니다" : "사진 고르기 (여러 장 가능)"}
             </span>
             <span className="text-xs text-[#777]">
-              JPG · PNG · WEBP · 한 장당 20MB까지
+              JPG · PNG · WEBP · 큰 사진은 올릴 때 자동으로 줄입니다
             </span>
             <input
               type="file"

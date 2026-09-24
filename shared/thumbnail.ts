@@ -12,7 +12,7 @@
  */
 export const THUMBNAIL_SUFFIX = ".thumb.jpg";
 export const THUMBNAIL_MAX_DIMENSION = 800;
-/** 작은 사진은 이보다 클 수 없다. 원본(20MB)과 같은 한도를 쓸 이유가 없다. */
+/** 작은 사진은 이보다 클 수 없다. 원본 한도(1.5MB, shared/imageLimits.ts)보다 훨씬 작다. */
 export const THUMBNAIL_MAX_BYTES = 600 * 1024;
 
 /** 원본 경로(또는 주소)에서 작은 사진의 경로(주소)를 만든다. */

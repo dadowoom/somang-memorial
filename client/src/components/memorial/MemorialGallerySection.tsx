@@ -100,7 +100,7 @@ export function uploadFailureReason(error: unknown) {
       return "사진을 바꿀 권한이 없습니다. 추모관을 만든 가족, 초대받은 가족, 관리자만 올릴 수 있습니다.";
     }
     if (code === "PAYLOAD_TOO_LARGE") {
-      return "사진 용량이 너무 큽니다. 다른 사진을 골라 주세요.";
+      return "사진이 너무 큽니다. 화면을 새로고침한 뒤 다시 올려 주세요. 올리실 때 자동으로 줄여서 올립니다.";
     }
     if (
       code === "BAD_REQUEST" &&
