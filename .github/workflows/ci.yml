@@ -50,6 +50,8 @@ jobs:
       - name: Check fixed service maintenance tools
         run: |
           bash -n scripts/ops-pm2-restart.sh
+          bash -n scripts/deploy-production-remote.sh
+          bash scripts/deploy-production-remote.test.sh
           sudo -n python3 -I -B scripts/ops-runtime-permissions.test.py
           sudo -n python3 -I -B scripts/ops-release-archive.test.py
 
