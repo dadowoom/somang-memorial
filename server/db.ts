@@ -57,6 +57,12 @@ import {
 } from "../shared/accountDeletion";
 import { isReminderDue, seoulDateAfter } from "./reminderSchedule";
 import { signMediaUrl } from "./_core/protectedMedia";
+import { UPLOAD_URL_PREFIX } from "./storage";
+import {
+  churchHiddenLetterIds,
+  LETTER_STATUS_ACTION,
+  letterStatusNotePrefix,
+} from "../shared/letterHideSource";
 import {
   judgeVerification,
   VERIFY_KEEP_MS,
@@ -1287,6 +1293,24 @@ export async function getMemorialAccessStatus(slug: string) {
   return toMemorialAccessStatus(memorial);
 }
 
+/**
+ * 주소로 추모관 번호만 찾는다 (2026-09-25). 비밀번호 시도 횟수를 추모관
+ * 하나 기준으로 세는 데 쓴다. 상태와 상관없이 찾는다.
+ */
+export async function findMemorialIdBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const rows = await db
+    .select({ id: memorials.id })
+    .from(memorials)
+    .where(eq(memorials.slug, slug))
+    .limit(1);
+  return rows[0]?.id ?? null;
+}
+
 export async function verifyMemorialAccessPassword(input: {
   slug: string;
   password: string;
@@ -2383,6 +2407,55 @@ export async function setMemorialLetterStatusForMemorial(input: {
   return before;
 }
 
+/**
+ * 이 추모관의 숨긴 편지 가운데 관리자(교회)가 숨긴 것 (2026-09-25).
+ * 가족은 이 편지들을 다시 보이게 할 수 없다. 판단은 shared/letterHideSource.ts.
+ */
+export async function listChurchHiddenLetterIds(
+  memorialId: number,
+  letterIds?: number[]
+) {
+  if (letterIds && letterIds.length === 0) return new Set<number>();
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const hidden = await db
+    .select({ id: memorialLetters.id })
+    .from(memorialLetters)
+    .where(
+      and(
+        eq(memorialLetters.memorialId, memorialId),
+        eq(memorialLetters.status, "hidden"),
+        letterIds ? inArray(memorialLetters.id, letterIds) : undefined
+      )
+    )
+    .limit(300);
+  const hiddenIds = hidden.map(row => row.id);
+  if (hiddenIds.length === 0) return new Set<number>();
+
+  const logs = await db
+    .select({
+      id: adminAuditLogs.id,
+      adminUserId: adminAuditLogs.adminUserId,
+      afterValue: adminAuditLogs.afterValue,
+      note: adminAuditLogs.note,
+    })
+    .from(adminAuditLogs)
+    .where(
+      and(
+        eq(adminAuditLogs.action, LETTER_STATUS_ACTION),
+        or(
+          ...hiddenIds.map(id =>
+            like(adminAuditLogs.note, `${letterStatusNotePrefix(id)}%`)
+          )
+        )
+      )
+    );
+  return churchHiddenLetterIds(hiddenIds, logs);
+}
+
 // ---------------------------------------------------------------------------
 // 추도일 알림 본인 번호 확인 (2026-09-23). 규칙은 server/reminderVerification.ts.
 
@@ -3058,6 +3131,41 @@ export async function listMemorialBookPages(bookId: number) {
       asc(memorialBookPages.dateDay),
       asc(memorialBookPages.sortOrder)
     );
+}
+
+/**
+ * 추억책 사진(올린 파일 이름)이 어느 추모관의 책에 쓰였는지 (2026-09-25).
+ * /uploads 문이 그냥 주소로 보여 줘도 되는지 판단할 때 쓴다.
+ */
+export async function findBookMediaMemorialIds(key: string) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database is not available");
+  }
+
+  const url = `${UPLOAD_URL_PREFIX}/${key}`;
+  const covers = await db
+    .select({ memorialId: memorialBooks.memorialId })
+    .from(memorialBooks)
+    .where(
+      or(
+        eq(memorialBooks.coverPhotoKey, key),
+        eq(memorialBooks.coverPhotoUrl, url)
+      )
+    )
+    .limit(50);
+  const pages = await db
+    .select({ memorialId: memorialBooks.memorialId })
+    .from(memorialBookPages)
+    .innerJoin(memorialBooks, eq(memorialBookPages.bookId, memorialBooks.id))
+    .where(
+      or(
+        eq(memorialBookPages.photoKey, key),
+        eq(memorialBookPages.photoUrl, url)
+      )
+    )
+    .limit(50);
+  return Array.from(new Set([...covers, ...pages].map(row => row.memorialId)));
 }
 
 export async function createMemorialBookPage(data: InsertMemorialBookPage) {

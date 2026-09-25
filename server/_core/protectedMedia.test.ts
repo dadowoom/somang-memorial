@@ -15,6 +15,7 @@ const env = vi.hoisted(() => {
 vi.mock("../db", () => ({
   canReadMemorial: vi.fn(),
   getAdminMemorialById: vi.fn(),
+  findBookMediaMemorialIds: vi.fn(),
 }));
 
 import {
@@ -118,6 +119,11 @@ describe("기한이 적힌 사진 주소", () => {
     expect(mediaScope("uploads/abc.jpg")).toBeNull();
     expect(mediaScope("kiosk-posters/abc.jpg")).toBeNull();
   });
+
+  it("추억책 사진은 어느 추모관 것인지 따로 확인한다", () => {
+    expect(mediaScope("book-pages/abc.jpg")).toEqual({ type: "book" });
+    expect(mediaScope("book-covers/abc.png")).toEqual({ type: "book" });
+  });
 });
 
 describe("/uploads 문", () => {
@@ -129,8 +135,22 @@ describe("/uploads 문", () => {
     return publicMemorials.has(id);
   });
 
+  // 추억책 사진이 어느 추모관 책에 쓰였는지 (가짜 DB).
+  const bookMediaMemorialIds = vi.fn(async (key: string) => {
+    if (key === "book-pages/err_1.jpg") throw new Error("db down");
+    if (key === "book-pages/pub_b.jpg") return [1];
+    if (key === "book-covers/priv_c.png") return [2];
+    if (key === "book-pages/shared_b.jpg") return [2, 1];
+    return [];
+  });
+
   beforeAll(async () => {
     const files = [
+      "book-pages/pub_b.jpg",
+      "book-covers/priv_c.png",
+      "book-pages/shared_b.jpg",
+      "book-pages/orphan_1.jpg",
+      "book-pages/err_1.jpg",
       "family-rooms/5/abc_1234.jpg",
       "family-rooms/5/abc_1234.thumb.jpg",
       "gallery/1/pub_1.jpg",
@@ -145,7 +165,10 @@ describe("/uploads 문", () => {
     }
 
     const app = express();
-    app.use("/uploads", createUploadAccessGate({ isMemorialPublic }));
+    app.use(
+      "/uploads",
+      createUploadAccessGate({ isMemorialPublic, bookMediaMemorialIds })
+    );
     app.use(
       "/uploads",
       express.static(env.uploadDir, {
@@ -224,5 +247,41 @@ describe("/uploads 문", () => {
   it("공개 여부를 확인하지 못하면 보여 주지 않는다", async () => {
     const res = await get("/uploads/gallery/99/x_1.jpg");
     expect(res.status).toBe(503);
+  });
+
+  it("비공개·작성 중 추모관의 추억책 사진은 그냥 주소로 막히고 기한 주소로 보인다", async () => {
+    for (const url of [
+      "/uploads/book-covers/priv_c.png",
+      "/uploads/%62ook-covers/priv_c.png",
+      "/uploads//book-covers/priv_c.png",
+    ]) {
+      const res = await get(url);
+      expect(res.status, url).toBe(404);
+      expect(res.headers.get("cache-control")).toBe("no-store");
+    }
+    const res = await get(signMediaUrl("/uploads/book-covers/priv_c.png"));
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("photo:book-covers/priv_c.png");
+  });
+
+  it("어느 책에도 쓰이지 않은 추억책 사진은 그냥 주소로 보이지 않는다", async () => {
+    expect((await get("/uploads/book-pages/orphan_1.jpg")).status).toBe(404);
+    expect(
+      (await get(signMediaUrl("/uploads/book-pages/orphan_1.jpg"))).status
+    ).toBe(200);
+  });
+
+  it("공개 추모관의 추억책 사진은 지금처럼 보인다", async () => {
+    const res = await get("/uploads/book-pages/pub_b.jpg");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe(
+      "public, max-age=2592000, immutable"
+    );
+    // 공개 추모관 책에도 쓰인 사진이면 이미 공개된 사진이다.
+    expect((await get("/uploads/book-pages/shared_b.jpg")).status).toBe(200);
+  });
+
+  it("추억책 사진의 주인을 확인하지 못하면 보여 주지 않는다", async () => {
+    expect((await get("/uploads/book-pages/err_1.jpg")).status).toBe(503);
   });
 });

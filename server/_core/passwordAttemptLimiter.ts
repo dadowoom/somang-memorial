@@ -133,6 +133,18 @@ export function clientAddress(req: Pick<Request, "headers" | "socket">) {
   return req.socket.remoteAddress ?? "unknown";
 }
 
+// 서식 문자(폭 0 공백 등)와 빈칸. tsconfig 대상이 낮아 u 플래그 글자식을
+// 직접 쓸 수 없으므로 생성자로 만든다.
+const INVISIBLE_OR_SPACE = new RegExp("[\\p{Cf}\\p{White_Space}]", "gu");
+
+/**
+ * 시도 횟수를 셀 이름의 모양을 맞춘다 (2026-09-25). 대소문자, 호환 문자(전각 등),
+ * 보이지 않는 글자와 빈칸이 달라도 같은 이름으로 센다.
+ */
+export function normalizeAttemptSubject(value: string) {
+  return value.normalize("NFKC").replace(INVISIBLE_OR_SPACE, "").toLowerCase();
+}
+
 /** Creates a key for a protected item alone (e.g. one account), regardless of client. */
 export function subjectAttemptKey(subject: string) {
   return createHash("sha256")

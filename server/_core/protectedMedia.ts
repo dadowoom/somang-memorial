@@ -124,13 +124,22 @@ export function verifySignedMedia(
 
 /**
  * 이 파일이 보호 대상일 수 있는지. 가족관 사진은 늘 보호하고, 추모관 사진은
- * 그 추모관이 비공개인지 따로 확인한다 (storageProxy). 나머지(관리자가 올린
- * 사진, 키오스크 안내 사진 등)는 공개다.
+ * 그 추모관이 비공개인지 따로 확인한다 (storageProxy). 추억책 사진은 어느
+ * 추모관의 책에 쓰였는지 DB 에서 찾아 같은 규칙으로 본다 (2026-09-25).
+ * 나머지(관리자가 올린 사진, 키오스크 안내 사진 등)는 공개다.
  */
 export type MediaScope =
   | { type: "family-room" }
   | { type: "gallery"; memorialId: number }
+  | { type: "book" }
   | null;
+
+/** 추억책 표지·쪽 사진을 올리는 폴더. */
+export const BOOK_MEDIA_FOLDERS = ["book-pages", "book-covers"] as const;
+
+export function isBookMediaFolder(folder: string) {
+  return (BOOK_MEDIA_FOLDERS as readonly string[]).includes(folder);
+}
 
 export function mediaScope(key: string): MediaScope {
   const [folder, id] = key.split("/");
@@ -138,5 +147,19 @@ export function mediaScope(key: string): MediaScope {
   if (folder === "gallery" && id && /^\d+$/.test(id)) {
     return { type: "gallery", memorialId: Number(id) };
   }
+  if (isBookMediaFolder(folder)) return { type: "book" };
   return null;
+}
+
+/**
+ * 기한이 적힌 주소를 원래 주소(/uploads/...)로 되돌린다. 화면이 받은 주소를
+ * 그대로 다시 저장해도 DB 에는 기한 없는 원래 주소가 들어가게 한다.
+ * 기한 주소가 아니면 그대로 둔다.
+ */
+export function unsignMediaUrl(url: string): string {
+  const prefix = `${UPLOAD_URL_PREFIX}/`;
+  if (!url.startsWith(`${prefix}${SIGNED_SEGMENT}/`)) return url;
+  const parsed = parseUploadPath(url.slice(UPLOAD_URL_PREFIX.length));
+  if (!parsed || parsed.kind !== "signed") return url;
+  return `${prefix}${parsed.key}`;
 }

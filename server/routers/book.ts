@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import {
+  canReadMemorial,
   createMemorialBook,
   createMemorialBookPage,
   deleteMemorialBook,
@@ -13,8 +14,35 @@ import {
 } from "../db";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 import { requireReadableMemorialById } from "./memorialAccess";
+import { signMediaUrl, unsignMediaUrl } from "../_core/protectedMedia";
 
 const nullableText = z.string().trim().nullable().optional();
+
+/**
+ * 추억책 사진 주소 (2026-09-25). 앨범 사진처럼, 비공개·작성 중 추모관의
+ * 추억책 사진은 기한이 적힌 주소로만 내준다 (protectedMedia.ts).
+ */
+function bookPhotosFor(memorial: Parameters<typeof canReadMemorial>[0]) {
+  const open = canReadMemorial(memorial, null);
+  const url = (value: string | null) =>
+    open || !value ? value : signMediaUrl(value);
+  return <
+    B extends { coverPhotoUrl: string | null },
+    P extends { photoUrl: string | null },
+  >(
+    book: B,
+    pages: P[]
+  ) => ({
+    ...book,
+    coverPhotoUrl: url(book.coverPhotoUrl),
+    pages: pages.map(page => ({ ...page, photoUrl: url(page.photoUrl) })),
+  });
+}
+
+/** 화면이 받은 기한 주소를 그대로 보내도 DB 에는 원래 주소를 적는다. */
+function storedUrl<T extends string | null | undefined>(value: T): T {
+  return (typeof value === "string" ? unsignMediaUrl(value) : value) as T;
+}
 
 export const bookRouter = router({
   listByMemorial: publicProcedure
@@ -25,17 +53,17 @@ export const bookRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      await requireReadableMemorialById({
+      const memorial = await requireReadableMemorialById({
         memorialId: input.memorialId,
         accessToken: input.accessToken,
         ctx,
       });
+      const withPhotos = bookPhotosFor(memorial);
       const books = await listMemorialBooks(input.memorialId);
       return Promise.all(
-        books.map(async book => ({
-          ...book,
-          pages: await listMemorialBookPages(book.id),
-        }))
+        books.map(async book =>
+          withPhotos(book, await listMemorialBookPages(book.id))
+        )
       );
     }),
 
@@ -54,12 +82,15 @@ export const bookRouter = router({
           message: "책을 찾을 수 없습니다.",
         });
       }
-      await requireReadableMemorialById({
+      const memorial = await requireReadableMemorialById({
         memorialId: book.memorialId,
         accessToken: input.accessToken,
         ctx,
       });
-      return { ...book, pages: await listMemorialBookPages(book.id) };
+      return bookPhotosFor(memorial)(
+        book,
+        await listMemorialBookPages(book.id)
+      );
     }),
 
   create: adminProcedure
@@ -79,7 +110,7 @@ export const bookRouter = router({
         memorialId: input.memorialId,
         title: input.title,
         subtitle: input.subtitle || null,
-        coverPhotoUrl: input.coverPhotoUrl || null,
+        coverPhotoUrl: storedUrl(input.coverPhotoUrl) || null,
         coverPhotoKey: input.coverPhotoKey || null,
         publishedYear: input.publishedYear || null,
         sortOrder: input.sortOrder ?? 0,
@@ -101,7 +132,10 @@ export const bookRouter = router({
     )
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
-      await updateMemorialBook(id, data);
+      await updateMemorialBook(id, {
+        ...data,
+        coverPhotoUrl: storedUrl(data.coverPhotoUrl),
+      });
       return { success: true };
     }),
 
@@ -131,7 +165,7 @@ export const bookRouter = router({
         bookId: input.bookId,
         title: input.title || null,
         content: input.content || null,
-        photoUrl: input.photoUrl || null,
+        photoUrl: storedUrl(input.photoUrl) || null,
         photoKey: input.photoKey || null,
         dateYear: input.dateYear || null,
         dateMonth: input.dateMonth || null,
@@ -157,7 +191,10 @@ export const bookRouter = router({
     )
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
-      await updateMemorialBookPage(id, data);
+      await updateMemorialBookPage(id, {
+        ...data,
+        photoUrl: storedUrl(data.photoUrl),
+      });
       return { success: true };
     }),
 

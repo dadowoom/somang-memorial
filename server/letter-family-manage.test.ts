@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   listMemorialLettersForFamily: vi.fn(),
   setMemorialLetterStatusForMemorial: vi.fn(),
   createAdminAuditLog: vi.fn(),
+  listChurchHiddenLetterIds: vi.fn(),
 }));
 vi.mock("./db", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("./db");
@@ -64,6 +65,7 @@ beforeEach(() => {
     author: "익명",
     status: "published",
   });
+  mocks.listChurchHiddenLetterIds.mockResolvedValue(new Set());
 });
 
 describe("letter.familyList", () => {
@@ -147,5 +149,68 @@ describe("letter.familyUpdateStatus", () => {
     });
     await caller(owner).letter.familyUpdateStatus(hide);
     expect(mocks.createAdminAuditLog).not.toHaveBeenCalled();
+  });
+});
+
+// 관리자(교회)가 숨긴 편지는 가족이 다시 보이게 할 수 없다 (2026-09-25).
+describe("관리자가 숨긴 편지", () => {
+  const restore = {
+    memorialSlug: "kim-somang",
+    letterId: 32,
+    status: "published" as const,
+  };
+
+  beforeEach(() => {
+    mocks.listChurchHiddenLetterIds.mockResolvedValue(new Set([32]));
+    mocks.setMemorialLetterStatusForMemorial.mockResolvedValue({
+      author: "익명",
+      status: "hidden",
+    });
+  });
+
+  it("주인·초대받은 가족은 다시 보이게 할 수 없다", async () => {
+    for (const user of [owner, family]) {
+      await expect(
+        caller(user).letter.familyUpdateStatus(restore)
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    }
+    expect(mocks.setMemorialLetterStatusForMemorial).not.toHaveBeenCalled();
+    expect(mocks.createAdminAuditLog).not.toHaveBeenCalled();
+    expect(mocks.listChurchHiddenLetterIds).toHaveBeenCalledWith(5, [32]);
+  });
+
+  it("관리자는 다시 보이게 할 수 있다", async () => {
+    await expect(
+      caller(admin).letter.familyUpdateStatus(restore)
+    ).resolves.toEqual({ success: true });
+    expect(mocks.setMemorialLetterStatusForMemorial).toHaveBeenCalledWith({
+      letterId: 32,
+      memorialId: 5,
+      status: "published",
+    });
+  });
+
+  it("가족이 직접 숨긴 편지는 가족이 다시 보이게 할 수 있다", async () => {
+    mocks.listChurchHiddenLetterIds.mockResolvedValue(new Set());
+    await expect(
+      caller(family).letter.familyUpdateStatus(restore)
+    ).resolves.toEqual({ success: true });
+    expect(mocks.setMemorialLetterStatusForMemorial).toHaveBeenCalled();
+  });
+
+  it("가족 화면에는 관리자가 숨긴 편지가 잠겨 있다고 알려 준다", async () => {
+    const forFamily = await caller(family).letter.familyList({
+      memorialSlug: "kim-somang",
+    });
+    expect(
+      forFamily.letters.map(letter => [letter.id, letter.lockedByChurch])
+    ).toEqual([
+      [31, false],
+      [32, true],
+    ]);
+    const forAdmin = await caller(admin).letter.familyList({
+      memorialSlug: "kim-somang",
+    });
+    expect(forAdmin.letters.every(letter => !letter.lockedByChurch)).toBe(true);
   });
 });

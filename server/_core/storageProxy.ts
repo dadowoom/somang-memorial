@@ -2,7 +2,11 @@ import type { Express, NextFunction, Request, Response } from "express";
 import express from "express";
 import { ENV } from "./env";
 import { UPLOAD_DIR, UPLOAD_URL_PREFIX } from "../storage";
-import { canReadMemorial, getAdminMemorialById } from "../db";
+import {
+  canReadMemorial,
+  findBookMediaMemorialIds,
+  getAdminMemorialById,
+} from "../db";
 import {
   mediaScope,
   parseUploadPath,
@@ -20,8 +24,27 @@ async function isMemorialPublicFromDb(memorialId: number) {
 
 type UploadAccessGateDeps = {
   isMemorialPublic?: (memorialId: number) => Promise<boolean>;
+  /** 추억책 사진이 쓰인 추모관 번호들 (2026-09-25). */
+  bookMediaMemorialIds?: (key: string) => Promise<number[]>;
   now?: () => number;
 };
+
+/** 잠깐 기억하는 확인. 실패한 확인은 기억하지 않아 다음 요청이 다시 묻는다. */
+function cachedCheck<K>(
+  check: (key: K) => Promise<boolean>,
+  now: () => number
+) {
+  const cache = new Map<K, { value: Promise<boolean>; at: number }>();
+  return (key: K) => {
+    const hit = cache.get(key);
+    if (hit && now() - hit.at < MEMORIAL_PUBLIC_CACHE_MS) return hit.value;
+    const value = check(key);
+    cache.set(key, { value, at: now() });
+    value.catch(() => cache.delete(key));
+    if (cache.size > 1000) cache.clear();
+    return value;
+  };
+}
 
 /**
  * /uploads 앞에 서는 문 (2026-09-23, protectedMedia.ts 참고).
@@ -29,24 +52,25 @@ type UploadAccessGateDeps = {
  * - 기한이 적힌 주소: 서명과 기한이 맞으면 그 파일을 보여 준다. 브라우저에는
  *   기한까지만, 그 사람 브라우저에만 저장하게 한다.
  * - 그냥 주소: 가족관 사진과 비공개·작성 중 추모관 사진이면 "없음"으로 답한다.
+ *   추억책 사진은 공개 추모관의 책에 쓰인 것만 보여 준다 (2026-09-25).
  *   나머지는 지금처럼 보여 준다.
  */
 export function createUploadAccessGate(deps: UploadAccessGateDeps = {}) {
-  const isMemorialPublicUncached =
-    deps.isMemorialPublic ?? isMemorialPublicFromDb;
   const now = deps.now ?? Date.now;
-  const cache = new Map<number, { value: Promise<boolean>; at: number }>();
-
-  const isMemorialPublic = (memorialId: number) => {
-    const hit = cache.get(memorialId);
-    if (hit && now() - hit.at < MEMORIAL_PUBLIC_CACHE_MS) return hit.value;
-    const value = isMemorialPublicUncached(memorialId);
-    cache.set(memorialId, { value, at: now() });
-    // 실패한 확인은 기억하지 않는다. 다음 요청이 다시 묻는다.
-    value.catch(() => cache.delete(memorialId));
-    if (cache.size > 1000) cache.clear();
-    return value;
-  };
+  const isMemorialPublic = cachedCheck(
+    deps.isMemorialPublic ?? isMemorialPublicFromDb,
+    now
+  );
+  const bookMediaMemorialIds =
+    deps.bookMediaMemorialIds ?? findBookMediaMemorialIds;
+  // 어느 책에도 쓰이지 않은 사진은 공개로 보지 않는다. 공개 추모관의 책에
+  // 하나라도 쓰였으면 이미 공개된 사진이다.
+  const isBookMediaPublic = cachedCheck(async (key: string) => {
+    for (const memorialId of await bookMediaMemorialIds(key)) {
+      if (await isMemorialPublic(memorialId)) return true;
+    }
+    return false;
+  }, now);
 
   const notFound = (res: Response) => {
     res.setHeader("Cache-Control", "no-store");
@@ -75,7 +99,11 @@ export function createUploadAccessGate(deps: UploadAccessGateDeps = {}) {
     if (scope.type === "family-room") return notFound(res);
 
     try {
-      if (await isMemorialPublic(scope.memorialId)) return next();
+      const open =
+        scope.type === "book"
+          ? await isBookMediaPublic(parsed.key)
+          : await isMemorialPublic(scope.memorialId);
+      if (open) return next();
     } catch (error) {
       console.error("[Uploads] 추모관 공개 여부 확인 실패", error);
       res.setHeader("Cache-Control", "no-store");
