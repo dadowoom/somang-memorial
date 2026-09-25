@@ -86,6 +86,7 @@ if [ -z "${TEST_ROOT}" ]; then
     /usr/bin/node /usr/lib/node_modules/pm2/bin/pm2 jlist)
   NODE_BIN=/usr/bin/node
   NGINX_SITES_DIR=/etc/nginx/sites-enabled
+  NGINX_CONF_DIR=/etc/nginx/conf.d
   MIN_FREE_KB=$((3 * 1024 * 1024))
   FIX_OWNERSHIP=1
   export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -102,6 +103,7 @@ else
   PM2_JLIST=("${TEST_ROOT}/bin/pm2-jlist")
   NODE_BIN=node
   NGINX_SITES_DIR="${TEST_ROOT}/etc/nginx/sites-enabled"
+  NGINX_CONF_DIR="${TEST_ROOT}/etc/nginx/conf.d"
   MIN_FREE_KB=0
   FIX_OWNERSHIP=0
   export PATH="${TEST_ROOT}/bin:${PATH}"
@@ -256,11 +258,18 @@ wait_until_healthy() {
 }
 
 # ── 다른 사이트: 번호와 응답 코드만 남깁니다(주소는 출력하지 않음) ───────────────
+# sites-enabled 는 대부분 sites-available 로 가는 바로가기(심볼릭 링크)라서
+# grep -r 로는 따라가지 않아 19곳 중 2곳만 잡혔다 (2026-09-25 화순 배포에서 발견).
+# -R 로 바로가기를 따라가고, conf.d 도 함께 본다.
+nginx_server_names() {
+  grep -RhoE '^[[:space:]]*server_name[[:space:]]+[^;]+;' "${NGINX_SITES_DIR}/" "${NGINX_CONF_DIR}/" 2>/dev/null \
+    | sed -E 's/^[[:space:]]*server_name[[:space:]]+//; s/;.*$//' \
+    | tr ' \t' '\n\n' | sed '/^$/d' | grep -vE '^(_|localhost)$|\.invalid$' | sort -u
+}
+
 other_sites_status() {
   local names name code index=0 out=""
-  names="$(grep -rhoE '^[[:space:]]*server_name[[:space:]]+[^;]+;' "${NGINX_SITES_DIR}/" 2>/dev/null \
-    | sed -E 's/^[[:space:]]*server_name[[:space:]]+//; s/;[[:space:]]*$//' \
-    | tr ' ' '\n' | sed '/^$/d' | grep -vE '^(_|localhost)$' | sort -u)" || true
+  names="$(nginx_server_names)" || true
   for name in ${names}; do
     index=$((index + 1))
     code="$(curl -s -o /dev/null -m 8 -w '%{http_code}' "https://${name}/" || true)"

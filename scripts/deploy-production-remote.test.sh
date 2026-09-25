@@ -81,6 +81,8 @@ case "${url}" in
     if [ "${app}" = "BROKEN" ]; then printf '{"status":"not ready","database":"error"}' >"${out}"; printf 503
     else printf '{"status":"ready","database":"ok"}' >"${out}"; printf 200; fi ;;
   */api/trpc/memorial.list) printf '{"result":{"data":{"json":[]}}}' >"${out}"; printf 200 ;;
+  # 다른 사이트 확인: 어느 주소를 물었는지 적고 200 으로 답합니다(진짜 네트워크에 닿지 않음).
+  https://*) echo "site ${url}" >>"${SOMANG_DEPLOY_TEST_ROOT}/calls.log"; printf 200 ;;
   *) printf 000 ;;
 esac
 EOF
@@ -251,5 +253,27 @@ ok "문지기는 status / deploy <40자> 만 통과"
 set +e; env -u SOMANG_DEPLOY_TEST_ROOT bash "${SCRIPT}" status >/dev/null 2>&1; code=$?; set -e
 [ "${code}" = "1" ] || die "root 가 아니면 멈춰야 함 (받은 값 ${code})"
 ok "운영 모드는 root 로만"
+
+# 15. 다른 사이트 확인은 sites-enabled 의 바로가기를 따라가고 conf.d 도 본다 (2026-09-25).
+#     전에는 grep -r 이 바로가기를 따라가지 않아 19곳 중 2곳만 잡혔다.
+N="${R}/etc/nginx"
+mkdir -p "${N}/sites-available" "${N}/sites-enabled" "${N}/conf.d"
+printf 'server {\n  listen 443;\n  server_name alpha.example;\n}\n' >"${N}/sites-available/alpha"
+ln -s ../sites-available/alpha "${N}/sites-enabled/alpha"
+printf 'server {\n\tserver_name\tbeta.example   www.beta.example ;\n}\nserver { server_name _; }\nserver { server_name localhost; }\nserver { server_name blocked.invalid; }\n' >"${N}/conf.d/beta.conf"
+if [ -L "${N}/sites-enabled/alpha" ]; then
+  rm -rf "${O}/drizzle"
+  C9="$(commit v9)"
+  : >"${CALLS}"
+  run deploy "${C9}" >/dev/null || die "다른 사이트가 있어도 배포는 성공해야 함"
+  sites="$(grep '^site ' "${CALLS}" | sort -u | tr '\n' ' ')"
+  for host in alpha.example beta.example www.beta.example; do
+    case "${sites}" in *"https://${host}/"*) ;; *) die "다른 사이트 확인에 ${host} 가 빠짐 (${sites})" ;; esac
+  done
+  case "${sites}" in *"https://_/"* | *localhost* | *".invalid"*) die "기본·localhost·.invalid 는 빼야 함 (${sites})" ;; esac
+  ok "다른 사이트 확인은 바로가기·conf.d 까지 모두 봄"
+else
+  printf 'skip - 이 PC 에서는 바로가기를 만들 수 없어 다른 사이트 시험을 건너뜀\n'
+fi
 
 printf '모두 통과 (%d개)\n' "${pass}"
