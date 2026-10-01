@@ -95,6 +95,10 @@ git pull --ff-only origin main
 자세한 배경은 [RUNTIME_DEPLOYMENT.md](RUNTIME_DEPLOYMENT.md). 앱은 root 가 아니라
 전용 계정 `somangapp` 으로 돈다. 그래서 **아래 순서를 빼먹으면 502 가 난다.**
 
+> 깃허브 자동 배포(초안, 2026-09-25): 서버의 자동 배포 단추가 아래와 같은 순서를 대신 한다.
+> 켜는 법·조건은 [AUTO_DEPLOY_SETUP.md](AUTO_DEPLOY_SETUP.md). DB 구조(`drizzle/`)가 바뀐 버전은
+> 자동으로 나가지 않으므로 여전히 이 절의 손 배포로 한다.
+
 1. 배포 전에 데이터베이스를 백업한다 (`scripts/backup.sh`).
 2. `releases/<날짜_시각>` 에 `main` 을 새로 받는다.
 3. 운영 `.env` 를 새 폴더로 복사한다.

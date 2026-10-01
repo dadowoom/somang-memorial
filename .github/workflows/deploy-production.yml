@@ -1,0 +1,281 @@
+# 소망 추모관 운영 배포 (초안)
+#
+# - 깃허브 금고(Secrets)가 비어 있으면 아무것도 하지 않고 조용히 끝납니다(서버에 접속하지 않음).
+# - main 에 병합(push)되면: 한국시간 09:00~18:00 이면 바로 배포, 그 밖이면 배포하지 않습니다.
+#   근무 시간 밖에 병합한 것은 다음 날 09:00 예약 실행이 내보냅니다.
+# - 매일 09:00 KST 예약: 지금 올라가 있는 버전과 같으면 검사·빌드 없이 바로 끝냅니다.
+# - 손 단추(workflow_dispatch)는 시간 제한 없이 돌립니다(main 에서만).
+# - 서버의 기준 버전을 모르거나, 그 버전이 main 기록에 없거나, DB 구조(drizzle)·서버 부품
+#   (pnpm-lock.yaml·patches)이 바뀐 버전은 자동으로 내보내지 않고 경고만 남깁니다(손 배포 필요).
+# - 서버에서는 배포 전용 계정(somangdeploy)이 "자동 배포 단추" 하나만 누를 수 있습니다.
+#   단추는 root 소유로 서버에 설치되어 있고, 문서의 정식 배포 순서(복사 설치 → 권한 도구 →
+#   정식 재시작)를 그대로 따르며, 실패하면 직전 릴리스로 되돌립니다(scripts/deploy-production-remote.sh).
+# - 이 저장소는 somang-memorial 한 곳만 배포합니다. 다른 서비스·nginx·크론은 건드리지 않습니다.
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # 깃허브 예약은 UTC 기준입니다. 00:00 UTC = 09:00 KST.
+    # 깃허브 사정으로 몇 분~십여 분 늦게 시작할 수 있습니다.
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: somang-memorial-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SSH_PORT: ${{ vars.SOMANG_SSH_PORT || '22' }}
+  PUBLIC_URL: ${{ vars.SOMANG_PUBLIC_URL || 'https://somangmemorial.co.kr' }}
+
+jobs:
+  # 사전 확인: 금고·배포 시각·서버 기준 버전·"자동으로 내보내도 되는 변경인지"를 한 번에 봅니다.
+  # 여기서 proceed=false 가 나오면 검사·빌드·배포가 아예 돌지 않습니다.
+  precheck:
+    name: 사전 확인
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      proceed: ${{ steps.decide.outputs.proceed }}
+    steps:
+      - name: 금고 확인
+        id: secrets
+        env:
+          SSH_HOST: ${{ secrets.SOMANG_SSH_HOST }}
+          SSH_USER: ${{ secrets.SOMANG_SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SOMANG_SSH_PRIVATE_KEY }}
+          SSH_HOST_ED25519_KEY: ${{ secrets.SOMANG_SSH_HOST_ED25519_KEY }}
+        run: |
+          set -Eeuo pipefail
+          if [ -n "${SSH_HOST:-}" ] && [ -n "${SSH_USER:-}" ] \
+            && [ -n "${SSH_PRIVATE_KEY:-}" ] && [ -n "${SSH_HOST_ED25519_KEY:-}" ]; then
+            echo "filled=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "filled=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      # 운영 기준 버전과 비교하려면 기록 전체가 필요합니다(금고가 차 있을 때만 받습니다).
+      - name: 코드 받기 (기록 전체)
+        if: steps.secrets.outputs.filled == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 금고·배포 시각·기준 버전·변경 종류 확인
+        id: decide
+        env:
+          FILLED: ${{ steps.secrets.outputs.filled }}
+          SSH_HOST: ${{ secrets.SOMANG_SSH_HOST }}
+          SSH_USER: ${{ secrets.SOMANG_SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SOMANG_SSH_PRIVATE_KEY }}
+          SSH_HOST_ED25519_KEY: ${{ secrets.SOMANG_SSH_HOST_ED25519_KEY }}
+        run: |
+          set -Eeuo pipefail
+
+          stop() {
+            echo "::warning::$1"
+            echo "proceed=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          }
+          quiet_stop() {
+            echo "::notice::$1"
+            echo "proceed=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          }
+
+          if [ "${FILLED}" != "true" ]; then
+            quiet_stop "깃허브 금고가 아직 비어 있어 아무것도 하지 않고 끝냅니다."
+          fi
+
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            quiet_stop "main 이 아닌 가지(${GITHUB_REF})라 반영하지 않습니다."
+          fi
+
+          # main 병합(push)은 한국시간 09:00~18:00 에만 바로 배포합니다.
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            hour="$(TZ=Asia/Seoul date +%H)"
+            hour=$((10#${hour}))
+            if [ "${hour}" -lt 9 ] || [ "${hour}" -ge 18 ]; then
+              quiet_stop "지금은 한국시간 $(TZ=Asia/Seoul date +%H:%M) — 근무 시간(09:00~18:00) 밖이라 배포하지 않습니다. 다음 날 09:00 예약 실행이 내보냅니다."
+            fi
+          fi
+
+          if ! printf '%s' "${SSH_HOST}" | grep -qE '^[A-Za-z0-9][A-Za-z0-9._:-]*$'; then
+            echo "SOMANG_SSH_HOST 형식이 올바르지 않습니다." >&2
+            exit 1
+          fi
+          if ! printf '%s' "${SSH_USER}" | grep -qE '^[A-Za-z_][A-Za-z0-9._-]*$'; then
+            echo "SOMANG_SSH_USER 형식이 올바르지 않습니다." >&2
+            exit 1
+          fi
+          if ! printf '%s' "${SSH_PORT}" | grep -qE '^[0-9]+$'; then
+            echo "SOMANG_SSH_PORT 는 숫자여야 합니다." >&2
+            exit 1
+          fi
+          if ! printf '%s' "${SSH_HOST_ED25519_KEY}" | grep -qE '^[A-Za-z0-9+/]+={0,2}$'; then
+            echo "SOMANG_SSH_HOST_ED25519_KEY 가 올바른 서버 지문이 아닙니다." >&2
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/somang_precheck_key
+          chmod 600 ~/.ssh/somang_precheck_key
+          if [ "${SSH_PORT}" = "22" ]; then
+            HOST_TOKEN="${SSH_HOST}"
+          else
+            HOST_TOKEN="[${SSH_HOST}]:${SSH_PORT}"
+          fi
+          printf '%s ssh-ed25519 %s\n' "${HOST_TOKEN}" "${SSH_HOST_ED25519_KEY}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+          # 서버를 읽기만 합니다. 열쇠는 서버에서 "자동 배포 단추" 에만 묶여 있고, status 는 두 줄만 돌려줍니다.
+          #   1줄: 지금 운영 버전(40자) 또는 unknown
+          #   2줄(있을 때만): failed <전에 실패해서 되돌린 버전>
+          status="$(ssh -i ~/.ssh/somang_precheck_key -p "${SSH_PORT}" \
+            -o LogLevel=ERROR \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o "UserKnownHostsFile=${HOME}/.ssh/known_hosts" \
+            -o ConnectTimeout=15 \
+            "${SSH_USER}@${SSH_HOST}" status || true)"
+          rm -f ~/.ssh/somang_precheck_key
+
+          deployed="$(printf '%s\n' "${status}" | sed -n 1p | tr -d '[:space:]')"
+          failed="$(printf '%s\n' "${status}" | sed -n 's/^failed \([0-9a-f]\{40\}\)$/\1/p' | head -1)"
+
+          # 기준 버전을 모르면 무엇이 바뀌는지 알 수 없으므로 내보내지 않습니다.
+          if ! printf '%s' "${deployed}" | grep -qE '^[0-9a-f]{40}$'; then
+            stop "서버의 기준 버전을 읽지 못해 반영하지 않습니다(접속 실패 포함). docs/AUTO_DEPLOY_SETUP.md 를 확인하세요."
+          fi
+
+          if [ "${deployed}" = "${GITHUB_SHA}" ]; then
+            quiet_stop "이미 같은 버전이 올라가 있어 검사·빌드 없이 끝냅니다 (${GITHUB_SHA})."
+          fi
+
+          if [ -n "${failed}" ] && [ "${failed}" = "${GITHUB_SHA}" ]; then
+            stop "이 버전(${GITHUB_SHA})은 전에 서버에서 실패해 되돌렸습니다. 고친 새 커밋이 main 에 들어오면 다시 시도합니다."
+          fi
+
+          # 운영 버전이 main 기록 안에 있어야 합니다. 아니면(다른 가지를 손으로 올린 경우 등)
+          # main 으로 덮으면 그 기능이 사라질 수 있으므로 멈춥니다.
+          if ! git merge-base --is-ancestor "${deployed}" "${GITHUB_SHA}" 2>/dev/null; then
+            stop "운영에 올라간 버전(${deployed})이 main 기록에 없어 덮어쓰지 않습니다. 사람이 확인해야 합니다."
+          fi
+
+          # DB 구조(drizzle)·서버 부품(pnpm-lock.yaml·patches)이 바뀐 버전은 자동으로 내보내지 않습니다.
+          # (자동 배포는 DB 변경(drizzle-kit migrate)을 하지 않습니다. 이런 버전은 지금처럼 손 배포합니다.)
+          risky="$(git diff --name-only "${deployed}" "${GITHUB_SHA}" -- drizzle pnpm-lock.yaml patches || true)"
+          if [ -n "${risky}" ]; then
+            echo "DB 구조·부품 변경 파일:"
+            printf '%s\n' "${risky}" | head -20
+            stop "이번 변경에 DB 구조나 서버 부품 변경이 들어 있어 자동으로 내보내지 않습니다. 손 배포가 필요합니다."
+          fi
+
+          echo "지금 올라간 버전: ${deployed} / 이번 버전: ${GITHUB_SHA}"
+          echo "proceed=true" >> "${GITHUB_OUTPUT}"
+
+  checks:
+    name: 검사
+    needs: precheck
+    if: needs.precheck.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 코드 받기
+        uses: actions/checkout@v4
+
+      - name: pnpm 준비
+        # 판 번호는 package.json 의 packageManager 를 따릅니다.
+        uses: pnpm/action-setup@v4
+
+      - name: Node 준비
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: 의존성 설치
+        run: pnpm install --frozen-lockfile
+
+      - name: 배포 단추 문법·가짜 폴더 시험
+        run: |
+          bash -n scripts/deploy-production-remote.sh
+          bash scripts/deploy-production-remote.test.sh
+
+      - name: 타입 검사
+        run: pnpm run check
+
+      - name: 시험
+        run: pnpm test -- --run
+
+      - name: 운영 빌드
+        run: pnpm run build
+
+  deploy:
+    name: 배포
+    needs: [precheck, checks]
+    if: needs.precheck.outputs.proceed == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # 서버에서 설치·빌드까지 하므로 넉넉히 둡니다.
+    timeout-minutes: 40
+    steps:
+      - name: SSH 준비 (서버 지문 고정)
+        env:
+          SSH_HOST: ${{ secrets.SOMANG_SSH_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.SOMANG_SSH_PRIVATE_KEY }}
+          SSH_HOST_ED25519_KEY: ${{ secrets.SOMANG_SSH_HOST_ED25519_KEY }}
+        run: |
+          set -Eeuo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/somang_deploy_key
+          chmod 600 ~/.ssh/somang_deploy_key
+          if [ "${SSH_PORT}" = "22" ]; then
+            HOST_TOKEN="${SSH_HOST}"
+          else
+            HOST_TOKEN="[${SSH_HOST}]:${SSH_PORT}"
+          fi
+          printf '%s ssh-ed25519 %s\n' "${HOST_TOKEN}" "${SSH_HOST_ED25519_KEY}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: 서버에서 배포 단추 누르기
+        env:
+          SSH_HOST: ${{ secrets.SOMANG_SSH_HOST }}
+          SSH_USER: ${{ secrets.SOMANG_SSH_USER }}
+        run: |
+          set -Eeuo pipefail
+          # 보내는 것은 "deploy <커밋 40자>" 한 줄뿐입니다. 서버는 그 커밋을 깃허브에서 직접 받아
+          # main 기록·변경 종류를 한 번 더 확인한 뒤 배포하고, 실패하면 스스로 되돌립니다.
+          ssh -i ~/.ssh/somang_deploy_key \
+            -p "${SSH_PORT}" \
+            -o LogLevel=ERROR \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o "UserKnownHostsFile=${HOME}/.ssh/known_hosts" \
+            -o ConnectTimeout=15 \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
+            "${SSH_USER}@${SSH_HOST}" \
+            "deploy ${GITHUB_SHA}"
+
+      - name: 공개 주소 확인
+        if: env.PUBLIC_URL != ''
+        run: |
+          set -Eeuo pipefail
+          home_code="$(curl -s -o /dev/null -m 15 -w '%{http_code}' "${PUBLIC_URL}/")"
+          ready_code="$(curl -s -o /tmp/readyz.json -m 15 -w '%{http_code}' "${PUBLIC_URL}/readyz")"
+          echo "공개 첫 화면 ${home_code} / 준비 상태 ${ready_code}"
+          [ "${home_code}" = "200" ]
+          [ "${ready_code}" = "200" ]
+          grep -q '"database":"ok"' /tmp/readyz.json
+
+      - name: 열쇠 지우기
+        if: always()
+        run: rm -f ~/.ssh/somang_deploy_key
