@@ -60,19 +60,20 @@ export function normalizeKioskDisplaySettings(
   };
 }
 
-/**
- * 돌리지 않는 아주 작은 창(가로로 눕힌 휴대폰 등). 키오스크는 배율을 크게 잡아도
- * 짧은 변이 600px 보다 크다.
- */
-export const KIOSK_ROTATE_MIN_SHORT_SIDE = 600;
-
 export type KioskRotateReason =
   | "rotated"
   | "rotated-by-url"
   | "already-portrait"
   | "setting-off"
-  | "off-by-url"
-  | "small-window";
+  | "off-by-url";
+
+export const KIOSK_ROTATE_REASONS = [
+  "rotated",
+  "rotated-by-url",
+  "already-portrait",
+  "setting-off",
+  "off-by-url",
+] as const satisfies readonly KioskRotateReason[];
 
 export type KioskRotateDecision = {
   rotation: KioskRotateDirection | null;
@@ -91,10 +92,8 @@ export function decideKioskRotation({
   height: number;
 }): KioskRotateDecision {
   if (override === "off") return { rotation: null, reason: "off-by-url" };
+  // 창 크기만 본다. 화면 배율을 크게 잡은 키오스크(예: 200% → 960×540)도 돌린다.
   if (!(width > height)) return { rotation: null, reason: "already-portrait" };
-  if (Math.min(width, height) < KIOSK_ROTATE_MIN_SHORT_SIDE) {
-    return { rotation: null, reason: "small-window" };
-  }
   if (override) return { rotation: override, reason: "rotated-by-url" };
   if (!settings?.portraitLock) return { rotation: null, reason: "setting-off" };
   return { rotation: settings.direction, reason: "rotated" };
@@ -150,6 +149,8 @@ export type KioskDisplayReport = {
   pixelRatio: number;
   rotation: KioskRotateDirection | null;
   reason: KioskRotateReason;
+  /** 돌린 틀 안의 화면이 다 떴는지. 돌리지 않을 때는 null. */
+  frameReady: boolean | null;
   browser: string;
 };
 
@@ -199,7 +200,6 @@ const REASON_LABELS: Record<KioskRotateReason, string> = {
   "already-portrait": "돌리지 않음 (이미 세로)",
   "setting-off": "돌리지 않음 (설정 꺼짐)",
   "off-by-url": "돌리지 않음 (주소로 끔)",
-  "small-window": "돌리지 않음 (작은 화면)",
 };
 
 export function kioskRotateReasonLabel(reason: KioskRotateReason) {

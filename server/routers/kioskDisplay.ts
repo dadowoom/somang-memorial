@@ -9,6 +9,7 @@ import { kioskDisplayStore } from "../kioskDisplayStore";
 import {
   KIOSK_REPORT_UA_MAX,
   KIOSK_ROTATE_DIRECTIONS,
+  KIOSK_ROTATE_REASONS,
   kioskDirectionLabel,
   type KioskDisplaySettings,
 } from "../../shared/kioskDisplay";
@@ -52,14 +53,8 @@ export const kioskDisplayRouter = router({
         screenHeight: dimension,
         pixelRatio: z.number().min(0).max(16),
         rotation: z.enum(KIOSK_ROTATE_DIRECTIONS).nullable(),
-        reason: z.enum([
-          "rotated",
-          "rotated-by-url",
-          "already-portrait",
-          "setting-off",
-          "off-by-url",
-          "small-window",
-        ]),
+        reason: z.enum(KIOSK_ROTATE_REASONS),
+        frameReady: z.boolean().nullable().default(null),
         browser: z.string().trim().max(KIOSK_REPORT_UA_MAX),
       })
     )

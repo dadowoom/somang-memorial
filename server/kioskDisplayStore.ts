@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
 import {
@@ -56,7 +57,8 @@ export function createKioskDisplayStore({
   let persisted = true;
   const reports = new Map<string, StoredKioskDisplayReport>();
 
-  function readFromDisk(): StoredKioskDisplaySettings {
+  /** 파일을 읽는다. 없으면 기본값, 읽을 수 없으면 null(마지막 값을 계속 쓴다). */
+  function readFromDisk(): StoredKioskDisplaySettings | null {
     try {
       const raw = JSON.parse(fs.readFileSync(filePath, "utf-8"));
       return {
@@ -65,20 +67,54 @@ export function createKioskDisplayStore({
       };
     } catch (error) {
       const code = (error as NodeJS.ErrnoException)?.code;
-      if (code !== "ENOENT") {
-        console.error("[KioskDisplay] 설정 파일을 읽지 못해 기본값을 씁니다.", code ?? error);
+      if (code === "ENOENT") {
+        return { ...DEFAULT_KIOSK_DISPLAY_SETTINGS, updatedAt: null };
       }
-      return { ...DEFAULT_KIOSK_DISPLAY_SETTINGS, updatedAt: null };
+      console.error(
+        "[KioskDisplay] 설정 파일을 읽지 못했습니다. 마지막 값을 씁니다.",
+        code ?? error
+      );
+      return null;
+    }
+  }
+
+  function writeToDisk(value: StoredKioskDisplaySettings) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    // 다 쓴 뒤 이름을 바꿔 끼운다. 쓰다 멈춰도 반쯤 쓴 파일이 남지 않는다.
+    const temp = `${filePath}.${randomUUID()}.tmp`;
+    try {
+      const fd = fs.openSync(temp, "wx", 0o640);
+      try {
+        fs.writeFileSync(fd, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
+        fs.fsyncSync(fd);
+      } finally {
+        fs.closeSync(fd);
+      }
+      fs.renameSync(temp, filePath);
+    } catch (error) {
+      fs.rmSync(temp, { force: true });
+      throw error;
     }
   }
 
   function getSettings(): StoredKioskDisplaySettings {
-    // 파일까지 저장되지 않은 값은 메모리 것이 최신이다. 그 밖에는 잠깐씩만
-    // 기억했다가 다시 읽는다(서버가 여러 개 떠 있어도 서로 맞춰지게).
     const fresh = now().getTime() - cachedAt < SETTINGS_CACHE_MS;
-    if (cached && (fresh || !persisted)) return cached;
-    cached = readFromDisk();
+    if (cached && fresh) return cached;
     cachedAt = now().getTime();
+    if (cached && !persisted) {
+      // 파일에 못 쓴 값은 메모리 것이 최신이다. 잠깐마다 다시 써 본다
+      // (권한을 고치면 저절로 파일에 남는다).
+      try {
+        writeToDisk(cached);
+        persisted = true;
+      } catch {
+        // 다음에 다시 시도한다.
+      }
+      return cached;
+    }
+    // 그 밖에는 잠깐씩만 기억했다가 다시 읽는다(서버가 여러 개여도 맞춰지게).
+    cached = readFromDisk() ??
+      cached ?? { ...DEFAULT_KIOSK_DISPLAY_SETTINGS, updatedAt: null };
     return cached;
   }
 
@@ -90,11 +126,7 @@ export function createKioskDisplayStore({
     cached = value;
     cachedAt = now().getTime();
     try {
-      fs.mkdirSync(path.dirname(filePath), { recursive: true });
-      // 다 쓴 뒤 이름을 바꿔 끼운다. 쓰다 멈춰도 반쯤 쓴 파일이 남지 않는다.
-      const temp = `${filePath}.${process.pid}.tmp`;
-      fs.writeFileSync(temp, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
-      fs.renameSync(temp, filePath);
+      writeToDisk(value);
       persisted = true;
     } catch (error) {
       persisted = false;

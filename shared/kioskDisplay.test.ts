@@ -15,7 +15,12 @@ const off = { portraitLock: false, direction: "ccw" } as const;
 describe("decideKioskRotation", () => {
   it("설정이 켜져 있고 창이 가로이면 설정 방향으로 돌린다", () => {
     expect(
-      decideKioskRotation({ settings: on, override: null, width: 1920, height: 1080 })
+      decideKioskRotation({
+        settings: on,
+        override: null,
+        width: 1920,
+        height: 1080,
+      })
     ).toEqual({ rotation: "ccw", reason: "rotated" });
     expect(
       decideKioskRotation({
@@ -29,39 +34,79 @@ describe("decideKioskRotation", () => {
 
   it("창이 이미 세로이면 켜져 있어도 돌리지 않는다 (이중 회전 금지)", () => {
     expect(
-      decideKioskRotation({ settings: on, override: null, width: 1080, height: 1920 })
+      decideKioskRotation({
+        settings: on,
+        override: null,
+        width: 1080,
+        height: 1920,
+      })
     ).toEqual({ rotation: null, reason: "already-portrait" });
     expect(
-      decideKioskRotation({ settings: on, override: "cw", width: 1080, height: 1920 })
+      decideKioskRotation({
+        settings: on,
+        override: "cw",
+        width: 1080,
+        height: 1920,
+      })
     ).toEqual({ rotation: null, reason: "already-portrait" });
     expect(
-      decideKioskRotation({ settings: on, override: null, width: 1000, height: 1000 })
+      decideKioskRotation({
+        settings: on,
+        override: null,
+        width: 1000,
+        height: 1000,
+      })
     ).toEqual({ rotation: null, reason: "already-portrait" });
   });
 
   it("설정이 꺼져 있거나 아직 모르면 지금처럼 그린다", () => {
     expect(
-      decideKioskRotation({ settings: off, override: null, width: 1920, height: 1080 })
+      decideKioskRotation({
+        settings: off,
+        override: null,
+        width: 1920,
+        height: 1080,
+      })
     ).toEqual({ rotation: null, reason: "setting-off" });
     expect(
-      decideKioskRotation({ settings: null, override: null, width: 1920, height: 1080 })
+      decideKioskRotation({
+        settings: null,
+        override: null,
+        width: 1920,
+        height: 1080,
+      })
     ).toEqual({ rotation: null, reason: "setting-off" });
   });
 
   it("주소 덮어쓰기가 설정보다 먼저다", () => {
     expect(
-      decideKioskRotation({ settings: on, override: "off", width: 1920, height: 1080 })
+      decideKioskRotation({
+        settings: on,
+        override: "off",
+        width: 1920,
+        height: 1080,
+      })
     ).toEqual({ rotation: null, reason: "off-by-url" });
     expect(
-      decideKioskRotation({ settings: off, override: "cw", width: 1920, height: 1080 })
+      decideKioskRotation({
+        settings: off,
+        override: "cw",
+        width: 1920,
+        height: 1080,
+      })
     ).toEqual({ rotation: "cw", reason: "rotated-by-url" });
   });
 
-  it("가로로 눕힌 휴대폰 같은 작은 창은 돌리지 않는다", () => {
+  it("화면 배율을 크게 잡은 작은 가로 창도 돌린다", () => {
     expect(
-      decideKioskRotation({ settings: on, override: null, width: 844, height: 390 })
-    ).toEqual({ rotation: null, reason: "small-window" });
-    expect(kioskRotateReasonLabel("small-window")).toContain("작은 화면");
+      decideKioskRotation({
+        settings: on,
+        override: null,
+        width: 960,
+        height: 540,
+      })
+    ).toEqual({ rotation: "ccw", reason: "rotated" });
+    expect(kioskRotateReasonLabel("rotated")).toBe("세로 고정 적용 중");
   });
 });
 

@@ -6,7 +6,9 @@ import type { TrpcContext } from "./_core/context";
 import type { KioskDisplayReport } from "../shared/kioskDisplay";
 
 // 키오스크 세로 고정 설정·화면 상태 보고 (2026-10-03). 파일은 임시 폴더에만 쓴다.
-const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "somang-kiosk-display-"));
+const tempRoot = fs.mkdtempSync(
+  path.join(os.tmpdir(), "somang-kiosk-display-")
+);
 
 const mocks = vi.hoisted(() => ({
   createAdminAuditLog: vi.fn(),
@@ -46,7 +48,9 @@ const caller = (user: typeof admin | null, ip = "203.0.113.10") =>
     res: {},
   } as unknown as TrpcContext);
 
-const report = (overrides: Partial<KioskDisplayReport> = {}): KioskDisplayReport => ({
+const report = (
+  overrides: Partial<KioskDisplayReport> = {}
+): KioskDisplayReport => ({
   viewportWidth: 1920,
   viewportHeight: 1080,
   screenWidth: 1920,
@@ -54,6 +58,7 @@ const report = (overrides: Partial<KioskDisplayReport> = {}): KioskDisplayReport
   pixelRatio: 1,
   rotation: "ccw",
   reason: "rotated",
+  frameReady: true,
   browser: "Chrome 141 · Windows",
   ...overrides,
 });
@@ -73,7 +78,12 @@ describe("createKioskDisplayStore", () => {
   });
 
   it("저장하면 파일에 남고, 서버를 다시 켜도(새 저장소) 읽힌다", () => {
-    const filePath = path.join(tempRoot, "a", ".settings", "kiosk-display.json");
+    const filePath = path.join(
+      tempRoot,
+      "a",
+      ".settings",
+      "kiosk-display.json"
+    );
     const store = createKioskDisplayStore({
       filePath,
       now: () => new Date("2026-10-03T07:00:00.000Z"),
@@ -87,7 +97,9 @@ describe("createKioskDisplayStore", () => {
       updatedAt: "2026-10-03T07:00:00.000Z",
     });
     // 반쯤 쓴 임시 파일이 남지 않는다.
-    expect(fs.readdirSync(path.dirname(filePath))).toEqual(["kiosk-display.json"]);
+    expect(fs.readdirSync(path.dirname(filePath))).toEqual([
+      "kiosk-display.json",
+    ]);
 
     const restarted = createKioskDisplayStore({ filePath });
     expect(restarted.getSettings()).toMatchObject({
@@ -120,6 +132,45 @@ describe("createKioskDisplayStore", () => {
     expect(store.getSettings()).toMatchObject({ portraitLock: true });
   });
 
+  it("파일에 못 쓴 값은 권한이 돌아오면 저절로 파일에 남는다", () => {
+    const blocker = path.join(tempRoot, "blocker2");
+    fs.writeFileSync(blocker, "x");
+    let clock = Date.parse("2026-10-03T07:00:00.000Z");
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const filePath = path.join(blocker, "kiosk-display.json");
+    const store = createKioskDisplayStore({
+      filePath,
+      now: () => new Date(clock),
+    });
+    expect(
+      store.saveSettings({ portraitLock: true, direction: "cw" }).persisted
+    ).toBe(false);
+    spy.mockRestore();
+    fs.rmSync(blocker);
+    clock += 16 * 1000;
+    expect(store.getSettings()).toMatchObject({ portraitLock: true });
+    expect(store.isPersisted()).toBe(true);
+    expect(JSON.parse(fs.readFileSync(filePath, "utf-8"))).toMatchObject({
+      portraitLock: true,
+      direction: "cw",
+    });
+  });
+
+  it("파일이 잠깐 깨져도 마지막 값을 계속 쓴다(꺼짐으로 돌아가지 않음)", () => {
+    const filePath = path.join(tempRoot, "flaky", "kiosk-display.json");
+    let clock = Date.parse("2026-10-03T07:00:00.000Z");
+    const store = createKioskDisplayStore({
+      filePath,
+      now: () => new Date(clock),
+    });
+    store.saveSettings({ portraitLock: true, direction: "ccw" });
+    fs.writeFileSync(filePath, "{ broken");
+    clock += 16 * 1000;
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(store.getSettings()).toMatchObject({ portraitLock: true });
+    spy.mockRestore();
+  });
+
   it("다른 서버가 파일을 바꾸면 잠시 뒤 따라간다", () => {
     const filePath = path.join(tempRoot, "shared", "kiosk-display.json");
     let clock = Date.parse("2026-10-03T07:00:00.000Z");
@@ -145,7 +196,13 @@ describe("createKioskDisplayStore", () => {
     expect(store.listReports()).toHaveLength(1);
     expect(store.listReports()[0].reason).toBe("setting-off");
 
-    store.recordReport(report({ screenWidth: 390, screenHeight: 844, browser: "Safari 18 · iOS" }));
+    store.recordReport(
+      report({
+        screenWidth: 390,
+        screenHeight: 844,
+        browser: "Safari 18 · iOS",
+      })
+    );
     store.recordReport(report({ screenWidth: 1080, screenHeight: 1920 }));
     const list = store.listReports();
     expect(list).toHaveLength(2);
@@ -163,11 +220,14 @@ describe("kioskDisplay 라우터", () => {
 
   it("관리자만 바꿀 수 있고, 바꾸면 관리 기록을 남긴다", async () => {
     await expect(
-      caller(member).kioskDisplay.adminUpdate({ portraitLock: true, direction: "ccw" })
+      caller(member).kioskDisplay.adminUpdate({
+        portraitLock: true,
+        direction: "ccw",
+      })
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await expect(
-      caller(null).kioskDisplay.adminGet()
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller(null).kioskDisplay.adminGet()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
     expect(mocks.createAdminAuditLog).not.toHaveBeenCalled();
 
     const result = await caller(admin).kioskDisplay.adminUpdate({
@@ -208,14 +268,10 @@ describe("kioskDisplay 라우터", () => {
 
   it("이상한 보고는 받지 않는다", async () => {
     await expect(
-      caller(null).kioskDisplay.report(
-        report({ browser: "x".repeat(200) })
-      )
+      caller(null).kioskDisplay.report(report({ browser: "x".repeat(200) }))
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
-      caller(null).kioskDisplay.report(
-        report({ viewportWidth: -1 })
-      )
+      caller(null).kioskDisplay.report(report({ viewportWidth: -1 }))
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 

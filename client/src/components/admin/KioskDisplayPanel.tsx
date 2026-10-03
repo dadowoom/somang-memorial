@@ -30,6 +30,14 @@ function formatTime(value: string | null) {
   return Number.isNaN(date.getTime()) ? "-" : timeFormat.format(date);
 }
 
+/** 키오스크는 5분마다 알린다. 15분 넘게 소식이 없으면 꺼졌거나 끊긴 것이다. */
+const STALE_AFTER_MS = 15 * 60 * 1000;
+
+function isStale(value: string) {
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) || Date.now() - time > STALE_AFTER_MS;
+}
+
 export default function KioskDisplayPanel() {
   const [message, setMessage] = useState("");
   const utils = trpc.useUtils();
@@ -40,7 +48,7 @@ export default function KioskDisplayPanel() {
     onSuccess: async result => {
       setMessage(
         result.persisted
-          ? "저장했습니다. 켜져 있는 키오스크는 2분 안에 따라옵니다."
+          ? "저장했습니다. 켜져 있는 키오스크는 보통 2분 안에 따라옵니다(인터넷이 끊겨 있으면 다시 이어진 뒤)."
           : "적용했지만 서버 파일에 저장하지 못했습니다. 서버를 다시 켜면 꺼진 상태로 돌아갑니다."
       );
       await Promise.all([
@@ -55,7 +63,10 @@ export default function KioskDisplayPanel() {
   const reports = displayQuery.data?.reports ?? [];
   const busy = update.isPending || !settings;
 
-  function save(next: { portraitLock: boolean; direction: KioskRotateDirection }) {
+  function save(next: {
+    portraitLock: boolean;
+    direction: KioskRotateDirection;
+  }) {
     setMessage("");
     update.mutate(next);
   }
@@ -105,7 +116,10 @@ export default function KioskDisplayPanel() {
                 disabled={busy || selected}
                 onClick={() =>
                   settings &&
-                  save({ portraitLock: option.value, direction: settings.direction })
+                  save({
+                    portraitLock: option.value,
+                    direction: settings.direction,
+                  })
                 }
                 className={`h-10 min-w-16 px-4 text-sm transition-colors disabled:cursor-default ${
                   selected
@@ -170,8 +184,10 @@ export default function KioskDisplayPanel() {
 
       <h3 className="mt-8 text-sm font-medium">키오스크가 알려 온 화면 상태</h3>
       <p className="mt-1 break-keep text-xs leading-5 text-[#777] [overflow-wrap:anywhere]">
-        키오스크 주소(/kiosk)를 연 화면이 5분마다 알려 옵니다. 서버를 다시 켜면
-        비었다가 몇 분 안에 다시 채워집니다. 개인정보는 받지 않습니다.
+        키오스크 주소(/kiosk)를 연 화면이 5분마다 스스로 알려 오는 참고
+        정보입니다(로그인 없이 받으므로 확인된 기록은 아닙니다). 15분 넘게
+        소식이 없으면 흐리게 보입니다. 서버를 다시 켜면 비었다가 몇 분 안에 다시
+        채워집니다. 개인정보는 받지 않습니다.
       </p>
       {displayQuery.isLoading ? (
         <p className="mt-4 text-sm text-[#616161]">불러오는 중입니다.</p>
@@ -184,7 +200,9 @@ export default function KioskDisplayPanel() {
           {reports.map(report => (
             <li
               key={`${report.screenWidth}x${report.screenHeight}@${report.pixelRatio}|${report.browser}`}
-              className="flex flex-wrap items-baseline gap-x-5 gap-y-1 py-3 text-sm"
+              className={`flex flex-wrap items-baseline gap-x-5 gap-y-1 py-3 text-sm ${
+                isStale(report.receivedAt) ? "opacity-50" : ""
+              }`}
             >
               <span className="w-36 shrink-0 text-[#616161]">
                 {formatTime(report.receivedAt)}
@@ -205,6 +223,9 @@ export default function KioskDisplayPanel() {
                 {kioskRotateReasonLabel(report.reason)}
                 {report.rotation
                   ? ` · ${kioskDirectionLabel(report.rotation)}`
+                  : ""}
+                {report.rotation && report.frameReady === false
+                  ? " · 화면을 불러오는 중(계속 이러면 확인 필요)"
                   : ""}
               </span>
               <span className="text-xs text-[#777]">

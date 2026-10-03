@@ -115,7 +115,11 @@ describe("isKioskRotationFrame / reloadKioskDocument", () => {
 
     const alone = {
       location: location("https://somangmemorial.co.kr"),
-    } as { self?: unknown; top?: unknown; location: ReturnType<typeof location> };
+    } as {
+      self?: unknown;
+      top?: unknown;
+      location: ReturnType<typeof location>;
+    };
     alone.self = alone;
     alone.top = alone;
     reloadKioskDocument(alone as unknown as Window);
@@ -127,7 +131,10 @@ describe("마지막 설정 기억", () => {
   it("쓰고 읽고, 깨진 값은 없는 것으로 본다", () => {
     const storage = memoryStorage();
     expect(readCachedKioskDisplaySettings(storage)).toBeNull();
-    writeCachedKioskDisplaySettings({ portraitLock: true, direction: "cw" }, storage);
+    writeCachedKioskDisplaySettings(
+      { portraitLock: true, direction: "cw" },
+      storage
+    );
     expect(readCachedKioskDisplaySettings(storage)).toEqual({
       portraitLock: true,
       direction: "cw",
