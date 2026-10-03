@@ -21,6 +21,7 @@ function isSecureRequest(req: Request) {
  * 허락한 바깥 주소:
  * - 구글 글꼴 (fonts.googleapis.com 글꼴 목록, fonts.gstatic.com 글꼴 파일)
  * - 유튜브 영상 틀 (youtube.com, youtube-nocookie.com)
+ * - 우리 주소의 틀 ('self'): 키오스크 세로 고정이 /kiosk 화면을 틀에 담아 돌린다 (2026-10-03)
  * - 사진은 https 주소면 어디든 (유튜브·비메오 썸네일, 옛 틀 저장소 사진이 DB 에 남아
  *   있을 수 있다). 사진은 스크립트를 실행하지 못하므로 넓게 둔다.
  *
@@ -38,7 +39,8 @@ export const CONTENT_SECURITY_POLICY = [
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob:",
   "connect-src 'self'",
-  "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
+  // 'self' 는 키오스크 세로 고정(2026-10-03)이 화면을 우리 주소의 틀 안에 담아 돌리기 때문이다.
+  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com",
   "frame-ancestors 'self'",
   "object-src 'none'",
   "base-uri 'self'",

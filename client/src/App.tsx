@@ -12,6 +12,7 @@ import KioskNotFound from "./pages/KioskNotFound";
 import MemorialWritingSafety from "./components/memorial/MemorialWritingSafety";
 import { KioskKeyboardProvider } from "./components/kiosk/KioskKeyboard";
 import KioskConnectionBanner from "./components/kiosk/KioskConnectionBanner";
+import KioskPortraitLock from "./components/kiosk/KioskPortraitLock";
 import { useKioskDocumentMode } from "./hooks/useKioskDocumentMode";
 import "./pages/memberEditorial.css";
 
@@ -50,23 +51,37 @@ const AccountSettings = lazy(() => import("./pages/AccountSettings"));
 const ParentFinder = lazy(() => import("./pages/ParentFinder"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
+// 키오스크 화면은 세로 고정 상자로 감싼다 (2026-10-03). 창이 이미 세로이거나
+// 설정이 꺼져 있으면 상자는 아무것도 하지 않는다.
 function KioskIndexRoute() {
   useKioskDocumentMode();
   return (
-    <KioskKeyboardProvider>
-      <KioskConnectionBanner />
-      <Kiosk />
-    </KioskKeyboardProvider>
+    <KioskPortraitLock>
+      <KioskKeyboardProvider>
+        <KioskConnectionBanner />
+        <Kiosk />
+      </KioskKeyboardProvider>
+    </KioskPortraitLock>
   );
 }
 
 function KioskMemorialRoute() {
   useKioskDocumentMode();
   return (
-    <KioskKeyboardProvider>
-      <KioskConnectionBanner />
-      <KioskMemorial />
-    </KioskKeyboardProvider>
+    <KioskPortraitLock>
+      <KioskKeyboardProvider>
+        <KioskConnectionBanner />
+        <KioskMemorial />
+      </KioskKeyboardProvider>
+    </KioskPortraitLock>
+  );
+}
+
+function KioskNotFoundRoute() {
+  return (
+    <KioskPortraitLock>
+      <KioskNotFound />
+    </KioskPortraitLock>
   );
 }
 
@@ -83,7 +98,7 @@ function Router() {
         <Route path={"/kiosk/memorial/:slug"} component={KioskMemorialRoute} />
         <Route path={"/kiosk"} component={KioskIndexRoute} />
         {/* 잘못된 키오스크 주소는 일반 홈페이지의 404 로 새지 않게 키오스크 안에서 받는다. */}
-        <Route path={"/kiosk/*"} component={KioskNotFound} />
+        <Route path={"/kiosk/*"} component={KioskNotFoundRoute} />
         <Route path={"/admin/operations"} component={AdminOperations} />
         <Route path={"/admin/users"} component={AdminUsers} />
         <Route path={"/admin/kiosk"} component={AdminKioskPosters} />

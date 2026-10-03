@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import AdminNavigation from "@/components/admin/AdminNavigation";
+import KioskDisplayPanel from "@/components/admin/KioskDisplayPanel";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import { compressImageFile } from "@/lib/imageCompression";
@@ -219,6 +220,8 @@ export default function AdminKioskPosters() {
             </aside>
           </div>
         </section>
+
+        <KioskDisplayPanel />
 
         <section className="container py-10">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#b5b0a7] pb-4">

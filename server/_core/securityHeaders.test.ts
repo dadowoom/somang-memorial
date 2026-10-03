@@ -22,7 +22,7 @@ describe("콘텐츠 보안 정책", () => {
     );
   });
 
-  it("스크립트는 우리 사이트 것만, 영상 틀은 유튜브만 허락한다", () => {
+  it("스크립트는 우리 사이트 것만, 영상 틀은 유튜브와 우리 사이트(키오스크 세로 고정)만 허락한다", () => {
     const rules = Object.fromEntries(
       CONTENT_SECURITY_POLICY.split("; ").map(rule => {
         const [name, ...values] = rule.split(" ");
@@ -32,6 +32,7 @@ describe("콘텐츠 보안 정책", () => {
     expect(rules["script-src"]).toEqual(["'self'"]);
     expect(rules["object-src"]).toEqual(["'none'"]);
     expect(rules["frame-src"]).toEqual([
+      "'self'",
       "https://www.youtube.com",
       "https://www.youtube-nocookie.com",
     ]);

@@ -156,6 +156,7 @@ import { letterNoticeRouter } from "./routers/letterNotice";
 import { intermentAdminRouter } from "./routers/intermentAdmin";
 import { canUserManageMemorialMedia } from "./routers/memorialAccess";
 import { kioskInquiryRouter } from "./routers/kioskInquiry";
+import { kioskDisplayRouter } from "./routers/kioskDisplay";
 import { uploadRouter } from "./routers/upload";
 import { videoRouter } from "./routers/video";
 import { maskEmailForAudit, maskPhoneForAudit } from "../shared/auditNotes";
@@ -2952,6 +2953,7 @@ export const appRouter = router({
   upload: uploadRouter,
   kioskPoster: kioskPosterRouter,
   kioskInquiry: kioskInquiryRouter,
+  kioskDisplay: kioskDisplayRouter,
   memorialDraft: memorialDraftRouter,
   letterNotice: letterNoticeRouter,
   intermentAdmin: intermentAdminRouter,
