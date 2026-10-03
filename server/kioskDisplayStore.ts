@@ -105,7 +105,18 @@ export function createKioskDisplayStore({
     cachedAt = now().getTime();
     if (cached && !persisted) {
       // 파일에 못 쓴 값은 메모리 것이 최신이다. 잠깐마다 다시 써 본다
-      // (권한을 고치면 저절로 파일에 남는다).
+      // (권한을 고치면 저절로 파일에 남는다). 단, 그사이 다른 서버가 더 나중에
+      // 저장한 값이 파일에 있으면 그쪽을 따르고 내 값은 버린다.
+      const onDisk = readFromDisk();
+      if (
+        onDisk?.updatedAt &&
+        cached.updatedAt &&
+        onDisk.updatedAt > cached.updatedAt
+      ) {
+        cached = onDisk;
+        persisted = true;
+        return cached;
+      }
       try {
         writeToDisk(cached);
         persisted = true;

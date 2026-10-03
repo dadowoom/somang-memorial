@@ -7,6 +7,7 @@ import {
 } from "../_core/passwordAttemptLimiter";
 import { kioskDisplayStore } from "../kioskDisplayStore";
 import {
+  KIOSK_BROWSER_SUMMARY_PATTERN,
   KIOSK_REPORT_UA_MAX,
   KIOSK_ROTATE_DIRECTIONS,
   KIOSK_ROTATE_REASONS,
@@ -55,7 +56,12 @@ export const kioskDisplayRouter = router({
         rotation: z.enum(KIOSK_ROTATE_DIRECTIONS).nullable(),
         reason: z.enum(KIOSK_ROTATE_REASONS),
         frameReady: z.boolean().nullable().default(null),
-        browser: z.string().trim().max(KIOSK_REPORT_UA_MAX),
+        // 화면이 줄여 보낸 "Chrome 141 · Windows" 꼴만 받는다(아무 글이나 못 남기게).
+        browser: z
+          .string()
+          .trim()
+          .max(KIOSK_REPORT_UA_MAX)
+          .regex(KIOSK_BROWSER_SUMMARY_PATTERN),
       })
     )
     .mutation(({ ctx, input }) => {
@@ -84,16 +90,16 @@ export const kioskDisplayRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const before = kioskDisplayStore.getSettings();
-      const { settings, persisted } = kioskDisplayStore.saveSettings(input);
+      // 관리 기록을 먼저 남긴다. 기록이 실패하면 설정도 바꾸지 않는다.
+      // (파일 저장 실패는 관리자 화면에 빨간 글로 따로 보이고 서버 로그에 남는다.)
       await createAdminAuditLog({
         adminUserId: ctx.user.id,
         action: "kioskDisplay.update",
         beforeValue: auditValue(before),
-        afterValue: auditValue(settings),
-        note: persisted
-          ? "키오스크 세로 고정 설정 변경"
-          : "키오스크 세로 고정 설정 변경 (파일 저장 실패 · 서버 메모리에만 있음)",
+        afterValue: auditValue(input),
+        note: "키오스크 세로 고정 설정 변경",
       });
+      const { settings, persisted } = kioskDisplayStore.saveSettings(input);
       return { settings, persisted };
     }),
 });

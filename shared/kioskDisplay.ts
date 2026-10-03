@@ -154,15 +154,19 @@ export type KioskDisplayReport = {
   browser: string;
 };
 
+/** summarizeUserAgent 가 만드는 모양. 서버는 이 모양만 받는다. */
+export const KIOSK_BROWSER_SUMMARY_PATTERN =
+  /^(?:(?:Edge|Samsung|Chrome|Firefox|Safari) \d{1,4}|기타 브라우저)(?: · (?:Windows|Android|iOS|Mac|ChromeOS|Linux))?$/;
+
 /** 브라우저 문자열을 "Chrome 141 · Windows" 정도로 줄인다. */
 export function summarizeUserAgent(userAgent: string | null | undefined) {
   const ua = userAgent ?? "";
   const pick = (pattern: RegExp) => ua.match(pattern)?.[1];
-  const edge = pick(/Edg\/(\d+)/);
-  const samsung = pick(/SamsungBrowser\/(\d+)/);
-  const chrome = pick(/(?:Chrome|CriOS)\/(\d+)/);
-  const firefox = pick(/(?:Firefox|FxiOS)\/(\d+)/);
-  const safari = /Safari\//.test(ua) ? pick(/Version\/(\d+)/) : undefined;
+  const edge = pick(/Edg\/(\d{1,4})/);
+  const samsung = pick(/SamsungBrowser\/(\d{1,4})/);
+  const chrome = pick(/(?:Chrome|CriOS)\/(\d{1,4})/);
+  const firefox = pick(/(?:Firefox|FxiOS)\/(\d{1,4})/);
+  const safari = /Safari\//.test(ua) ? pick(/Version\/(\d{1,4})/) : undefined;
   const name = edge
     ? `Edge ${edge}`
     : samsung

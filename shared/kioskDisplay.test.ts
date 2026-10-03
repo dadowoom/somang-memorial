@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  KIOSK_BROWSER_SUMMARY_PATTERN,
   decideKioskRotation,
   kioskFramePointToScreen,
   kioskRotateReasonLabel,
@@ -222,6 +223,16 @@ describe("summarizeUserAgent", () => {
       )
     ).toBe("Safari 18 · iOS");
     expect(summarizeUserAgent("")).toBe("기타 브라우저");
+    for (const ua of [
+      "",
+      "x".repeat(500),
+      "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/26.0 Chrome/122.0.0.0 Mobile Safari/537.36",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0; rv:131.0) Gecko/20100101 Firefox/131.0",
+      "Mozilla/5.0 (X11; CrOS x86_64 15000.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99999.0 Safari/537.36",
+    ]) {
+      // 서버가 받는 모양과 늘 맞아야 한다.
+      expect(summarizeUserAgent(ua)).toMatch(KIOSK_BROWSER_SUMMARY_PATTERN);
+    }
     expect(summarizeUserAgent("x".repeat(500)).length).toBeLessThanOrEqual(40);
   });
 });

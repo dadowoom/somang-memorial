@@ -156,6 +156,32 @@ describe("createKioskDisplayStore", () => {
     });
   });
 
+  it("못 쓴 값을 다시 쓸 때 다른 서버가 더 나중에 저장한 값이 있으면 그쪽을 따른다", () => {
+    const filePath = path.join(tempRoot, "race", "kiosk-display.json");
+    let clock = Date.parse("2026-10-03T07:00:00.000Z");
+    const now = () => new Date(clock);
+    const a = createKioskDisplayStore({ filePath, now });
+    const b = createKioskDisplayStore({ filePath, now });
+    // A 는 저장에 실패한 척: 폴더 자리에 파일을 두었다가 치운다.
+    fs.mkdirSync(path.dirname(path.dirname(filePath)), { recursive: true });
+    fs.writeFileSync(path.dirname(filePath), "x");
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(
+      a.saveSettings({ portraitLock: true, direction: "ccw" }).persisted
+    ).toBe(false);
+    fs.rmSync(path.dirname(filePath));
+    clock += 1000;
+    expect(
+      b.saveSettings({ portraitLock: false, direction: "ccw" }).persisted
+    ).toBe(true);
+    clock += 16 * 1000;
+    expect(a.getSettings()).toMatchObject({ portraitLock: false });
+    expect(JSON.parse(fs.readFileSync(filePath, "utf-8")).portraitLock).toBe(
+      false
+    );
+    spy.mockRestore();
+  });
+
   it("파일이 잠깐 깨져도 마지막 값을 계속 쓴다(꺼짐으로 돌아가지 않음)", () => {
     const filePath = path.join(tempRoot, "flaky", "kiosk-display.json");
     let clock = Date.parse("2026-10-03T07:00:00.000Z");
@@ -249,6 +275,36 @@ describe("kioskDisplay 라우터", () => {
       portraitLock: true,
       direction: "cw",
     });
+  });
+
+  it("관리 기록을 남기지 못하면 설정도 바꾸지 않는다", async () => {
+    const before = await caller(null).kioskDisplay.settings();
+    mocks.createAdminAuditLog.mockRejectedValueOnce(new Error("db down"));
+    await expect(
+      caller(admin).kioskDisplay.adminUpdate({
+        portraitLock: !before.portraitLock,
+        direction: "ccw",
+      })
+    ).rejects.toBeTruthy();
+    await expect(caller(null).kioskDisplay.settings()).resolves.toEqual(before);
+  });
+
+  it("브라우저 칸에는 줄인 이름 모양만 받는다(아무 글이나 저장 못 함)", async () => {
+    for (const browser of [
+      "name@example.com",
+      "010-1234-5678",
+      "Chrome 141 · 김소망",
+      "Chrome",
+    ]) {
+      await expect(
+        caller(null, "198.51.100.200").kioskDisplay.report(report({ browser }))
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    await expect(
+      caller(null, "198.51.100.201").kioskDisplay.report(
+        report({ browser: "기타 브라우저" })
+      )
+    ).resolves.toEqual({ ok: true });
   });
 
   it("화면 상태 보고를 받아 관리자 화면에 보여 준다", async () => {
