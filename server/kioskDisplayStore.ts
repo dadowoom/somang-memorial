@@ -23,11 +23,10 @@ import { UPLOAD_DIR } from "./storage";
  * 몇 분 안에 다시 알린다).
  */
 
-export const KIOSK_DISPLAY_SETTINGS_FILE = path.join(
-  UPLOAD_DIR,
-  ".settings",
-  "kiosk-display.json"
-);
+/** 업로드 폴더 안 숨김 폴더의 설정 파일. 쓸 때 정한다(시험에서 storage 를 바꿔 끼워도 되게). */
+export function kioskDisplaySettingsFile() {
+  return path.join(UPLOAD_DIR, ".settings", "kiosk-display.json");
+}
 
 /** 보고는 기기(화면 크기 + 브라우저)마다 마지막 1건, 모두 합쳐 이만큼만 둔다. */
 export const KIOSK_REPORT_MAX_DEVICES = 8;
@@ -43,7 +42,7 @@ export type StoredKioskDisplayReport = KioskDisplayReport & {
 };
 
 export function createKioskDisplayStore({
-  filePath = KIOSK_DISPLAY_SETTINGS_FILE,
+  filePath: filePathOption,
   now = () => new Date(),
   maxDevices = KIOSK_REPORT_MAX_DEVICES,
 }: {
@@ -56,11 +55,13 @@ export function createKioskDisplayStore({
   /** 마지막 저장이 파일까지 갔는지. false 면 서버를 다시 켜면 사라진다. */
   let persisted = true;
   const reports = new Map<string, StoredKioskDisplayReport>();
+  let resolvedFilePath: string | null = filePathOption ?? null;
+  const settingsFile = () => (resolvedFilePath ??= kioskDisplaySettingsFile());
 
   /** 파일을 읽는다. 없으면 기본값, 읽을 수 없으면 null(마지막 값을 계속 쓴다). */
   function readFromDisk(): StoredKioskDisplaySettings | null {
     try {
-      const raw = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      const raw = JSON.parse(fs.readFileSync(settingsFile(), "utf-8"));
       return {
         ...normalizeKioskDisplaySettings(raw),
         updatedAt: typeof raw?.updatedAt === "string" ? raw.updatedAt : null,
@@ -79,6 +80,7 @@ export function createKioskDisplayStore({
   }
 
   function writeToDisk(value: StoredKioskDisplaySettings) {
+    const filePath = settingsFile();
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     // 다 쓴 뒤 이름을 바꿔 끼운다. 쓰다 멈춰도 반쯤 쓴 파일이 남지 않는다.
     const temp = `${filePath}.${randomUUID()}.tmp`;
