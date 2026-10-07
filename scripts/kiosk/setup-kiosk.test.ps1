@@ -20,6 +20,13 @@ Assert ($launcher.Length -gt 500) 'Launcher was not extracted'
 [void][System.Management.Automation.Language.Parser]::ParseInput($launcher, [ref]$tokens, [ref]$errors)
 Assert ($errors.Count -eq 0) 'Launcher syntax error'
 
+# Windows Update stays off on the kiosk (2026-10-07 on site: an update changed the graphics driver
+# and restarted Windows, which broke the portrait screen and reopened Chrome).
+$setupText = [System.IO.File]::ReadAllText($setup)
+foreach ($policy in @('NoAutoUpdate', 'ExcludeWUDriversInQualityUpdate', 'NoAutoRebootWithLoggedOnUsers')) {
+  Assert ($setupText -match ('Set-ItemProperty -Path \$\w+ -Name ' + $policy + ' -Value 1 -Type DWord')) ('Setup must set Windows Update policy ' + $policy)
+}
+
 # All filesystem checks are mocked; this also runs on PCs without Chrome installed.
 & {
   $capture = @{}
@@ -238,4 +245,4 @@ Assert (($shared.Logs.ToArray() -match 'chrome exited').Count -eq 1) ('First lau
 $first.Dispose()
 $shared.Release.Dispose()
 
-Write-Host 'PASS: syntax, preview isolation, URL validation, one launcher only, running Chrome watched, quick-exit back-off, failure retries'
+Write-Host 'PASS: syntax, Windows Update off, preview isolation, URL validation, one launcher only, running Chrome watched, quick-exit back-off, failure retries'

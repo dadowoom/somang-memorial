@@ -7,7 +7,8 @@
     3. 로그인되자마자 Chrome 이 전체 화면(키오스크 모드)으로 추모관 검색 화면을 연다.
     4. 누가 브라우저를 닫아도 3초 뒤 다시 뜬다. 실행기는 한 번에 하나만 돈다.
     5. 화면이 꺼지거나 절전에 들어가지 않는다.
-    6. Windows 업데이트 활성 시간을 08~22시로 지정한다.
+    6. Windows 자동 업데이트를 끈다(드라이버 자동 교체·업데이트 재시작 포함). 보안 패치는
+       관리자가 날을 정해 직접 설치한다. 활성 시간은 08~22시로 둔다.
 
   주소가 바뀌면 같은 파일을 -KioskUrl 로 다시 실행하거나
   C:\Kiosk\config.json 의 url 만 고치면 된다.
@@ -79,6 +80,7 @@ Write-Host "   키오스크 주소 : $KioskUrl"
 Write-Host "   전용 계정     : $KioskUser"
 Write-Host "   브라우저      : $chromePath"
 Write-Warn2 '이 PC 전체 Chrome 정책(브라우저 로그인·동기화·저장 제안·알림·백그라운드 실행)을 변경합니다.'
+Write-Warn2 'Windows 자동 업데이트를 끕니다. 보안 패치는 몇 달에 한 번 관리자 계정에서 직접 설치해 주세요.'
 
 # ---------------------------------------------------------------------------
 # 1. 폴더와 설정 파일
@@ -310,14 +312,27 @@ Write-Step "전원 설정"
 Write-Ok "화면이 꺼지지 않고 절전에 들어가지 않습니다."
 
 # ---------------------------------------------------------------------------
-# 8. Windows 업데이트 활성 시간 (재부팅을 절대 방지하는 것은 아님)
+# 8. Windows 업데이트: 자동으로 받거나 깔거나 재시작하지 않는다
 # ---------------------------------------------------------------------------
+# 2026-10-07 현장 결정. 업데이트가 깔리거나 그 뒤 재시작될 때, 그래픽(AMD) 드라이버가 바뀌어 세로
+# 1080×1920 설정이 풀리거나(화면이 눌리고 돌아감) Windows 가 Chrome 을 다시 열어 첫 화면이 되풀이됐다.
+#   NoAutoUpdate=1                     자동 업데이트 끄기 (관리자가 "업데이트 확인"을 누를 때만)
+#   ExcludeWUDriversInQualityUpdate=1  장치 드라이버를 Windows 업데이트로 바꾸지 않기
+#   NoAutoRebootWithLoggedOnUsers=1    로그인돼 있는 동안 업데이트 때문에 저절로 재시작하지 않기
+# 기존 값은 지우지 않는다(키가 없을 때만 만든다). 활성 시간 08~22시는 그대로 둔다.
 Write-Step "Windows 업데이트"
 $ux = "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings"
 New-Item -Path $ux -Force | Out-Null
 Set-ItemProperty -Path $ux -Name ActiveHoursStart -Value 8 -Type DWord
 Set-ItemProperty -Path $ux -Name ActiveHoursEnd -Value 22 -Type DWord
-Write-Ok "Windows 업데이트 활성 시간을 08시~22시로 지정했습니다."
+$wuPolicy = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
+$auPolicy = Join-Path $wuPolicy "AU"
+if (-not (Test-Path -LiteralPath $auPolicy)) { New-Item -Path $auPolicy -Force | Out-Null }
+Set-ItemProperty -Path $wuPolicy -Name ExcludeWUDriversInQualityUpdate -Value 1 -Type DWord
+Set-ItemProperty -Path $auPolicy -Name NoAutoUpdate -Value 1 -Type DWord
+Set-ItemProperty -Path $auPolicy -Name NoAutoRebootWithLoggedOnUsers -Value 1 -Type DWord
+Write-Ok "자동 업데이트·드라이버 자동 교체·업데이트 재시작을 껐습니다. 활성 시간은 08시~22시입니다."
+Write-Warn2 "보안 패치는 몇 달에 한 번 관리자 계정에서 '설정 → Windows 업데이트 → 업데이트 확인'으로 직접 설치하세요."
 
 # ---------------------------------------------------------------------------
 # 끝
