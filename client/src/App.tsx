@@ -13,6 +13,7 @@ import MemorialWritingSafety from "./components/memorial/MemorialWritingSafety";
 import { KioskKeyboardProvider } from "./components/kiosk/KioskKeyboard";
 import KioskConnectionBanner from "./components/kiosk/KioskConnectionBanner";
 import { useKioskDocumentMode } from "./hooks/useKioskDocumentMode";
+import { markScreenRendered } from "./lib/chunkReload";
 import "./pages/memberEditorial.css";
 
 // Kiosk routes stay in the first download. Less frequently used web and admin
@@ -77,6 +78,7 @@ function Router() {
     !location.endsWith("/obituary");
   const routes = (
     <Suspense fallback={<RouteLoading />}>
+      <ScreenRenderedSignal />
       <Switch>
         <Route path={"/"} component={Home} />
         <Route path={"/login"} component={Login} />
@@ -130,6 +132,18 @@ function Router() {
   return memberPage ? (
     <div className="member-editorial">{routes}</div>
   ) : routes;
+}
+
+/**
+ * 화면이 실제로 그려졌다고 알린다 (2026-10-07). 위 Suspense 안에 두었으므로 늦게 받는
+ * 화면 조각까지 다 받아 그려진 뒤에만 불린다. 조각을 못 받아 오류 화면이 되면 불리지 않는다.
+ * 조각 파일 새로고침의 반복 방지 표시는 이 알림 뒤에만 지운다 (lib/chunkReload.ts).
+ */
+function ScreenRenderedSignal() {
+  useEffect(() => {
+    markScreenRendered();
+  }, []);
+  return null;
 }
 
 function RouteLoading() {
