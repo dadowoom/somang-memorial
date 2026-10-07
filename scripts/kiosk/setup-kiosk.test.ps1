@@ -194,8 +194,12 @@ try { & ([scriptblock]::Create($launcherText)) } catch {
 '@
 $first = [PowerShell]::Create()
 [void]$first.AddScript($firstRunner).AddArgument($pairText).AddArgument($shared)
+# Reading $first.Streams.Error while the first launcher still runs would wait until it ends
+# (PowerShell streams block their readers), so the errors are read only after it has finished.
 function Get-FirstLauncherDetail {
-  ' | first launcher log: ' + (@($shared.Logs) -join ' / ') + ' | first launcher errors: ' + (($first.Streams.Error | Out-String).Trim())
+  $errorText = 'still running'
+  if ($firstRun.IsCompleted) { $errorText = ($first.Streams.Error | Out-String).Trim() }
+  ' | first launcher log: ' + ($shared.Logs.ToArray() -join ' / ') + ' | first launcher errors: ' + $errorText
 }
 $firstRun = $first.BeginInvoke()
 try {
@@ -205,7 +209,7 @@ try {
   }
   Assert ($shared.Launches -eq 1) ('First launcher did not open Chrome' + (Get-FirstLauncherDetail))
   Assert (-not $firstRun.IsCompleted) ('First launcher stopped while its Chrome was still open' + (Get-FirstLauncherDetail))
-  Assert ((@($shared.Logs) -match 'lock unavailable').Count -eq 0) ('First launcher could not take its lock' + (Get-FirstLauncherDetail))
+  Assert (($shared.Logs.ToArray() -match 'lock unavailable').Count -eq 0) ('First launcher could not take its lock' + (Get-FirstLauncherDetail))
   & {
     $second = @{ Logs = @(); Launches = 0; Slept = $false }
     function Get-Content { '{"url":"https://somangmemorial.co.kr/kiosk"}' }
@@ -230,7 +234,7 @@ Assert $firstRun.IsCompleted ('First launcher did not stop' + (Get-FirstLauncher
 [void]$first.EndInvoke($firstRun)
 Assert ($first.Streams.Error.Count -eq 0) ('First launcher failed' + (Get-FirstLauncherDetail))
 Assert ($shared.Launches -eq 1) ('Two launchers must open only one Chrome' + (Get-FirstLauncherDetail))
-Assert ((@($shared.Logs) -match 'first: chrome exited').Count -eq 1) ('First launcher stopped watching its Chrome' + (Get-FirstLauncherDetail))
+Assert (($shared.Logs.ToArray() -match 'first: chrome exited').Count -eq 1) ('First launcher stopped watching its Chrome' + (Get-FirstLauncherDetail))
 $first.Dispose()
 $shared.Release.Dispose()
 
