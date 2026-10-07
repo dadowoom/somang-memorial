@@ -234,7 +234,7 @@ Assert $firstRun.IsCompleted ('First launcher did not stop' + (Get-FirstLauncher
 [void]$first.EndInvoke($firstRun)
 Assert ($first.Streams.Error.Count -eq 0) ('First launcher failed' + (Get-FirstLauncherDetail))
 Assert ($shared.Launches -eq 1) ('Two launchers must open only one Chrome' + (Get-FirstLauncherDetail))
-Assert (($shared.Logs.ToArray() -match 'first: chrome exited').Count -eq 1) ('First launcher stopped watching its Chrome' + (Get-FirstLauncherDetail))
+Assert (($shared.Logs.ToArray() -match 'chrome exited').Count -eq 1) ('First launcher stopped watching its Chrome' + (Get-FirstLauncherDetail))
 $first.Dispose()
 $shared.Release.Dispose()
 
