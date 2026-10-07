@@ -5,7 +5,7 @@
     1. 키오스크 전용 계정(kiosk)을 만든다. 관리자 권한이 없는 일반 계정이다.
     2. PC 를 켜면 그 계정으로 자동 로그인한다.
     3. 로그인되자마자 Chrome 이 전체 화면(키오스크 모드)으로 추모관 검색 화면을 연다.
-    4. 누가 브라우저를 닫아도 3초 뒤 다시 뜬다.
+    4. 누가 브라우저를 닫아도 3초 뒤 다시 뜬다. 실행기는 한 번에 하나만 돈다.
     5. 화면이 꺼지거나 절전에 들어가지 않는다.
     6. Windows 업데이트 활성 시간을 08~22시로 지정한다.
 
@@ -179,9 +179,43 @@ $chrome = @(
 ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 $profileDir = Join-Path $root "ChromeProfile"
 $log = Join-Path $root "kiosk.log"
+# Chrome 이 이 시간(초)보다 빨리 꺼지면 "바로 꺼짐"으로 본다. 그때는 3초 만에 다시 켜지 않고
+# 연달아 꺼진 횟수에 따라 10초, 30초, 60초를 기다린다.
+$quickExitSeconds = 10
+$quickExitDelays = @(10, 30, 60)
 
 function Log([string]$text) {
   Add-Content -Path $log -Value ("{0} {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $text)
+}
+
+# 실행기는 한 번에 하나만 돈다 (2026-10-07 현장). 둘이 돌면 두 번째가 켠 Chrome 은 이미 떠 있는
+# Chrome 에 주소만 넘기고 바로 꺼지고, 그 실행기는 3초 뒤 또 켠다. 그때마다 첫 화면이 새로 떠서
+# 30초 광고가 나오지 못했다. 다른 실행기가 이미 돌고 있으면 아무것도 하지 않고 끝낸다.
+$mutexName = 'Local\SomangKioskLauncher'
+$ownsLock = $false
+try {
+  $launcherLock = New-Object System.Threading.Mutex($false, $mutexName)
+  try { $ownsLock = $launcherLock.WaitOne(0) }
+  catch [System.Threading.AbandonedMutexException] { $ownsLock = $true } # 먼저 돌던 실행기가 비정상 종료됨
+} catch {
+  # 잠금을 못 만들면 막지 않고 그대로 띄운다. 키오스크 화면이 안 뜨는 것이 더 나쁘다.
+  Log "launcher lock unavailable ($($_.Exception.Message)); continuing"
+  $ownsLock = $true
+}
+if (-not $ownsLock) {
+  Log "another launcher is already running; this one (pid $PID) exits"
+  return
+}
+
+# 이 키오스크 프로필을 쓰는 Chrome 본체를 찾는다. 탭·그래픽 같은 보조 프로세스(--type=...)와
+# 다른 프로필의 Chrome 은 뺀다. 확인하지 못하면 없는 것으로 본다(예전처럼 그냥 켠다).
+function Get-KioskChrome {
+  try {
+    @(Get-CimInstance -ClassName Win32_Process -Filter "Name = 'chrome.exe'" -ErrorAction Stop |
+      Where-Object { $_.CommandLine -and $_.CommandLine -like "*$profileDir*" -and $_.CommandLine -notlike '*--type=*' })
+  } catch {
+    @()
+  }
 }
 
 # 지난번 비정상 종료 뒤 "복원하시겠습니까?" 창이 뜨지 않게 한다.
@@ -201,7 +235,18 @@ if (-not [Uri]::TryCreate($url, [UriKind]::Absolute, [ref]$uri) -or
     $uri.Scheme -ne 'https' -or $uri.UserInfo -or $url -match '[\s"]') {
   Log 'Invalid HTTPS kiosk URL'; exit 1
 }
+$quickExits = 0
 while ($true) {
+  # 이 프로필의 Chrome 이 이미 떠 있으면(Windows 가 다시 열었거나 Chrome 이 업데이트하며 스스로
+  # 다시 켠 경우) 하나 더 켜지 않는다. 더 켜면 주소만 넘어가 첫 화면이 또 새로 뜬다. 그 Chrome 이
+  # 꺼질 때까지 지켜보기만 한다.
+  $running = @(Get-KioskChrome)
+  if ($running.Count -gt 0) {
+    Log ("kiosk chrome already running pid={0}; watching it instead of starting another" -f (($running | ForEach-Object { $_.ProcessId }) -join ','))
+    do { Start-Sleep -Seconds 5 } while (@(Get-KioskChrome).Count -gt 0)
+    Log 'kiosk chrome closed; starting a new one'
+    $quickExits = 0
+  }
   $chromeArgs = @(
     "--kiosk", "`"$url`"",
     "--incognito",
@@ -215,14 +260,26 @@ while ($true) {
     "--disable-pinch",
     "--user-data-dir=`"$profileDir`""
   )
+  $startedAt = Get-Date
   try {
     $proc = Start-Process -FilePath $chrome -ArgumentList $chromeArgs -PassThru -ErrorAction Stop
     $proc.WaitForExit()
-    Log "chrome exited code=$($proc.ExitCode); relaunch in 3s"
+    $ranSeconds = [int][Math]::Floor(((Get-Date) - $startedAt).TotalSeconds)
+    if ($ranSeconds -lt $quickExitSeconds) { $quickExits++ } else { $quickExits = 0 }
+    $status = "chrome exited code=$($proc.ExitCode) after ${ranSeconds}s"
   } catch {
-    Log 'Chrome launch failed; retry in 3s'
+    $quickExits++
+    $status = 'Chrome launch failed'
   }
-  Start-Sleep -Seconds 3
+  if ($quickExits -eq 0) {
+    $delay = 3
+    Log "$status; relaunch in ${delay}s"
+  } else {
+    # 연달아 바로 꺼지면 계속 다시 켜지 않고 기다리는 시간을 늘린다.
+    $delay = $quickExitDelays[[Math]::Min($quickExits, $quickExitDelays.Count) - 1]
+    Log "$status; quick exit $quickExits in a row, relaunch in ${delay}s"
+  }
+  Start-Sleep -Seconds $delay
 }
 '@
 Set-Content -Path $Launcher -Value $launcherBody -Encoding UTF8
