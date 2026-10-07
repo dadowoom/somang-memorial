@@ -103,6 +103,8 @@ function Invoke-TestLauncher([hashtable]$capture) {
       if ($_.Exception.Message -ne 'TEST_END') { throw }
     }
   }
+  # The single-instance lock must really be taken, not skipped because it could not be created.
+  Assert (($capture.Logs -match 'lock unavailable').Count -eq 0) ('Launcher could not take its lock: ' + ($capture.Logs -join ' | '))
 }
 
 # Chrome that ran normally comes back after three seconds, with the kiosk arguments.
@@ -155,7 +157,19 @@ Assert (($capture.Delays -join ',') -eq '10,5,5,3') ('Restarted Chrome must be w
 Assert ($capture.Launches -eq 2) 'Launcher opened Chrome while another kiosk Chrome was running'
 
 # Two launchers at the same time: the second one must leave at once without opening Chrome.
-# The first one runs on another thread (its own runspace) so the lock is really held.
+# The first one runs on another thread (its own runspace) so the lock is really held. Its fake
+# Chrome is a compiled class whose WaitForExit blocks until the test releases it, so it stays
+# open no matter which thread or runspace calls it.
+if (-not ('KioskTestChrome' -as [type])) {
+  Add-Type -TypeDefinition @'
+public class KioskTestChrome {
+  private readonly System.Threading.WaitHandle closed;
+  public KioskTestChrome(System.Threading.WaitHandle closed) { this.closed = closed; }
+  public int ExitCode { get { return 0; } }
+  public void WaitForExit() { closed.WaitOne(30000); }
+}
+'@
+}
 $pairText = New-TestLauncherText
 $shared = [hashtable]::Synchronized(@{
   Launches = 0
@@ -171,9 +185,7 @@ function Get-CimInstance { param($ClassName, $Filter, $ErrorAction) }
 function Start-Process {
   param($FilePath, $ArgumentList, [switch]$PassThru, $ErrorAction)
   $shared.Launches++
-  $fake = [pscustomobject]@{ ExitCode = 0 }
-  $fake | Add-Member -MemberType ScriptMethod -Name WaitForExit -Value { [void]$shared.Release.WaitOne(30000) }
-  return $fake
+  return New-Object KioskTestChrome($shared.Release)
 }
 function Start-Sleep { param($Seconds) throw 'TEST_END' }
 try { & ([scriptblock]::Create($launcherText)) } catch {
@@ -182,13 +194,18 @@ try { & ([scriptblock]::Create($launcherText)) } catch {
 '@
 $first = [PowerShell]::Create()
 [void]$first.AddScript($firstRunner).AddArgument($pairText).AddArgument($shared)
+function Get-FirstLauncherDetail {
+  ' | first launcher log: ' + (@($shared.Logs) -join ' / ') + ' | first launcher errors: ' + (($first.Streams.Error | Out-String).Trim())
+}
 $firstRun = $first.BeginInvoke()
 try {
   $deadline = [DateTime]::UtcNow.AddSeconds(30)
   while ($shared.Launches -lt 1 -and -not $firstRun.IsCompleted -and [DateTime]::UtcNow -lt $deadline) {
     Start-Sleep -Milliseconds 100
   }
-  Assert ($shared.Launches -eq 1) ('First launcher did not open Chrome: ' + ($first.Streams.Error | Out-String))
+  Assert ($shared.Launches -eq 1) ('First launcher did not open Chrome' + (Get-FirstLauncherDetail))
+  Assert (-not $firstRun.IsCompleted) ('First launcher stopped while its Chrome was still open' + (Get-FirstLauncherDetail))
+  Assert ((@($shared.Logs) -match 'lock unavailable').Count -eq 0) ('First launcher could not take its lock' + (Get-FirstLauncherDetail))
   & {
     $second = @{ Logs = @(); Launches = 0; Slept = $false }
     function Get-Content { '{"url":"https://somangmemorial.co.kr/kiosk"}' }
@@ -200,19 +217,20 @@ try {
     try { & ([scriptblock]::Create($pairText)) } catch {
       if ($_.Exception.Message -ne 'TEST_END') { throw }
     }
-    Assert ($second.Launches -eq 0) 'Second launcher opened another Chrome'
-    Assert (-not $second.Slept) 'Second launcher kept running'
-    Assert (($second.Logs -match 'another launcher is already running').Count -eq 1) 'Second launcher did not log why it stopped'
+    $detail = ' | second launcher log: ' + ($second.Logs -join ' / ') + (Get-FirstLauncherDetail)
+    Assert ($second.Launches -eq 0) ('Second launcher opened another Chrome' + $detail)
+    Assert (-not $second.Slept) ('Second launcher kept running' + $detail)
+    Assert (($second.Logs -match 'another launcher is already running').Count -eq 1) ('Second launcher did not log why it stopped' + $detail)
   }
 } finally {
   [void]$shared.Release.Set()
   [void]$firstRun.AsyncWaitHandle.WaitOne(30000)
 }
-Assert $firstRun.IsCompleted 'First launcher did not stop'
+Assert $firstRun.IsCompleted ('First launcher did not stop' + (Get-FirstLauncherDetail))
 [void]$first.EndInvoke($firstRun)
-Assert ($first.Streams.Error.Count -eq 0) ('First launcher failed: ' + ($first.Streams.Error | Out-String))
-Assert ($shared.Launches -eq 1) 'Two launchers must open only one Chrome'
-Assert ((@($shared.Logs) -match 'first: chrome exited').Count -eq 1) 'First launcher stopped watching its Chrome'
+Assert ($first.Streams.Error.Count -eq 0) ('First launcher failed' + (Get-FirstLauncherDetail))
+Assert ($shared.Launches -eq 1) ('Two launchers must open only one Chrome' + (Get-FirstLauncherDetail))
+Assert ((@($shared.Logs) -match 'first: chrome exited').Count -eq 1) ('First launcher stopped watching its Chrome' + (Get-FirstLauncherDetail))
 $first.Dispose()
 $shared.Release.Dispose()
 
