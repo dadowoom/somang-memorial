@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { reloadKioskDocument } from "@/lib/kioskFrame";
 import {
   KIOSK_BUILD_CHECK_INTERVAL_MS,
   KIOSK_RELOAD_TICK_MS,
@@ -59,7 +60,8 @@ export function useKioskAutoReload(idle: boolean) {
       });
       if (!reason) return;
       reloading = true;
-      window.location.reload();
+      // 세로 고정 틀 안이면 바깥 창째 새로고침한다 (2026-10-03).
+      reloadKioskDocument();
     };
 
     void check();

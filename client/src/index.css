@@ -281,6 +281,16 @@ html.kiosk-mode textarea {
 html.kiosk-mode img {
   -webkit-user-drag: none;
 }
+/* 키오스크 세로 고정 틀 안 (2026-10-03, components/kiosk/KioskPortraitLock.tsx).
+   돌린 화면에서 크롬은 손가락 밀기의 방향을 돌리기 전(실제 화면) 기준으로 보고
+   "가로로 밀 수 있는 곳인가"를 따진다. 가로 넘침을 숨김(hidden)으로 막아 둔 곳은
+   세로 화면의 위아래 밀기(실제 화면에서는 좌우)가 통째로 무시되어 스크롤이 안 된다.
+   틀 안에서만 숨김 대신 auto 로 둔다. 키오스크 화면은 가로로 넘치는 내용이 없어
+   보이는 모습은 같다. */
+html.kiosk-rotation-frame body,
+html.kiosk-rotation-frame .overflow-x-hidden {
+  overflow-x: auto;
+}
 /* 책장을 넘기는 손가락 움직임은 책이 모두 받는다. 화면이 같이 밀리지 않는다. */
 html.kiosk-mode .memorial-book-open {
   touch-action: none;
