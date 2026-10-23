@@ -17,7 +17,7 @@ import {
   registerErrorHandler,
   registerRequestLogging,
 } from "../_core/requestLogging";
-import { serveStatic } from "../_core/vite";
+import { serveStatic } from "../_core/serveStatic";
 import { previewHealthStatus } from "./workflow";
 
 async function startPreviewServer() {
