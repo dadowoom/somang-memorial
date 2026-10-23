@@ -30,12 +30,16 @@ function getTransporter() {
   }
 
   if (!transporter) {
+    const previewMail =
+      isFakeMode() && ENV.smtpHost === "mail" && ENV.smtpPort === 1025;
     transporter = nodemailer.createTransport({
       host: ENV.smtpHost,
       port: ENV.smtpPort,
       // 465 는 처음부터 암호화된 연결, 그 외(587 등)는 STARTTLS 로 올린다.
-      secure: ENV.smtpPort === 465,
-      auth: { user: ENV.smtpUser, pass: ENV.smtpPassword },
+      secure: !previewMail && ENV.smtpPort === 465,
+      ...(previewMail
+        ? { ignoreTLS: true, requireTLS: false }
+        : { auth: { user: ENV.smtpUser, pass: ENV.smtpPassword } }),
       // 기본값은 연결 2분·응답 10분이라, 메일 서버가 느리면 문의·비밀번호
       // 재설정 요청이 몇 분씩 붙잡혀 있었다 (2026-09-18 점검).
       connectionTimeout: 10_000,
@@ -48,8 +52,10 @@ function getTransporter() {
 }
 
 export async function sendEmail(input: SendEmailInput) {
-  // 작업장(SOMANG_FAKE=1)에서는 실제로 보내지 않고 보낸 것으로 기록만 남긴다.
-  if (isFakeMode()) {
+  // The isolated preview sink is the only fake-mode transport that actually sends.
+  const previewMail =
+    isFakeMode() && ENV.smtpHost === "mail" && ENV.smtpPort === 1025;
+  if (isFakeMode() && !previewMail) {
     console.log(
       `[가짜 메일] 보내지 않고 기록만: 받는 주소 ${maskForFakeLog(input.to, 8)} · ${maskNumbersForFakeLog(input.subject)}`
     );
