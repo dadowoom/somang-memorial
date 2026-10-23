@@ -24,6 +24,7 @@ import {
   hashUserPassword,
 } from "./db";
 import { storagePut } from "./storage";
+import { putPreviewImage } from "./preview/imageStore";
 import { normalizeIntermentName } from "../shared/parentFinder";
 import {
   FAKE_ADMIN_EMAIL,
@@ -33,12 +34,16 @@ import {
 } from "./fakeSeed";
 
 /** 작업장 DB 에 가짜 자료를 넣는 실제 통로. 시험에서는 메모리 통로로 바꿔 끼운다. */
-export async function createDbFakeSeedStore(): Promise<FakeSeedStore> {
+export async function createDbFakeSeedStore(
+  options: { exactImages?: boolean } = {}
+): Promise<FakeSeedStore> {
   const db = await getDb();
   if (!db) throw new Error("DB 에 연결하지 못했습니다 (DATABASE_URL 확인).");
 
   const putImage = async (image: FakeImage) => {
-    const { key, url } = await storagePut(image.key, image.buffer, "image/png");
+    const { key, url } = options.exactImages
+      ? await putPreviewImage(image.key, image.buffer)
+      : await storagePut(image.key, image.buffer, "image/png");
     return { key, url };
   };
   const count = async (rows: Promise<{ n: number }[]>) =>

@@ -113,3 +113,6 @@ temp/
 
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
+
+# 시드·작업장이 만든 업로드 파일은 저장소에 넣지 않는다 (2026-10-23)
+uploads/

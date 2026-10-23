@@ -6,11 +6,14 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx watch server/_core/index.ts",
     "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build:preview": "esbuild server/preview/previewFake.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/previewFake.js",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "seed:fake": "tsx server/scripts/seedFake.ts"
+    "seed:fake": "tsx server/scripts/seedFake.ts",
+    "preview:fake": "node dist/previewFake.js",
+    "preview:fake:reset": "node dist/previewFake.js --site-reset --confirm-site-reset"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
