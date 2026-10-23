@@ -1,5 +1,6 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import {
+  adminAuditLogs,
   kioskPosters,
   memorialBookPages,
   memorialBooks,
@@ -43,6 +44,29 @@ export async function createDbFakeSeedStore(): Promise<FakeSeedStore> {
     Number((await rows)[0]?.n ?? 0);
 
   return {
+    async isDatabaseEmpty() {
+      for (const table of [
+        users,
+        memorials,
+        somangIntermentRecords,
+        memorialLetters,
+      ]) {
+        const rows = await db.select({ n: sql<number>`COUNT(*)` }).from(table);
+        if (Number(rows[0]?.n ?? 0) !== 0) return false;
+      }
+      return true;
+    },
+    async hasWorkshopMarker() {
+      const rows = await db
+        .select({ id: adminAuditLogs.id })
+        .from(adminAuditLogs)
+        .where(eq(adminAuditLogs.action, "workshop.fake_seed"))
+        .limit(1);
+      return rows.length > 0;
+    },
+    async writeWorkshopMarker() {
+      await db.insert(adminAuditLogs).values({ action: "workshop.fake_seed" });
+    },
     hasAdmin: () => hasAdminUser(),
     async createAdmin(password) {
       await createBootstrapAdmin(password);
@@ -244,20 +268,4 @@ export async function createDbFakeSeedStore(): Promise<FakeSeedStore> {
       });
     },
   };
-}
-
-/** 지금 DB 에 실제 회원으로 보이는 자료가 있는지(가짜 표식 없는 회원 수). 안내용. */
-export async function countNonFakeUsers(fakeDomain: string) {
-  const db = await getDb();
-  if (!db) return 0;
-  const rows = await db
-    .select({ n: sql<number>`COUNT(*)` })
-    .from(users)
-    .where(
-      and(
-        sql`${users.email} NOT LIKE ${`%@${fakeDomain}`}`,
-        sql`${users.email} NOT LIKE ${"%@somang-memorial.invalid"}`
-      )
-    );
-  return Number(rows[0]?.n ?? 0);
 }

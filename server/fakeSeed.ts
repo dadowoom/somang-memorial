@@ -251,6 +251,9 @@ export type FakeImage = { key: string; buffer: Buffer };
 
 /** 실제 DB·파일 대신 시험에서 바꿔 끼울 수 있게 저장 통로를 받는다. */
 export interface FakeSeedStore {
+  isDatabaseEmpty(): Promise<boolean>;
+  hasWorkshopMarker(): Promise<boolean>;
+  writeWorkshopMarker(): Promise<void>;
   hasAdmin(): Promise<boolean>;
   createAdmin(password: string): Promise<void>;
   findUserIdByEmail(email: string): Promise<number | null>;
@@ -329,6 +332,21 @@ export type FakeSeedPasswords = {
 
 export type FakeSeedSummary = Record<string, number>;
 
+/** 처음에는 빈 DB만 허용하고, 이후에는 먼저 남긴 작업장 표식을 확인한다. */
+export function checkSeedDatabase(state: {
+  isEmpty: boolean;
+  hasMarker: boolean;
+}): { ok: true } | { ok: false; reason: string } {
+  if (state.isEmpty || state.hasMarker) return { ok: true };
+  return {
+    ok: false,
+    reason:
+      "이미 자료가 있고 작업장 표식이 없습니다. 운영 자료일 수 있어 멈춥니다.",
+  };
+}
+
+export class UnsafeFakeSeedDatabaseError extends Error {}
+
 function image(
   folder: string,
   name: string,
@@ -345,6 +363,13 @@ export async function runFakeSeed(
   store: FakeSeedStore,
   passwords: FakeSeedPasswords
 ) {
+  const hasMarker = await store.hasWorkshopMarker();
+  const isEmpty = await store.isDatabaseEmpty();
+  const safety = checkSeedDatabase({ isEmpty, hasMarker });
+  if (!safety.ok) throw new UnsafeFakeSeedDatabaseError(safety.reason);
+  // 실패 후 다시 실행할 수 있도록 다른 자료를 만들기 전에 표식을 기록한다.
+  if (isEmpty && !hasMarker) await store.writeWorkshopMarker();
+
   const made: FakeSeedSummary = {
     admin: 0,
     users: 0,

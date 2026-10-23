@@ -16,20 +16,45 @@ export function maskForFakeLog(value: string, keep = 4) {
   return `${"*".repeat(Math.min(6, text.length - keep))}${text.slice(-keep)}`;
 }
 
-const PRIVATE_IPV4 = [
-  /^127\./,
-  /^10\./,
-  /^192\.168\./,
-  /^172\.(1[6-9]|2\d|3[01])\./,
-];
-const LOCAL_SUFFIXES = [".local", ".test", ".internal", ".localhost"];
+/** 제목의 긴 번호는 마지막 네 숫자만 가짜 기록에 남긴다. */
+export function maskNumbersForFakeLog(subject: string) {
+  return subject.replace(/\d[\d-]*\d/g, value => {
+    const digits = value.replace(/-/g, "");
+    return digits.length >= 6
+      ? `${"*".repeat(digits.length - 4)}${digits.slice(-4)}`
+      : value;
+  });
+}
+
+const DEFAULT_FAKE_DB_HOSTS = new Set([
+  "db",
+  "mysql",
+  "mariadb",
+  "somang-db",
+  "workshop-db",
+]);
+
+function isPrivateIpv4(host: string) {
+  const parts = host.split(".");
+  if (
+    parts.length !== 4 ||
+    parts.some(part => !/^\d+$/.test(part) || Number(part) > 255)
+  )
+    return false;
+  const [first, second] = parts.map(Number);
+  return (
+    first === 127 ||
+    first === 10 ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168)
+  );
+}
 
 /**
  * 가짜 자료를 넣어도 되는 DB 인지 본다. 하나라도 걸리면 넣지 않는다.
  * - SOMANG_FAKE=1 이어야 한다 (작업장 표식)
  * - NODE_ENV=production 이면 안 된다
- * - DB 주소가 이 컴퓨터·사설망·작업장 이름(점 없는 이름, .local/.test/.internal)
- *   이어야 한다. 운영 DB 처럼 바깥 도메인이면 멈춘다.
+ * - DB 주소가 이 컴퓨터·사설 IPv4·명시한 작업장 이름이어야 한다.
  */
 export function checkFakeSeedTarget(
   env: NodeJS.ProcessEnv
@@ -48,20 +73,30 @@ export function checkFakeSeedTarget(
   }
   const raw = env.DATABASE_URL ?? "";
   let host: string;
+  let suppliedHost: string;
   try {
     host = new URL(raw).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    const authority = raw.match(/^[a-z][a-z\d+.-]*:\/\/([^/?#]*)/i)?.[1] ?? "";
+    const hostPort = authority.slice(authority.lastIndexOf("@") + 1);
+    suppliedHost = hostPort.startsWith("[")
+      ? hostPort.slice(1, hostPort.indexOf("]"))
+      : hostPort.split(":")[0];
   } catch {
     return { ok: false, reason: "DATABASE_URL 을 읽을 수 없습니다." };
   }
   if (!host) return { ok: false, reason: "DB 주소가 비어 있습니다." };
 
+  const customHosts = (env.SOMANG_FAKE_DB_HOSTS ?? "")
+    .split(",")
+    .map(name => name.trim().toLowerCase())
+    .filter(Boolean);
   const allowed =
-    host === "localhost" ||
-    host === "::1" ||
-    PRIVATE_IPV4.some(pattern => pattern.test(host)) ||
-    // 컨테이너 이름처럼 점이 없는 이름 (예: mysql, somang-db)
-    /^[a-z0-9][a-z0-9-]*$/.test(host) ||
-    LOCAL_SUFFIXES.some(suffix => host.endsWith(suffix));
+    suppliedHost.toLowerCase() === host &&
+    (host === "localhost" ||
+      host === "::1" ||
+      isPrivateIpv4(host) ||
+      DEFAULT_FAKE_DB_HOSTS.has(host) ||
+      customHosts.includes(host));
   if (!allowed) {
     return {
       ok: false,

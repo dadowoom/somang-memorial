@@ -215,8 +215,13 @@ pnpm 은 기본적으로 공용 저장소(`/root/.local/share/pnpm/store`)의 �
   이 표식이 있으면 알림톡·메일은 실제로 보내지 않고 `[가짜 알림톡]`·`[가짜 메일]`
   기록만 남긴다(번호·주소는 끝자리만).
 - 가짜 자료 넣기: `SOMANG_FAKE=1 DATABASE_URL=<작업장 DB> pnpm run seed:fake`
-  - 표식이 없거나 `NODE_ENV=production` 이거나 DB 주소가 바깥(운영처럼 보이는)
-    주소면 멈춘다. 가짜가 아닌 회원이 있는 DB 에도 넣지 않는다.
+  - 허용 DB 주소는 `localhost`, `::1`, 사설 IPv4(127/8·10/8·172.16/12·192.168/16),
+    `db`·`mysql`·`mariadb`·`somang-db`·`workshop-db`와
+    `SOMANG_FAKE_DB_HOSTS`에 쉼표로 적은 정확한 이름뿐이다. 표식이 없거나
+    `NODE_ENV=production`이면 멈춘다.
+  - 처음에는 회원·추모관·안장 기록·편지가 모두 빈 DB에만 넣는다.
+    시작할 때 `admin_audit_logs`에 `workshop.fake_seed` 작업장 표식을 먼저 남겨
+    중간에 실패해도 다시 실행할 수 있다. 자료가 있는데 표식이 없으면 멈춘다.
   - 두 번 돌려도 더 넣지 않는다. 비밀번호는 `SOMANG_FAKE_ADMIN_PASSWORD`·
     `SOMANG_FAKE_USER_PASSWORD`·`SOMANG_FAKE_PRIVATE_PASSWORD`·`SOMANG_FAKE_ROOM_PASSWORD`
     로 줄 수 있고, 없으면 무작위로 만들어 새로 만든 것만 한 번 보여 준다.

@@ -1,5 +1,5 @@
 import { ENV } from "./env";
-import { isFakeMode, maskForFakeLog } from "./fakeMode";
+import { isFakeMode, maskForFakeLog, maskNumbersForFakeLog } from "./fakeMode";
 
 /**
  * 추도일 알림을 카카오 알림톡으로 보낸다 (2026-09-23, 문자 대신).
@@ -225,7 +225,7 @@ export async function sendAlimtalk(to: string, message: AlimtalkMessage) {
   // 작업장(SOMANG_FAKE=1)에서는 실제로 보내지 않고 보낸 것으로 기록만 남긴다.
   if (isFakeMode()) {
     console.log(
-      `[가짜 알림톡] 보내지 않고 기록만: 받는 번호 ${maskForFakeLog(digitsOnly(to))} · ${message.subject}`
+      `[가짜 알림톡] 보내지 않고 기록만: 받는 번호 ${maskForFakeLog(digitsOnly(to))} · ${maskNumbersForFakeLog(message.subject)}`
     );
     return { messageId: `fake-${Date.now()}` };
   }
