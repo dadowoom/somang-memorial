@@ -10,7 +10,7 @@ import {
   FAKE_EMAIL_DOMAIN,
   FAKE_MEMORIALS,
   FAKE_USERS,
-  checkSeedDatabase,
+  FAKE_POSTER_CAPTION,
   type FakeSeedStore,
   fakeIntermentRows,
   makeFakePng,
@@ -35,10 +35,10 @@ describe("가짜 자료를 넣어도 되는 곳인지", () => {
   const base = {
     SOMANG_FAKE: "1",
     NODE_ENV: "development",
-    DATABASE_URL: "mysql://u:p@127.0.0.1:3306/somang",
+    DATABASE_URL: "mysql://u:p@127.0.0.1:3306/somang_workshop",
   };
 
-  it("작업장 표식·이 컴퓨터·사설망·허용된 컨테이너 이름이면 넣는다", () => {
+  it("작업장 DB 이름과 고정 허용 주소면 통과한다", () => {
     for (const host of [
       "127.0.0.1",
       "localhost",
@@ -46,30 +46,35 @@ describe("가짜 자료를 넣어도 되는 곳인지", () => {
       "192.168.0.9",
       "172.20.1.2",
       "db",
-      "mysql",
-      "somang-db",
+      "::1",
     ]) {
+      const address = host === "::1" ? `[${host}]` : host;
       expect(
         checkFakeSeedTarget({
           ...base,
-          DATABASE_URL: `mysql://u:p@${host}:3306/somang`,
+          DATABASE_URL: `mysql://u:p@${address}:3306/somang_workshop_preview`,
         }),
         host
       ).toMatchObject({ ok: true });
     }
   });
 
-  it("환경값에 정확히 적은 DB 이름을 대소문자 구분 없이 허용한다", () => {
-    expect(
-      checkFakeSeedTarget({
-        ...base,
-        DATABASE_URL: "mysql://u:p@Workshop-Custom:3306/somang",
-        SOMANG_FAKE_DB_HOSTS: "other-db, WORKSHOP-CUSTOM",
-      })
-    ).toMatchObject({ ok: true });
+  it("운영과 비슷한 DB 이름은 허용 주소라도 거절한다", () => {
+    for (const databaseName of [
+      "somang",
+      "somang_memorial",
+      "prod_somang_workshop",
+    ]) {
+      expect(
+        checkFakeSeedTarget({
+          ...base,
+          DATABASE_URL: `mysql://u:p@db:3306/${databaseName}`,
+        })
+      ).toMatchObject({ ok: false });
+    }
   });
 
-  it("표식이 없거나 운영 모드거나 바깥 주소면 멈춘다", () => {
+  it("가짜 모드 설정이 없거나 운영 모드거나 바깥 주소면 멈춘다", () => {
     expect(
       checkFakeSeedTarget({ ...base, SOMANG_FAKE: undefined })
     ).toMatchObject({ ok: false });
@@ -80,16 +85,21 @@ describe("가짜 자료를 넣어도 되는 곳인지", () => {
       checkFakeSeedTarget({ ...base, NODE_ENV: "production" })
     ).toMatchObject({ ok: false });
     for (const url of [
-      "mysql://u:p@db.example-dbaas.net:3306/somang",
-      "mysql://u:p@203.0.113.10:3306/somang",
-      "mysql://u:p@172.32.0.1:3306/somang",
-      "mysql://u:p@10.db.example.com:3306/somang",
-      "mysql://u:p@127.0.0.1.evil.example:3306/somang",
-      "mysql://u:p@192.168.1.1.example.com:3306/somang",
-      "mysql://u:p@db.internal:3306/somang",
-      "mysql://u:p@unknown-host:3306/somang",
-      "mysql://u:p@127.1:3306/somang",
-      "mysql://u:p@10.0.0.256:3306/somang",
+      "mysql://u:p@db.example-dbaas.net:3306/somang_workshop",
+      "mysql://u:p@203.0.113.10:3306/somang_workshop",
+      "mysql://u:p@172.32.0.1:3306/somang_workshop",
+      "mysql://u:p@10.db.example.com:3306/somang_workshop",
+      "mysql://u:p@127.0.0.1.evil.example:3306/somang_workshop",
+      "mysql://u:p@192.168.1.1.example.com:3306/somang_workshop",
+      "mysql://u:p@db.internal:3306/somang_workshop",
+      "mysql://u:p@mysql:3306/somang_workshop",
+      "mysql://u:p@mariadb:3306/somang_workshop",
+      "mysql://u:p@somang-db:3306/somang_workshop",
+      "mysql://u:p@workshop-db:3306/somang_workshop",
+      "mysql://u:p@custom-db:3306/somang_workshop",
+      "mysql://u:p@unknown-host:3306/somang_workshop",
+      "mysql://u:p@127.1:3306/somang_workshop",
+      "mysql://u:p@10.0.0.256:3306/somang_workshop",
       "not a url",
       "",
     ]) {
@@ -98,20 +108,6 @@ describe("가짜 자료를 넣어도 되는 곳인지", () => {
         url
       ).toMatchObject({ ok: false });
     }
-  });
-});
-
-describe("DB 자료와 작업장 표식 확인", () => {
-  it("빈 DB 또는 표식이 있는 DB만 허용한다", () => {
-    expect(checkSeedDatabase({ isEmpty: true, hasMarker: false })).toEqual({
-      ok: true,
-    });
-    expect(checkSeedDatabase({ isEmpty: false, hasMarker: true })).toEqual({
-      ok: true,
-    });
-    expect(
-      checkSeedDatabase({ isEmpty: false, hasMarker: false })
-    ).toMatchObject({ ok: false });
   });
 });
 
@@ -155,9 +151,10 @@ describe("가짜 자료에 실제 사람 정보가 없다", () => {
 });
 
 /** 메모리 안 가짜 저장소. 실제 DB·파일에 닿지 않는다. */
-function memoryStore() {
+function memoryStore(databaseName = "somang_workshop") {
   const db = {
-    admin: 0,
+    databaseName,
+    admin: false,
     users: new Map<string | null, number>(),
     interments: new Map<number, number>(),
     memorials: new Map<string, number>(),
@@ -169,48 +166,71 @@ function memoryStore() {
     books: new Map<number, number>(),
     pages: 0,
     posters: 0,
-    marker: false,
+    posterCaptions: [] as (string | null)[],
+    nonFakeLetters: 0,
+    inquiries: 0,
+    subscriptions: 0,
+    checks: [] as string[],
     events: [] as string[],
     files: [] as string[],
   };
   let nextId = 1;
   const store: FakeSeedStore = {
-    isDatabaseEmpty: async () =>
-      db.admin === 0 &&
-      db.users.size === 0 &&
-      db.interments.size === 0 &&
-      db.memorials.size === 0 &&
-      db.letters.size === 0,
-    hasWorkshopMarker: async () => db.marker,
-    writeWorkshopMarker: async () => {
-      db.events.push("marker");
-      db.marker = true;
+    currentDatabaseName: async () => {
+      db.checks.push("databaseName");
+      return db.databaseName;
     },
-    hasAdmin: async () => db.admin > 0,
+    countNonFakeRows: async () => {
+      db.checks.push("nonFakeRows");
+      return {
+        users: [...db.users.keys()].filter(
+          email => !email?.endsWith("@example.invalid")
+        ).length,
+        memorials: [...db.memorials.keys()].filter(
+          slug => !slug.startsWith("fake-")
+        ).length,
+        somang_interment_records: [...db.interments.keys()].filter(
+          id => id > -800000001
+        ).length,
+        memorial_letters: db.nonFakeLetters,
+        kiosk_posters: db.posterCaptions.filter(
+          caption => caption !== FAKE_POSTER_CAPTION
+        ).length,
+        kiosk_inquiries: db.inquiries,
+        memorial_reminder_subscriptions: db.subscriptions,
+      };
+    },
+    hasAdmin: async () => db.admin,
     createAdmin: async () => {
       db.events.push("admin");
-      db.admin += 1;
+      db.admin = true;
+      db.users.set("admin@example.invalid", nextId++);
     },
     findUserIdByEmail: async email => db.users.get(email) ?? null,
     createUser: async input => {
+      db.events.push("createUser");
       const id = nextId++;
       db.users.set(input.email, id);
       return id;
     },
     existingIntermentSourceIds: async ids =>
       new Set(ids.filter(id => db.interments.has(id))),
-    insertInterments: async rows =>
-      rows.forEach(row => db.interments.set(row.sourceId, nextId++)),
+    insertInterments: async rows => {
+      db.events.push("insertInterments");
+      rows.forEach(row => db.interments.set(row.sourceId, nextId++));
+    },
     findIntermentIdBySourceId: async sourceId =>
       db.interments.get(sourceId) ?? null,
     findMemorialIdBySlug: async slug => db.memorials.get(slug) ?? null,
     createMemorial: async input => {
+      db.events.push("createMemorial");
       const id = nextId++;
       db.memorials.set(input.slug, id);
       return id;
     },
     countGalleryPhotos: async id => db.photos.get(id) ?? 0,
     addGalleryPhoto: async input => {
+      db.events.push("addGalleryPhoto");
       db.files.push(input.image.key);
       db.photos.set(
         input.memorialId,
@@ -219,16 +239,19 @@ function memoryStore() {
     },
     countLetters: async id => db.letters.get(id) ?? 0,
     addLetter: async input => {
+      db.events.push("addLetter");
       const id = db.memorials.get(input.memorialSlug)!;
       db.letters.set(id, (db.letters.get(id) ?? 0) + 1);
     },
     addFamilyMember: async input => {
+      db.events.push("addFamilyMember");
       const key = `${input.memorialId}:${input.userId}`;
       if (db.family.has(key)) return false;
       db.family.add(key);
       return true;
     },
     ensureFamilyRoom: async input => {
+      db.events.push("ensureFamilyRoom");
       const existing = db.rooms.get(input.memorialId);
       if (existing) return { roomId: existing, created: false };
       const id = nextId++;
@@ -237,6 +260,7 @@ function memoryStore() {
     },
     countFamilyRoomPhotos: async id => db.roomPhotos.get(id) ?? 0,
     addFamilyRoomPhoto: async input => {
+      db.events.push("addFamilyRoomPhoto");
       db.files.push(input.image.key);
       db.roomPhotos.set(
         input.roomId,
@@ -245,12 +269,20 @@ function memoryStore() {
     },
     countBooks: async id => db.books.get(id) ?? 0,
     addBook: async input => {
+      db.events.push("addBook");
       db.books.set(input.memorialId, (db.books.get(input.memorialId) ?? 0) + 1);
       return nextId++;
     },
-    addBookPage: async () => void (db.pages += 1),
+    addBookPage: async () => {
+      db.events.push("addBookPage");
+      db.pages += 1;
+    },
     hasFakePoster: async () => db.posters > 0,
-    addPoster: async () => void (db.posters += 1),
+    addPoster: async input => {
+      db.events.push("addPoster");
+      db.posters += 1;
+      db.posterCaptions.push(input.caption);
+    },
   };
   return { store, db };
 }
@@ -266,7 +298,9 @@ describe("가짜 자료 넣기", () => {
   it("처음에는 회원·추모관·안장 기록·사진·편지·가족관·이북·포스터를 넣는다", async () => {
     const { store, db } = memoryStore();
     const made = await runFakeSeed(store, passwords);
-    expect(db.events.slice(0, 2)).toEqual(["marker", "admin"]);
+    expect(db.checks).toEqual(["databaseName", "nonFakeRows"]);
+    expect(db.events[0]).toBe("admin");
+    expect(db.users.has("admin@example.invalid")).toBe(true);
     expect(made).toMatchObject({
       admin: 1,
       users: 3,
@@ -302,26 +336,100 @@ describe("가짜 자료 넣기", () => {
       db.posters,
     ]);
     const again = await runFakeSeed(store, passwords);
-    expect(db.events.filter(event => event === "marker")).toHaveLength(1);
+    expect(db.checks).toEqual([
+      "databaseName",
+      "nonFakeRows",
+      "databaseName",
+      "nonFakeRows",
+    ]);
     expect(Object.values(again).every(n => n === 0)).toBe(true);
     expect(
       JSON.stringify([...db.users, ...db.memorials, db.pages, db.posters])
     ).toBe(before);
   });
 
-  it("표식 없는 기존 자료가 있으면 관리자나 가짜 자료를 만들지 않는다", async () => {
-    const { store, db } = memoryStore();
-    db.users.set(null, 1);
+  it("연결된 DB 이름이 운영 이름이면 어떤 쓰기 함수도 부르지 않는다", async () => {
+    const { store, db } = memoryStore("somang");
     await expect(runFakeSeed(store, passwords)).rejects.toBeInstanceOf(
       UnsafeFakeSeedDatabaseError
     );
     expect(db.events).toEqual([]);
+    expect(db.checks).toEqual(["databaseName"]);
+  });
 
-    db.users.clear();
-    db.interments.set(42, 1);
-    await expect(runFakeSeed(store, passwords)).rejects.toBeInstanceOf(
-      UnsafeFakeSeedDatabaseError
-    );
+  const realRows: [
+    string,
+    (db: ReturnType<typeof memoryStore>["db"]) => void,
+  ][] = [
+    [
+      "이메일 없는 회원",
+      db => {
+        db.users.set(null, 1);
+      },
+    ],
+    [
+      "다른 도메인 회원",
+      db => {
+        db.users.set("person@example.com", 1);
+      },
+    ],
+    [
+      "실제 추모관",
+      db => {
+        db.memorials.set("real-memorial", 1);
+      },
+    ],
+    [
+      "실제 안장 기록",
+      db => {
+        db.interments.set(42, 1);
+      },
+    ],
+    [
+      "실제 편지",
+      db => {
+        db.nonFakeLetters = 1;
+      },
+    ],
+    [
+      "실제 포스터",
+      db => {
+        db.posterCaptions.push(null);
+      },
+    ],
+    [
+      "문의",
+      db => {
+        db.inquiries = 1;
+      },
+    ],
+    [
+      "추도일 알림 신청",
+      db => {
+        db.subscriptions = 1;
+      },
+    ],
+  ];
+
+  it.each(realRows)(
+    "%s 자료가 있으면 쓰기 전에 멈춘다",
+    async (_, addRealRow) => {
+      const { store, db } = memoryStore();
+      addRealRow(db);
+      await expect(runFakeSeed(store, passwords)).rejects.toBeInstanceOf(
+        UnsafeFakeSeedDatabaseError
+      );
+      expect(db.checks).toEqual(["databaseName", "nonFakeRows"]);
+      expect(db.events).toEqual([]);
+    }
+  );
+
+  it("가짜 자료를 넣은 뒤 실제 회원이 섞여도 다음 실행은 쓰지 않는다", async () => {
+    const { store, db } = memoryStore();
+    await runFakeSeed(store, passwords);
+    db.users.set("person@example.com", 999);
+    db.events.length = 0;
+    await expect(runFakeSeed(store, passwords)).rejects.toThrow(/users 1줄/);
     expect(db.events).toEqual([]);
   });
 });

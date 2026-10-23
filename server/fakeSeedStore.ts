@@ -1,6 +1,6 @@
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, gt, inArray, isNull, ne, notLike, or, sql } from "drizzle-orm";
 import {
-  adminAuditLogs,
+  kioskInquiries,
   kioskPosters,
   memorialBookPages,
   memorialBooks,
@@ -8,24 +8,25 @@ import {
   memorialFamilyRooms,
   memorialGalleryPhotos,
   memorialLetters,
+  memorialReminderSubscriptions,
   memorials,
   somangIntermentRecords,
   users,
 } from "../drizzle/schema";
 import {
   addMemorialFamilyMember,
-  createBootstrapAdmin,
   createLocalUser,
   createMemorialLetter,
   getDb,
   getUserByEmail,
-  hasAdminUser,
   hashFamilyRoomPassword,
   hashMemorialAccessPassword,
+  hashUserPassword,
 } from "./db";
 import { storagePut } from "./storage";
 import { normalizeIntermentName } from "../shared/parentFinder";
 import {
+  FAKE_ADMIN_EMAIL,
   FAKE_POSTER_CAPTION,
   type FakeImage,
   type FakeSeedStore,
@@ -44,32 +45,79 @@ export async function createDbFakeSeedStore(): Promise<FakeSeedStore> {
     Number((await rows)[0]?.n ?? 0);
 
   return {
-    async isDatabaseEmpty() {
-      for (const table of [
-        users,
-        memorials,
-        somangIntermentRecords,
-        memorialLetters,
-      ]) {
-        const rows = await db.select({ n: sql<number>`COUNT(*)` }).from(table);
-        if (Number(rows[0]?.n ?? 0) !== 0) return false;
-      }
-      return true;
+    async currentDatabaseName() {
+      const [rows] = await db.execute(sql`SELECT DATABASE() AS databaseName`);
+      const databaseRows = rows as unknown as { databaseName: string | null }[];
+      return databaseRows[0]?.databaseName ?? null;
     },
-    async hasWorkshopMarker() {
-      const rows = await db
-        .select({ id: adminAuditLogs.id })
-        .from(adminAuditLogs)
-        .where(eq(adminAuditLogs.action, "workshop.fake_seed"))
-        .limit(1);
-      return rows.length > 0;
+    async countNonFakeRows() {
+      return {
+        users: await count(
+          db
+            .select({ n: sql<number>`COUNT(*)` })
+            .from(users)
+            .where(
+              or(isNull(users.email), notLike(users.email, "%@example.invalid"))
+            )
+        ),
+        memorials: await count(
+          db
+            .select({ n: sql<number>`COUNT(*)` })
+            .from(memorials)
+            .where(notLike(memorials.slug, "fake-%"))
+        ),
+        somang_interment_records: await count(
+          db
+            .select({ n: sql<number>`COUNT(*)` })
+            .from(somangIntermentRecords)
+            .where(gt(somangIntermentRecords.sourceId, -800000001))
+        ),
+        memorial_letters: await count(
+          db
+            .select({ n: sql<number>`COUNT(*)` })
+            .from(memorialLetters)
+            .where(notLike(memorialLetters.content, "[가짜 편지]%"))
+        ),
+        kiosk_posters: await count(
+          db
+            .select({ n: sql<number>`COUNT(*)` })
+            .from(kioskPosters)
+            .where(
+              or(
+                isNull(kioskPosters.caption),
+                ne(kioskPosters.caption, FAKE_POSTER_CAPTION)
+              )
+            )
+        ),
+        kiosk_inquiries: await count(
+          db.select({ n: sql<number>`COUNT(*)` }).from(kioskInquiries)
+        ),
+        memorial_reminder_subscriptions: await count(
+          db
+            .select({ n: sql<number>`COUNT(*)` })
+            .from(memorialReminderSubscriptions)
+        ),
+      };
     },
-    async writeWorkshopMarker() {
-      await db.insert(adminAuditLogs).values({ action: "workshop.fake_seed" });
+    async hasAdmin() {
+      return (await getUserByEmail(FAKE_ADMIN_EMAIL))?.role === "admin";
     },
-    hasAdmin: () => hasAdminUser(),
     async createAdmin(password) {
-      await createBootstrapAdmin(password);
+      if (await getUserByEmail(FAKE_ADMIN_EMAIL)) {
+        throw new Error("가짜 관리자 이메일이 이미 사용 중입니다.");
+      }
+      const now = new Date();
+      await db.insert(users).values({
+        openId: "local:fake-admin",
+        name: "가짜 관리자",
+        email: FAKE_ADMIN_EMAIL,
+        passwordHash: hashUserPassword(password),
+        loginMethod: "local",
+        role: "admin",
+        approvalStatus: "approved",
+        approvedAt: now,
+        lastSignedIn: now,
+      });
     },
 
     async findUserIdByEmail(email) {

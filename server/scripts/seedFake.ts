@@ -15,7 +15,7 @@ import { createDbFakeSeedStore } from "../fakeSeedStore";
  *
  * - SOMANG_FAKE=1 이 없거나, NODE_ENV=production 이거나, DB 주소가 바깥(운영처럼
  *   보이는) 주소면 아무것도 하지 않고 멈춘다.
- * - 처음에는 네 자료 표가 모두 빈 DB 에만 넣고, 작업장 표식을 먼저 남긴다.
+ * - 연결된 DB 이름과 실제 자료가 없는지 확인한 뒤에만 가짜 자료를 넣는다.
  * - 두 번 돌려도 같은 것을 또 넣지 않는다.
  * - 비밀번호는 SOMANG_FAKE_ADMIN_PASSWORD 등으로 줄 수 있고, 없으면 무작위로
  *   만들어 이번에 새로 만든 것만 한 번 보여 준다(저장소에는 남기지 않는다).
@@ -45,7 +45,9 @@ async function main() {
     JSON.stringify(made)
   );
   if (made.admin)
-    console.log(`  관리자 아이디 admin / 비밀번호 ${passwords.admin}`);
+    console.log(
+      `  관리자 이메일 admin@example.invalid / 비밀번호 ${passwords.admin}`
+    );
   if (made.users)
     console.log(
       `  가짜 가족 family1~3@${FAKE_EMAIL_DOMAIN} / 비밀번호 ${passwords.user}`

@@ -211,21 +211,23 @@ pnpm 은 기본적으로 공용 저장소(`/root/.local/share/pnpm/store`)의 �
 
 두 공동대표만 들어가는 작업장(미리보기 서버)은 가짜 자료로 돈다. 실제 자료는 0이다.
 
-- `SOMANG_FAKE=1` 이 작업장 표식이다. 운영 서버 `.env` 에는 절대 넣지 않는다.
-  이 표식이 있으면 알림톡·메일은 실제로 보내지 않고 `[가짜 알림톡]`·`[가짜 메일]`
+- `SOMANG_FAKE=1` 은 가짜 발송 모드다. 운영 서버 `.env` 에는 절대 넣지 않는다.
+  이 값이 있으면 알림톡·메일은 실제로 보내지 않고 `[가짜 알림톡]`·`[가짜 메일]`
   기록만 남긴다(번호·주소는 끝자리만).
 - 가짜 자료 넣기: `SOMANG_FAKE=1 DATABASE_URL=<작업장 DB> pnpm run seed:fake`
-  - 허용 DB 주소는 `localhost`, `::1`, 사설 IPv4(127/8·10/8·172.16/12·192.168/16),
-    `db`·`mysql`·`mariadb`·`somang-db`·`workshop-db`와
-    `SOMANG_FAKE_DB_HOSTS`에 쉼표로 적은 정확한 이름뿐이다. 표식이 없거나
-    `NODE_ENV=production`이면 멈춘다.
-  - 처음에는 회원·추모관·안장 기록·편지가 모두 빈 DB에만 넣는다.
-    시작할 때 `admin_audit_logs`에 `workshop.fake_seed` 작업장 표식을 먼저 남겨
-    중간에 실패해도 다시 실행할 수 있다. 자료가 있는데 표식이 없으면 멈춘다.
+  - DB 이름은 반드시 `somang_workshop` 으로 시작해야 한다. 주소에 적힌 이름과
+    연결 뒤 DB가 직접 알려 주는 이름을 모두 확인한 다음에만 쓴다.
+  - 허용 DB 주소는 `db`, `localhost`, `127.0.0.1`, `::1`, 네 칸 숫자 형식의
+    사설 IPv4(127/8·10/8·172.16/12·192.168/16)로 고정한다.
+    `SOMANG_FAKE=1`이 없거나 `NODE_ENV=production`이면 멈춘다.
+  - 매번 첫 쓰기 전에 회원·추모관·안장 기록·편지·키오스크 포스터·문의·추도일
+    알림 신청 표에 실제 자료가 섞였는지 센다. 한 줄이라도 있으면 어느 표에 몇 줄인지
+    알리고 멈춘다. 시드는 DB에 작업장 표식을 만들지 않는다.
   - 두 번 돌려도 더 넣지 않는다. 비밀번호는 `SOMANG_FAKE_ADMIN_PASSWORD`·
     `SOMANG_FAKE_USER_PASSWORD`·`SOMANG_FAKE_PRIVATE_PASSWORD`·`SOMANG_FAKE_ROOM_PASSWORD`
     로 줄 수 있고, 없으면 무작위로 만들어 새로 만든 것만 한 번 보여 준다.
-  - 넣는 것: 관리자 1·가족 3(…@example.invalid), 추모관 6(공개 4·비공개 1·작성 중 1),
+  - 넣는 것: 가짜 관리자 1(`admin@example.invalid`)·가족 3(…@example.invalid),
+    추모관 6(공개 4·비공개 1·작성 중 1),
     가족관 1, 안장 기록 30(원본 번호 -800000001 아래), 사진·편지·이북 1권·키오스크 포스터 1.
 - 코드: `server/fakeSeed.ts`(자료·순서), `server/fakeSeedStore.ts`(DB 통로),
-  `server/scripts/seedFake.ts`(명령), `server/_core/fakeMode.ts`(표식·안전 확인).
+  `server/scripts/seedFake.ts`(명령), `server/_core/fakeMode.ts`(대상 안전 확인).

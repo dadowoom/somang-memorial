@@ -26,14 +26,6 @@ export function maskNumbersForFakeLog(subject: string) {
   });
 }
 
-const DEFAULT_FAKE_DB_HOSTS = new Set([
-  "db",
-  "mysql",
-  "mariadb",
-  "somang-db",
-  "workshop-db",
-]);
-
 function isPrivateIpv4(host: string) {
   const parts = host.split(".");
   if (
@@ -52,9 +44,9 @@ function isPrivateIpv4(host: string) {
 
 /**
  * 가짜 자료를 넣어도 되는 DB 인지 본다. 하나라도 걸리면 넣지 않는다.
- * - SOMANG_FAKE=1 이어야 한다 (작업장 표식)
+ * - SOMANG_FAKE=1 이어야 한다
  * - NODE_ENV=production 이면 안 된다
- * - DB 주소가 이 컴퓨터·사설 IPv4·명시한 작업장 이름이어야 한다.
+ * - DB 이름은 somang_workshop 으로 시작하고 주소는 고정 허용 목록이어야 한다.
  */
 export function checkFakeSeedTarget(
   env: NodeJS.ProcessEnv
@@ -62,7 +54,8 @@ export function checkFakeSeedTarget(
   if (env.SOMANG_FAKE !== "1") {
     return {
       ok: false,
-      reason: "작업장 표식(SOMANG_FAKE=1)이 없습니다. 운영일 수 있어 멈춥니다.",
+      reason:
+        "가짜 모드 설정(SOMANG_FAKE=1)이 없습니다. 운영일 수 있어 멈춥니다.",
     };
   }
   if (env.NODE_ENV === "production") {
@@ -74,8 +67,11 @@ export function checkFakeSeedTarget(
   const raw = env.DATABASE_URL ?? "";
   let host: string;
   let suppliedHost: string;
+  let databaseName: string;
   try {
-    host = new URL(raw).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    const url = new URL(raw);
+    host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    databaseName = url.pathname.slice(1);
     const authority = raw.match(/^[a-z][a-z\d+.-]*:\/\/([^/?#]*)/i)?.[1] ?? "";
     const hostPort = authority.slice(authority.lastIndexOf("@") + 1);
     suppliedHost = hostPort.startsWith("[")
@@ -85,18 +81,20 @@ export function checkFakeSeedTarget(
     return { ok: false, reason: "DATABASE_URL 을 읽을 수 없습니다." };
   }
   if (!host) return { ok: false, reason: "DB 주소가 비어 있습니다." };
+  if (!databaseName.startsWith("somang_workshop")) {
+    return {
+      ok: false,
+      reason:
+        "DB 이름이 somang_workshop 으로 시작하지 않습니다. 운영일 수 있어 멈춥니다.",
+    };
+  }
 
-  const customHosts = (env.SOMANG_FAKE_DB_HOSTS ?? "")
-    .split(",")
-    .map(name => name.trim().toLowerCase())
-    .filter(Boolean);
   const allowed =
     suppliedHost.toLowerCase() === host &&
-    (host === "localhost" ||
+    (host === "db" ||
+      host === "localhost" ||
       host === "::1" ||
-      isPrivateIpv4(host) ||
-      DEFAULT_FAKE_DB_HOSTS.has(host) ||
-      customHosts.includes(host));
+      isPrivateIpv4(host));
   if (!allowed) {
     return {
       ok: false,
