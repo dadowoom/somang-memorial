@@ -1,6 +1,7 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { inquirySourceLabel } from "../../shared/kioskInquiry";
 import { ENV } from "./env";
+import { isFakeMode, maskForFakeLog } from "./fakeMode";
 
 type SendEmailInput = {
   to: string;
@@ -16,9 +17,10 @@ export function getEmailConfigStatus() {
     hasUser: Boolean(ENV.smtpUser),
     hasPassword: Boolean(ENV.smtpPassword),
     hasFrom: Boolean(ENV.smtpFrom),
-    enabled: Boolean(
-      ENV.smtpHost && ENV.smtpUser && ENV.smtpPassword && ENV.smtpFrom
-    ),
+    // 작업장에서는 메일 설정이 없어도 켜진 것으로 보고, 보내기는 기록만 남긴다.
+    enabled:
+      isFakeMode() ||
+      Boolean(ENV.smtpHost && ENV.smtpUser && ENV.smtpPassword && ENV.smtpFrom),
   };
 }
 
@@ -46,6 +48,13 @@ function getTransporter() {
 }
 
 export async function sendEmail(input: SendEmailInput) {
+  // 작업장(SOMANG_FAKE=1)에서는 실제로 보내지 않고 보낸 것으로 기록만 남긴다.
+  if (isFakeMode()) {
+    console.log(
+      `[가짜 메일] 보내지 않고 기록만: 받는 주소 ${maskForFakeLog(input.to, 8)} · ${input.subject}`
+    );
+    return;
+  }
   const mailer = getTransporter();
   await mailer.sendMail({
     from: ENV.smtpFrom,

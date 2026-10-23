@@ -206,3 +206,21 @@ pnpm 은 기본적으로 공용 저장소(`/root/.local/share/pnpm/store`)의 �
    **문서에 적힌 배포 상태를 믿지 말고 서버에서 직접 본다.**
 4. `pnpm install --frozen-lockfile` 을 먼저 돌린다. 오래된 `node_modules`
    때문에 나는 오류를 코드 문제로 오해하기 쉽다.
+
+## 작업장(가짜 자료) — 2026-10-23
+
+두 공동대표만 들어가는 작업장(미리보기 서버)은 가짜 자료로 돈다. 실제 자료는 0이다.
+
+- `SOMANG_FAKE=1` 이 작업장 표식이다. 운영 서버 `.env` 에는 절대 넣지 않는다.
+  이 표식이 있으면 알림톡·메일은 실제로 보내지 않고 `[가짜 알림톡]`·`[가짜 메일]`
+  기록만 남긴다(번호·주소는 끝자리만).
+- 가짜 자료 넣기: `SOMANG_FAKE=1 DATABASE_URL=<작업장 DB> pnpm run seed:fake`
+  - 표식이 없거나 `NODE_ENV=production` 이거나 DB 주소가 바깥(운영처럼 보이는)
+    주소면 멈춘다. 가짜가 아닌 회원이 있는 DB 에도 넣지 않는다.
+  - 두 번 돌려도 더 넣지 않는다. 비밀번호는 `SOMANG_FAKE_ADMIN_PASSWORD`·
+    `SOMANG_FAKE_USER_PASSWORD`·`SOMANG_FAKE_PRIVATE_PASSWORD`·`SOMANG_FAKE_ROOM_PASSWORD`
+    로 줄 수 있고, 없으면 무작위로 만들어 새로 만든 것만 한 번 보여 준다.
+  - 넣는 것: 관리자 1·가족 3(…@example.invalid), 추모관 6(공개 4·비공개 1·작성 중 1),
+    가족관 1, 안장 기록 30(원본 번호 -800000001 아래), 사진·편지·이북 1권·키오스크 포스터 1.
+- 코드: `server/fakeSeed.ts`(자료·순서), `server/fakeSeedStore.ts`(DB 통로),
+  `server/scripts/seedFake.ts`(명령), `server/_core/fakeMode.ts`(표식·안전 확인).
