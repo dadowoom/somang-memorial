@@ -18,10 +18,15 @@ import {
   registerRequestLogging,
 } from "../_core/requestLogging";
 import { serveStatic } from "../_core/serveStatic";
+import { assertRevokedSessionsTable } from "../_core/startupGuard";
+import { prepareUploadQuota } from "../_core/uploadQuota";
 import { previewHealthStatus } from "./workflow";
 
 async function startPreviewServer() {
   validateRuntimeConfig(process.env);
+  // 운영 진입점(_core/index.ts)과 같은 시작 확인: 0032 표 확인, 업로드 사용량 준비·기존 사진 백필.
+  await assertRevokedSessionsTable();
+  await prepareUploadQuota();
   const app = express();
   app.set("trust proxy", 1);
   const server = createServer(app);
