@@ -54,6 +54,13 @@ export const users = mysqlTable(
   ]
 );
 
+/** 로그아웃한 로그인 묶음. 원본 쿠키나 개인 정보는 저장하지 않는다. */
+export const revokedSessions = mysqlTable("revoked_sessions", {
+  sessionKey: varchar("sessionKey", { length: 64 }).primaryKey(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
