@@ -13,6 +13,7 @@ import { startLetterNoticeScheduler } from "./letterNoticeScheduler";
 import { startUploadCleanupScheduler } from "./uploadCleanup";
 import { isDatabaseHealthy } from "../db";
 import { validateRuntimeConfig } from "./runtimeConfig";
+import { assertRevokedSessionsTable } from "./startupGuard";
 import {
   registerCspReportRoute,
   registerSecurityHeaders,
@@ -46,6 +47,7 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   validateRuntimeConfig(process.env);
+  await assertRevokedSessionsTable();
   const app = express();
   if (process.env.TRUST_PROXY === "true") {
     app.set("trust proxy", 1);

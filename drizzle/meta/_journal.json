@@ -211,6 +211,13 @@
       "when": 1789300000000,
       "tag": "0031_add_letter_notices",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "5",
+      "when": 1792800000000,
+      "tag": "0032_add_revoked_sessions",
+      "breakpoints": true
     }
   ]
 }

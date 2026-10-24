@@ -1135,9 +1135,19 @@ export const appRouter = router({
         replacePasswordAndKeepThisDevice(ctx, input.password, {})
       ),
 
-    logout: publicProcedure.mutation(({ ctx }) => {
+    logout: publicProcedure.mutation(async ({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      try {
+        await sdk.revokeRequestSession(ctx.req);
+      } catch (error) {
+        console.warn("[Auth] Could not record session revocation during logout", error);
+        throw new TRPCError({
+          code: "SERVICE_UNAVAILABLE",
+          message: "이 기기에서는 로그아웃했지만, 서버에서 기존 로그인을 끊지 못했습니다. 잠시 후 비밀번호를 변경해 주세요.",
+        });
+      } finally {
+        ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      }
       return {
         success: true,
       } as const;

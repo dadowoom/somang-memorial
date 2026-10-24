@@ -1,14 +1,17 @@
 import { COOKIE_NAME } from "@shared/const";
 import type { Request } from "express";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import { getSessionAppId, sdk } from "./sdk";
+import { createContext } from "./context";
 import { credentialFingerprint } from "./sessionCredential";
 
 vi.mock("../db", () => ({
   getUserByOpenId: vi.fn(),
   upsertUser: vi.fn(),
+  isSessionRevoked: vi.fn().mockResolvedValue(false),
+  revokeSession: vi.fn(),
 }));
 
 describe("local session application identifier", () => {
@@ -22,11 +25,16 @@ describe("local session application identifier", () => {
 });
 
 describe("authenticated user status", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(db.isSessionRevoked).mockResolvedValue(false);
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("keeps a disabled user's status across repeated requests", async () => {
+  it("treats a disabled user's cookie as anonymous and clears it", async () => {
     const disabledUser: User = {
       id: 7,
       openId: "disabled-user",
@@ -59,27 +67,88 @@ describe("authenticated user status", () => {
       },
     } as Request;
 
-    const firstRequest = await sdk.authenticateRequest(request);
-    const secondRequest = await sdk.authenticateRequest(request);
+    await expect(sdk.authenticateRequest(request)).rejects.toThrow(
+      "비활성화된 계정입니다."
+    );
+    expect(db.upsertUser).not.toHaveBeenCalled();
+    const clearCookie = vi.fn();
+    const ctx = await createContext({
+      req: request,
+      res: { clearCookie },
+    } as unknown as Parameters<typeof createContext>[0]);
+    expect(ctx.user).toBeNull();
+    expect(clearCookie).toHaveBeenCalledWith(
+      COOKIE_NAME,
+      expect.objectContaining({ maxAge: -1 })
+    );
+  });
 
-    expect(db.upsertUser).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(db.upsertUser).mock.calls).toEqual([
-      [
-        {
-          openId: disabledUser.openId,
-          lastSignedIn: expect.any(Date),
-        },
-      ],
-      [
-        {
-          openId: disabledUser.openId,
-          lastSignedIn: expect.any(Date),
-        },
-      ],
-    ]);
-    expect(firstRequest.approvalStatus).toBe("rejected");
-    expect(secondRequest.approvalStatus).toBe("rejected");
-    expect(secondRequest.lastSignedIn).toBeInstanceOf(Date);
-    expect(secondRequest.lastSignedIn).not.toEqual(disabledUser.lastSignedIn);
+  it("does not recreate a deleted account from an old cookie", async () => {
+    vi.spyOn(sdk, "verifySession").mockResolvedValue({
+      openId: "deleted-user",
+      appId: "somang-memorial",
+      name: "Deleted",
+      cred: credentialFingerprint(null),
+    });
+    vi.mocked(db.getUserByOpenId).mockResolvedValue(undefined);
+    await expect(
+      sdk.authenticateRequest({
+        headers: { cookie: `${COOKIE_NAME}=signed-session` },
+      } as Request)
+    ).rejects.toThrow("삭제된 계정입니다.");
+    expect(db.upsertUser).not.toHaveBeenCalled();
+    const clearCookie = vi.fn();
+    const ctx = await createContext({
+      req: { headers: { cookie: `${COOKIE_NAME}=signed-session` } } as Request,
+      res: { clearCookie },
+    } as unknown as Parameters<typeof createContext>[0]);
+    expect(ctx.user).toBeNull();
+    expect(clearCookie).toHaveBeenCalledWith(
+      COOKIE_NAME,
+      expect.objectContaining({ maxAge: -1 })
+    );
+  });
+
+  it("treats a revocation lookup failure as an anonymous request", async () => {
+    const user: User = {
+      id: 8,
+      openId: "active-user",
+      name: "Active User",
+      email: "active@example.com",
+      passwordHash: null,
+      phone: null,
+      loginMethod: "email",
+      role: "user",
+      approvalStatus: "approved",
+      approvedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastSignedIn: new Date(),
+    };
+    vi.spyOn(sdk, "verifySession").mockResolvedValue({
+      openId: user.openId,
+      appId: "somang-memorial",
+      name: user.name || "",
+      cred: credentialFingerprint(user.passwordHash),
+    });
+    vi.mocked(db.getUserByOpenId).mockResolvedValue(user);
+    vi.mocked(db.upsertUser).mockResolvedValue();
+    vi.mocked(db.isSessionRevoked).mockRejectedValue(
+      new Error("revocation table missing")
+    );
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const request = {
+      headers: { cookie: `${COOKIE_NAME}=signed-session` },
+    } as Request;
+    const ctx = await createContext({ req: request, res: {} } as Parameters<
+      typeof createContext
+    >[0]);
+    expect(ctx.user).toBeNull();
+    expect(db.getUserByOpenId).not.toHaveBeenCalled();
+    expect(db.upsertUser).not.toHaveBeenCalled();
+    expect(warning).toHaveBeenCalledWith(
+      expect.stringContaining("Could not check session revocation"),
+      expect.any(Error)
+    );
   });
 });
