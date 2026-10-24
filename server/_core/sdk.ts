@@ -1,9 +1,7 @@
-import {
-  AXIOS_TIMEOUT_MS,
-  COOKIE_NAME,
-  SESSION_TTL_MS,
-} from "@shared/const";
+import { AXIOS_TIMEOUT_MS, COOKIE_NAME, SESSION_TTL_MS } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
+import { createHash, randomUUID } from "crypto";
+import { TRPCError } from "@trpc/server";
 import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
@@ -35,6 +33,7 @@ export type SessionPayload = {
   name: string;
   // 발급 당시 비밀번호의 지문. 비밀번호를 바꾸면 옛 세션이 끊긴다 (2026-09-14).
   cred?: string;
+  sid?: string;
 };
 
 const EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
@@ -180,7 +179,12 @@ class SDKServer {
    */
   async createSessionToken(
     openId: string,
-    options: { expiresInMs?: number; name?: string; credential?: string } = {}
+    options: {
+      expiresInMs?: number;
+      name?: string;
+      credential?: string;
+      sessionId?: string;
+    } = {}
   ): Promise<string> {
     return this.signSession(
       {
@@ -191,6 +195,7 @@ class SDKServer {
         appId: getSessionAppId(),
         name: options.name || "",
         cred: options.credential,
+        sid: options.sessionId ?? randomUUID(),
       },
       options
     );
@@ -210,19 +215,19 @@ class SDKServer {
       appId: payload.appId,
       name: payload.name,
       ...(payload.cred ? { cred: payload.cred } : {}),
+      ...(payload.sid ? { sid: payload.sid } : {}),
     })
       .setProtectedHeader({ alg: "HS256", typ: "JWT" })
       .setExpirationTime(expirationSeconds)
       .sign(secretKey);
   }
 
-  async verifySession(
-    cookieValue: string | undefined | null
-  ): Promise<{
+  async verifySession(cookieValue: string | undefined | null): Promise<{
     openId: string;
     appId: string;
     name: string;
     cred: string | null;
+    sid?: string | null;
   } | null> {
     if (!cookieValue) {
       console.warn("[Auth] Missing session cookie");
@@ -234,7 +239,10 @@ class SDKServer {
       const { payload } = await jwtVerify(cookieValue, secretKey, {
         algorithms: ["HS256"],
       });
-      const { openId, appId, name, cred } = payload as Record<string, unknown>;
+      const { openId, appId, name, cred, sid } = payload as Record<
+        string,
+        unknown
+      >;
 
       if (
         !isNonEmptyString(openId) ||
@@ -250,6 +258,7 @@ class SDKServer {
         appId,
         name,
         cred: typeof cred === "string" ? cred : null,
+        sid: typeof sid === "string" ? sid : null,
       };
     } catch (error) {
       console.warn("[Auth] Session verification failed", String(error));
@@ -296,7 +305,10 @@ class SDKServer {
         algorithms: ["HS256"],
       });
 
-      const { openId, name, exp, cred } = payload as Record<string, unknown>;
+      const { openId, name, exp, cred, sid } = payload as Record<
+        string,
+        unknown
+      >;
       if (typeof openId !== "string" || typeof name !== "string") return null;
       if (typeof exp !== "number") return null;
 
@@ -305,10 +317,35 @@ class SDKServer {
         name,
         expiresAtMs: exp * 1000,
         cred: typeof cred === "string" ? cred : undefined,
+        // 배포 전 쿠키에도 연장 후 같은 폐기 키를 쓰도록 원본 쿠키의 지문을 이어 간다.
+        sid:
+          typeof sid === "string"
+            ? sid
+            : `legacy:${this.sessionKey(cookieValue, null)}`,
       };
     } catch {
       return null;
     }
+  }
+
+  private sessionKey(cookieValue: string, sid: string | null | undefined) {
+    if (sid?.startsWith("legacy:") && /^[a-f0-9]{64}$/.test(sid.slice(7))) {
+      return sid.slice(7);
+    }
+    return createHash("sha256")
+      .update(sid ? `sid:${sid}` : `cookie:${cookieValue}`)
+      .digest("hex");
+  }
+
+  async revokeRequestSession(req: Request): Promise<void> {
+    const cookieValue = this.parseCookies(req.headers.cookie).get(COOKIE_NAME);
+    if (!cookieValue) return;
+    const session = await this.readSession(req);
+    if (!session) return;
+    await db.revokeSession(
+      this.sessionKey(cookieValue, session.sid),
+      new Date(session.expiresAtMs)
+    );
   }
 
   async authenticateRequest(req: Request): Promise<User> {
@@ -321,30 +358,25 @@ class SDKServer {
       throw ForbiddenError("Invalid session cookie");
     }
 
+    if (
+      await db.isSessionRevoked(this.sessionKey(sessionCookie!, session.sid))
+    ) {
+      throw ForbiddenError("Revoked session cookie");
+    }
+
     const sessionUserId = session.openId;
     const signedInAt = new Date();
     let user = await db.getUserByOpenId(sessionUserId);
 
-    // If user not in DB, sync from OAuth server automatically
     if (!user) {
-      try {
-        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
-        await db.upsertUser({
-          openId: userInfo.openId,
-          name: userInfo.name || null,
-          email: userInfo.email ?? null,
-          loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          lastSignedIn: signedInAt,
-        });
-        user = await db.getUserByOpenId(userInfo.openId);
-      } catch (error) {
-        console.error("[Auth] Failed to sync user from OAuth:", error);
-        throw ForbiddenError("Failed to sync user info");
-      }
+      throw new TRPCError({ code: "FORBIDDEN", message: "삭제된 계정입니다." });
     }
 
-    if (!user) {
-      throw ForbiddenError("User not found");
+    if (user.approvalStatus === "rejected") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "비활성화된 계정입니다.",
+      });
     }
 
     // 세션에 담긴 비밀번호 지문이 지금 비밀번호와 다르면(재설정했거나, 지문이

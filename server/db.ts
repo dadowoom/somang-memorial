@@ -33,6 +33,7 @@ import {
   memorials,
   somangIntermentRecords,
   passwordResetTokens,
+  revokedSessions,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -181,6 +182,23 @@ export async function getUserByOpenId(openId: string) {
     .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function isSessionRevoked(sessionKey: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const rows = await db.select({ sessionKey: revokedSessions.sessionKey })
+    .from(revokedSessions)
+    .where(and(eq(revokedSessions.sessionKey, sessionKey), sql`${revokedSessions.expiresAt} > NOW()`))
+    .limit(1);
+  return rows.length > 0;
+}
+
+export async function revokeSession(sessionKey: string, expiresAt: Date): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.insert(revokedSessions).values({ sessionKey, expiresAt })
+    .onDuplicateKeyUpdate({ set: { expiresAt } });
 }
 
 export function normalizeEmail(email: string) {
@@ -1164,13 +1182,32 @@ export function verifyMemorialAccessPasswordHash(
   return verifyRoomSecret(MEMORIAL_ACCESS_PURPOSE, password, stored);
 }
 
+export const MEMORIAL_ACCESS_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
 export function createMemorialAccessToken(
   slug: string,
-  accessPasswordHash: string
+  accessPasswordHash: string,
+  nowMs = Date.now()
 ) {
-  return createHash("sha256")
-    .update(`somang-memorial-token:${slug}:${accessPasswordHash}`)
+  const expiresAt = Math.floor((nowMs + MEMORIAL_ACCESS_TOKEN_TTL_MS) / 1000);
+  const signature = createHash("sha256")
+    .update(`somang-memorial-token:v2:${slug}:${accessPasswordHash}:${expiresAt}`)
     .digest("hex");
+  return `${expiresAt}.${signature}`;
+}
+
+export function verifyMemorialAccessToken(
+  token: string,
+  slug: string,
+  accessPasswordHash: string,
+  nowMs = Date.now()
+) {
+  const match = /^(\d{10})\.([a-f0-9]{64})$/.exec(token);
+  if (!match || Number(match[1]) * 1000 <= nowMs) return false;
+  const expected = createHash("sha256")
+    .update(`somang-memorial-token:v2:${slug}:${accessPasswordHash}:${match[1]}`)
+    .digest("hex");
+  return timingSafeEqual(Buffer.from(match[2]), Buffer.from(expected));
 }
 
 /**
@@ -1204,11 +1241,11 @@ export function canReadMemorial(
   const hasValidToken = () =>
     Boolean(memorial.accessPasswordHash) &&
     Boolean(accessToken) &&
-    accessToken ===
-      createMemorialAccessToken(
-        memorial.slug,
-        memorial.accessPasswordHash as string
-      );
+    verifyMemorialAccessToken(
+      accessToken as string,
+      memorial.slug,
+      memorial.accessPasswordHash as string
+    );
 
   if (memorial.status === "published") {
     if (memorial.visibility !== "private") return true;

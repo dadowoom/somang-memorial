@@ -1,4 +1,5 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
+import { TRPCError } from "@trpc/server";
 import {
   COOKIE_NAME,
   SESSION_RENEW_AFTER_MS,
@@ -36,6 +37,7 @@ async function renewSessionIfNeeded(opts: CreateExpressContextOptions) {
       expiresInMs: SESSION_TTL_MS,
       // 연장해도 비밀번호 지문은 그대로 가져간다.
       credential: session.cred,
+      sessionId: session.sid,
     });
     opts.res.cookie(COOKIE_NAME, renewed, {
       ...getSessionCookieOptions(opts.req),
@@ -54,6 +56,8 @@ export async function createContext(
   try {
     user = await sdk.authenticateRequest(opts.req);
   } catch (error) {
+    // 서명된 쿠키의 계정이 삭제·비활성화됐다면 공개 절차도 익명으로 통과시키지 않는다.
+    if (error instanceof TRPCError && error.code === "FORBIDDEN") throw error;
     // Authentication is optional for public procedures.
     user = null;
   }

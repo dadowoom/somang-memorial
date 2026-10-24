@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => {
   return {
     getUserByOpenId: vi.fn(),
     upsertUser: vi.fn(),
+    isSessionRevoked: vi.fn().mockResolvedValue(false),
+    revokeSession: vi.fn(),
   };
 });
 vi.mock("./db", async () => {
@@ -18,6 +20,8 @@ vi.mock("./db", async () => {
 import { COOKIE_NAME } from "@shared/const";
 import { credentialFingerprint } from "./_core/sessionCredential";
 import { sdk } from "./_core/sdk";
+import { appRouter } from "./routers";
+import type { TrpcContext } from "./_core/context";
 
 const oldHash = "scrypt$old-salt$old-hash";
 const newHash = "scrypt$new-salt$new-hash";
@@ -102,5 +106,71 @@ describe("비밀번호를 바꾸면 옛 로그인이 끊긴다", () => {
     });
     const session = await sdk.readSession(requestWith(token));
     expect(session?.cred).toBe(fp);
+  });
+});
+
+describe("로그아웃 후 서버 폐기", () => {
+  it("같은 쿠키와 연장 전 쿠키를 다시 쓰지 못한다", async () => {
+    const revoked = new Set<string>();
+    mocks.revokeSession.mockImplementation(async (key: string) => {
+      revoked.add(key);
+    });
+    mocks.isSessionRevoked.mockImplementation(async (key: string) =>
+      revoked.has(key)
+    );
+    const token = await sdk.createSessionToken(baseUser.openId, {
+      name: baseUser.name,
+      credential: credentialFingerprint(oldHash),
+    });
+    const session = await sdk.readSession(requestWith(token));
+    const renewed = await sdk.createSessionToken(baseUser.openId, {
+      name: baseUser.name,
+      credential: session!.cred,
+      sessionId: session!.sid,
+    });
+    const ctx = {
+      user: baseUser,
+      req: requestWith(renewed),
+      res: { clearCookie: vi.fn() },
+    } as unknown as TrpcContext;
+    await expect(appRouter.createCaller(ctx).auth.logout()).resolves.toEqual({
+      success: true,
+    });
+    expect(mocks.revokeSession).toHaveBeenCalledOnce();
+    await expect(sdk.authenticateRequest(requestWith(renewed))).rejects.toThrow(
+      /Revoked/
+    );
+    await expect(sdk.authenticateRequest(requestWith(token))).rejects.toThrow(
+      /Revoked/
+    );
+  });
+
+  it("배포 전 쿠키가 연장된 뒤에도 원본과 연장본을 함께 막는다", async () => {
+    const revoked = new Set<string>();
+    mocks.revokeSession.mockImplementation(async (key: string) => {
+      revoked.add(key);
+    });
+    mocks.isSessionRevoked.mockImplementation(async (key: string) =>
+      revoked.has(key)
+    );
+    const oldToken = await sdk.signSession({
+      openId: baseUser.openId,
+      appId: "somang-memorial",
+      name: baseUser.name,
+      cred: credentialFingerprint(oldHash),
+    });
+    const oldSession = await sdk.readSession(requestWith(oldToken));
+    const renewed = await sdk.createSessionToken(baseUser.openId, {
+      name: baseUser.name,
+      credential: oldSession!.cred,
+      sessionId: oldSession!.sid,
+    });
+    await sdk.revokeRequestSession(requestWith(renewed));
+    await expect(
+      sdk.authenticateRequest(requestWith(oldToken))
+    ).rejects.toThrow(/Revoked/);
+    await expect(sdk.authenticateRequest(requestWith(renewed))).rejects.toThrow(
+      /Revoked/
+    );
   });
 });

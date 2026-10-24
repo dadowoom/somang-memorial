@@ -4,11 +4,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import { getSessionAppId, sdk } from "./sdk";
+import { createContext } from "./context";
 import { credentialFingerprint } from "./sessionCredential";
 
 vi.mock("../db", () => ({
   getUserByOpenId: vi.fn(),
   upsertUser: vi.fn(),
+  isSessionRevoked: vi.fn().mockResolvedValue(false),
+  revokeSession: vi.fn(),
 }));
 
 describe("local session application identifier", () => {
@@ -26,7 +29,7 @@ describe("authenticated user status", () => {
     vi.restoreAllMocks();
   });
 
-  it("keeps a disabled user's status across repeated requests", async () => {
+  it("rejects a disabled user's existing cookie before updating activity", async () => {
     const disabledUser: User = {
       id: 7,
       openId: "disabled-user",
@@ -59,27 +62,30 @@ describe("authenticated user status", () => {
       },
     } as Request;
 
-    const firstRequest = await sdk.authenticateRequest(request);
-    const secondRequest = await sdk.authenticateRequest(request);
+    await expect(sdk.authenticateRequest(request)).rejects.toThrow(
+      "비활성화된 계정입니다."
+    );
+    expect(db.upsertUser).not.toHaveBeenCalled();
+    await expect(
+      createContext({ req: request, res: {} } as Parameters<
+        typeof createContext
+      >[0])
+    ).rejects.toThrow("비활성화된 계정입니다.");
+  });
 
-    expect(db.upsertUser).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(db.upsertUser).mock.calls).toEqual([
-      [
-        {
-          openId: disabledUser.openId,
-          lastSignedIn: expect.any(Date),
-        },
-      ],
-      [
-        {
-          openId: disabledUser.openId,
-          lastSignedIn: expect.any(Date),
-        },
-      ],
-    ]);
-    expect(firstRequest.approvalStatus).toBe("rejected");
-    expect(secondRequest.approvalStatus).toBe("rejected");
-    expect(secondRequest.lastSignedIn).toBeInstanceOf(Date);
-    expect(secondRequest.lastSignedIn).not.toEqual(disabledUser.lastSignedIn);
+  it("does not recreate a deleted account from an old cookie", async () => {
+    vi.spyOn(sdk, "verifySession").mockResolvedValue({
+      openId: "deleted-user",
+      appId: "somang-memorial",
+      name: "Deleted",
+      cred: credentialFingerprint(null),
+    });
+    vi.mocked(db.getUserByOpenId).mockResolvedValue(undefined);
+    await expect(
+      sdk.authenticateRequest({
+        headers: { cookie: `${COOKIE_NAME}=signed-session` },
+      } as Request)
+    ).rejects.toThrow("삭제된 계정입니다.");
+    expect(db.upsertUser).not.toHaveBeenCalled();
   });
 });
