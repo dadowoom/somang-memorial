@@ -28,6 +28,7 @@ vi.mock("./_core/imageUpload", () => ({
 }));
 vi.mock("./_core/uploadQuota", () => ({
   storeAccountImage: mocks.storeAccountImage,
+  cancelAccountImage: vi.fn(),
 }));
 vi.mock("./routers/memorialAccess", () => ({
   requireReadableMemorialById: mocks.requireReadableMemorialById,

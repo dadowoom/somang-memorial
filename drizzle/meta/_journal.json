@@ -218,6 +218,13 @@
       "when": 1792800000000,
       "tag": "0033_add_account_uploads",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "5",
+      "when": 1792800001000,
+      "tag": "0034_upload_quota_usage",
+      "breakpoints": true
     }
   ]
 }

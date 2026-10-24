@@ -33,6 +33,7 @@ vi.mock("./_core/imageUpload", () => ({
 }));
 vi.mock("./_core/uploadQuota", () => ({
   storeAccountImage: mocks.storeAccountImage,
+  cancelAccountImage: vi.fn(),
 }));
 
 import { appRouter } from "./routers";

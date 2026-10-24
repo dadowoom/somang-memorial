@@ -47,17 +47,22 @@ function stripJpeg(buffer: Buffer) {
   const parts: Buffer[] = [buffer.subarray(0, 2)]; // SOI
   let offset = 2;
 
-  while (offset + 3 < buffer.length) {
+  while (offset + 1 < buffer.length) {
     if (buffer[offset] !== 0xff) break;
-
-    const marker = buffer[offset + 1];
+    let markerOffset = offset + 1;
+    // JPEG permits any number of FF fill bytes before a marker.
+    while (markerOffset < buffer.length && buffer[markerOffset] === 0xff)
+      markerOffset += 1;
+    if (markerOffset >= buffer.length) break;
+    const marker = buffer[markerOffset];
+    if (marker === 0x00) break;
 
     // 압축된 그림 데이터가 시작되면 그림의 끝 표식(EOI, FF D9)까지만 옮깁니다.
     // 그 뒤에 붙은 것(휴대폰이 덧붙이는 두 번째 사진·짧은 영상과 그 안의 위치
     // 정보)은 버립니다 (2026-09-23). 그림 데이터 안에서는 FF D9 가 나올 수 없어
     // 처음 만나는 FF D9 가 그림의 끝입니다. 못 찾으면 업로드를 거절합니다.
     if (marker === 0xda) {
-      const end = buffer.indexOf(JPEG_EOI, offset + 2);
+      const end = buffer.indexOf(JPEG_EOI, markerOffset + 1);
       if (end === -1) throw new Error("JPEG has no end marker");
       parts.push(buffer.subarray(offset, end + 2));
       return Buffer.concat(parts);
@@ -65,24 +70,25 @@ function stripJpeg(buffer: Buffer) {
 
     // 길이가 없는 표식들.
     if (marker === 0xd8 || marker === 0xd9 || marker === 0x01) {
-      parts.push(buffer.subarray(offset, offset + 2));
-      offset += 2;
+      parts.push(buffer.subarray(offset, markerOffset + 1));
+      offset = markerOffset + 1;
       continue;
     }
     if (marker >= 0xd0 && marker <= 0xd7) {
-      parts.push(buffer.subarray(offset, offset + 2));
-      offset += 2;
+      parts.push(buffer.subarray(offset, markerOffset + 1));
+      offset = markerOffset + 1;
       continue;
     }
 
-    const length = buffer.readUInt16BE(offset + 2);
-    if (length < 2 || offset + 2 + length > buffer.length)
+    if (markerOffset + 2 >= buffer.length) break;
+    const length = buffer.readUInt16BE(markerOffset + 1);
+    if (length < 2 || markerOffset + 1 + length > buffer.length)
       throw new Error("Invalid JPEG segment");
 
     if (!JPEG_SEGMENTS_TO_DROP.has(marker)) {
-      parts.push(buffer.subarray(offset, offset + 2 + length));
+      parts.push(buffer.subarray(offset, markerOffset + 1 + length));
     }
-    offset += 2 + length;
+    offset = markerOffset + 1 + length;
   }
 
   // 도중에 형식이 어긋나면 숨은 정보가 남을 수 있으므로 거절합니다.

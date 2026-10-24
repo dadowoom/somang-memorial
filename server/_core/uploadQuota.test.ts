@@ -1,38 +1,58 @@
-import { describe, expect, it } from "vitest";
-import { assertUploadQuota } from "./uploadQuota";
+import { describe, expect, it, vi } from "vitest";
+import { reserveAccountUpload, seoulUploadDay } from "./uploadQuota";
 
-const now = new Date("2026-10-24T03:00:00.000Z");
-const upload = (
-  bytes: number,
-  createdAt = now,
-  purgedAt: Date | null = null
-) => ({ bytes, createdAt, purgedAt });
+function fakeTransaction(
+  affected: number,
+  usage = { dayKey: "2026-10-24", dayCount: 1 }
+) {
+  const execute = vi.fn().mockResolvedValue([{ affectedRows: affected }]);
+  let selection = 0;
+  const select = vi.fn(() => ({
+    from: () => ({
+      where: () => {
+        selection += 1;
+        const rows = selection === 1 ? [{ id: 7 }] : [usage];
+        return {
+          limit: async () => rows,
+          then: (resolve: (value: typeof rows) => void) => resolve(rows),
+        };
+      },
+    }),
+  }));
+  const insert = vi.fn(() => ({
+    values: () => ({ onDuplicateKeyUpdate: async () => [{ affectedRows: 1 }] }),
+  }));
+  return { tx: { execute, select, insert } as never, execute, insert };
+}
 
-describe("account upload limits", () => {
-  it("rejects bytes above the account limit", () => {
-    expect(() =>
-      assertUploadQuota([upload(90)], 11, now, { bytes: 100, dailyCount: 100 })
-    ).toThrow(/저장 공간/);
+describe("account upload reservation", () => {
+  const now = new Date("2026-10-24T03:00:00.000Z");
+  it("uses the Seoul calendar day", () => {
+    expect(seoulUploadDay(new Date("2026-10-23T15:00:00Z"))).toBe("2026-10-24");
   });
-
-  it("deleting and uploading repeatedly cannot free bytes or today's attempts", () => {
-    // Deleting a gallery row leaves the upload record active while its file is retained.
-    const deletedPhotos = [upload(40), upload(40), upload(20)];
-    expect(() =>
-      assertUploadQuota(deletedPhotos, 1, now, { bytes: 100, dailyCount: 100 })
-    ).toThrow(/저장 공간/);
-    expect(() =>
-      assertUploadQuota(deletedPhotos, 1, now, { bytes: 1000, dailyCount: 3 })
-    ).toThrow(/오늘은 더/);
+  it("accepts only an affected conditional update", async () => {
+    const { tx, execute } = fakeTransaction(1);
+    await reserveAccountUpload(tx, 7, 40, now, { bytes: 100, dailyCount: 2 });
+    expect(execute).toHaveBeenCalledTimes(1);
   });
-
-  it("releases space only after physical purge, while keeping today's count", () => {
-    const purged = [upload(100, now, now)];
-    expect(() =>
-      assertUploadQuota(purged, 100, now, { bytes: 100, dailyCount: 2 })
-    ).not.toThrow();
-    expect(() =>
-      assertUploadQuota(purged, 1, now, { bytes: 100, dailyCount: 1 })
-    ).toThrow(/오늘은 더/);
+  it("rejects when the same-day count reached the limit", async () => {
+    const { tx } = fakeTransaction(0, { dayKey: "2026-10-24", dayCount: 2 });
+    await expect(
+      reserveAccountUpload(tx, 7, 40, now, { bytes: 100, dailyCount: 2 })
+    ).rejects.toThrow(/오늘은 더/);
+  });
+  it("rejects when the byte reservation affects no row", async () => {
+    const { tx } = fakeTransaction(0);
+    await expect(
+      reserveAccountUpload(tx, 7, 40, now, { bytes: 100, dailyCount: 2 })
+    ).rejects.toThrow(/저장 공간/);
+  });
+  it("does not reserve an oversized upload", async () => {
+    const { tx, execute, insert } = fakeTransaction(1);
+    await expect(
+      reserveAccountUpload(tx, 7, 101, now, { bytes: 100, dailyCount: 2 })
+    ).rejects.toThrow(/저장 공간/);
+    expect(insert).not.toHaveBeenCalled();
+    expect(execute).not.toHaveBeenCalled();
   });
 });

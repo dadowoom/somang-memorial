@@ -31,6 +31,7 @@ vi.mock("./storage", () => ({
 }));
 vi.mock("./_core/uploadQuota", () => ({
   storeAccountImage: mocks.storeAccountImage,
+  cancelAccountImage: vi.fn(),
 }));
 
 import { bookRouter } from "./routers/book";

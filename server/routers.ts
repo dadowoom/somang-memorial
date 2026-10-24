@@ -99,7 +99,7 @@ import {
 import { nanoid } from "nanoid";
 import { decodeImageDataUrl } from "./_core/imageUpload";
 import { decodeThumbnailDataUrl, saveThumbnail } from "./_core/thumbnailStorage";
-import { storeAccountImage } from "./_core/uploadQuota";
+import { cancelAccountImage, storeAccountImage } from "./_core/uploadQuota";
 import { signMediaUrl } from "./_core/protectedMedia";
 import {
   collectReferencedUploadKeys,
@@ -2256,12 +2256,17 @@ export const appRouter = router({
         });
         await saveThumbnail(storedKey, input.thumbDataUrl);
 
-        await addFamilyRoomPhoto({
-          familyRoomId: info.roomId,
-          photoUrl: url,
-          photoKey: key,
-          caption: input.caption || null,
-        });
+        try {
+          await addFamilyRoomPhoto({
+            familyRoomId: info.roomId,
+            photoUrl: url,
+            photoKey: key,
+            caption: input.caption || null,
+          });
+        } catch (error) {
+          await cancelAccountImage(storedKey);
+          throw error;
+        }
         await createAdminAuditLog({
           ...familyAuditActor(ctx.user),
           action: "family_room.photo.add",

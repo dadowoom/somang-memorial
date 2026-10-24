@@ -67,12 +67,25 @@ export const accountUploads = mysqlTable(
     bytes: bigint("bytes", { mode: "number" }).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     purgedAt: timestamp("purgedAt"),
+    purgePendingAt: timestamp("purgePendingAt"),
   },
   table => [
     uniqueIndex("account_uploads_storageKey_unique").on(table.storageKey),
     index("account_uploads_user_created_idx").on(table.userId, table.createdAt),
   ]
 );
+
+export const accountUploadUsage = mysqlTable("account_upload_usage", {
+  userId: int("userId").primaryKey(),
+  usedBytes: bigint("usedBytes", { mode: "number" }).default(0).notNull(),
+  dayKey: varchar("dayKey", { length: 10 }).default("").notNull(),
+  dayCount: int("dayCount").default(0).notNull(),
+});
+
+export const uploadQuotaBootstrap = mysqlTable("upload_quota_bootstrap", {
+  id: int("id").primaryKey(),
+  completedAt: timestamp("completedAt"),
+});
 
 export const adminAuditLogs = mysqlTable(
   "admin_audit_logs",
