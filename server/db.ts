@@ -198,7 +198,9 @@ export async function revokeSession(sessionKey: string, expiresAt: Date): Promis
   const db = await getDb();
   if (!db) throw new Error("Database is not available");
   await db.insert(revokedSessions).values({ sessionKey, expiresAt })
-    .onDuplicateKeyUpdate({ set: { expiresAt } });
+    .onDuplicateKeyUpdate({
+      set: { expiresAt: sql`GREATEST(${revokedSessions.expiresAt}, ${expiresAt})` },
+    });
 }
 
 export function normalizeEmail(email: string) {

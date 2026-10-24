@@ -17,7 +17,7 @@ vi.mock("./db", async () => {
   return { ...actual, ...mocks };
 });
 
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, SESSION_TTL_MS } from "@shared/const";
 import { credentialFingerprint } from "./_core/sessionCredential";
 import { sdk } from "./_core/sdk";
 import { appRouter } from "./routers";
@@ -110,6 +110,20 @@ describe("비밀번호를 바꾸면 옛 로그인이 끊긴다", () => {
 });
 
 describe("로그아웃 후 서버 폐기", () => {
+  it("keeps a later cookie expiry when recording revocation", async () => {
+    const token = await sdk.createSessionToken(baseUser.openId, {
+      name: baseUser.name,
+      credential: credentialFingerprint(oldHash),
+      expiresInMs: SESSION_TTL_MS * 2,
+    });
+    const session = await sdk.readSession(requestWith(token));
+
+    await sdk.revokeRequestSession(requestWith(token));
+
+    const expiresAt = mocks.revokeSession.mock.calls[0]?.[1] as Date;
+    expect(expiresAt.getTime()).toBeGreaterThanOrEqual(session!.expiresAtMs);
+  });
+
   it("같은 쿠키와 연장 전 쿠키를 다시 쓰지 못한다", async () => {
     const revoked = new Set<string>();
     mocks.revokeSession.mockImplementation(async (key: string) => {
@@ -133,10 +147,19 @@ describe("로그아웃 후 서버 폐기", () => {
       req: requestWith(renewed),
       res: { clearCookie: vi.fn() },
     } as unknown as TrpcContext;
+    const logoutStartedAt = Date.now();
     await expect(appRouter.createCaller(ctx).auth.logout()).resolves.toEqual({
       success: true,
     });
     expect(mocks.revokeSession).toHaveBeenCalledOnce();
+    const expiresAt = mocks.revokeSession.mock.calls[0]?.[1] as Date;
+    const renewedSession = await sdk.readSession(requestWith(renewed));
+    expect(expiresAt.getTime()).toBeGreaterThanOrEqual(
+      renewedSession!.expiresAtMs
+    );
+    expect(expiresAt.getTime()).toBeGreaterThanOrEqual(
+      logoutStartedAt + SESSION_TTL_MS
+    );
     await expect(sdk.authenticateRequest(requestWith(renewed))).rejects.toThrow(
       /Revoked/
     );
@@ -166,6 +189,12 @@ describe("로그아웃 후 서버 폐기", () => {
       sessionId: oldSession!.sid,
     });
     await sdk.revokeRequestSession(requestWith(renewed));
+    const expiresAt = mocks.revokeSession.mock.calls[0]?.[1] as Date;
+    const renewedSession = await sdk.readSession(requestWith(renewed));
+    expect(expiresAt.getTime()).toBeGreaterThanOrEqual(
+      renewedSession!.expiresAtMs
+    );
+    expect(expiresAt.getTime()).toBeGreaterThanOrEqual(oldSession!.expiresAtMs);
     await expect(
       sdk.authenticateRequest(requestWith(oldToken))
     ).rejects.toThrow(/Revoked/);

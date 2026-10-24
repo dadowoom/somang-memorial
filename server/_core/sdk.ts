@@ -1,7 +1,6 @@
 import { AXIOS_TIMEOUT_MS, COOKIE_NAME, SESSION_TTL_MS } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import { createHash, randomUUID } from "crypto";
-import { TRPCError } from "@trpc/server";
 import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
@@ -22,6 +21,8 @@ const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
 
 const LOCAL_SESSION_APP_ID = "somang-memorial";
+
+export class InvalidAccountSessionError extends Error {}
 
 export function getSessionAppId(appId: string | undefined = ENV.appId) {
   return appId || LOCAL_SESSION_APP_ID;
@@ -344,7 +345,7 @@ class SDKServer {
     if (!session) return;
     await db.revokeSession(
       this.sessionKey(cookieValue, session.sid),
-      new Date(session.expiresAtMs)
+      new Date(Math.max(session.expiresAtMs, Date.now() + SESSION_TTL_MS))
     );
   }
 
@@ -358,9 +359,18 @@ class SDKServer {
       throw ForbiddenError("Invalid session cookie");
     }
 
-    if (
-      await db.isSessionRevoked(this.sessionKey(sessionCookie!, session.sid))
-    ) {
+    let revoked = false;
+    try {
+      revoked = await db.isSessionRevoked(
+        this.sessionKey(sessionCookie!, session.sid)
+      );
+    } catch (error) {
+      console.warn(
+        "[Auth] Could not check session revocation; allowing session",
+        error
+      );
+    }
+    if (revoked) {
       throw ForbiddenError("Revoked session cookie");
     }
 
@@ -369,14 +379,11 @@ class SDKServer {
     let user = await db.getUserByOpenId(sessionUserId);
 
     if (!user) {
-      throw new TRPCError({ code: "FORBIDDEN", message: "삭제된 계정입니다." });
+      throw new InvalidAccountSessionError("삭제된 계정입니다.");
     }
 
     if (user.approvalStatus === "rejected") {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "비활성화된 계정입니다.",
-      });
+      throw new InvalidAccountSessionError("비활성화된 계정입니다.");
     }
 
     // 세션에 담긴 비밀번호 지문이 지금 비밀번호와 다르면(재설정했거나, 지문이

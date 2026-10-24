@@ -1136,9 +1136,14 @@ export const appRouter = router({
       ),
 
     logout: publicProcedure.mutation(async ({ ctx }) => {
-      await sdk.revokeRequestSession(ctx.req);
       const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      try {
+        await sdk.revokeRequestSession(ctx.req);
+      } catch (error) {
+        console.warn("[Auth] Could not record session revocation during logout", error);
+      } finally {
+        ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      }
       return {
         success: true,
       } as const;

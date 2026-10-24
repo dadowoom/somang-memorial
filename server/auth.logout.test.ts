@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
 import { COOKIE_NAME } from "../shared/const";
 import type { TrpcContext } from "./_core/context";
+import { sdk } from "./_core/sdk";
 
 type CookieCall = {
   name: string;
@@ -49,6 +50,8 @@ function createAuthContext(): {
 }
 
 describe("auth.logout", () => {
+  afterEach(() => vi.restoreAllMocks());
+
   it("clears the session cookie and reports success", async () => {
     const { ctx, clearedCookies } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
@@ -65,5 +68,23 @@ describe("auth.logout", () => {
       httpOnly: true,
       path: "/",
     });
+  });
+
+  it("clears the cookie even when server revocation cannot be recorded", async () => {
+    vi.spyOn(sdk, "revokeRequestSession").mockRejectedValue(
+      new Error("database unavailable")
+    );
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { ctx, clearedCookies } = createAuthContext();
+
+    await expect(appRouter.createCaller(ctx).auth.logout()).resolves.toEqual({
+      success: true,
+    });
+    expect(clearedCookies).toHaveLength(1);
+    expect(clearedCookies[0]?.name).toBe(COOKIE_NAME);
+    expect(warning).toHaveBeenCalledWith(
+      expect.stringContaining("Could not record session revocation"),
+      expect.any(Error)
+    );
   });
 });

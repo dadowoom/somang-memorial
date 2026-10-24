@@ -1,5 +1,4 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
-import { TRPCError } from "@trpc/server";
 import {
   COOKIE_NAME,
   SESSION_RENEW_AFTER_MS,
@@ -7,7 +6,7 @@ import {
 } from "@shared/const";
 import type { User } from "../../drizzle/schema";
 import { getSessionCookieOptions } from "./cookies";
-import { sdk } from "./sdk";
+import { InvalidAccountSessionError, sdk } from "./sdk";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -56,8 +55,12 @@ export async function createContext(
   try {
     user = await sdk.authenticateRequest(opts.req);
   } catch (error) {
-    // 서명된 쿠키의 계정이 삭제·비활성화됐다면 공개 절차도 익명으로 통과시키지 않는다.
-    if (error instanceof TRPCError && error.code === "FORBIDDEN") throw error;
+    if (error instanceof InvalidAccountSessionError) {
+      opts.res.clearCookie(COOKIE_NAME, {
+        ...getSessionCookieOptions(opts.req),
+        maxAge: -1,
+      });
+    }
     // Authentication is optional for public procedures.
     user = null;
   }
