@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { detectImageFormat, stripImageMetadata } from "./imageMetadata";
 
+it("rejects GIF files whose private extension blocks cannot be checked", () => {
+  expect(() =>
+    stripImageMetadata(Buffer.from("GIF89a........", "ascii"))
+  ).toThrow();
+});
+
 /** EXIF(APP1) 조각을 끼운 최소한의 JPEG 을 만듭니다. */
 function makeJpegWithExif(payload = "GPS-LATITUDE-SECRET") {
   const exif = Buffer.concat([
@@ -81,6 +87,17 @@ describe("형식 알아보기", () => {
 });
 
 describe("JPEG 숨은 정보 제거", () => {
+  it("표식 앞 FF 채움 바이트가 있어도 EXIF를 제거한다", () => {
+    const original = makeJpegWithExif();
+    const withFill = Buffer.concat([
+      original.subarray(0, 2),
+      Buffer.from([0xff, 0xff]),
+      original.subarray(2),
+    ]);
+    const cleaned = stripImageMetadata(withFill);
+    expect(cleaned.includes(Buffer.from("GPS-LATITUDE-SECRET"))).toBe(false);
+    expect(cleaned.includes(Buffer.from([0xff, 0xda]))).toBe(true);
+  });
   it("위치정보가 든 EXIF 조각을 떼어낸다", () => {
     const original = makeJpegWithExif();
     expect(original.includes(Buffer.from("GPS-LATITUDE-SECRET"))).toBe(true);
@@ -116,11 +133,10 @@ describe("JPEG 뒤에 덧붙은 자료", () => {
     expect(output.subarray(-2)).toEqual(Buffer.from([0xff, 0xd9]));
   });
 
-  it("끝 표식이 없으면 그림 데이터를 자르지 않는다", () => {
+  it("끝 표식이 없으면 업로드를 거절한다", () => {
     const jpeg = makeJpegWithExif();
     const noEoi = jpeg.subarray(0, jpeg.length - 2);
-    const output = stripImageMetadata(noEoi);
-    expect(output.subarray(-3)).toEqual(Buffer.from([0xaa, 0xbb, 0xcc]));
+    expect(() => stripImageMetadata(noEoi)).toThrow();
   });
 });
 
@@ -156,8 +172,8 @@ describe("망가진 파일을 만났을 때", () => {
     expect(stripImageMetadata(odd)).toEqual(odd);
   });
 
-  it("중간이 잘린 JPEG 에도 예외를 던지지 않는다", () => {
+  it("중간이 잘린 JPEG는 거절한다", () => {
     const truncated = makeJpegWithExif().subarray(0, 8);
-    expect(() => stripImageMetadata(truncated)).not.toThrow();
+    expect(() => stripImageMetadata(truncated)).toThrow();
   });
 });

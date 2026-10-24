@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => {
     updateMemorialBookPage: vi.fn(),
     requireReadableMemorialById: vi.fn(),
     storagePut: vi.fn(),
+    storeAccountImage: vi.fn(),
   };
 });
 vi.mock("./db", async () => {
@@ -27,6 +28,10 @@ vi.mock("./routers/memorialAccess", () => ({
 vi.mock("./storage", () => ({
   storagePut: mocks.storagePut,
   UPLOAD_URL_PREFIX: "/uploads",
+}));
+vi.mock("./_core/uploadQuota", () => ({
+  storeAccountImage: mocks.storeAccountImage,
+  cancelAccountImage: vi.fn(),
 }));
 
 import { bookRouter } from "./routers/book";
@@ -78,6 +83,10 @@ const isSignedFor = (url: string | null | undefined, key: string) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.storeAccountImage.mockImplementation(
+    ({ key, buffer, mimeType }: { key: string; buffer: Buffer; mimeType: string }) =>
+      mocks.storagePut(key, buffer, mimeType)
+  );
   mocks.listMemorialBooks.mockResolvedValue([book]);
   mocks.listMemorialBookPages.mockResolvedValue([page]);
   mocks.getMemorialBookById.mockResolvedValue(book);

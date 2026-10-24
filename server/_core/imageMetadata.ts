@@ -47,48 +47,52 @@ function stripJpeg(buffer: Buffer) {
   const parts: Buffer[] = [buffer.subarray(0, 2)]; // SOI
   let offset = 2;
 
-  while (offset + 3 < buffer.length) {
+  while (offset + 1 < buffer.length) {
     if (buffer[offset] !== 0xff) break;
-
-    const marker = buffer[offset + 1];
+    let markerOffset = offset + 1;
+    // JPEG permits any number of FF fill bytes before a marker.
+    while (markerOffset < buffer.length && buffer[markerOffset] === 0xff)
+      markerOffset += 1;
+    if (markerOffset >= buffer.length) break;
+    const marker = buffer[markerOffset];
+    if (marker === 0x00) break;
 
     // 압축된 그림 데이터가 시작되면 그림의 끝 표식(EOI, FF D9)까지만 옮깁니다.
     // 그 뒤에 붙은 것(휴대폰이 덧붙이는 두 번째 사진·짧은 영상과 그 안의 위치
     // 정보)은 버립니다 (2026-09-23). 그림 데이터 안에서는 FF D9 가 나올 수 없어
-    // 처음 만나는 FF D9 가 그림의 끝입니다. 못 찾으면 예전처럼 끝까지 옮깁니다.
+    // 처음 만나는 FF D9 가 그림의 끝입니다. 못 찾으면 업로드를 거절합니다.
     if (marker === 0xda) {
-      const end = buffer.indexOf(JPEG_EOI, offset + 2);
-      parts.push(
-        end === -1 ? buffer.subarray(offset) : buffer.subarray(offset, end + 2)
-      );
+      const end = buffer.indexOf(JPEG_EOI, markerOffset + 1);
+      if (end === -1) throw new Error("JPEG has no end marker");
+      parts.push(buffer.subarray(offset, end + 2));
       return Buffer.concat(parts);
     }
 
     // 길이가 없는 표식들.
     if (marker === 0xd8 || marker === 0xd9 || marker === 0x01) {
-      parts.push(buffer.subarray(offset, offset + 2));
-      offset += 2;
+      parts.push(buffer.subarray(offset, markerOffset + 1));
+      offset = markerOffset + 1;
       continue;
     }
     if (marker >= 0xd0 && marker <= 0xd7) {
-      parts.push(buffer.subarray(offset, offset + 2));
-      offset += 2;
+      parts.push(buffer.subarray(offset, markerOffset + 1));
+      offset = markerOffset + 1;
       continue;
     }
 
-    const length = buffer.readUInt16BE(offset + 2);
-    if (length < 2 || offset + 2 + length > buffer.length) break;
+    if (markerOffset + 2 >= buffer.length) break;
+    const length = buffer.readUInt16BE(markerOffset + 1);
+    if (length < 2 || markerOffset + 1 + length > buffer.length)
+      throw new Error("Invalid JPEG segment");
 
     if (!JPEG_SEGMENTS_TO_DROP.has(marker)) {
-      parts.push(buffer.subarray(offset, offset + 2 + length));
+      parts.push(buffer.subarray(offset, markerOffset + 1 + length));
     }
-    offset += 2 + length;
+    offset = markerOffset + 1 + length;
   }
 
-  // 도중에 형식이 어긋나면 남은 부분을 그대로 붙입니다. 사진이 깨지는 것보다
-  // 낫습니다.
-  if (offset < buffer.length) parts.push(buffer.subarray(offset));
-  return Buffer.concat(parts);
+  // 도중에 형식이 어긋나면 숨은 정보가 남을 수 있으므로 거절합니다.
+  throw new Error("Incomplete JPEG");
 }
 
 const PNG_CHUNKS_TO_DROP = new Set(["eXIf", "tEXt", "zTXt", "iTXt", "tIME"]);
@@ -101,7 +105,8 @@ function stripPng(buffer: Buffer) {
     const length = buffer.readUInt32BE(offset);
     const type = buffer.subarray(offset + 4, offset + 8).toString("ascii");
     const end = offset + 12 + length;
-    if (length > buffer.length || end > buffer.length) break;
+    if (length > buffer.length || end > buffer.length)
+      throw new Error("Invalid PNG chunk");
 
     if (!PNG_CHUNKS_TO_DROP.has(type)) {
       parts.push(buffer.subarray(offset, end));
@@ -111,13 +116,14 @@ function stripPng(buffer: Buffer) {
     if (type === "IEND") return Buffer.concat(parts);
   }
 
-  if (offset < buffer.length) parts.push(buffer.subarray(offset));
-  return Buffer.concat(parts);
+  throw new Error("Incomplete PNG");
 }
 
 const WEBP_CHUNKS_TO_DROP = new Set(["EXIF", "XMP "]);
 
 function stripWebp(buffer: Buffer) {
+  if (buffer.length < 20 || buffer.readUInt32LE(4) + 8 !== buffer.length)
+    throw new Error("Invalid WebP size");
   const chunks: Buffer[] = [];
   let offset = 12;
 
@@ -127,7 +133,7 @@ function stripWebp(buffer: Buffer) {
     // 각 덩어리는 짝수 길이로 맞춰집니다.
     const padded = size + (size % 2);
     const end = offset + 8 + padded;
-    if (end > buffer.length) break;
+    if (end > buffer.length) throw new Error("Invalid WebP chunk");
 
     if (!WEBP_CHUNKS_TO_DROP.has(fourcc)) {
       chunks.push(buffer.subarray(offset, end));
@@ -135,7 +141,8 @@ function stripWebp(buffer: Buffer) {
     offset = end;
   }
 
-  if (chunks.length === 0) return buffer;
+  if (offset !== buffer.length || chunks.length === 0)
+    throw new Error("Incomplete WebP");
 
   const body = Buffer.concat(chunks);
   const header = Buffer.alloc(12);
@@ -146,23 +153,19 @@ function stripWebp(buffer: Buffer) {
   return Buffer.concat([header, body]);
 }
 
-/**
- * 알아보지 못하는 형식이나 처리 중 문제가 생기면 원본을 그대로 돌려줍니다.
- * 사진이 깨지는 것보다 낫고, 형식 확인은 별도로 합니다.
- */
+/** Reject images when metadata cannot be safely removed. */
 export function stripImageMetadata(buffer: Buffer): Buffer {
-  try {
-    switch (detectImageFormat(buffer)) {
-      case "jpeg":
-        return stripJpeg(buffer);
-      case "png":
-        return stripPng(buffer);
-      case "webp":
-        return stripWebp(buffer);
-      default:
-        return buffer;
-    }
-  } catch {
-    return buffer;
+  switch (detectImageFormat(buffer)) {
+    case "jpeg":
+      return stripJpeg(buffer);
+    case "png":
+      return stripPng(buffer);
+    case "webp":
+      return stripWebp(buffer);
+    case "gif":
+      // GIF application/comment blocks can contain private data that this stripper cannot verify.
+      throw new Error("GIF metadata cannot be safely stripped");
+    default:
+      return buffer;
   }
 }

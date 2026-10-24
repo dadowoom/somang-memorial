@@ -1,10 +1,15 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const referencedKeys = vi.hoisted(() => ({ value: new Set<string>() }));
 vi.mock("../db", () => ({ getDb: vi.fn() }));
+const markPurged = vi.hoisted(() => vi.fn());
+vi.mock("./uploadQuota", () => ({
+  markPurgedAccountUploads: markPurged,
+  markPendingAccountUploads: vi.fn(),
+}));
 
 import * as cleanup from "./uploadCleanup";
 import {
@@ -16,6 +21,7 @@ import {
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 8, 18, 18, 0, 0); // 서울 9월 19일 새벽 3시
+beforeEach(() => vi.clearAllMocks());
 
 describe("주소에서 파일 경로 뽑기", () => {
   it("상대 주소와 전체 주소 모두 읽는다", () => {
@@ -54,7 +60,10 @@ describe("치울 목록 정하기", () => {
 
   it("막 올린 파일은 저장 전일 수 있어 건드리지 않는다", () => {
     const plan = planUploadCleanup({
-      files: [file("a.jpg"), { key: "new.jpg", mtimeMs: NOW - MIN_ORPHAN_AGE_MS + 1000 }],
+      files: [
+        file("a.jpg"),
+        { key: "new.jpg", mtimeMs: NOW - MIN_ORPHAN_AGE_MS + 1000 },
+      ],
       referenced: new Set(["a.jpg"]),
       now: NOW,
     });
@@ -83,6 +92,7 @@ describe("치울 목록 정하기", () => {
   it("값이 없거나 이상하면 확인만 하는 모드로 돈다", () => {
     expect(uploadCleanupMode(undefined)).toBe("dry-run");
     expect(uploadCleanupMode("yes")).toBe("dry-run");
+    expect(uploadCleanupMode("dry-run")).toBe("dry-run");
     expect(uploadCleanupMode("on")).toBe("on");
     expect(uploadCleanupMode("off")).toBe("off");
   });
@@ -132,12 +142,81 @@ describe("휴지통으로 옮기기", () => {
   });
 
   // DB 대신 "쓰이는 파일" 목록을 직접 준다.
+  it("removes expired trash and releases its account quota", async () => {
+    setup();
+    const trash = path.join(root, ".trash", "20260801");
+    const old = path.join(trash, "gallery", "1", "old.jpg");
+    fs.mkdirSync(path.dirname(old), { recursive: true });
+    fs.writeFileSync(old, "x");
+    const time = new Date(NOW - 31 * DAY);
+    fs.utimesSync(trash, time, time);
+    await runWith("on");
+    expect(fs.existsSync(old)).toBe(false);
+    expect(markPurged).toHaveBeenCalledWith(["gallery/1/old.jpg"]);
+  });
+
+  it("DB 갱신이 실패하면 삭제 대상을 남겨 재실행할 수 있다", async () => {
+    setup();
+    const trash = path.join(root, ".trash", "20260801");
+    const old = path.join(trash, "gallery", "1", "old.jpg");
+    fs.mkdirSync(path.dirname(old), { recursive: true });
+    fs.writeFileSync(old, "x");
+    fs.utimesSync(trash, new Date(NOW - 31 * DAY), new Date(NOW - 31 * DAY));
+    markPurged.mockRejectedValueOnce(new Error("DB unavailable"));
+    await expect(runWith("on")).rejects.toThrow("DB unavailable");
+    expect(fs.existsSync(path.join(trash, ".purge-manifest.json"))).toBe(true);
+    await runWith("on");
+    expect(fs.existsSync(trash)).toBe(false);
+    expect(markPurged).toHaveBeenCalledTimes(2);
+  });
+
+  it("삭제 직전 다시 찾은 DB 참조가 있으면 휴지통을 유지한다", async () => {
+    setup();
+    const trash = path.join(root, ".trash", "20260801");
+    const old = path.join(trash, "gallery", "1", "old.jpg");
+    fs.mkdirSync(path.dirname(old), { recursive: true });
+    fs.writeFileSync(old, "x");
+    fs.utimesSync(trash, new Date(NOW - 31 * DAY), new Date(NOW - 31 * DAY));
+    const result = await cleanup.runUploadCleanup({
+      mode: "on",
+      root,
+      now: new Date(NOW),
+      referenced: referencedKeys.value,
+      getPurgeReferences: async () => new Set(["gallery/1/old.jpg"]),
+    });
+    expect(result.moved).toBe(1);
+    expect(fs.existsSync(old)).toBe(true);
+  });
+
+  it("삭제 직전 DB 조회 오류가 나면 파일을 지우지 않는다", async () => {
+    setup();
+    const trash = path.join(root, ".trash", "20260801");
+    const old = path.join(trash, "gallery", "1", "old.jpg");
+    fs.mkdirSync(path.dirname(old), { recursive: true });
+    fs.writeFileSync(old, "x");
+    fs.utimesSync(trash, new Date(NOW - 31 * DAY), new Date(NOW - 31 * DAY));
+    await expect(
+      cleanup.runUploadCleanup({
+        mode: "on",
+        root,
+        now: new Date(NOW),
+        referenced: referencedKeys.value,
+        getPurgeReferences: async () => {
+          throw new Error("DB unavailable");
+        },
+      })
+    ).rejects.toThrow("DB unavailable");
+    expect(fs.existsSync(old)).toBe(true);
+    expect(markPurged).not.toHaveBeenCalled();
+  });
+
   async function runWith(mode: "on" | "dry-run") {
     return cleanup.runUploadCleanup({
       mode,
       root,
       now: new Date(NOW),
       referenced: referencedKeys.value,
+      getPurgeReferences: async () => referencedKeys.value,
     });
   }
 });

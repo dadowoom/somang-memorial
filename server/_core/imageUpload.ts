@@ -18,7 +18,6 @@ const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
-  "image/gif": "gif",
 };
 
 export function decodeImageDataUrl(dataUrl: string) {
@@ -35,7 +34,7 @@ export function decodeImageDataUrl(dataUrl: string) {
   if (!ext) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "JPG, PNG, WEBP, GIF 이미지만 업로드할 수 있습니다.",
+      message: "JPG, PNG, WEBP 이미지만 업로드할 수 있습니다.",
     });
   }
 
@@ -64,7 +63,13 @@ export function decodeImageDataUrl(dataUrl: string) {
   }
 
   const size = readImageDimensions(buffer, actualFormat);
-  if (size && Math.max(size.width, size.height) > UPLOAD_MAX_DIMENSION) {
+  if (!size || size.width < 1 || size.height < 1) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "사진 크기를 확인할 수 없습니다. 다른 사진을 올려 주세요.",
+    });
+  }
+  if (Math.max(size.width, size.height) > UPLOAD_MAX_DIMENSION) {
     throw new TRPCError({
       code: "PAYLOAD_TOO_LARGE",
       message: TOO_LARGE_MESSAGE,
@@ -72,5 +77,12 @@ export function decodeImageDataUrl(dataUrl: string) {
   }
 
   // 촬영 장소·시각 같은 숨은 정보를 떼어냅니다. 그림 자체는 그대로입니다.
-  return { buffer: stripImageMetadata(buffer), mimeType, ext };
+  try {
+    return { buffer: stripImageMetadata(buffer), mimeType, ext };
+  } catch {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "사진의 숨은 정보를 지울 수 없습니다. 다른 사진을 올려 주세요.",
+    });
+  }
 }

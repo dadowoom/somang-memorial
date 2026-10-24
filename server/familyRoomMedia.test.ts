@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => {
     isMemorialFamilyMember: vi.fn(),
     createAdminAuditLog: vi.fn(),
     storagePut: vi.fn(),
+    storeAccountImage: vi.fn(),
     decodeImageDataUrl: vi.fn(),
   };
 });
@@ -29,6 +30,10 @@ vi.mock("./storage", () => ({
 }));
 vi.mock("./_core/imageUpload", () => ({
   decodeImageDataUrl: mocks.decodeImageDataUrl,
+}));
+vi.mock("./_core/uploadQuota", () => ({
+  storeAccountImage: mocks.storeAccountImage,
+  cancelAccountImage: vi.fn(),
 }));
 
 import { appRouter } from "./routers";
@@ -60,6 +65,10 @@ const slug = { memorialSlug: "kim-somang-kwonsa" };
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.storeAccountImage.mockImplementation(
+    ({ key, buffer, mimeType }: { key: string; buffer: Buffer; mimeType: string }) =>
+      mocks.storagePut(key, buffer, mimeType)
+  );
   mocks.isMemorialFamilyMember.mockResolvedValue(false);
   mocks.getMemorialFamilyRoomManageInfo.mockResolvedValue(room);
   mocks.decodeImageDataUrl.mockReturnValue({
