@@ -1,5 +1,6 @@
 import {
   index,
+  bigint,
   int,
   mediumtext,
   mysqlEnum,
@@ -55,6 +56,23 @@ export const users = mysqlTable(
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+// A row survives photo deletion so a file in the 30-day trash still uses quota.
+export const accountUploads = mysqlTable(
+  "account_uploads",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    storageKey: varchar("storageKey", { length: 500 }).notNull(),
+    bytes: bigint("bytes", { mode: "number" }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    purgedAt: timestamp("purgedAt"),
+  },
+  table => [
+    uniqueIndex("account_uploads_storageKey_unique").on(table.storageKey),
+    index("account_uploads_user_created_idx").on(table.userId, table.createdAt),
+  ]
+);
 
 export const adminAuditLogs = mysqlTable(
   "admin_audit_logs",

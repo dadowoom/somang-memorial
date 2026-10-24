@@ -9,6 +9,7 @@ import {
 } from "../db";
 import { UPLOAD_DIR } from "../storage";
 import { thumbnailPathFor } from "../../shared/thumbnail";
+import { markPurgedAccountUploads } from "./uploadQuota";
 
 /**
  * 지운 사진이 서버에 그대로 남던 문제 (2026-09-18 점검).
@@ -40,8 +41,8 @@ export type UploadCleanupMode = "off" | "dry-run" | "on";
 export function uploadCleanupMode(
   value = process.env.UPLOAD_CLEANUP_MODE
 ): UploadCleanupMode {
-  if (value === "off" || value === "on") return value;
-  // 기본값은 "치울 목록만 로그에 남기기". 운영에서 목록을 확인한 뒤 on 으로 켠다.
+  if (value === undefined || value === "") return "on";
+  if (value === "off" || value === "on" || value === "dry-run") return value;
   return "dry-run";
 }
 
@@ -59,9 +60,7 @@ export function extractUploadKeys(text: string | null | undefined): string[] {
     }
     // 기한이 적힌 주소(/uploads/s/<기한>.<서명>/...)가 글에 붙여 넣어졌어도
     // 실제 파일 이름으로 센다 (2026-09-23, protectedMedia.ts).
-    keys.push(
-      key.replace(/^\/+/, "").replace(/^s\/\d+\.[A-Za-z0-9_-]+\//, "")
-    );
+    keys.push(key.replace(/^\/+/, "").replace(/^s\/\d+\.[A-Za-z0-9_-]+\//, ""));
   }
   return keys;
 }
@@ -204,18 +203,33 @@ function seoulDateKey(date: Date) {
 }
 
 /** 휴지통에서 보관 기간이 지난 날짜 폴더를 완전히 지운다. */
-function purgeOldTrash(root: string, now: number) {
+async function purgeOldTrash(root: string, now: number) {
   const trashRoot = path.join(root, TRASH_DIR_NAME);
   if (!fs.existsSync(trashRoot)) return 0;
   let purged = 0;
+  const purgedKeys: string[] = [];
   for (const entry of fs.readdirSync(trashRoot, { withFileTypes: true })) {
     if (!entry.isDirectory() || !/^\d{8}$/.test(entry.name)) continue;
     const full = path.join(trashRoot, entry.name);
     if (now - fs.statSync(full).mtimeMs >= TRASH_RETENTION_MS) {
+      const folderKeys: string[] = [];
+      const walk = (dir: string) => {
+        for (const file of fs.readdirSync(dir, { withFileTypes: true })) {
+          const filePath = path.join(dir, file.name);
+          if (file.isDirectory()) walk(filePath);
+          else if (file.isFile())
+            folderKeys.push(
+              path.relative(full, filePath).split(path.sep).join("/")
+            );
+        }
+      };
+      walk(full);
       fs.rmSync(full, { recursive: true, force: true });
+      purgedKeys.push(...folderKeys);
       purged += 1;
     }
   }
+  await markPurgedAccountUploads(purgedKeys);
   return purged;
 }
 
@@ -232,6 +246,9 @@ export async function runUploadCleanup({
   referenced?: Set<string>;
 } = {}) {
   if (mode === "off") return { mode, moved: 0, planned: 0, skipped: true };
+
+  // An orphan safety stop must not prevent independently expired trash from leaving disk.
+  const purged = mode === "on" ? await purgeOldTrash(root, now.getTime()) : 0;
 
   const referenced = givenReferenced ?? (await collectReferencedUploadKeys());
   const files = listStoredFiles(root);
@@ -264,7 +281,6 @@ export async function runUploadCleanup({
       console.error(`[UploadCleanup] 옮기지 못함: ${key}`, error);
     }
   }
-  const purged = purgeOldTrash(root, now.getTime());
   console.log(
     `[UploadCleanup] 안 쓰는 파일 ${moved}개를 휴지통으로 옮김, 오래된 휴지통 ${purged}개 비움`
   );

@@ -12,10 +12,13 @@ import { signMediaUrl } from "../_core/protectedMedia";
 import { memorialGalleryPhotos } from "../../drizzle/schema";
 import { canManageMemorialGallery } from "../../shared/memorialGalleryPermissions";
 import { withGalleryEditor } from "../galleryEditing";
-import { saveThumbnail } from "../_core/thumbnailStorage";
+import {
+  decodeThumbnailDataUrl,
+  saveThumbnail,
+} from "../_core/thumbnailStorage";
 import { decodeImageDataUrl } from "../_core/imageUpload";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
-import { storagePut } from "../storage";
+import { storeAccountImage } from "../_core/uploadQuota";
 import { requireReadableMemorialById } from "./memorialAccess";
 
 export const galleryRouter = router({
@@ -92,7 +95,14 @@ export const galleryRouter = router({
           }
           const { buffer, mimeType, ext } = decodeImageDataUrl(input.dataUrl);
           const key = `gallery/${memorialId}/${nanoid()}.${ext}`;
-          const { key: storedKey, url } = await storagePut(key, buffer, mimeType);
+          const { key: storedKey, url } = await storeAccountImage({
+            userId: ctx.user.id,
+            key,
+            buffer,
+            mimeType,
+            extraBytes: decodeThumbnailDataUrl(input.thumbDataUrl)?.length ?? 0,
+            tx,
+          });
           await saveThumbnail(storedKey, input.thumbDataUrl);
 
           const asProfile = input.asProfile === true;

@@ -98,8 +98,8 @@ import {
 } from "../shared/letterHideSource";
 import { nanoid } from "nanoid";
 import { decodeImageDataUrl } from "./_core/imageUpload";
-import { saveThumbnail } from "./_core/thumbnailStorage";
-import { storagePut } from "./storage";
+import { decodeThumbnailDataUrl, saveThumbnail } from "./_core/thumbnailStorage";
+import { storeAccountImage } from "./_core/uploadQuota";
 import { signMediaUrl } from "./_core/protectedMedia";
 import {
   collectReferencedUploadKeys,
@@ -2250,7 +2250,10 @@ export const appRouter = router({
         // 추모관 사진과 같은 통로다. 형식을 확인하고 위치·기기 정보를 지운다.
         const { buffer, mimeType, ext } = decodeImageDataUrl(input.dataUrl);
         const key = `family-rooms/${info.roomId}/${nanoid()}.${ext}`;
-        const { key: storedKey, url } = await storagePut(key, buffer, mimeType);
+        const { key: storedKey, url } = await storeAccountImage({
+          userId: ctx.user.id, key, buffer, mimeType,
+          extraBytes: decodeThumbnailDataUrl(input.thumbDataUrl)?.length ?? 0,
+        });
         await saveThumbnail(storedKey, input.thumbDataUrl);
 
         await addFamilyRoomPhoto({

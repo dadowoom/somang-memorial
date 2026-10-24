@@ -11,7 +11,7 @@ import {
   updateKioskPoster,
 } from "../db";
 import { decodeImageDataUrl } from "../_core/imageUpload";
-import { storagePut } from "../storage";
+import { storeAccountImage } from "../_core/uploadQuota";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 
 // 한 장을 너무 짧게/길게 두면 대기 화면이 쓸모없어진다. 사이 값만 받는다.
@@ -64,7 +64,12 @@ export const kioskPosterRouter = router({
       // 추모관 사진과 같은 통로다. 형식을 확인하고 위치·기기 정보를 지운다.
       const { buffer, mimeType, ext } = decodeImageDataUrl(input.dataUrl);
       const key = `kiosk-posters/${nanoid()}.${ext}`;
-      const { url } = await storagePut(key, buffer, mimeType);
+      const { url } = await storeAccountImage({
+        userId: ctx.user.id,
+        key,
+        buffer,
+        mimeType,
+      });
 
       const existing = await listAllKioskPosters();
       const sortOrder =

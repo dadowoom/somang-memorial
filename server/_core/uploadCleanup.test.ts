@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const referencedKeys = vi.hoisted(() => ({ value: new Set<string>() }));
 vi.mock("../db", () => ({ getDb: vi.fn() }));
+const markPurged = vi.hoisted(() => vi.fn());
+vi.mock("./uploadQuota", () => ({ markPurgedAccountUploads: markPurged }));
 
 import * as cleanup from "./uploadCleanup";
 import {
@@ -54,7 +56,10 @@ describe("치울 목록 정하기", () => {
 
   it("막 올린 파일은 저장 전일 수 있어 건드리지 않는다", () => {
     const plan = planUploadCleanup({
-      files: [file("a.jpg"), { key: "new.jpg", mtimeMs: NOW - MIN_ORPHAN_AGE_MS + 1000 }],
+      files: [
+        file("a.jpg"),
+        { key: "new.jpg", mtimeMs: NOW - MIN_ORPHAN_AGE_MS + 1000 },
+      ],
       referenced: new Set(["a.jpg"]),
       now: NOW,
     });
@@ -81,8 +86,9 @@ describe("치울 목록 정하기", () => {
   });
 
   it("값이 없거나 이상하면 확인만 하는 모드로 돈다", () => {
-    expect(uploadCleanupMode(undefined)).toBe("dry-run");
+    expect(uploadCleanupMode(undefined)).toBe("on");
     expect(uploadCleanupMode("yes")).toBe("dry-run");
+    expect(uploadCleanupMode("dry-run")).toBe("dry-run");
     expect(uploadCleanupMode("on")).toBe("on");
     expect(uploadCleanupMode("off")).toBe("off");
   });
@@ -132,6 +138,19 @@ describe("휴지통으로 옮기기", () => {
   });
 
   // DB 대신 "쓰이는 파일" 목록을 직접 준다.
+  it("removes expired trash and releases its account quota", async () => {
+    setup();
+    const trash = path.join(root, ".trash", "20260801");
+    const old = path.join(trash, "gallery", "1", "old.jpg");
+    fs.mkdirSync(path.dirname(old), { recursive: true });
+    fs.writeFileSync(old, "x");
+    const time = new Date(NOW - 31 * DAY);
+    fs.utimesSync(trash, time, time);
+    await runWith("on");
+    expect(fs.existsSync(old)).toBe(false);
+    expect(markPurged).toHaveBeenCalledWith(["gallery/1/old.jpg"]);
+  });
+
   async function runWith(mode: "on" | "dry-run") {
     return cleanup.runUploadCleanup({
       mode,
