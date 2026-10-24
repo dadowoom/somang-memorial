@@ -118,6 +118,7 @@ tail -30 /var/log/somang-memorial-backup.log
 | 앱 요청 기록    | `/root/.pm2/logs/somang-memorial-out.log` (본문·비밀번호는 안 남긴다)                                                                                                               |
 | nginx           | `/var/log/nginx/access.log`, `/var/log/nginx/error.log`                                                                                                                             |
 | 배포            | `/root/somang-deploy.log`, `/root/somang-deploy-run-*.log`                                                                                                                          |
+| 자동 배포       | `/root/somang-auto-deploy.log` — 깃허브 자동 배포 단추의 자세한 기록. 끝에 `되돌리기:` 한 줄이 있다 ([AUTO_DEPLOY_SETUP.md](AUTO_DEPLOY_SETUP.md))                                  |
 | 백업            | `/var/log/somang-memorial-backup.log` (매일 04:37)                                                                                                                                  |
 | 서버 자동 감시  | `/var/log/dadowoom-watch.log` — 07:20·19:20 에 사이트 응답·백업 성공·디스크 85%·인증서·재시작 횟수를 보고 **텔레그램**으로 알린다                                                   |
 | 관리자 감사기록 | 사이트 관리자 화면 → 회원 → 감사기록 (누가 언제 무엇을 바꿨나)                                                                                                                      |
