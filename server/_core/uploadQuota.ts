@@ -242,6 +242,30 @@ function resultRows(
     : [];
 }
 
+/** Missing files are skipped; other read failures must leave the bootstrap retryable. */
+function legacyFileBytes(key: string, trashDays: string[]): number | undefined {
+  const candidates = [
+    UPLOAD_DIR,
+    ...trashDays.map(day => path.join(UPLOAD_DIR, ".trash", day)),
+  ];
+  for (const root of candidates) {
+    let bytes: number;
+    try {
+      bytes = fs.statSync(path.join(root, key)).size;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
+      throw error;
+    }
+    try {
+      bytes += fs.statSync(path.join(root, thumbnailPathFor(key))).size;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+    return bytes;
+  }
+  return undefined;
+}
+
 /** Fail startup before accepting requests if migrations are absent. */
 export async function prepareUploadQuota() {
   const db = await getDb();
@@ -296,22 +320,41 @@ export async function prepareUploadQuota() {
         ON a.action = 'kioskPoster.create' AND a.afterValue = k.imageKey
     `)
     );
+    let skippedOwners = 0;
+    let fileReadErrors = 0;
+    const trashRoot = path.join(UPLOAD_DIR, ".trash");
+    let trashDays: string[] = [];
+    try {
+      trashDays = fs.existsSync(trashRoot)
+        ? fs
+            .readdirSync(trashRoot, { withFileTypes: true })
+            .filter(entry => entry.isDirectory() && /^\d{8}$/.test(entry.name))
+            .map(entry => entry.name)
+        : [];
+    } catch (error) {
+      fileReadErrors += 1;
+      console.warn(
+        "[UploadQuota] 휴지통 목록을 읽지 못해 다음 시작 때 다시 시도합니다:",
+        error
+      );
+    }
     for (const row of legacy) {
+      if (!row.userId) {
+        skippedOwners += 1;
+        continue;
+      }
       const key = row.storageKey?.match(/\/uploads\/([A-Za-z0-9._\-/%]+)/)?.[1];
-      if (!row.userId || !key || key.includes("..")) continue;
+      if (!key || key.includes("..")) continue;
       const file = path.resolve(UPLOAD_DIR, key);
       if (!file.startsWith(path.resolve(UPLOAD_DIR) + path.sep)) continue;
       let bytes: number;
       try {
-        bytes = fs.statSync(file).size;
-        try {
-          bytes += fs.statSync(
-            path.join(UPLOAD_DIR, thumbnailPathFor(key))
-          ).size;
-        } catch {
-          /* optional */
-        }
-      } catch {
+        const size = legacyFileBytes(key, trashDays);
+        if (size === undefined) continue;
+        bytes = size;
+      } catch (error) {
+        fileReadErrors += 1;
+        console.warn(`[UploadQuota] 파일 크기를 읽지 못함 (${key}):`, error);
         continue;
       }
       await tx
@@ -324,6 +367,10 @@ export async function prepareUploadQuota() {
         })
         .onDuplicateKeyUpdate({ set: { storageKey: key } });
     }
+    if (skippedOwners > 0)
+      console.warn(
+        `[UploadQuota] 소유자 없는 사진 ${skippedOwners}건은 건너뛰었습니다.`
+      );
     const totals = await tx
       .select({
         userId: accountUploads.userId,
@@ -362,10 +409,16 @@ export async function prepareUploadQuota() {
             dayCount: daily.get(total.userId) ?? 0,
           },
         });
-    await tx
-      .update(uploadQuotaBootstrap)
-      .set({ completedAt: new Date() })
-      .where(eq(uploadQuotaBootstrap.id, 1));
+    if (fileReadErrors > 0) {
+      console.warn(
+        `[UploadQuota] 파일 읽기 오류 ${fileReadErrors}건으로 백필을 다음 시작 때 다시 시도합니다.`
+      );
+    } else {
+      await tx
+        .update(uploadQuotaBootstrap)
+        .set({ completedAt: new Date() })
+        .where(eq(uploadQuotaBootstrap.id, 1));
+    }
   });
   await finishMissingPendingUploads();
 }
