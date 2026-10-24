@@ -4,6 +4,7 @@ import { ORG_INFO } from "@/lib/orgInfo";
 import { ArrowRight, ChevronDown, Menu, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
+import { toast } from "sonner";
 import "./siteChrome.css";
 
 const menus = {
@@ -48,6 +49,18 @@ export default function Navbar() {
   const closeMenus = () => {
     setMobileOpen(false);
     setActiveMenu(null);
+  };
+  const handleLogout = async () => {
+    closeMenus();
+    try {
+      await logout();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "로그아웃 처리 중 문제가 생겼습니다."
+      );
+    }
   };
   useEffect(closeMenus, [location]);
   useEffect(() => {
@@ -142,10 +155,7 @@ export default function Navbar() {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => {
-                    logout();
-                    closeMenus();
-                  }}
+                  onClick={handleLogout}
                 >
                   로그아웃
                 </button>
@@ -311,10 +321,7 @@ export default function Navbar() {
                 )}
                 <button
                   type="button"
-                  onClick={() => {
-                    logout();
-                    closeMenus();
-                  }}
+                  onClick={handleLogout}
                 >
                   로그아웃
                 </button>

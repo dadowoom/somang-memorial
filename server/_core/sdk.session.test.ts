@@ -109,7 +109,7 @@ describe("authenticated user status", () => {
     );
   });
 
-  it("keeps a valid user signed in if revocation lookup fails", async () => {
+  it("treats a revocation lookup failure as an anonymous request", async () => {
     const user: User = {
       id: 8,
       openId: "active-user",
@@ -143,7 +143,9 @@ describe("authenticated user status", () => {
     const ctx = await createContext({ req: request, res: {} } as Parameters<
       typeof createContext
     >[0]);
-    expect(ctx.user?.id).toBe(user.id);
+    expect(ctx.user).toBeNull();
+    expect(db.getUserByOpenId).not.toHaveBeenCalled();
+    expect(db.upsertUser).not.toHaveBeenCalled();
     expect(warning).toHaveBeenCalledWith(
       expect.stringContaining("Could not check session revocation"),
       expect.any(Error)

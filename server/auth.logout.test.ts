@@ -77,9 +77,12 @@ describe("auth.logout", () => {
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { ctx, clearedCookies } = createAuthContext();
 
-    await expect(appRouter.createCaller(ctx).auth.logout()).resolves.toEqual({
-      success: true,
-    });
+    await expect(appRouter.createCaller(ctx).auth.logout()).rejects.toMatchObject(
+      {
+        code: "SERVICE_UNAVAILABLE",
+        message: expect.stringContaining("기존 로그인을 끊지 못했습니다"),
+      }
+    );
     expect(clearedCookies).toHaveLength(1);
     expect(clearedCookies[0]?.name).toBe(COOKIE_NAME);
     expect(warning).toHaveBeenCalledWith(

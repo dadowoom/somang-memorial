@@ -359,16 +359,17 @@ class SDKServer {
       throw ForbiddenError("Invalid session cookie");
     }
 
-    let revoked = false;
+    let revoked: boolean;
     try {
       revoked = await db.isSessionRevoked(
         this.sessionKey(sessionCookie!, session.sid)
       );
     } catch (error) {
       console.warn(
-        "[Auth] Could not check session revocation; allowing session",
+        "[Auth] Could not check session revocation; treating request as unauthenticated",
         error
       );
+      throw ForbiddenError("Session revocation check unavailable");
     }
     if (revoked) {
       throw ForbiddenError("Revoked session cookie");
