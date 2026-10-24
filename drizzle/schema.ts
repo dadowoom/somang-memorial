@@ -1,5 +1,6 @@
 import {
   index,
+  bigint,
   int,
   mediumtext,
   mysqlEnum,
@@ -53,8 +54,45 @@ export const users = mysqlTable(
   ]
 );
 
+/** 로그아웃한 로그인 묶음. 원본 쿠키나 개인 정보는 저장하지 않는다. */
+export const revokedSessions = mysqlTable("revoked_sessions", {
+  sessionKey: varchar("sessionKey", { length: 64 }).primaryKey(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+// A row survives photo deletion so a file in the 30-day trash still uses quota.
+export const accountUploads = mysqlTable(
+  "account_uploads",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    storageKey: varchar("storageKey", { length: 500 }).notNull(),
+    bytes: bigint("bytes", { mode: "number" }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    purgedAt: timestamp("purgedAt"),
+    purgePendingAt: timestamp("purgePendingAt"),
+  },
+  table => [
+    uniqueIndex("account_uploads_storageKey_unique").on(table.storageKey),
+    index("account_uploads_user_created_idx").on(table.userId, table.createdAt),
+  ]
+);
+
+export const accountUploadUsage = mysqlTable("account_upload_usage", {
+  userId: int("userId").primaryKey(),
+  usedBytes: bigint("usedBytes", { mode: "number" }).default(0).notNull(),
+  dayKey: varchar("dayKey", { length: 10 }).default("").notNull(),
+  dayCount: int("dayCount").default(0).notNull(),
+});
+
+export const uploadQuotaBootstrap = mysqlTable("upload_quota_bootstrap", {
+  id: int("id").primaryKey(),
+  completedAt: timestamp("completedAt"),
+});
 
 export const adminAuditLogs = mysqlTable(
   "admin_audit_logs",

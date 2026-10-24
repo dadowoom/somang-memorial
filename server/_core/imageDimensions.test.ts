@@ -71,6 +71,13 @@ describe("사진 가로·세로 읽기", () => {
 });
 
 describe("서버 사진 한도", () => {
+  it("숨은 정보를 안전하게 지울 수 없는 GIF는 받지 않는다", () => {
+    const gif = Buffer.from("GIF89a\x40\x01\xf0\x00", "latin1");
+    expect(() => decodeImageDataUrl(dataUrl("image/gif", gif))).toThrow(
+      /JPG, PNG, WEBP 이미지만/
+    );
+  });
+
   it("긴 변이 2048px 을 넘으면 받지 않는다", () => {
     expect(() =>
       decodeImageDataUrl(dataUrl("image/jpeg", jpegHeader(4032, 3024)))
@@ -88,8 +95,20 @@ describe("서버 사진 한도", () => {
   });
 
   it("줄인 사진(2048px 이하·1.5MB 이하)은 받는다", () => {
-    const small = jpegHeader(2048, 1536, 1000);
+    const header = jpegHeader(2048, 1536);
+    const small = Buffer.concat([
+      header.subarray(0, header.length - 2),
+      Buffer.from([0xff, 0xda, 0x00, 0x03, 0x01, 0xaa, 0xff, 0xd9]),
+    ]);
     const decoded = decodeImageDataUrl(dataUrl("image/jpeg", small));
     expect(decoded.ext).toBe("jpg");
+  });
+  it("rejects unreadable dimensions and failed metadata stripping", () => {
+    expect(() =>
+      decodeImageDataUrl(dataUrl("image/jpeg", Buffer.from([0xff, 0xd8, 0xff])))
+    ).toThrow(/사진 크기/);
+    expect(() =>
+      decodeImageDataUrl(dataUrl("image/jpeg", jpegHeader(100, 100)))
+    ).toThrow(/숨은 정보/);
   });
 });

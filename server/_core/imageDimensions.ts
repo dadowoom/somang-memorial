@@ -1,6 +1,6 @@
 /**
  * 사진 파일 앞부분에서 가로·세로 크기를 읽는다 (2026-09-24). 사진을 풀지 않고
- * 머리말만 본다. 읽지 못하면 null — 그때는 파일 크기 한도만 적용한다.
+ * 머리말만 본다. 읽지 못하면 null — 업로드 검사를 통과할 수 없다.
  */
 export function readImageDimensions(
   buffer: Buffer,

@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => {
     getAdminMemorialById: vi.fn(),
     listMemorialGalleryPhotos: vi.fn(),
     storagePut: vi.fn(),
+    storeAccountImage: vi.fn(),
     decodeImageDataUrl: vi.fn(),
     requireReadableMemorialById: vi.fn(),
     // 가족 초대(2026-09-13): 주인·관리자가 아닐 때만 조회된다. 기본은 "가족 아님".
@@ -24,6 +25,10 @@ vi.mock("./storage", () => ({
 }));
 vi.mock("./_core/imageUpload", () => ({
   decodeImageDataUrl: mocks.decodeImageDataUrl,
+}));
+vi.mock("./_core/uploadQuota", () => ({
+  storeAccountImage: mocks.storeAccountImage,
+  cancelAccountImage: vi.fn(),
 }));
 vi.mock("./routers/memorialAccess", () => ({
   requireReadableMemorialById: mocks.requireReadableMemorialById,
@@ -78,6 +83,10 @@ function database(...results: unknown[][]) {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocks.storeAccountImage.mockImplementation(
+    ({ key, buffer, mimeType }: { key: string; buffer: Buffer; mimeType: string }) =>
+      mocks.storagePut(key, buffer, mimeType)
+  );
   mocks.storagePut.mockResolvedValue({ url: "/uploads/test-photo.jpg" });
   mocks.isMemorialFamilyMember.mockResolvedValue(false);
   mocks.decodeImageDataUrl.mockReturnValue({

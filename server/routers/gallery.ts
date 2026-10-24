@@ -12,10 +12,13 @@ import { signMediaUrl } from "../_core/protectedMedia";
 import { memorialGalleryPhotos } from "../../drizzle/schema";
 import { canManageMemorialGallery } from "../../shared/memorialGalleryPermissions";
 import { withGalleryEditor } from "../galleryEditing";
-import { saveThumbnail } from "../_core/thumbnailStorage";
+import {
+  decodeThumbnailDataUrl,
+  saveThumbnail,
+} from "../_core/thumbnailStorage";
 import { decodeImageDataUrl } from "../_core/imageUpload";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
-import { storagePut } from "../storage";
+import { cancelAccountImage, storeAccountImage } from "../_core/uploadQuota";
 import { requireReadableMemorialById } from "./memorialAccess";
 
 export const galleryRouter = router({
@@ -74,55 +77,70 @@ export const galleryRouter = router({
         asProfile: z.boolean().optional(),
       })
     )
-    .mutation(async ({ ctx, input }) =>
-      withGalleryEditor(
-        ctx.user,
-        { memorialId: input.memorialId },
-        async (tx, memorialId) => {
-          const existing = await tx
-            .select({ id: memorialGalleryPhotos.id })
-            .from(memorialGalleryPhotos)
-            .where(eq(memorialGalleryPhotos.memorialId, memorialId));
-          if (ctx.user.role !== "admin" && existing.length >= 30) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message:
-                "사진은 30장까지 준비할 수 있습니다. 더 필요한 경우 관리자에게 문의해 주세요.",
-            });
-          }
-          const { buffer, mimeType, ext } = decodeImageDataUrl(input.dataUrl);
-          const key = `gallery/${memorialId}/${nanoid()}.${ext}`;
-          const { key: storedKey, url } = await storagePut(key, buffer, mimeType);
-          await saveThumbnail(storedKey, input.thumbDataUrl);
-
-          const asProfile = input.asProfile === true;
-          if (asProfile) {
-            await tx
-              .update(memorialGalleryPhotos)
-              .set({ isRepresentative: 0 })
+    .mutation(async ({ ctx, input }) => {
+      let uncommittedKey: string | undefined;
+      try {
+        return await withGalleryEditor(
+          ctx.user,
+          { memorialId: input.memorialId },
+          async (tx, memorialId) => {
+            const existing = await tx
+              .select({ id: memorialGalleryPhotos.id })
+              .from(memorialGalleryPhotos)
               .where(eq(memorialGalleryPhotos.memorialId, memorialId));
+            if (ctx.user.role !== "admin" && existing.length >= 30) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message:
+                  "사진은 30장까지 준비할 수 있습니다. 더 필요한 경우 관리자에게 문의해 주세요.",
+              });
+            }
+            const { buffer, mimeType, ext } = decodeImageDataUrl(input.dataUrl);
+            const key = `gallery/${memorialId}/${nanoid()}.${ext}`;
+            const { key: storedKey, url } = await storeAccountImage({
+              userId: ctx.user.id,
+              key,
+              buffer,
+              mimeType,
+              extraBytes:
+                decodeThumbnailDataUrl(input.thumbDataUrl)?.length ?? 0,
+              tx,
+            });
+            uncommittedKey = storedKey;
+            await saveThumbnail(storedKey, input.thumbDataUrl);
+
+            const asProfile = input.asProfile === true;
+            if (asProfile) {
+              await tx
+                .update(memorialGalleryPhotos)
+                .set({ isRepresentative: 0 })
+                .where(eq(memorialGalleryPhotos.memorialId, memorialId));
+            }
+
+            // 프로필 사진은 "프로필 사진" 칸에서 올린 사진만 된다 (2026-09-16).
+            // 전에는 첫 사진이 저절로 대표 사진이 되어, 앨범에 올린 사진이 말없이
+            // 추모관 맨 위 사진으로 쓰였다.
+            const [inserted] = await tx.insert(memorialGalleryPhotos).values({
+              memorialId,
+              photoUrl: url,
+              photoKey: key,
+              caption: input.caption || null,
+              year: input.year || null,
+              sortOrder: input.sortOrder ?? 0,
+              isRepresentative: asProfile ? 1 : 0,
+            });
+            const id = Number(
+              (inserted as { insertId?: number } | undefined)?.insertId ?? 0
+            );
+
+            return { success: true, url, key, id, asProfile };
           }
-
-          // 프로필 사진은 "프로필 사진" 칸에서 올린 사진만 된다 (2026-09-16).
-          // 전에는 첫 사진이 저절로 대표 사진이 되어, 앨범에 올린 사진이 말없이
-          // 추모관 맨 위 사진으로 쓰였다.
-          const [inserted] = await tx.insert(memorialGalleryPhotos).values({
-            memorialId,
-            photoUrl: url,
-            photoKey: key,
-            caption: input.caption || null,
-            year: input.year || null,
-            sortOrder: input.sortOrder ?? 0,
-            isRepresentative: asProfile ? 1 : 0,
-          });
-          const id = Number(
-            (inserted as { insertId?: number } | undefined)?.insertId ?? 0
-          );
-
-          return { success: true, url, key, id, asProfile };
-        }
-      )
-    ),
+        );
+      } catch (error) {
+        if (uncommittedKey) await cancelAccountImage(uncommittedKey);
+        throw error;
+      }
+    }),
 
   update: protectedProcedure
     .input(

@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   canUserReadMemorial,
   createMemorialAccessToken,
+  MEMORIAL_ACCESS_TOKEN_TTL_MS,
   escapeMemorialSearchKeyword,
   getMemorialFamilyRoomVideo,
   hashMemorialAccessPassword,
+  verifyMemorialAccessToken,
 } from "./db";
 
 const accessPasswordHash = hashMemorialAccessPassword("1234");
@@ -24,6 +26,27 @@ describe("canUserReadMemorial", () => {
   it("allows private memorial data with a valid access token", () => {
     const token = createMemorialAccessToken("park-somang", accessPasswordHash);
     expect(canUserReadMemorial(privateMemorial, token)).toBe(true);
+  });
+
+  it("rejects an expired access token and a token after password change", () => {
+    const issuedAt = Date.now() - MEMORIAL_ACCESS_TOKEN_TTL_MS - 1000;
+    const expired = createMemorialAccessToken(
+      "park-somang",
+      accessPasswordHash,
+      issuedAt
+    );
+    expect(canUserReadMemorial(privateMemorial, expired)).toBe(false);
+    const current = createMemorialAccessToken(
+      "park-somang",
+      accessPasswordHash
+    );
+    expect(
+      verifyMemorialAccessToken(
+        current,
+        "park-somang",
+        hashMemorialAccessPassword("changed")
+      )
+    ).toBe(false);
   });
 
   it("allows the memorial owner and admins without a password token", () => {

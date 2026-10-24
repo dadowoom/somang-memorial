@@ -6,7 +6,7 @@ import {
 } from "@shared/const";
 import type { User } from "../../drizzle/schema";
 import { getSessionCookieOptions } from "./cookies";
-import { sdk } from "./sdk";
+import { InvalidAccountSessionError, sdk } from "./sdk";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -36,6 +36,7 @@ async function renewSessionIfNeeded(opts: CreateExpressContextOptions) {
       expiresInMs: SESSION_TTL_MS,
       // 연장해도 비밀번호 지문은 그대로 가져간다.
       credential: session.cred,
+      sessionId: session.sid,
     });
     opts.res.cookie(COOKIE_NAME, renewed, {
       ...getSessionCookieOptions(opts.req),
@@ -54,6 +55,12 @@ export async function createContext(
   try {
     user = await sdk.authenticateRequest(opts.req);
   } catch (error) {
+    if (error instanceof InvalidAccountSessionError) {
+      opts.res.clearCookie(COOKIE_NAME, {
+        ...getSessionCookieOptions(opts.req),
+        maxAge: -1,
+      });
+    }
     // Authentication is optional for public procedures.
     user = null;
   }
